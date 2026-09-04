@@ -12,10 +12,10 @@ interface SelectionDrawerProps {
  * The bar that slides up when a list has a selection: the verbs the route
  * supplies, and one way out.
  *
- * **Mobile only since #587.** On desktop the same verbs take over the sidebar
- * rail (`app/(authenticated)/_components/sidebar/rail-actions.tsx`) -- a bar at
- * the bottom of the viewport is easy to miss while you are looking at the grid.
- * The split is CSS at `48rem`, the breakpoint that swaps the rail for MobileNav.
+ * **The narrow surface since #587**, and still Trash's only one. Where a route
+ * has a controls column wide enough to hand over, the same verbs go there
+ * instead (`app/(authenticated)/_components/selection-panel/`) -- a bar at the
+ * bottom of the viewport is easy to miss while you are looking at the grid.
  *
  * It sits on --z-drawer, which is below --z-dialog. It used to be `z-50`, the
  * same layer as a dialog, and only stayed under the confirm dialog it opens

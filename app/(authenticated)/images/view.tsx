@@ -3,6 +3,7 @@
 import { GroupHeading } from '../_components/group-heading/group-heading'
 import { GroupPickerDialog } from '../_components/group-picker-dialog/group-picker-dialog'
 import { HiddenBar } from '../_components/hidden-bar/hidden-bar'
+import { useSelectionPanelFits } from '../_components/selection-panel/selection-panel'
 import { ImageGallery } from './_components/image-gallery/image-gallery'
 import { DownloadDialog } from './_components/download-dialog/download-dialog'
 import { GeneratorDock } from './_components/generator-dock/generator-dock'
@@ -39,7 +40,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     selectMode,
     visibility,
     hideSelected,
-    focusSelected,
     isBatchDeleting,
     deleteSelected,
     viewer,
@@ -89,6 +89,32 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
   const selectedImages = images.filter((img) => selection.isSelected(img.id))
   const selectedIds = selectedImages.map((img) => img.id)
 
+  const panelFits = useSelectionPanelFits()
+  /* One list of verbs, two places it can appear: the generator column on a
+     wide screen (#587), and the bottom drawer when the column is too narrow to
+     hand over. The bar at the bottom of the viewport was easy to miss unless
+     you already knew it was there. */
+  const selectionSurface = selectMode && panelFits ? 'panel' : 'drawer'
+  const selectionActions = (
+    <SelectionActions
+      surface={selectionSurface}
+      count={selection.count}
+      busy={isBatchDeleting}
+      /* One more verb among the selection's rather than a mode or a dialog
+         (#476): selection already exists everywhere this makes sense. */
+      sheetBusy={referenceSheet.busy}
+      onCreateReferenceSheet={() => void referenceSheet.create(selectedIds)}
+      onDownloadZip={() => setZipSelectionOpen(true)}
+      onClear={selection.clearSelection}
+      onDelete={() => void deleteSelected()}
+      onHide={() => void hideSelected()}
+      onAddToGroup={() => startAddToGroup(selectedIds)}
+      onRemoveFromGroup={
+        activeGroupId ? () => void removeFromGroup(selectedIds) : undefined
+      }
+    />
+  )
+
   return (
     <>
       {/* Clicking away from a selection is what clears it everywhere else, and
@@ -96,7 +122,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           something is picked, so an ordinary click on the background of an
           ordinary page stays an ordinary click. */}
       <Workspace
-        pushed={dock.open}
+        pushed={dock.open || selectionSurface === 'panel'}
         onBackgroundClick={selectMode ? selection.clearSelection : undefined}
       >
         <Toolbar
@@ -244,29 +270,16 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onBackgroundClick={selectMode ? selection.clearSelection : undefined}
         />
 
-        <SelectionActions
-          count={selection.count}
-          busy={isBatchDeleting}
-          /* One more verb in the drawer rather than a mode or a dialog
-             (#476): selection already exists everywhere this makes sense. */
-          sheetBusy={referenceSheet.busy}
-          onCreateReferenceSheet={() => void referenceSheet.create(selectedIds)}
-          onDownloadZip={() => setZipSelectionOpen(true)}
-          onClear={selection.clearSelection}
-          onDelete={() => void deleteSelected()}
-          onHide={() => void hideSelected()}
-          onFocus={focusSelected}
-          onAddToGroup={() => startAddToGroup(selectedIds)}
-          onRemoveFromGroup={
-            activeGroupId ? () => void removeFromGroup(selectedIds) : undefined
-          }
-        />
+        {selectionSurface === 'drawer' && selectionActions}
       </Workspace>
 
       <GeneratorDock
         dock={dock}
         isMobile={prefs.isMobile}
         selectionActive={selectMode}
+        selectionActions={
+          selectionSurface === 'panel' ? selectionActions : null
+        }
         generator={generator}
         modelSelector={modelSelector}
         userImages={userImages}

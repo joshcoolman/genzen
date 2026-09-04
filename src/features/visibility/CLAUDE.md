@@ -11,6 +11,11 @@ only the surface was missing.
 
 ## Quirks
 
+- **Focus has no entry point.** #587 took the Focus verb out of select mode on
+  both routes, and nothing else ever set `focusIds` -- so every focus branch
+  below is unreachable, and its tests keep it looking maintained. #590 is the
+  decision: remove it, or give it a home that is not a batch verb. The two
+  quirks under this one are written as if it still runs, and go with it.
 - **Hide and focus are one predicate**, `isVisible`. "Hide these eight" and
   "show only these two" are the same filtered view from opposite ends, so there
   is one rule with two inputs rather than two filters to keep in agreement.

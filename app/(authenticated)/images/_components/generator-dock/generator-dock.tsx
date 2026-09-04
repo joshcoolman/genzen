@@ -7,14 +7,19 @@ import type { DockState } from '../../_hooks/use-dock'
 import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import type { UserImage } from '#/features/user-images/types'
+import type { ReactNode } from 'react'
 import { Dialog, DialogContent, MobileDialogHeader } from '#/components'
 import { cx } from '#/lib/utils'
 
 interface GeneratorDockProps {
   dock: DockState
   isMobile: boolean
-  /** A selection is up: the panel steps back rather than competing with it. */
+  /** A selection is up, and the column is too narrow to hand over: the panel
+   *  steps back rather than competing with the bottom drawer. */
   selectionActive?: boolean
+  /** A selection is up and the column is wide enough: these take the column,
+   *  in place of the generator (#587). */
+  selectionActions?: ReactNode
   generator: GeneratorState
   modelSelector: ReturnType<typeof useModelSelector>
   userImages: {
@@ -44,6 +49,7 @@ export function GeneratorDock({
   dock,
   isMobile,
   selectionActive,
+  selectionActions,
   generator,
   modelSelector,
   userImages,
@@ -78,6 +84,13 @@ export function GeneratorDock({
         </DialogContent>
       </Dialog>
     )
+  }
+
+  /* The column exists for the selection even with the generator closed:
+     otherwise select mode has no desktop surface for anyone who works with the
+     generator hidden. */
+  if (selectionActions) {
+    return <div className={styles.panel}>{selectionActions}</div>
   }
 
   if (!dock.open) return null

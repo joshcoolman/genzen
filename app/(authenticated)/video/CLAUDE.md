@@ -350,15 +350,20 @@ source images; `use-view.ts` owns everything after the first paint.
   for this** -- its list filtered to `upload` and `ai_generated` while its
   Empty Trash destroyed every trashed row regardless, so a binned clip was
   invisible in the one place that could restore it and swept anyway.
-- **Several clips at once, and five verbs: Add to group, Remove from group,
-  Hide, Focus, Trash** (#517, #537). Images' drawer carries seven -- a still is
-  a thing you file, sheet, zip and share; a clip is a take you group, hide or
+- **Several clips at once, and four verbs: Add to group, Remove from group,
+  Hide, Trash** (#517, #537). Images carries six -- a still is
+  a thing you file, sheet, share and hide; a clip is a take you group, hide or
   prune. There is no
   reference sheet, because a sheet of clips is not a thing, and no zip yet.
-  They are listed once, in `_components/selection-actions/`, and rendered
-  twice: the sidebar rail on desktop and `SelectionDrawer` below `48rem`
-  (#587). `useSelection`, `SelectionDrawer` and `RailActions` are borrowed
-  unchanged -- all three exist so
+  Focus was a fifth until #587 removed it from both routes; what is left of it
+  is #590.
+  They are listed once, in `_components/selection-actions/`, and rendered into
+  whichever container the width chooses: the controls column takes them over on
+  a wide screen (#587), and below 60rem -- where that column has stacked under
+  the wall, so a takeover would put the verbs off the bottom of a long page --
+  they go in the bottom drawer.
+  `useSelection`, `SelectionPanel` and `SelectionDrawer` are borrowed unchanged
+  -- all three exist so
   a route supplies the verbs and nothing else -- and the trash is
   `trashGalleryImages(ids)`, which dispatches on `status` and never on
   `source`, so it was already right for clips. One call for the set (#329):
@@ -434,9 +439,10 @@ source images; `use-view.ts` owns everything after the first paint.
   mode is having something picked; Escape and Deselect all are the way out
   because emptying the selection is the only thing leaving could mean, and the
   tick sits on every card always so picking up again after a delete is one
-  click rather than a mode to re-enter. On desktop the verbs take over the
-  sidebar rail while that lasts (#587); the takeover is `<RailOverride>`
-  rendered conditionally, so there is still no second piece of mode state.
+  click rather than a mode to re-enter. What changes on screen is the controls
+  column, which the verbs take over while the selection lasts (#587) -- a swap,
+  not a second piece of state: the surface is chosen from `selectedCount > 0`
+  like everything else about the mode.
 
   **In select mode the whole picture is the target** (#538), as a still's whole
   tile is. Only in select mode: with nothing picked, Play owns the player and

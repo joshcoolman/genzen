@@ -1,0 +1,65 @@
+/* The verbs for a selection, filling the right-hand column. Full-width rows
+   with the icon at the left edge, so the labels line up and the column reads
+   as a list of things to do rather than a row of chips. */
+
+.root {
+  /* Fills the column so the dead space below the verbs belongs to the panel
+     and a click down there can mean "deselect". */
+  min-block-size: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-16);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: var(--text);
+}
+
+/* Smaller than the verbs, and outlined rather than filled: leaving is not one
+   of the things you came here to do. */
+.deselect {
+  padding: var(--space-2) var(--space-8);
+  font-size: var(--text-xs);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Solid grey fills, not a tinted panel. A wash behind the whole column tinted
+   the thumbnails' neighbour and still left the verbs looking like the
+   generator's outlined controls; filling them is what says the page is in a
+   mode, and it says it on the things you are about to press. Grey rather than
+   green because these are ordinary verbs -- the accent is the brand, not a
+   loudness dial, and a column of seven green buttons outshouts the pictures.
+   Mixed off `--text` so one value works on either ground: solid, not a
+   translucent wash over a translucent scrim. */
+.actions button:not([data-variant='danger']) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--text) 16%, var(--bg));
+  color: var(--text);
+}
+
+.actions button:not([data-variant='danger']):not([data-disabled]):hover {
+  background: color-mix(in srgb, var(--text) 24%, var(--bg));
+  color: var(--text);
+}
+
+/* Full width, and the label starts where every other label starts. A centred
+   row of icon-then-text in a 20rem column leaves the verbs scattered across
+   it. */
+.actions button {
+  width: 100%;
+  justify-content: flex-start;
+}

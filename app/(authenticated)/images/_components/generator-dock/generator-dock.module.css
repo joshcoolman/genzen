@@ -22,9 +22,11 @@
   transition: all var(--duration-slow) var(--ease-in-out);
 }
 
-/* A selection is up. The panel is still there -- it holds a prompt you are
-   part-way through -- but it is not what you are doing, so it fades back and
-   stops answering. */
+/* A selection is up and the column is too narrow to hand over, so the verbs
+   are in the bottom drawer instead. The panel is still there -- it holds a
+   prompt you are part-way through -- but it is not what you are doing, so it
+   fades back and stops answering. Wide enough and the column is handed over
+   outright (#587), which is a swap rather than a fade. */
 .stepBack {
   opacity: 0.35;
 }

@@ -5,6 +5,7 @@ import { ModelSelector } from '../_components/model-selector/model-selector'
 import { GroupHeading } from '../_components/group-heading/group-heading'
 import { GroupPickerDialog } from '../_components/group-picker-dialog/group-picker-dialog'
 import { HiddenBar } from '../_components/hidden-bar/hidden-bar'
+import { useSelectionPanelFits } from '../_components/selection-panel/selection-panel'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { VideoForm } from './_components/video-form/video-form'
 import { VideoList } from './_components/video-list/video-list'
@@ -43,7 +44,6 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     cells,
     visibility,
     hideSelected,
-    focusSelected,
     groups,
     expandedGroupIds,
     groupMembers,
@@ -94,6 +94,28 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     canSubmit,
     submit,
   } = useView(initialVideos)
+
+  const panelFits = useSelectionPanelFits()
+  /* One list of verbs, two places it can appear: the controls column on a wide
+     screen (#587), and the bottom drawer once that column has stacked under
+     the wall, where a takeover would put the verbs off the bottom of a long
+     page. */
+  const selectionSurface = selectedCount > 0 && panelFits ? 'panel' : 'drawer'
+  const selectionActions = (
+    <SelectionActions
+      surface={selectionSurface}
+      count={selectedCount}
+      busy={isBatchDeleting}
+      hideBusy={visibility.busy}
+      onClear={clearSelection}
+      onAddToGroup={startAddToGroup}
+      onRemoveFromGroup={
+        activeGroupId ? () => void removeFromGroup() : undefined
+      }
+      onHide={() => void hideSelected()}
+      onDelete={() => void deleteSelected()}
+    />
+  )
 
   return (
     <Stack gap={24}>
@@ -180,73 +202,83 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
         </div>
 
         <div className={styles.controls}>
-          <VideoForm
-            durationOptions={durationOptions}
-            promptCount={promptCount}
-            needsConfirm={needsConfirm}
-            prompts={prompts}
-            onUpdatePrompt={updatePrompt}
-            onAddPrompt={addPrompt}
-            onRemovePrompt={removePrompt}
-            onClearPrompts={clearPrompts}
-            pendingCount={pendingCount}
-            duration={duration}
-            onDurationChange={setDuration}
-            aspectRatio={aspectRatio}
-            aspectOptions={aspectOptions}
-            onAspectRatioChange={setAspectRatio}
-            resolution={resolution}
-            resolutionOptions={resolutionOptions}
-            onResolutionChange={setResolution}
-            estimatedCost={estimatedCost}
-            isSubmitting={isSubmitting}
-            canSubmit={canSubmit}
-            onSubmit={submit}
-            /* Under the prompts, where the generator panel puts its reference
+          {/* The column is handed over while a selection is up: the form holds
+              a prompt you are part-way through, but it is not what you are
+              doing, and two stacks of controls in one column is neither. */}
+          {selectionSurface === 'panel' ? (
+            selectionActions
+          ) : (
+            <VideoForm
+              durationOptions={durationOptions}
+              promptCount={promptCount}
+              needsConfirm={needsConfirm}
+              prompts={prompts}
+              onUpdatePrompt={updatePrompt}
+              onAddPrompt={addPrompt}
+              onRemovePrompt={removePrompt}
+              onClearPrompts={clearPrompts}
+              pendingCount={pendingCount}
+              duration={duration}
+              onDurationChange={setDuration}
+              aspectRatio={aspectRatio}
+              aspectOptions={aspectOptions}
+              onAspectRatioChange={setAspectRatio}
+              resolution={resolution}
+              resolutionOptions={resolutionOptions}
+              onResolutionChange={setResolution}
+              estimatedCost={estimatedCost}
+              isSubmitting={isSubmitting}
+              canSubmit={canSubmit}
+              onSubmit={submit}
+              /* Under the prompts, where the generator panel puts its reference
                strip. The generator panel's widget, twice, with one picker
                behind both -- a second dialog would be the same component
                mounted twice to answer the same question. Labelled, which that
                panel's single strip is not: two slots that do different things
                cannot both be unlabelled. */
-            framesSlot={
-              <>
-                {/* Absent for a text-to-video-only model, not disabled: a slot
+              framesSlot={
+                <>
+                  {/* Absent for a text-to-video-only model, not disabled: a slot
                     that cannot be sent anywhere is worse than no slot. What is
                     already staged is kept, so switching back restores it --
                     the frame is simply not sent meanwhile. */}
-                {modelTakesFirstFrame && (
-                  <div className={styles.frame}>
-                    <p className={styles.frameLabel}>First frame (optional)</p>
-                    <RefImageStrip
-                      images={sources}
-                      max={1}
-                      onAdd={() => openPicker('first')}
-                      onRemove={clearSources}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                )}
-
-                {/* Optional, and it stays visible when empty rather than
-                    hiding behind a disclosure -- an empty slot is the only
-                    thing that says the capability exists. */}
-                {modelTakesFirstFrame &&
-                  modelTakesEndFrame &&
-                  hasFirstFrame && (
+                  {modelTakesFirstFrame && (
                     <div className={styles.frame}>
-                      <p className={styles.frameLabel}>Last frame (optional)</p>
+                      <p className={styles.frameLabel}>
+                        First frame (optional)
+                      </p>
                       <RefImageStrip
-                        images={endSources}
+                        images={sources}
                         max={1}
-                        onAdd={() => openPicker('last')}
-                        onRemove={clearEndSources}
+                        onAdd={() => openPicker('first')}
+                        onRemove={clearSources}
                         disabled={isSubmitting}
                       />
                     </div>
                   )}
-              </>
-            }
-            /* Last, as it is in the generator panel, and single-select: the
+
+                  {/* Optional, and it stays visible when empty rather than
+                    hiding behind a disclosure -- an empty slot is the only
+                    thing that says the capability exists. */}
+                  {modelTakesFirstFrame &&
+                    modelTakesEndFrame &&
+                    hasFirstFrame && (
+                      <div className={styles.frame}>
+                        <p className={styles.frameLabel}>
+                          Last frame (optional)
+                        </p>
+                        <RefImageStrip
+                          images={endSources}
+                          max={1}
+                          onAdd={() => openPicker('last')}
+                          onRemove={clearEndSources}
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    )}
+                </>
+              }
+              /* Last, as it is in the generator panel, and single-select: the
                controls above it are this model's, not an intersection of
                several models' (see the lineup's header comment). Its two
                right-hand columns are the same two numbers read differently --
@@ -254,42 +286,31 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
                is the model's headline rate; where it has resolution tiers the
                Resolution control moves the real figure, and `CostNote` is
                where that lands. */
-            modelSlot={
-              <ModelSelector
-                mode="single"
-                selectedIds={[modelSlug]}
-                visibleModels={pickerModels.map((m) => ({
-                  id: m.slug,
-                  name: m.label,
-                  description: m.description,
-                  capability: 'video' as const,
-                  price: m.pricePerSecondCents / 100,
-                  capacity: frameCapacityFor(m),
-                }))}
-                onToggleSelected={selectModel}
-                stagedImageCount={sources.length + endSources.length}
-                priceLabel="$/s"
-                capacityLabel="Frames"
-                persistKey="genzen:video:model-panel:expanded"
-              />
-            }
-          />
+              modelSlot={
+                <ModelSelector
+                  mode="single"
+                  selectedIds={[modelSlug]}
+                  visibleModels={pickerModels.map((m) => ({
+                    id: m.slug,
+                    name: m.label,
+                    description: m.description,
+                    capability: 'video' as const,
+                    price: m.pricePerSecondCents / 100,
+                    capacity: frameCapacityFor(m),
+                  }))}
+                  onToggleSelected={selectModel}
+                  stagedImageCount={sources.length + endSources.length}
+                  priceLabel="$/s"
+                  capacityLabel="Frames"
+                  persistKey="genzen:video:model-panel:expanded"
+                />
+              }
+            />
+          )}
         </div>
       </div>
 
-      <SelectionActions
-        count={selectedCount}
-        busy={isBatchDeleting}
-        hideBusy={visibility.busy}
-        onClear={clearSelection}
-        onAddToGroup={startAddToGroup}
-        onRemoveFromGroup={
-          activeGroupId ? () => void removeFromGroup() : undefined
-        }
-        onHide={() => void hideSelected()}
-        onFocus={focusSelected}
-        onDelete={() => void deleteSelected()}
-      />
+      {selectionSurface === 'drawer' && selectionActions}
 
       {/* Pick a group, or fall through to naming a new one. Never opened with
           an empty list -- `startAddToGroup` sends you straight to the name

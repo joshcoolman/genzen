@@ -49,7 +49,8 @@ list once when the seed comes back full, so the grid is never short.
   independent of `deleted_at` -- trashing does not clear it, so a restore puts
   a hidden image back hidden. Focus dies with the page, and **wins over hidden
   rather than intersecting with it**, or a focus would silently drop images you
-  had just selected. Applied once above the scope filter, so a group, top level
+  had just selected. **Focus has no way in since #587** took its verb out of
+  select mode -- the machinery is still here and unreachable, which is #590. Applied once above the scope filter, so a group, top level
   and every scope inherit it. **Group swatches and the expanded member strip
   are filtered client-side**, not in the reads that build them -- the client
   holds every row, so the filter costs no round trip; a group's `count` is
@@ -248,19 +249,38 @@ list once when the seed comes back full, so the grid is never short.
   faded, and its body `inert` rather than merely dimmed, since a panel that
   looks off but still takes clicks and Tab stops is a lie. Its header stays
   live so the gear is still reachable
-- **The verbs live in the sidebar rail on desktop, the bottom drawer on mobile
-  (#587).** One list of verbs, two surfaces, and which one you see is CSS at
-  `48rem` -- the same breakpoint that swaps the rail for `MobileNav`. The bar
-  fixed to the bottom of the viewport was easy to miss unless you already knew
-  it was there, and it sat in peripheral vision while you were looking at the
-  grid; the rail is where you already look to move around. The rail is not a
-  new piece of state: `_components/sidebar/rail-override.tsx` is a context the
-  chrome provides and `<RailOverride>` writes to on mount, so the takeover
-  lasts exactly as long as the selection and select mode stays a selection
-  rather than a switch. **The rail does not widen** -- it is `position: fixed`
-  and `app-chrome` offsets the page by a hard 64px, so a wider rail would
-  cover the grid rather than push it. Icon over a one-word caption fits; the
-  tooltip carries the full verb
+- **The verbs take over the generator column on a wide screen, and fall back
+  to the bottom drawer below 60rem (#587).** One list of them in
+  `_components/selection-actions/`, handed to whichever container the width
+  chooses -- `SelectionPanel` in `(authenticated)/_components/`, or
+  `SelectionDrawer`. The bar fixed to the bottom of the viewport was easy to
+  miss unless you already knew it was there: it sat in peripheral vision while
+  you were looking at the grid, which is the one place you were not looking.
+  The column is where this page's controls already are. **The column appears
+  for a selection even with the generator hidden** -- otherwise anyone who
+  works with it closed has no desktop surface at all -- which is why
+  `GeneratorDock` returns the panel before it checks `dock.open`. Below 60rem
+  the column and a usable grid cannot both fit, so the drawer is the surface
+  and the generator only steps back (#326) rather than being replaced. The
+  split is a JS breakpoint rather than CSS because the two surfaces are
+  different components, not one styled two ways; nothing flashes, since a
+  selection is always empty at mount
+- **The verbs are two groups either side of a rule.** Above it, what the
+  selection _becomes_: filed, hidden, thrown away -- the wall is different
+  afterwards. Below it, what you _take away_ from it: a sheet, a zip. Nothing
+  changes on the page and nothing is stored. The rule is the only thing saying
+  those are different questions, which is why the two halves are not just
+  ordered but separated
+- **Grey fills, not a tinted panel.** A wash behind the whole column tinted the
+  thumbnails' neighbour and still left the verbs looking like the generator's
+  outlined controls; filling them is what says the page is in a mode, and it
+  says it on the things you are about to press. Grey rather than the accent
+  because these are ordinary verbs -- a column of green buttons outshouts the
+  pictures, which are the point of the page
+- **A click on the empty column deselects**, the way a click on the empty space
+  under the grid does (#439), and by the same identity check: every button in
+  the panel bubbles, so a handler that fired for those would clear the
+  selection on the very clicks that use it
 - **Create reference sheet is a selection verb, not a group feature (#476).**
   It composites the picked images onto one black sheet and downloads it --
   nothing is stored, and there is no sheet object, no mode and no dialog. It
