@@ -9,6 +9,16 @@
   transition: all 200ms var(--ease-in-out);
 }
 
+/* Mobile only. On desktop the selection takes over the sidebar rail instead
+   (`_components/sidebar/rail-actions.tsx`) -- a bar at the bottom of the
+   viewport is easy to miss while you are looking at the grid. The breakpoint
+   is `app-chrome`'s: the rail appears at exactly the width this disappears. */
+@media (min-width: 48rem) {
+  .root {
+    display: none;
+  }
+}
+
 .hidden {
   composes: root;
   transform: translateY(var(--space-24));

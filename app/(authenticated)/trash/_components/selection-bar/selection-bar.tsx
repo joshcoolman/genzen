@@ -1,6 +1,11 @@
 'use client'
 
 import { RotateCcw, Trash2 } from 'lucide-react'
+import {
+  RailAction,
+  RailActions,
+} from '../../../_components/sidebar/rail-actions'
+import { RailOverride } from '../../../_components/sidebar/rail-override'
 import styles from './selection-bar.module.css'
 import {
   Button,
@@ -38,6 +43,31 @@ export function SelectionBar({
 
   return (
     <>
+      {/* Desktop: the rail. Mobile: the drawer below. Delete keeps its confirm
+          on both -- it is the one verb in the app that cannot be undone. */}
+      {count > 0 && (
+        <RailOverride>
+          <RailActions count={count} onClear={onClear}>
+            <RailAction
+              icon={RotateCcw}
+              label={`Restore (${count})`}
+              caption="Restore"
+              count={count}
+              disabled={busy}
+              onClick={onRestore}
+            />
+            <RailAction
+              icon={Trash2}
+              label={`Delete (${count})`}
+              caption="Delete"
+              count={count}
+              danger
+              disabled={busy}
+              onClick={() => void ask()}
+            />
+          </RailActions>
+        </RailOverride>
+      )}
       <SelectionDrawer count={count} onClear={onClear}>
         <Button variant="ghost" size="sm" disabled={busy} onClick={onRestore}>
           <RotateCcw className={styles.icon} />

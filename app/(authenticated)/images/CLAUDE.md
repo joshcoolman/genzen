@@ -248,10 +248,24 @@ list once when the seed comes back full, so the grid is never short.
   faded, and its body `inert` rather than merely dimmed, since a panel that
   looks off but still takes clicks and Tab stops is a lie. Its header stays
   live so the gear is still reachable
+- **The verbs live in the sidebar rail on desktop, the bottom drawer on mobile
+  (#587).** One list of verbs, two surfaces, and which one you see is CSS at
+  `48rem` -- the same breakpoint that swaps the rail for `MobileNav`. The bar
+  fixed to the bottom of the viewport was easy to miss unless you already knew
+  it was there, and it sat in peripheral vision while you were looking at the
+  grid; the rail is where you already look to move around. The rail is not a
+  new piece of state: `_components/sidebar/rail-override.tsx` is a context the
+  chrome provides and `<RailOverride>` writes to on mount, so the takeover
+  lasts exactly as long as the selection and select mode stays a selection
+  rather than a switch. **The rail does not widen** -- it is `position: fixed`
+  and `app-chrome` offsets the page by a hard 64px, so a wider rail would
+  cover the grid rather than push it. Icon over a one-word caption fits; the
+  tooltip carries the full verb
 - **Create reference sheet is a selection verb, not a group feature (#476).**
   It composites the picked images onto one black sheet and downloads it --
   nothing is stored, and there is no sheet object, no mode and no dialog. It
-  lives in the drawer because groups are only one place a selection happens.
+  sits with the other selection verbs because groups are only one place a
+  selection happens.
   The layout is `src/lib/justified-rows.ts` (pure, tested) and the compositing is
   `src/lib/server/reference-sheet.server.ts`, reached through
   `POST /api/reference-sheet`, which answers with the PNG itself. **Justified rows, not native
