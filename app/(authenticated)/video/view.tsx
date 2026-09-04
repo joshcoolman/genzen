@@ -44,7 +44,6 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     cells,
     visibility,
     hideSelected,
-    focusSelected,
     groups,
     expandedGroupIds,
     groupMembers,
@@ -114,7 +113,6 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
         activeGroupId ? () => void removeFromGroup() : undefined
       }
       onHide={() => void hideSelected()}
-      onFocus={focusSelected}
       onDelete={() => void deleteSelected()}
     />
   )

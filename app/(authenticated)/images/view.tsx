@@ -40,7 +40,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     selectMode,
     visibility,
     hideSelected,
-    focusSelected,
     isBatchDeleting,
     deleteSelected,
     viewer,
@@ -109,7 +108,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
       onClear={selection.clearSelection}
       onDelete={() => void deleteSelected()}
       onHide={() => void hideSelected()}
-      onFocus={focusSelected}
       onAddToGroup={() => startAddToGroup(selectedIds)}
       onRemoveFromGroup={
         activeGroupId ? () => void removeFromGroup(selectedIds) : undefined

@@ -4,3 +4,19 @@
   width: 0.75rem;
   height: 0.75rem;
 }
+
+/* The line between what the selection becomes and what you take away from it.
+   Two shapes because the two surfaces run in two directions -- the same
+   separator, turned. */
+.rule {
+  margin-block: var(--space-8);
+  border-top: var(--border-width) solid
+    color-mix(in srgb, var(--text) 28%, transparent);
+}
+
+.ruleVertical {
+  align-self: stretch;
+  margin-inline: var(--space-8);
+  border-left: var(--border-width) solid
+    color-mix(in srgb, var(--text) 28%, transparent);
+}

@@ -1,12 +1,6 @@
 'use client'
 
-import {
-  EyeOff,
-  FolderMinus,
-  FolderPlus,
-  ScanSearch,
-  Trash2,
-} from 'lucide-react'
+import { EyeOff, FolderMinus, FolderPlus, Trash2 } from 'lucide-react'
 import { SelectionPanel } from '../../../_components/selection-panel/selection-panel'
 import { Button, SelectionDrawer } from '#/components'
 
@@ -23,17 +17,16 @@ interface SelectionActionsProps {
   /** Only inside a group: the selected clips return to top level. */
   onRemoveFromGroup?: () => void
   onHide: () => void
-  onFocus: () => void
   onDelete: () => void
 }
 
 /**
- * Five verbs, against Images' seven. A still is a thing you file, sheet, zip
- * and share; a clip is a take you group, hide or prune. There is no reference
+ * Four verbs, against Images' six. A still is a thing you file, sheet and
+ * share; a clip is a take you group, hide or prune. There is no reference
  * sheet -- a sheet of clips is not a thing -- and no zip in this pass (#517).
- * Hide and Focus arrived in #537: a wall of takes of one shot is mostly
- * near-misses you want out of the way while you judge the two that worked, and
- * trashing one to tidy up is a real loss.
+ * Hide arrived in #537: a wall of takes of one shot is mostly near-misses you
+ * want out of the way while you judge the two that worked, and trashing one to
+ * tidy up is a real loss.
  *
  * One list, two containers: the controls column on a wide screen, the bottom
  * drawer once that column has stacked under the wall.
@@ -47,14 +40,17 @@ export function SelectionActions({
   onAddToGroup,
   onRemoveFromGroup,
   onHide,
-  onFocus,
   onDelete,
 }: SelectionActionsProps) {
+  /* The column has room the bar never did, and a row you are meant to read
+     down wants to be a row rather than a chip. */
+  const size = surface === 'panel' ? 'md' : 'sm'
+
   const verbs = (
     <>
       <Button
         variant="secondary"
-        size="sm"
+        size={size}
         disabled={busy}
         onClick={onAddToGroup}
       >
@@ -66,7 +62,7 @@ export function SelectionActions({
       {onRemoveFromGroup && (
         <Button
           variant="secondary"
-          size="sm"
+          size={size}
           disabled={busy}
           onClick={onRemoveFromGroup}
         >
@@ -74,25 +70,21 @@ export function SelectionActions({
           Remove from group
         </Button>
       )}
-      {/* Hide and Focus are a pair and stay one (#537): Focus shows only the
-          selection, Hide removes only it, and neither destroys anything. They
-          sit before Trash, which is the only verb here that does. */}
+      {/* Hide removes the selection from the wall without destroying it
+          (#537), so it sits before Trash, which is the only verb here that
+          does. */}
       <Button
         variant="secondary"
-        size="sm"
+        size={size}
         disabled={busy || hideBusy}
         onClick={onHide}
       >
         <EyeOff size={14} />
         Hide
       </Button>
-      <Button variant="secondary" size="sm" disabled={busy} onClick={onFocus}>
-        <ScanSearch size={14} />
-        Focus
-      </Button>
       {/* Not `danger` and not "Delete": this moves rows to Trash, where they
           sit until it is emptied -- red belongs to Delete Forever. */}
-      <Button size="sm" disabled={busy} onClick={onDelete}>
+      <Button size={size} disabled={busy} onClick={onDelete}>
         <Trash2 size={14} />
         {busy ? 'Trashing...' : `Trash ${count}`}
       </Button>

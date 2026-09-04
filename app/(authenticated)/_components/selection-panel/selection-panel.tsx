@@ -25,7 +25,7 @@ interface SelectionPanelProps {
 }
 
 /**
- * Select mode's desktop surface: the verbs for the selection take over the
+ * Select mode's wide surface: the verbs for the selection take over the
  * right-hand column, in place of the generator.
  *
  * The bar fixed to the bottom of the viewport (`SelectionDrawer`) is easy to
@@ -43,16 +43,31 @@ export function SelectionPanel({
   children,
 }: SelectionPanelProps) {
   return (
-    <div className={styles.root}>
+    /* The empty column below the verbs clears the selection, the way the empty
+       space under the grid does (#439). Compared by identity rather than by
+       what bubbles up: every button in here bubbles, and a handler that fired
+       for those would clear the selection on the very clicks that use it. */
+    <div
+      className={styles.root}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClear()
+      }}
+    >
+      {/* Deselect is text opposite the count, not a button among the verbs:
+          the column is a list of things to do to the selection, and leaving is
+          not one of them. Escape and a click on the background do the same. */}
       <div className={styles.header}>
         <span className={styles.title}>{count} selected</span>
+        <Button
+          variant="secondary"
+          size="sm"
+          className={styles.deselect}
+          onClick={onClear}
+        >
+          Deselect
+        </Button>
       </div>
       <div className={styles.actions}>{children}</div>
-      {/* Last and set apart, where the drawer puts it: the way out, after the
-          things you might do. */}
-      <Button variant="ghost" size="sm" onClick={onClear}>
-        Deselect all
-      </Button>
     </div>
   )
 }

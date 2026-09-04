@@ -49,7 +49,8 @@ list once when the seed comes back full, so the grid is never short.
   independent of `deleted_at` -- trashing does not clear it, so a restore puts
   a hidden image back hidden. Focus dies with the page, and **wins over hidden
   rather than intersecting with it**, or a focus would silently drop images you
-  had just selected. Applied once above the scope filter, so a group, top level
+  had just selected. **Focus has no way in since #587** took its verb out of
+  select mode -- the machinery is still here and unreachable, which is #590. Applied once above the scope filter, so a group, top level
   and every scope inherit it. **Group swatches and the expanded member strip
   are filtered client-side**, not in the reads that build them -- the client
   holds every row, so the filter costs no round trip; a group's `count` is
@@ -264,6 +265,22 @@ list once when the seed comes back full, so the grid is never short.
   split is a JS breakpoint rather than CSS because the two surfaces are
   different components, not one styled two ways; nothing flashes, since a
   selection is always empty at mount
+- **The verbs are two groups either side of a rule.** Above it, what the
+  selection _becomes_: filed, hidden, thrown away -- the wall is different
+  afterwards. Below it, what you _take away_ from it: a sheet, a zip. Nothing
+  changes on the page and nothing is stored. The rule is the only thing saying
+  those are different questions, which is why the two halves are not just
+  ordered but separated
+- **Grey fills, not a tinted panel.** A wash behind the whole column tinted the
+  thumbnails' neighbour and still left the verbs looking like the generator's
+  outlined controls; filling them is what says the page is in a mode, and it
+  says it on the things you are about to press. Grey rather than the accent
+  because these are ordinary verbs -- a column of green buttons outshouts the
+  pictures, which are the point of the page
+- **A click on the empty column deselects**, the way a click on the empty space
+  under the grid does (#439), and by the same identity check: every button in
+  the panel bubbles, so a handler that fired for those would clear the
+  selection on the very clicks that use it
 - **Create reference sheet is a selection verb, not a group feature (#476).**
   It composites the picked images onto one black sheet and downloads it --
   nothing is stored, and there is no sheet object, no mode and no dialog. It

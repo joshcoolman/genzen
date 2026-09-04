@@ -350,11 +350,13 @@ source images; `use-view.ts` owns everything after the first paint.
   for this** -- its list filtered to `upload` and `ai_generated` while its
   Empty Trash destroyed every trashed row regardless, so a binned clip was
   invisible in the one place that could restore it and swept anyway.
-- **Several clips at once, and five verbs: Add to group, Remove from group,
-  Hide, Focus, Trash** (#517, #537). Images' drawer carries seven -- a still is
-  a thing you file, sheet, zip and share; a clip is a take you group, hide or
+- **Several clips at once, and four verbs: Add to group, Remove from group,
+  Hide, Trash** (#517, #537). Images carries six -- a still is
+  a thing you file, sheet, share and hide; a clip is a take you group, hide or
   prune. There is no
   reference sheet, because a sheet of clips is not a thing, and no zip yet.
+  Focus was a fifth until #587 removed it from both routes; what is left of it
+  is #590.
   They are listed once, in `_components/selection-actions/`, and rendered into
   whichever container the width chooses: the controls column takes them over on
   a wide screen (#587), and below 60rem -- where that column has stacked under

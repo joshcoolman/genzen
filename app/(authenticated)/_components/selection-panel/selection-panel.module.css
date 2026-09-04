@@ -3,37 +3,13 @@
    as a list of things to do rather than a row of chips. */
 
 .root {
+  /* Fills the column so the dead space below the verbs belongs to the panel
+     and a click down there can mean "deselect". */
+  min-block-size: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-12);
   padding: var(--space-16);
-  /* Accent, not the page's own near-black: a selection is a mode, and a
-     surface that matches what it sits in is one you have to already know
-     about. The wash carries it rather than a filled accent panel, so the red
-     Delete still reads as the dangerous one. The drawer's own colour, so the
-     mode looks the same wherever it appears. */
-  background: color-mix(in srgb, var(--accent-soft) 92%, var(--bg));
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--accent) 40%, transparent);
-  border-radius: var(--radius-lg);
-  animation: panelArrive var(--duration-slow) var(--ease-out);
-}
-
-/* One pulse on arrival, then quiet. The column swapping its contents is a
-   change you can miss when your eye is on the grid. */
-@keyframes panelArrive {
-  from {
-    box-shadow: 0 0 0 0 var(--accent);
-  }
-  to {
-    box-shadow: 0 0 0 0.5rem transparent;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .root {
-    animation: none;
-  }
 }
 
 .header {
@@ -42,42 +18,48 @@
   justify-content: space-between;
 }
 
-/* The generator header's voice, matched: the column keeps one label style
-   whichever thing is in it. */
 .title {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: var(--text);
+}
+
+/* Smaller than the verbs, and outlined rather than filled: leaving is not one
+   of the things you came here to do. */
+.deselect {
+  padding: var(--space-2) var(--space-8);
   font-size: var(--text-xs);
-  line-height: var(--text-xs-leading);
-  color: var(--text-muted);
 }
 
 .actions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-6);
 }
 
-/* Every button in here is a filled darker green with no edge -- the panel is
-   one object, and a stack of outlined buttons on a green wash reads as seven
-   separate controls floating on it. Danger keeps its own treatment: Trash's
-   "Delete Forever" is the one irreversible verb in the app and must not look
-   like its neighbours. */
-.root button:not([data-variant='danger']) {
+/* Solid grey fills, not a tinted panel. A wash behind the whole column tinted
+   the thumbnails' neighbour and still left the verbs looking like the
+   generator's outlined controls; filling them is what says the page is in a
+   mode, and it says it on the things you are about to press. Grey rather than
+   green because these are ordinary verbs -- the accent is the brand, not a
+   loudness dial, and a column of seven green buttons outshouts the pictures.
+   Mixed off `--text` so one value works on either ground: solid, not a
+   translucent wash over a translucent scrim. */
+.actions button:not([data-variant='danger']) {
   border-color: transparent;
-  background: color-mix(in srgb, var(--image-backing) 60%, transparent);
+  background: color-mix(in srgb, var(--text) 16%, var(--bg));
   color: var(--text);
 }
 
-/* Hover thins the black rather than adding a colour: the green underneath
-   comes up through it, so the panel stays one object. */
-.root button:not([data-variant='danger']):not([data-disabled]):hover {
-  background: color-mix(in srgb, var(--image-backing) 35%, transparent);
+.actions button:not([data-variant='danger']):not([data-disabled]):hover {
+  background: color-mix(in srgb, var(--text) 24%, var(--bg));
   color: var(--text);
 }
 
 /* Full width, and the label starts where every other label starts. A centred
    row of icon-then-text in a 20rem column leaves the verbs scattered across
    it. */
-.root button {
+.actions button {
   width: 100%;
   justify-content: flex-start;
 }
