@@ -355,7 +355,10 @@ source images; `use-view.ts` owns everything after the first paint.
   a thing you file, sheet, zip and share; a clip is a take you group, hide or
   prune. There is no
   reference sheet, because a sheet of clips is not a thing, and no zip yet.
-  `useSelection` and `SelectionDrawer` are borrowed unchanged -- both exist so
+  They are listed once, in `_components/selection-actions/`, and rendered
+  twice: the sidebar rail on desktop and `SelectionDrawer` below `48rem`
+  (#587). `useSelection`, `SelectionDrawer` and `RailActions` are borrowed
+  unchanged -- all three exist so
   a route supplies the verbs and nothing else -- and the trash is
   `trashGalleryImages(ids)`, which dispatches on `status` and never on
   `source`, so it was already right for clips. One call for the set (#329):
@@ -431,7 +434,9 @@ source images; `use-view.ts` owns everything after the first paint.
   mode is having something picked; Escape and Deselect all are the way out
   because emptying the selection is the only thing leaving could mean, and the
   tick sits on every card always so picking up again after a delete is one
-  click rather than a mode to re-enter.
+  click rather than a mode to re-enter. On desktop the verbs take over the
+  sidebar rail while that lasts (#587); the takeover is `<RailOverride>`
+  rendered conditionally, so there is still no second piece of mode state.
 
   **In select mode the whole picture is the target** (#538), as a still's whole
   tile is. Only in select mode: with nothing picked, Play owns the player and

@@ -9,6 +9,11 @@ import {
   ScanSearch,
   Trash2,
 } from 'lucide-react'
+import {
+  RailAction,
+  RailActions,
+} from '../../../_components/sidebar/rail-actions'
+import { RailOverride } from '../../../_components/sidebar/rail-override'
 import styles from './selection-actions.module.css'
 import { Button, SelectionDrawer } from '#/components'
 
@@ -59,57 +64,121 @@ export function SelectionActions({
   onDownloadZip,
 }: SelectionActionsProps) {
   return (
-    <SelectionDrawer count={count} onClear={onClear}>
-      <Button
-        variant="secondary"
-        size="sm"
-        disabled={busy}
-        onClick={onAddToGroup}
-      >
-        <FolderPlus className={styles.icon} />
-        Add to group
-      </Button>
-      {onRemoveFromGroup && (
+    <>
+      {/* Two surfaces, one list of verbs. The rail is desktop, the drawer is
+          mobile, and which one you see is CSS at 48rem -- the rail is hidden
+          below it and the drawer above it. */}
+      {count > 0 && (
+        <RailOverride>
+          <RailActions count={count} onClear={onClear}>
+            <RailAction
+              icon={FolderPlus}
+              label="Add to group"
+              caption="Group"
+              disabled={busy}
+              onClick={onAddToGroup}
+            />
+            {onRemoveFromGroup && (
+              <RailAction
+                icon={FolderMinus}
+                label="Remove from group"
+                caption="Ungroup"
+                disabled={busy}
+                onClick={onRemoveFromGroup}
+              />
+            )}
+            <RailAction
+              icon={LayoutGrid}
+              label="Create reference sheet"
+              caption="Sheet"
+              disabled={busy}
+              busy={sheetBusy}
+              onClick={onCreateReferenceSheet}
+            />
+            <RailAction
+              icon={Download}
+              label="Download zip"
+              caption="Zip"
+              disabled={busy}
+              onClick={onDownloadZip}
+            />
+            <RailAction
+              icon={ScanSearch}
+              label="Focus"
+              caption="Focus"
+              disabled={busy}
+              onClick={onFocus}
+            />
+            <RailAction
+              icon={EyeOff}
+              label={`Hide ${count}`}
+              caption="Hide"
+              count={count}
+              disabled={busy}
+              onClick={onHide}
+            />
+            <RailAction
+              icon={Trash2}
+              label={busy ? 'Trashing...' : `Trash ${count}`}
+              caption="Trash"
+              count={count}
+              busy={busy}
+              onClick={onDelete}
+            />
+          </RailActions>
+        </RailOverride>
+      )}
+      <SelectionDrawer count={count} onClear={onClear}>
         <Button
           variant="secondary"
           size="sm"
           disabled={busy}
-          onClick={onRemoveFromGroup}
+          onClick={onAddToGroup}
         >
-          {/* The mirror of Add to group, and it should look like one: a folder
-              losing an item, not a broken link. */}
-          <FolderMinus className={styles.icon} />
-          Remove from group
+          <FolderPlus className={styles.icon} />
+          Add to group
         </Button>
-      )}
-      {/* **A selection action, not a group feature** (#476). Groups are only
+        {onRemoveFromGroup && (
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={busy}
+            onClick={onRemoveFromGroup}
+          >
+            {/* The mirror of Add to group, and it should look like one: a folder
+              losing an item, not a broken link. */}
+            <FolderMinus className={styles.icon} />
+            Remove from group
+          </Button>
+        )}
+        {/* **A selection action, not a group feature** (#476). Groups are only
           one place a selection happens, so this sits beside Add to group
           rather than on the group page -- which is also what means there is no
           mode to enter, and no question about what it does with nothing
           picked. It downloads; nothing is stored. */}
-      <Button
-        variant="secondary"
-        size="sm"
-        disabled={busy}
-        loading={sheetBusy}
-        onClick={onCreateReferenceSheet}
-      >
-        {!sheetBusy && <LayoutGrid className={styles.icon} />}
-        {sheetBusy ? 'Building sheet...' : 'Create reference sheet'}
-      </Button>
-      {/* The group page keeps its own Download, because wanting a whole group
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={busy}
+          loading={sheetBusy}
+          onClick={onCreateReferenceSheet}
+        >
+          {!sheetBusy && <LayoutGrid className={styles.icon} />}
+          {sheetBusy ? 'Building sheet...' : 'Create reference sheet'}
+        </Button>
+        {/* The group page keeps its own Download, because wanting a whole group
           without picking through it is the common case. This is the other
           scope: exactly what is selected, wherever it came from (#480). */}
-      <Button
-        variant="secondary"
-        size="sm"
-        disabled={busy}
-        onClick={onDownloadZip}
-      >
-        <Download className={styles.icon} />
-        Download zip
-      </Button>
-      {/* The pair that narrow what is on screen (#504), from opposite ends:
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={busy}
+          onClick={onDownloadZip}
+        >
+          <Download className={styles.icon} />
+          Download zip
+        </Button>
+        {/* The pair that narrow what is on screen (#504), from opposite ends:
           Focus shows only these, Hide removes only these. Neither destroys
           anything, which is why they sit among the ordinary verbs and not
           beside Trash.
@@ -117,21 +186,22 @@ export function SelectionActions({
           Focus first, because it is the one that turned out to be the real
           gesture -- wanting to look at two images rather than to get rid of
           eight. */}
-      <Button variant="secondary" size="sm" disabled={busy} onClick={onFocus}>
-        <ScanSearch className={styles.icon} />
-        Focus
-      </Button>
-      <Button variant="secondary" size="sm" disabled={busy} onClick={onHide}>
-        <EyeOff className={styles.icon} />
-        {`Hide ${count}`}
-      </Button>
-      {/* Not `danger`, and not "Delete": this moves rows to Trash, where they
+        <Button variant="secondary" size="sm" disabled={busy} onClick={onFocus}>
+          <ScanSearch className={styles.icon} />
+          Focus
+        </Button>
+        <Button variant="secondary" size="sm" disabled={busy} onClick={onHide}>
+          <EyeOff className={styles.icon} />
+          {`Hide ${count}`}
+        </Button>
+        {/* Not `danger`, and not "Delete": this moves rows to Trash, where they
           sit until you empty it. Red belongs to the one verb that cannot be
           undone, which is Trash's own Delete Forever. */}
-      <Button size="sm" disabled={busy} onClick={onDelete}>
-        <Trash2 className={styles.icon} />
-        {busy ? 'Trashing...' : `Trash ${count}`}
-      </Button>
-    </SelectionDrawer>
+        <Button size="sm" disabled={busy} onClick={onDelete}>
+          <Trash2 className={styles.icon} />
+          {busy ? 'Trashing...' : `Trash ${count}`}
+        </Button>
+      </SelectionDrawer>
+    </>
   )
 }

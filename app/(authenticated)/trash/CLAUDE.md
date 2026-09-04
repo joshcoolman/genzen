@@ -3,7 +3,7 @@
 Soft-delete recovery for user images: restore, permanent delete, batch
 operations, and a ZIP download of everything in the bin. That dialog is
 `ZipDownloadDialog` in `#/components` since #477 -- the Images group page and
-the selection drawer (#480) download through the same one, so a change here
+the Images selection verbs (#480) download through the same one, so a change here
 changes all three.
 
 Built to `docs/reference/route-shape.md`. `page.tsx` is a server component that
@@ -12,6 +12,11 @@ read after that.
 
 ## Quirks
 
+- **Restore and Delete live in the sidebar rail on desktop, the bottom drawer
+  on mobile** (#587). `_components/selection-bar/` lists them once and renders
+  both; which one you see is CSS at `48rem`. Delete keeps its `useConfirm` on
+  either surface and is the only red verb in the app, because it is the only
+  one that cannot be undone
 - **Failed generations never arrive here.** Deleting one from Images destroys
   the row (`deleteGalleryImage`): there is no image to restore, and a restored
   failure is just an error card again

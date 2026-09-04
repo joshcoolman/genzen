@@ -1,17 +1,11 @@
 'use client'
 
-import {
-  EyeOff,
-  FolderMinus,
-  FolderPlus,
-  ScanSearch,
-  Trash2,
-} from 'lucide-react'
 import { ExistingImagePicker } from '../_components/existing-image-picker/existing-image-picker'
 import { ModelSelector } from '../_components/model-selector/model-selector'
 import { GroupHeading } from '../_components/group-heading/group-heading'
 import { GroupPickerDialog } from '../_components/group-picker-dialog/group-picker-dialog'
 import { HiddenBar } from '../_components/hidden-bar/hidden-bar'
+import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { VideoForm } from './_components/video-form/video-form'
 import { VideoList } from './_components/video-list/video-list'
 import { useView } from './use-view'
@@ -19,12 +13,10 @@ import styles from './video.module.css'
 import type { VideoRecord } from './_actions/generate-video.action'
 import { frameCapacityFor } from '#/features/video/models'
 import {
-  Button,
   ConfirmDialog,
   NameDialog,
   PageHeader,
   RefImageStrip,
-  SelectionDrawer,
   Stack,
 } from '#/components'
 
@@ -285,69 +277,19 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
         </div>
       </div>
 
-      {/* Five verbs, against Images' seven. A still is a thing you file,
-          sheet, zip and share; a clip is a take you group, hide or prune.
-          There is no reference sheet -- a sheet of clips is not a thing -- and
-          no zip in this pass (#517). Hide and Focus arrived in #537: a wall of
-          takes of one shot is mostly near-misses you want out of the way while
-          you judge the two that worked, and trashing one to tidy up is a real
-          loss. */}
-      <SelectionDrawer count={selectedCount} onClear={clearSelection}>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={isBatchDeleting}
-          onClick={startAddToGroup}
-        >
-          <FolderPlus size={14} />
-          Add to group
-        </Button>
-        {/* Only inside a group: the mirror of Add to group, and it should look
-            like one -- a folder losing an item, not a broken link. */}
-        {activeGroupId && (
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={isBatchDeleting}
-            onClick={() => void removeFromGroup()}
-          >
-            <FolderMinus size={14} />
-            Remove from group
-          </Button>
-        )}
-        {/* Hide and Focus are a pair and stay one (#537): Focus shows only
-            the selection, Hide removes only it, and neither destroys
-            anything. They sit before Trash, which is the only verb here that
-            does. */}
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={isBatchDeleting || visibility.busy}
-          onClick={() => void hideSelected()}
-        >
-          <EyeOff size={14} />
-          Hide
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={isBatchDeleting}
-          onClick={focusSelected}
-        >
-          <ScanSearch size={14} />
-          Focus
-        </Button>
-        {/* Not `danger` and not "Delete": this moves rows to Trash, where they
-            sit until it is emptied -- red belongs to Delete Forever. */}
-        <Button
-          size="sm"
-          disabled={isBatchDeleting}
-          onClick={() => void deleteSelected()}
-        >
-          <Trash2 size={14} />
-          {isBatchDeleting ? 'Trashing...' : `Trash ${selectedCount}`}
-        </Button>
-      </SelectionDrawer>
+      <SelectionActions
+        count={selectedCount}
+        busy={isBatchDeleting}
+        hideBusy={visibility.busy}
+        onClear={clearSelection}
+        onAddToGroup={startAddToGroup}
+        onRemoveFromGroup={
+          activeGroupId ? () => void removeFromGroup() : undefined
+        }
+        onHide={() => void hideSelected()}
+        onFocus={focusSelected}
+        onDelete={() => void deleteSelected()}
+      />
 
       {/* Pick a group, or fall through to naming a new one. Never opened with
           an empty list -- `startAddToGroup` sends you straight to the name
