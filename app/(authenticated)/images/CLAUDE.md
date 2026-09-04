@@ -248,19 +248,22 @@ list once when the seed comes back full, so the grid is never short.
   faded, and its body `inert` rather than merely dimmed, since a panel that
   looks off but still takes clicks and Tab stops is a lie. Its header stays
   live so the gear is still reachable
-- **The verbs live in the sidebar rail on desktop, the bottom drawer on mobile
-  (#587).** One list of verbs, two surfaces, and which one you see is CSS at
-  `48rem` -- the same breakpoint that swaps the rail for `MobileNav`. The bar
-  fixed to the bottom of the viewport was easy to miss unless you already knew
-  it was there, and it sat in peripheral vision while you were looking at the
-  grid; the rail is where you already look to move around. The rail is not a
-  new piece of state: `_components/sidebar/rail-override.tsx` is a context the
-  chrome provides and `<RailOverride>` writes to on mount, so the takeover
-  lasts exactly as long as the selection and select mode stays a selection
-  rather than a switch. **The rail does not widen** -- it is `position: fixed`
-  and `app-chrome` offsets the page by a hard 64px, so a wider rail would
-  cover the grid rather than push it. Icon over a one-word caption fits; the
-  tooltip carries the full verb
+- **The verbs take over the generator column on a wide screen, and fall back
+  to the bottom drawer below 60rem (#587).** One list of them in
+  `_components/selection-actions/`, handed to whichever container the width
+  chooses -- `SelectionPanel` in `(authenticated)/_components/`, or
+  `SelectionDrawer`. The bar fixed to the bottom of the viewport was easy to
+  miss unless you already knew it was there: it sat in peripheral vision while
+  you were looking at the grid, which is the one place you were not looking.
+  The column is where this page's controls already are. **The column appears
+  for a selection even with the generator hidden** -- otherwise anyone who
+  works with it closed has no desktop surface at all -- which is why
+  `GeneratorDock` returns the panel before it checks `dock.open`. Below 60rem
+  the column and a usable grid cannot both fit, so the drawer is the surface
+  and the generator only steps back (#326) rather than being replaced. The
+  split is a JS breakpoint rather than CSS because the two surfaces are
+  different components, not one styled two ways; nothing flashes, since a
+  selection is always empty at mount
 - **Create reference sheet is a selection verb, not a group feature (#476).**
   It composites the picked images onto one black sheet and downloads it --
   nothing is stored, and there is no sheet object, no mode and no dialog. It

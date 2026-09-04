@@ -7,14 +7,13 @@ import {
   ScanSearch,
   Trash2,
 } from 'lucide-react'
-import {
-  RailAction,
-  RailActions,
-} from '../../../_components/sidebar/rail-actions'
-import { RailOverride } from '../../../_components/sidebar/rail-override'
+import { SelectionPanel } from '../../../_components/selection-panel/selection-panel'
 import { Button, SelectionDrawer } from '#/components'
 
 interface SelectionActionsProps {
+  /** Which surface renders the verbs: the controls column, or the bottom
+   *  drawer when the column has stacked under the wall (#587). */
+  surface: 'panel' | 'drawer'
   count: number
   busy: boolean
   /** Hide writes visibility rows of its own and can be busy on its own. */
@@ -36,9 +35,11 @@ interface SelectionActionsProps {
  * near-misses you want out of the way while you judge the two that worked, and
  * trashing one to tidy up is a real loss.
  *
- * Two surfaces, one list: the rail on desktop, the drawer on mobile.
+ * One list, two containers: the controls column on a wide screen, the bottom
+ * drawer once that column has stacked under the wall.
  */
 export function SelectionActions({
+  surface,
   count,
   busy,
   hideBusy,
@@ -49,98 +50,66 @@ export function SelectionActions({
   onFocus,
   onDelete,
 }: SelectionActionsProps) {
-  return (
+  const verbs = (
     <>
-      {count > 0 && (
-        <RailOverride>
-          <RailActions count={count} onClear={onClear}>
-            <RailAction
-              icon={FolderPlus}
-              label="Add to group"
-              caption="Group"
-              disabled={busy}
-              onClick={onAddToGroup}
-            />
-            {onRemoveFromGroup && (
-              <RailAction
-                icon={FolderMinus}
-                label="Remove from group"
-                caption="Ungroup"
-                disabled={busy}
-                onClick={onRemoveFromGroup}
-              />
-            )}
-            <RailAction
-              icon={EyeOff}
-              label="Hide"
-              caption="Hide"
-              disabled={busy || hideBusy}
-              onClick={onHide}
-            />
-            <RailAction
-              icon={ScanSearch}
-              label="Focus"
-              caption="Focus"
-              disabled={busy}
-              onClick={onFocus}
-            />
-            <RailAction
-              icon={Trash2}
-              label={busy ? 'Trashing...' : `Trash ${count}`}
-              caption="Trash"
-              count={count}
-              busy={busy}
-              onClick={onDelete}
-            />
-          </RailActions>
-        </RailOverride>
-      )}
-      <SelectionDrawer count={count} onClear={onClear}>
+      <Button
+        variant="secondary"
+        size="sm"
+        disabled={busy}
+        onClick={onAddToGroup}
+      >
+        <FolderPlus size={14} />
+        Add to group
+      </Button>
+      {/* Only inside a group: the mirror of Add to group, and it should look
+          like one -- a folder losing an item, not a broken link. */}
+      {onRemoveFromGroup && (
         <Button
           variant="secondary"
           size="sm"
           disabled={busy}
-          onClick={onAddToGroup}
+          onClick={onRemoveFromGroup}
         >
-          <FolderPlus size={14} />
-          Add to group
+          <FolderMinus size={14} />
+          Remove from group
         </Button>
-        {/* Only inside a group: the mirror of Add to group, and it should look
-            like one -- a folder losing an item, not a broken link. */}
-        {onRemoveFromGroup && (
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={busy}
-            onClick={onRemoveFromGroup}
-          >
-            <FolderMinus size={14} />
-            Remove from group
-          </Button>
-        )}
-        {/* Hide and Focus are a pair and stay one (#537): Focus shows only the
-            selection, Hide removes only it, and neither destroys anything.
-            They sit before Trash, which is the only verb here that does. */}
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={busy || hideBusy}
-          onClick={onHide}
-        >
-          <EyeOff size={14} />
-          Hide
-        </Button>
-        <Button variant="secondary" size="sm" disabled={busy} onClick={onFocus}>
-          <ScanSearch size={14} />
-          Focus
-        </Button>
-        {/* Not `danger` and not "Delete": this moves rows to Trash, where they
-            sit until it is emptied -- red belongs to Delete Forever. */}
-        <Button size="sm" disabled={busy} onClick={onDelete}>
-          <Trash2 size={14} />
-          {busy ? 'Trashing...' : `Trash ${count}`}
-        </Button>
-      </SelectionDrawer>
+      )}
+      {/* Hide and Focus are a pair and stay one (#537): Focus shows only the
+          selection, Hide removes only it, and neither destroys anything. They
+          sit before Trash, which is the only verb here that does. */}
+      <Button
+        variant="secondary"
+        size="sm"
+        disabled={busy || hideBusy}
+        onClick={onHide}
+      >
+        <EyeOff size={14} />
+        Hide
+      </Button>
+      <Button variant="secondary" size="sm" disabled={busy} onClick={onFocus}>
+        <ScanSearch size={14} />
+        Focus
+      </Button>
+      {/* Not `danger` and not "Delete": this moves rows to Trash, where they
+          sit until it is emptied -- red belongs to Delete Forever. */}
+      <Button size="sm" disabled={busy} onClick={onDelete}>
+        <Trash2 size={14} />
+        {busy ? 'Trashing...' : `Trash ${count}`}
+      </Button>
     </>
+  )
+
+  if (surface === 'panel') {
+    return (
+      <SelectionPanel count={count} onClear={onClear}>
+        {verbs}
+      </SelectionPanel>
+    )
+  }
+
+  return (
+    <SelectionDrawer count={count} onClear={onClear}>
+      {verbs}
+    </SelectionDrawer>
   )
 }

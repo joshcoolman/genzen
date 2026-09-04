@@ -1,0 +1,83 @@
+/* The verbs for a selection, filling the right-hand column. Full-width rows
+   with the icon at the left edge, so the labels line up and the column reads
+   as a list of things to do rather than a row of chips. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  /* Accent, not the page's own near-black: a selection is a mode, and a
+     surface that matches what it sits in is one you have to already know
+     about. The wash carries it rather than a filled accent panel, so the red
+     Delete still reads as the dangerous one. The drawer's own colour, so the
+     mode looks the same wherever it appears. */
+  background: color-mix(in srgb, var(--accent-soft) 92%, var(--bg));
+  border: var(--border-width) solid
+    color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: var(--radius-lg);
+  animation: panelArrive var(--duration-slow) var(--ease-out);
+}
+
+/* One pulse on arrival, then quiet. The column swapping its contents is a
+   change you can miss when your eye is on the grid. */
+@keyframes panelArrive {
+  from {
+    box-shadow: 0 0 0 0 var(--accent);
+  }
+  to {
+    box-shadow: 0 0 0 0.5rem transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    animation: none;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* The generator header's voice, matched: the column keeps one label style
+   whichever thing is in it. */
+.title {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Every button in here is a filled darker green with no edge -- the panel is
+   one object, and a stack of outlined buttons on a green wash reads as seven
+   separate controls floating on it. Danger keeps its own treatment: Trash's
+   "Delete Forever" is the one irreversible verb in the app and must not look
+   like its neighbours. */
+.root button:not([data-variant='danger']) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--image-backing) 60%, transparent);
+  color: var(--text);
+}
+
+/* Hover thins the black rather than adding a colour: the green underneath
+   comes up through it, so the panel stays one object. */
+.root button:not([data-variant='danger']):not([data-disabled]):hover {
+  background: color-mix(in srgb, var(--image-backing) 35%, transparent);
+  color: var(--text);
+}
+
+/* Full width, and the label starts where every other label starts. A centred
+   row of icon-then-text in a 20rem column leaves the verbs scattered across
+   it. */
+.root button {
+  width: 100%;
+  justify-content: flex-start;
+}
