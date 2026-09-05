@@ -13,3 +13,9 @@
   cleanup succeeds so deletion can be retried.
 - Import preserves browser-local source data. Server-saved sessions in local
   development and Railway belong to their respective database/bucket.
+- `/director` is the session list; `/director/[id]` is the workspace. The old
+  Lab URL redirects here. Cards borrow Video's visual pattern, not grouping.
+- Keep the two-player boundary behavior. Appending or replacing a clip must
+  not reload the currently playing element. Playback remains muted.
+- Drafts debounce to the server with a browser backup; cut revisions and draft
+  comparisons reject stale writes. Never report a failed save as successful.

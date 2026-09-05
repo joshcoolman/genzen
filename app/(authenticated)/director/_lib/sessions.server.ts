@@ -69,6 +69,7 @@ export async function saveState(
   owner: string,
   session: Session,
   cut: StoredCut,
+  draft?: string,
 ) {
   cut = storedCutSchema.parse(cut)
   const ids = cutMediaIds(cut)
@@ -79,7 +80,7 @@ export async function saveState(
       throw new Error('Some session media has not finished saving.')
   }
   const rows = await sql`
-    update director_sessions set cut = ${jsonb(cut)}, revision = revision + 1, updated_at = now()
+    update director_sessions set cut = ${jsonb(cut)}, draft = ${draft === undefined ? sql`draft` : draft}, revision = revision + 1, updated_at = now()
     where id = ${session.id} and user_id = ${owner} and revision = ${session.revision}
     returning id
   `

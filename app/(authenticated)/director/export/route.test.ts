@@ -27,7 +27,7 @@ const request = (
   origin = 'http://localhost:3000',
 ) =>
   new Request(
-    `http://localhost:3000/lab/director/export?operation=${operation}&id=job`,
+    `http://localhost:3000/director/export?operation=${operation}&id=job`,
     {
       method: 'POST',
       headers: { origin },

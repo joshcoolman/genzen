@@ -1,6 +1,7 @@
 import {
   Clapperboard,
   Compass,
+  Film,
   FlaskConical,
   Logs,
   Sparkles,
@@ -57,6 +58,12 @@ export const navItems: Array<NavItem> = [
     label: 'Video',
     href: '/video',
     icon: Clapperboard,
+  },
+  {
+    id: 'director',
+    label: 'Director',
+    href: '/director',
+    icon: Film,
   },
   {
     id: 'activity',

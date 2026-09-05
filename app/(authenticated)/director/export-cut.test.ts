@@ -60,9 +60,7 @@ describe('download-only export client', () => {
     ).rejects.toThrow('unchanged')
     expect(fetch.mock.calls.at(-1)?.[0]).toContain('discard')
     expect(
-      fetch.mock.calls.every(([url]) =>
-        url.startsWith('/lab/director/export?'),
-      ),
+      fetch.mock.calls.every(([url]) => url.startsWith('/director/export?')),
     ).toBe(true)
   })
   it('rejects an empty selection without sending a request', async () => {

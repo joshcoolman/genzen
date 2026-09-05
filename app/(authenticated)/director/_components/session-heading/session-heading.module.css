@@ -1,0 +1,23 @@
+.heading {
+  min-width: 0;
+  > a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-12);
+  }
+  > div {
+    display: flex;
+    gap: var(--space-12);
+    align-items: center;
+  }
+  h1 {
+    font-size: var(--text-xl);
+    overflow-wrap: anywhere;
+  }
+  p {
+    color: var(--danger);
+  }
+}
