@@ -209,7 +209,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Director Final Cut [#604](https://github.com/joshcoolman/genzen/issues/604).
+**Focus** — Director Final Cut feedback [#606](https://github.com/joshcoolman/genzen/issues/606).
 Director lives at `/director`, with named sessions, durable clips and pending
 requests, and explicit import of the browser-local Lab cut. The existing
 continuation, latest-section Redo and silent playback remain. Each session has
@@ -218,8 +218,9 @@ separate from Video, Images, Activity and shared Trash.
 Final Cut adds independent finishing versions to a saved export: reference-guided
 cinematography, picture-matched effects and a continuous instrumental score. One
 click starts paid generation, with saved progress, resume, stop, playback and
-download. The first version supports exports up to two minutes. It aims to polish
-the accepted story, not invent a different one; judging that result is still yours.
+download. Rough exports up to three minutes can become finals of up to two minutes.
+The finishing director selects strong scenes and condenses the accepted story,
+rather than reproducing every clip; judging that result is still yours.
 
 Updated when Focus changes. Everything else is the board at
 `localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
@@ -228,6 +229,8 @@ parking lots. The labels are the ranking; a list here would be a second copy
 that drifts, and one did.
 
 **Last shipped**
+
+- 2026-09-05 — Final Cut accepts rough exports up to three minutes and condenses them into at most two. It selects the strongest coverage while preserving the story, with internal timing adjustment rather than a duration-budget error (#606).
 
 - 2026-09-05 — Saved Director exports gain one-click Final Cut versions: Claude plans from accepted scenes and exported frames, H3 Max renders reference-guided shots, MMAudio supplies effects and Stable Audio supplies the score. Progress and receipts survive navigation, with recoverable resume, stop and private saved playback/download. Source exports stay unchanged; initial limit is two minutes (#604).
 

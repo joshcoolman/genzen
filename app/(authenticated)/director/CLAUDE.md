@@ -37,7 +37,11 @@
   Keep instructions in prompts/\*.md. Anthropic uses jsonTool structured output;
   native output_format rejects our array bounds. Validate the plan before video
   spending: at most 12 shots and the source duration rounded up to 5s, capped at
-  120s. Exports over 120s or 50 sections are rejected before any AI request.
+  120s. Rough exports over 180s or 50 sections are rejected before any AI request.
+  The planner selects strong scenes and preserves the core story and ending;
+  it need not reproduce every section. Timing is enforced internally: shorten
+  overlong shots in five-second steps, retaining selected coverage. One bounded
+  planning correction may repair structural mistakes before any video spending.
 - Final Cut runs in Next after(), with a 90s database lease renewed every 20s.
   Leaving the page does not stop it. Returning to Exports recovers queued or
   expired running jobs after a process restart; there is no separate worker.
