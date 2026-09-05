@@ -32,8 +32,10 @@
 - Final Cut belongs to one immutable export, never to the current session cut.
   Analyze only that export's sampled frames and accepted source directions.
   Each click creates an independent version; never replace the rough export.
-- The first finishing pipeline is Claude vision planning, H3 Max reference-to-video,
-  MMAudio effects and Stable Audio 2.5 score, assembled with native FFmpeg.
+- The finishing pipeline is Claude vision planning and H3 Max reference-to-video,
+  assembled silently with native FFmpeg. Do not submit effects or music requests;
+  strip native H3 audio too. Completed outputs remain unchanged. Legacy audio
+  receipts remain recorded but do not block or participate in silent finishing.
   Keep instructions in prompts/\*.md. Anthropic uses jsonTool structured output;
   native output_format rejects our array bounds. Validate the plan before video
   spending: at most 12 shots and the source duration rounded up to 5s, capped at

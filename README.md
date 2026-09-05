@@ -209,14 +209,14 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Director Final Cut feedback [#606](https://github.com/joshcoolman/genzen/issues/606).
+**Focus** — Director Final Cut audio [#609](https://github.com/joshcoolman/genzen/issues/609).
 Director lives at `/director`, with named sessions, durable clips and pending
 requests, and explicit import of the browser-local Lab cut. The existing
 continuation, latest-section Redo and silent playback remain. Each session has
 multiple named, immutable exports with playback and MP4 download. Its media is
 separate from Video, Images, Activity and shared Trash.
 Final Cut adds independent finishing versions to a saved export: reference-guided
-cinematography, picture-matched effects and a continuous instrumental score. One
+cinematography and silent output; separate audio generation is paused. One
 click starts paid generation, with saved progress, resume, stop, playback and
 download. Rough exports up to three minutes can become finals of up to two minutes.
 The finishing director selects strong scenes and condenses the accepted story,
@@ -229,6 +229,8 @@ parking lots. The labels are the ranking; a list here would be a second copy
 that drifts, and one did.
 
 **Last shipped**
+
+- 2026-09-05 — New Final Cuts skip effects and music generation and export silently. Existing finished versions stay unchanged; resumed jobs reuse pictures and skip retired audio stages (#609).
 
 - 2026-09-05 — Final Cut accepts rough exports up to three minutes and condenses them into at most two. It selects the strongest coverage while preserving the story, with internal timing adjustment rather than a duration-budget error (#606).
 

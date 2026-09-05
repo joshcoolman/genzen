@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import {
   assertFinalSource,
+  rejectedWork,
   sampleTimes,
   uncertainWork,
   validatePlan,
@@ -21,15 +22,13 @@ const plan: FinalPlan = {
   continuity: 'Yellow car, tan uniform',
   style: 'Dynamic',
   referenceFrames: [0, 2],
-  music: 'Instrumental',
   shots: [
     {
       sections: [0],
       duration: 5,
       prompt: 'Tracking the yellow car',
-      sound: 'Engine',
     },
-    { sections: [1], duration: 5, prompt: 'Tan uniform', sound: 'Footsteps' },
+    { sections: [1], duration: 5, prompt: 'Tan uniform' },
   ],
 }
 it('samples only the exported timeline and permits selective coverage in story order', () => {
@@ -99,4 +98,31 @@ it('never treats a paid intent without a result or receipt as safe to resubmit',
       steps: { shot: { endpoint: 'test', requestId: 'receipt' } },
     }),
   ).toBe(false)
+})
+it('ignores retired audio steps without discarding their receipts or weakening picture safety', () => {
+  const work = {
+    steps: {
+      'effects-0': { endpoint: 'fal-ai/mmaudio-v2' },
+      music: {
+        endpoint: 'fal-ai/stable-audio-25/text-to-audio',
+        terminal: true,
+      },
+    },
+  }
+  expect(uncertainWork(work)).toBe(false)
+  expect(rejectedWork(work)).toBe(false)
+  expect(Object.keys(work.steps)).toEqual(['effects-0', 'music'])
+  expect(
+    uncertainWork({
+      steps: { ...work.steps, 'picture-0': { endpoint: 'video' } },
+    }),
+  ).toBe(true)
+  expect(
+    rejectedWork({
+      steps: {
+        ...work.steps,
+        'picture-0': { endpoint: 'video', terminal: true },
+      },
+    }),
+  ).toBe(true)
 })

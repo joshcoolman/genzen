@@ -65,14 +65,14 @@ export async function extractFinalFrames(blob: Blob, source: SavedExport) {
   }
 }
 
-/** Normalize picture-matched effects, join on the planned cuts, then mix one
- * continuous score. Missing audio is an error, never a silent "finished" film. */
+/** Normalize and join pictures on the planned cuts, discarding native audio. */
 export async function assembleFinalCut(
   clips: Array<{ blob: Blob | (() => Promise<Blob>); duration: number }>,
-  music: Blob,
 ) {
   if (!clips.length || clips.length > 12)
     throw new Error('Invalid Final Cut shot count.')
+  const duration = clips.reduce((sum, clip) => sum + clip.duration, 0)
+  if (duration > 120) throw new Error('Final Cut exceeds two minutes.')
   const dir = await mkdtemp(join(tmpdir(), 'genzen-final-mix-'))
   try {
     for (const [index, clip] of clips.entries()) {
@@ -116,14 +116,11 @@ export async function assembleFinalCut(
         String(clip.duration),
         '-map',
         '0:v:0',
-        '-map',
-        '0:a:0',
+        '-an',
         '-sn',
         '-dn',
         '-vf',
         `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=24,format=yuv420p,tpad=stop_mode=clone:stop_duration=15`,
-        '-af',
-        `aresample=48000,apad,atrim=duration=${clip.duration},afade=t=in:d=0.03,afade=t=out:st=${Math.max(0, clip.duration - 0.04)}:d=0.04`,
         '-c:v',
         'libx264',
         '-threads',
@@ -132,12 +129,6 @@ export async function assembleFinalCut(
         'veryfast',
         '-crf',
         '18',
-        '-c:a',
-        'aac',
-        '-ar',
-        '48000',
-        '-ac',
-        '2',
         join(dir, `segment-${index}.mp4`),
       ])
     }
@@ -145,7 +136,7 @@ export async function assembleFinalCut(
       join(dir, 'segments.txt'),
       clips.map((_, index) => `file 'segment-${index}.mp4'`).join('\n'),
     )
-    const joined = join(dir, 'joined.mp4')
+    const output = join(dir, 'final.mp4')
     await run([
       '-protocol_whitelist',
       'file,pipe',
@@ -157,40 +148,7 @@ export async function assembleFinalCut(
       join(dir, 'segments.txt'),
       '-c',
       'copy',
-      joined,
-    ])
-    await writeFile(
-      join(dir, 'score'),
-      new Uint8Array(await music.arrayBuffer()),
-    )
-    const duration = clips.reduce((sum, clip) => sum + clip.duration, 0)
-    if (duration > 120) throw new Error('Final Cut exceeds two minutes.')
-    const output = join(dir, 'final.mp4')
-    await run([
-      '-protocol_whitelist',
-      'file,pipe',
-      '-i',
-      joined,
-      '-protocol_whitelist',
-      'file,pipe',
-      '-i',
-      join(dir, 'score'),
-      '-filter_complex',
-      `[0:a]aresample=48000,asplit=2[fx][key];[1:a]aresample=48000,apad,atrim=duration=${duration},volume=0.32,afade=t=in:d=0.4,afade=t=out:st=${Math.max(0, duration - 1.5)}:d=1.5[music];[music][key]sidechaincompress=threshold=0.08:ratio=3:attack=20:release=300[ducked];[fx][ducked]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95:level=0[mix]`,
-      '-map',
-      '0:v:0',
-      '-map',
-      '[mix]',
-      '-c:v',
-      'copy',
-      '-c:a',
-      'aac',
-      '-b:a',
-      '192k',
-      '-ar',
-      '48000',
-      '-ac',
-      '2',
+      '-an',
       '-t',
       String(duration),
       '-movflags',

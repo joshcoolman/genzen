@@ -8,8 +8,6 @@ import { extractFalError } from '#/lib/server/fal-error.server'
 
 export const FINAL_MODELS = {
   video: 'minimax/h3-max/reference-to-video',
-  effects: 'fal-ai/mmaudio-v2',
-  music: 'fal-ai/stable-audio-25/text-to-audio',
 } as const
 
 export async function runFinalProvider({
@@ -66,10 +64,8 @@ export async function runFinalProvider({
       throw new Error(detail.message)
     })
   const file = z.union([z.string(), z.object({ url: z.string() })])
-  const data = z
-    .object({ video: file.optional(), audio: file.optional() })
-    .parse(result.data)
-  const value = endpoint === FINAL_MODELS.music ? data.audio : data.video
+  const data = z.object({ video: file.optional() }).parse(result.data)
+  const value = data.video
   if (!value) throw new Error('The provider returned no media.')
   step.url = mediaUrl(typeof value === 'string' ? value : value.url)
   await checkpoint()
