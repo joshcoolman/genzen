@@ -24,19 +24,33 @@ beforeEach(() => {
   mocks.upload.mockResolvedValue('https://fal.media/start.png')
 })
 afterEach(() => vi.unstubAllEnvs())
-function data(model = 'turbo') {
+function data(model = 'turbo', duration?: number) {
   const form = new FormData()
   form.set(
     'request',
     JSON.stringify({
       prompt: 'Add a rabbit',
       context: ['A cartoon bear dances'],
-      settings: { model, resolution: '768P' },
+      settings: { model, resolution: '768P', duration },
     }),
   )
   return form
 }
 describe('bounded authenticated clip generation', () => {
+  it.each([5, 10, 15])(
+    'passes the selected %i-second duration to FAL',
+    async (duration) => {
+      await submitClip(data('turbo', duration))
+      expect(mocks.submit.mock.calls[0][1].input.duration).toBe(duration)
+    },
+  )
+  it.each([0, 7, 16])(
+    'rejects unsupported duration %i before spending',
+    async (duration) => {
+      await expect(submitClip(data('turbo', duration))).rejects.toThrow()
+      expect(mocks.submit).not.toHaveBeenCalled()
+    },
+  )
   it('sends one five-second request with fast expansion and the starting frame', async () => {
     const form = data()
     form.set('frame', new Blob(['frame'], { type: 'image/png' }), 'frame.png')

@@ -4,6 +4,31 @@ import { readCut, saveCut } from './clip-store'
 import { emptyCut, generationBase } from './clips'
 
 describe('persistent resumable cut', () => {
+  it('remembers the selected duration across reloads', async () => {
+    const owner = crypto.randomUUID()
+    const cut = emptyCut()
+    cut.settings.duration = 10
+    await saveCut(owner, cut)
+    expect((await readCut(owner))?.settings.duration).toBe(10)
+  })
+  it('defaults old saved settings and pending requests to five seconds', async () => {
+    const owner = crypto.randomUUID()
+    const cut = emptyCut()
+    cut.pending = {
+      id: 'old',
+      prompt: 'bear',
+      context: [],
+      settings: { ...cut.settings },
+      redo: false,
+      startedAt: 0,
+    }
+    Reflect.deleteProperty(cut.settings, 'duration')
+    Reflect.deleteProperty(cut.pending.settings, 'duration')
+    await saveCut(owner, cut)
+    const restored = await readCut(owner)
+    expect(restored?.settings.duration).toBe(5)
+    expect(restored?.pending?.settings.duration).toBe(5)
+  })
   it('restores media and the ending frame, ready for another section after reload', async () => {
     const owner = crypto.randomUUID()
     const cut = emptyCut()

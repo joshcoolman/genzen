@@ -137,7 +137,7 @@ export function useView(owner: string) {
       // Persist intent before spending. Missing receipt after interruption is
       // uncertain, never permission to automatically repeat a paid request.
       await commit({ ...current.current, pending })
-      setStatus('Submitting one five-second clip…')
+      setStatus(`Submitting one ${pending.settings.duration}-second clip…`)
       const data = new FormData()
       data.set(
         'request',
@@ -315,7 +315,7 @@ export function useView(owner: string) {
           accepted.id === next.pending.id &&
           typeof accepted.token === 'string'
         )
-          next.pending = accepted
+          next.pending = { ...next.pending, token: accepted.token }
       }
       if (wasCancelled()) return
       await commit(next)
@@ -325,7 +325,7 @@ export function useView(owner: string) {
       setStatus(
         next.clips.length
           ? 'Saved cut restored · ready to continue'
-          : 'Ready · five-second clips',
+          : `Ready · ${next.settings.duration}-second clips`,
       )
       if (next.pending?.token) void recover(next.pending)
       else if (next.pending)

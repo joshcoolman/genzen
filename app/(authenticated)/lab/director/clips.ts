@@ -1,9 +1,11 @@
 import { z } from 'zod'
 
 export const modelSchema = z.enum(['max', 'turbo'])
+export const DURATIONS = [5, 10, 15] as const
 export const settingsSchema = z.object({
   model: modelSchema,
   resolution: z.enum(['480P', '768P']),
+  duration: z.union([z.literal(5), z.literal(10), z.literal(15)]).default(5),
 })
 export const ENDPOINTS = {
   max: 'minimax/h3-max/image-to-video',
@@ -46,7 +48,7 @@ export function emptyCut(): Cut {
   return {
     version: 1,
     clips: [],
-    settings: { model: 'turbo', resolution: '768P' },
+    settings: { model: 'turbo', resolution: '768P', duration: 5 },
     initialImage: null,
     pending: null,
   }

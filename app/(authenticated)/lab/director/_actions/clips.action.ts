@@ -47,7 +47,7 @@ export async function submitClip(data: FormData) {
   const result = await fal.queue.submit(ENDPOINTS[request.settings.model], {
     input: {
       prompt,
-      duration: 5,
+      duration: request.settings.duration,
       resolution: request.settings.resolution,
       prompt_expansion_mode: 'balanced',
       enable_safety_checker: true,

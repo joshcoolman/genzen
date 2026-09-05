@@ -211,7 +211,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 **Focus** — [#591](https://github.com/joshcoolman/genzen/issues/591): Director
 clip experiment on `feat/lab-director`, awaiting review. `/lab/director` generates
-five-second H3 Max/Turbo clips, loops the growing cut silently, and continues
+5-, 10-, or 15-second H3 Max/Turbo clips (5s default), loops the growing cut silently, and continues
 from its final frame. Redo replaces the latest section; Next clip and Jump to
 latest inspect joins. Local cuts, drafts and pending requests survive refresh;
 legacy live recordings are preserved and imported as a starting section.

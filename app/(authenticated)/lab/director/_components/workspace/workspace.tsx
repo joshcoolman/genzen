@@ -1,5 +1,5 @@
 import { download } from '../../recording'
-import { ENDPOINTS, PROMPT_LIMIT } from '../../clips'
+import { DURATIONS, ENDPOINTS, PROMPT_LIMIT } from '../../clips'
 import { CutPlayer } from '../cut-player/cut-player'
 import styles from './workspace.module.css'
 import type { useView } from '../../use-view'
@@ -187,13 +187,31 @@ export function Workspace({
           </Button>
         </div>
         <p className={styles.hint}>
-          Each Send or Redo generates one paid five-second clip. Playback and
-          waiting do not generate anything.
+          Each Send or Redo generates one paid {cut.settings.duration}-second
+          clip. Playback and waiting do not generate anything.
         </p>
       </form>
       <details className={styles.settings}>
         <summary>Generation settings</summary>
         <fieldset disabled={locked}>
+          <label>
+            Duration
+            <select
+              value={cut.settings.duration}
+              onChange={(event) => {
+                void state.changeSettings({
+                  ...cut.settings,
+                  duration: Number(event.target.value) as Settings['duration'],
+                })
+              }}
+            >
+              {DURATIONS.map((duration) => (
+                <option key={duration} value={duration}>
+                  {duration} seconds
+                </option>
+              ))}
+            </select>
+          </label>
           <label>
             Model
             <select
@@ -251,10 +269,10 @@ export function Workspace({
           </p>
         )}
         <p className={styles.hint}>
-          Balanced prompt expansion · 5 seconds · silent playback. These
-          endpoints expose no audio-off switch; generated files may contain
-          audio. Continuations inherit the previous ending frame’s shape.
-          Text-only openings default to 16:9.
+          Balanced prompt expansion · {cut.settings.duration} seconds · silent
+          playback. These endpoints expose no audio-off switch; generated files
+          may contain audio. Continuations inherit the previous ending frame’s
+          shape. Text-only openings default to 16:9.
         </p>
         <p className={styles.hint}>
           Experimental local storage, not library assets or Activity entries.{' '}
