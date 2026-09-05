@@ -67,7 +67,7 @@ const COST_CENTS = sql`
 `
 
 /** Rows that represent a generation. An upload cost nothing and ran nothing. */
-const GENERATED = sql`source in ('ai_generated', 'ai_video')`
+const GENERATED = sql`source in ('ai_generated', 'ai_video') and origin <> 'director'`
 
 interface TotalsRow {
   image_count: number

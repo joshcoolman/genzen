@@ -1,4 +1,5 @@
 import {
+  CopyObjectCommand,
   DeleteObjectsCommand,
   GetObjectCommand,
   PutObjectCommand,
@@ -13,6 +14,7 @@ export interface UploadOptions {
 }
 
 export interface ImageStorage {
+  copy: (source: string, destination: string) => Promise<void>
   upload: (
     key: string,
     data: Uint8Array | Buffer | Blob,
@@ -92,6 +94,22 @@ class S3ImageStorage implements ImageStorage {
     )
     const bytes = await response.Body!.transformToByteArray()
     return new Blob([Buffer.from(bytes)], { type: response.ContentType })
+  }
+
+  async copy(source: string, destination: string): Promise<void> {
+    if (!this.client) {
+      throw new Error('S3 client not available (missing server credentials)')
+    }
+    await this.client.send(
+      new CopyObjectCommand({
+        Bucket: this.bucket,
+        Key: destination,
+        CopySource: `${this.bucket}/${source}`
+          .split('/')
+          .map(encodeURIComponent)
+          .join('/'),
+      }),
+    )
   }
 
   async remove(keys: Array<string>): Promise<void> {

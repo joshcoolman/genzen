@@ -1,7 +1,10 @@
 # Director
 
-- Sessions and their media are Director-owned. Never insert library rows or
-  group membership; Images, Video, Activity and shared Trash must not see them.
+- Working clips and Final Cut assets are Director-owned and private. Saved rough
+  exports also publish an independent Video copy through video/server/director-exports.server.
+  Video copies use normal Trash, and survive deletion of the Director original;
+  deleting a Video copy neither deletes nor republishes its source. No groups
+  are created. Images and Activity must not see these export copies.
 - Use the existing private bucket and database. Every operation resolves auth
   on the server and filters by user_id. A media ID is not authorization.
 - Save required media before publishing a cut. Revisions reject stale edits.

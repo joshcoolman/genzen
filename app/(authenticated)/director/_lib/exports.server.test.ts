@@ -24,6 +24,9 @@ import type { StoredClip } from './types'
 import { sql } from '#/lib/server/db.server'
 
 const mocks = vi.hoisted(() => ({ remove: vi.fn(), ingest: vi.fn() }))
+vi.mock('#/features/video/server/director-exports.server', () => ({
+  publishDirectorExport: vi.fn(),
+}))
 vi.mock('#/lib/image-storage', () => ({
   createImageStorage: () => ({ remove: mocks.remove }),
 }))

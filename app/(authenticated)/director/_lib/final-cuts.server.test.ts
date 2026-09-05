@@ -18,6 +18,9 @@ import { storeMedia } from './media.server'
 import { sql } from '#/lib/server/db.server'
 
 const storage = vi.hoisted(() => ({ remove: vi.fn(), upload: vi.fn() }))
+vi.mock('#/features/video/server/director-exports.server', () => ({
+  publishDirectorExport: vi.fn(),
+}))
 vi.mock('#/lib/image-storage', () => ({ createImageStorage: () => storage }))
 let owner: string
 let stranger: string

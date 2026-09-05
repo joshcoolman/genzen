@@ -5,6 +5,7 @@ import { removeMedia } from './media.server'
 import type { ExportInput, SavedExport, StoredCut } from './types'
 import { first, jsonb, sql } from '#/lib/server/db.server'
 import { createImageStorage } from '#/lib/image-storage'
+import { publishDirectorExport } from '#/features/video/server/director-exports.server'
 
 type Output = {
   mediaId: string
@@ -80,7 +81,10 @@ export async function saveExport(
         output.thumbnailId,
         output.endFrameId,
       ])
-    if (saved) return saved
+    if (saved) {
+      await publishDirectorExport(owner, sessionId, saved.id)
+      return saved
+    }
     throw error
   }
   const saved = await getExport(owner, sessionId, input.id)
@@ -91,6 +95,7 @@ export async function saveExport(
       output.endFrameId,
     ])
   if (!saved) throw new Error('Export could not be saved.')
+  await publishDirectorExport(owner, sessionId, saved.id)
   return saved
 }
 export async function renameExport(

@@ -76,9 +76,10 @@ export async function permanentlyDeleteImages(
       id: string
       storage_path: string | null
       thumbnail_path: string | null
+      end_frame_path: string | null
     }>
   >`
-    select id, storage_path, thumbnail_path
+    select id, storage_path, thumbnail_path, end_frame_path
     from user_images
     where user_id = ${userId}
       and deleted_at is not null
@@ -96,6 +97,7 @@ export async function permanentlyDeleteImages(
   const storagePaths = targets.flatMap((t) => [
     ...(t.storage_path ? [t.storage_path] : []),
     ...(t.thumbnail_path ? [t.thumbnail_path] : []),
+    ...(t.end_frame_path ? [t.end_frame_path] : []),
   ])
   if (storagePaths.length > 0) await removeImages({ storagePaths })
 

@@ -12,7 +12,7 @@
 
 /**
  * Which surface an image was made on (#207) -- `user_images.origin`, and the
- * `check` constraint in `migrations/0003_origin.sql` is the same three values.
+ * check constraint is extended by 0018 for Director's published exports.
  *
  * Not provenance (what it descends from) and not membership (where it sits):
  * a canvas generation from an uploaded photo descends from an upload, may sit
@@ -22,7 +22,7 @@
  * Lives here rather than beside the insert so client code can name it without
  * importing a `.server` module.
  */
-export type ImageOrigin = 'upload' | 'images' | 'canvas'
+export type ImageOrigin = 'upload' | 'images' | 'canvas' | 'director'
 
 /** The origins a *generation* can have: an upload is never generated. */
 export type GenerationOrigin = Exclude<ImageOrigin, 'upload'>
@@ -56,7 +56,7 @@ export type UserImageRow = {
   width: number | null
   height: number | null
   source: string
-  /** Surface the image was made on: `upload | images | canvas` (#207). */
+  /** Surface the asset was made on, including Director exports (#607). */
   origin: string
   generation_metadata: Json | null
   request_id: string | null
