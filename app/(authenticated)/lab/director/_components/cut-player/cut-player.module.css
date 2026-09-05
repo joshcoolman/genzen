@@ -1,0 +1,40 @@
+.stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--image-backing);
+}
+.video,
+.active {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  pointer-events: none;
+}
+.active {
+  opacity: 1;
+}
+.empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  padding-block: var(--space-12);
+  > span {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
+}
+.error {
+  color: var(--danger);
+  font-size: var(--text-sm);
+}

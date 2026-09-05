@@ -209,14 +209,15 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — [#578](https://github.com/joshcoolman/genzen/issues/578): move
-People out of the lab and into Images. The lab page works and is merged, but
-half of it is a worse copy of the Images wall — read
-`docs/reference/kicking-work-off.md` first, then the issue, which is the spec.
-The prompts, the model cull and the writer strategy carry over unchanged; what
-changes is where the press lives and that a cast files into a group.
-[#502](https://github.com/joshcoolman/genzen/issues/502) is also open and
-unrelated: two dead webhook variables still set on the deployed Railway service.
+**Focus** — [#591](https://github.com/joshcoolman/genzen/issues/591): Director
+clip experiment on `feat/lab-director`, awaiting review. `/lab/director` generates
+five-second H3 Max/Turbo clips, loops the growing cut silently, and continues
+from its final frame. Redo replaces the latest section; Next clip and Jump to
+latest inspect joins. Local cuts, drafts and pending requests survive refresh;
+legacy live recordings are preserved and imported as a starting section.
+Shift+Enter sends. Clear session requires confirmation. Visual quality and speed
+are being evaluated by Josh; no paid generations were run by the agent.
+Library Wrap and Activity/spend reconciliation remain outside this experiment.
 
 Updated when Focus changes. Everything else is the board at
 `localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
