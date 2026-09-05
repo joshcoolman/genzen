@@ -6,6 +6,7 @@ import { ExportPreview } from '../export-preview/export-preview'
 import styles from './workspace.module.css'
 import type { useView } from '../../[id]/use-view'
 import type { Clip, Settings } from '../../clips'
+import type { StoredClip } from '../../_lib/types'
 import {
   Button,
   ConfirmDialog,
@@ -14,10 +15,17 @@ import {
   useConfirm,
 } from '#/components'
 
-export function Workspace({ state }: { state: ReturnType<typeof useView> }) {
+export function Workspace({
+  state,
+  onExportSaved,
+}: {
+  state: ReturnType<typeof useView>
+  onExportSaved: () => void
+}) {
   const { confirm, dialogProps } = useConfirm()
   const { cut } = state
   const [exportClips, setExportClips] = useState<Array<Clip> | null>(null)
+  const [exportSource, setExportSource] = useState<Array<StoredClip>>([])
   const locked = !state.ready || state.busy || !!cut.pending
   const canSend = !locked && !!state.prompt.trim()
   const latest = cut.clips.at(-1)
@@ -46,7 +54,10 @@ export function Workspace({ state }: { state: ReturnType<typeof useView> }) {
         <div className={styles.actions}>
           <Button
             disabled={!state.ready || !cut.clips.length}
-            onClick={() => setExportClips([...cut.clips])}
+            onClick={() => {
+              setExportSource([...state.session.cut.clips])
+              setExportClips([...cut.clips])
+            }}
           >
             Export Final Video
           </Button>
@@ -299,6 +310,9 @@ export function Workspace({ state }: { state: ReturnType<typeof useView> }) {
       {exportClips && (
         <ExportPreview
           clips={exportClips}
+          source={exportSource}
+          sessionId={state.session.id}
+          onSaved={onExportSaved}
           onClose={() => setExportClips(null)}
         />
       )}

@@ -209,11 +209,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — [#597](https://github.com/joshcoolman/genzen/issues/597): saved exports within Director sessions, part of [#594](https://github.com/joshcoolman/genzen/issues/594).
+**Focus** — Director usage and feedback after [#594](https://github.com/joshcoolman/genzen/issues/594).
 Director lives at `/director`, with named sessions, durable clips and pending
 requests, and explicit import of the browser-local Lab cut. The existing
-continuation, latest-section Redo, silent playback and selective MP4 download
-remain. Its media is separate from Video, Images, Activity and shared Trash.
+continuation, latest-section Redo and silent playback remain. Each session has
+multiple named, immutable exports with playback and MP4 download. Its media is
+separate from Video, Images, Activity and shared Trash.
 
 Updated when Focus changes. Everything else is the board at
 `localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
@@ -222,6 +223,8 @@ parking lots. The labels are the ranking; a list here would be a second copy
 that drifts, and one did.
 
 **Last shipped**
+
+- 2026-09-05 — Director is a standalone feature with durable named sessions, a preserved Lab import and multiple saved exports. Railway uses the existing database and private bucket. Earlier-section redo and version history remain out of scope (#593, #594).
 
 - 2026-09-04 — Select mode's verbs take over the generator column on a wide screen. A bar fixed to the bottom of the viewport is easy to miss unless you already know it is there — it sits in peripheral vision while you are looking at the grid, which is the one place you are not looking; the column is where the page's controls already are. Grey filled rows, two groups either side of a rule (what the selection becomes, then what you take away from it), and a click on the empty column deselects. Images and Video each list their verbs once and hand them to whichever container the width chooses, the column above 60rem and the same bottom drawer below it. Trash keeps the drawer: it has no column to take over. **Focus is gone** — it showed only the selection and hid the rest, and its verb was its only way in, so what is left of it is #590 (#587)
 

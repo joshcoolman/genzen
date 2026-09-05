@@ -32,14 +32,16 @@ export async function requireSession(owner: string, id: string) {
 export async function listSessions(
   owner: string,
 ): Promise<Array<SessionSummary>> {
-  const rows = await sql<Array<Session>>`
-    select id, name, cut, to_json(updated_at)#>>'{}' as updated_at
+  const rows = await sql<Array<Session & { exports: number }>>`
+    select id, name, cut, to_json(updated_at)#>>'{}' as updated_at,
+      (select count(*)::int from director_exports e where e.session_id = director_sessions.id and e.user_id = ${owner}) as exports
     from director_sessions where user_id = ${owner} order by updated_at desc
   `
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
     count: row.cut.clips.length,
+    exports: row.exports,
     thumbnails: row.cut.clips.slice(0, 6).map((clip) => clip.thumbnailId),
     pending: !!row.cut.pending,
     updated_at: row.updated_at,

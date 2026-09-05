@@ -1,23 +1,33 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { Download, Save } from 'lucide-react'
+import { uploadMedia } from '../../_lib/upload'
 import { exportCut, selectedClips } from '../../export-cut'
 import { ExportTile } from '../export-tile/export-tile'
 import styles from './export-preview.module.css'
 import type { Clip } from '../../clips'
+import type { StoredClip } from '../../_lib/types'
 import {
   Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
+  Input,
 } from '#/components'
 
 export function ExportPreview({
   clips,
+  source,
+  sessionId,
+  onSaved,
   onClose,
 }: {
   clips: Array<Clip>
+  source: Array<StoredClip>
+  sessionId: string
+  onSaved: () => void
   onClose: () => void
 }) {
   const [selected, setSelected] = useState(
@@ -31,6 +41,11 @@ export function ExportPreview({
   const [result, setResult] = useState<string | null>(null)
   const controller = useRef<AbortController | null>(null)
   const resultUrl = useRef<string | null>(null)
+  const resultBlob = useRef<Blob | null>(null)
+  const saveId = useRef<string | null>(null)
+  const saving = useRef(false)
+  const [name, setName] = useState('Director cut')
+  const [saved, setSaved] = useState(false)
   const included = selectedClips(clips, selected)
   const duration = included.reduce((sum, clip) => sum + clip.duration, 0)
 
@@ -47,6 +62,9 @@ export function ExportPreview({
     setSelected(next)
     if (resultUrl.current) URL.revokeObjectURL(resultUrl.current)
     resultUrl.current = null
+    resultBlob.current = null
+    saveId.current = null
+    setSaved(false)
     setResult(null)
     setError(null)
     setStatus('Selection updated. Export keeps the original playback order.')
@@ -68,6 +86,7 @@ export function ExportPreview({
       if (abort.signal.aborted) return
       if (resultUrl.current) URL.revokeObjectURL(resultUrl.current)
       resultUrl.current = URL.createObjectURL(blob)
+      resultBlob.current = blob
       setResult(resultUrl.current)
     } catch (cause) {
       if (!abort.signal.aborted)
@@ -81,18 +100,45 @@ export function ExportPreview({
       if (!abort.signal.aborted) setBusy(false)
     }
   }
+  async function save() {
+    if (saving.current || !resultBlob.current || saved || !name.trim()) return
+    saving.current = true
+    setBusy(true)
+    setError(null)
+    saveId.current ??= crypto.randomUUID()
+    try {
+      setStatus('Saving export...')
+      await uploadMedia(sessionId, resultBlob.current, {
+        id: saveId.current,
+        name: name.trim(),
+        source: source.filter((clip) => selected.has(clip.id)),
+      })
+      setSaved(true)
+      setStatus('Export saved.')
+      onSaved()
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : 'Export could not be saved.',
+      )
+      setStatus(
+        'Not saved. The rendered video is still available to retry or download.',
+      )
+    } finally {
+      saving.current = false
+      setBusy(false)
+    }
+  }
   return (
     <Dialog
       open
       onOpenChange={(open) => {
-        if (!open) onClose()
+        if (!open && !saving.current) onClose()
       }}
     >
       <DialogContent size="wide" className={styles.preview}>
         <DialogTitle>Export Final Video</DialogTitle>
         <DialogDescription>
-          Select sections to stitch, in playback order. Download only—nothing is
-          added to the library.
+          {included.length} selected sections
         </DialogDescription>
         <div className={styles.toolbar}>
           <Button
@@ -137,15 +183,35 @@ export function ExportPreview({
           </p>
         )}
         <div className={styles.toolbar}>
-          <Button onClick={onClose}>{busy ? 'Cancel export' : 'Close'}</Button>
+          <Button disabled={saving.current} onClick={onClose}>
+            {busy ? 'Cancel export' : 'Close'}
+          </Button>
           {result ? (
-            <a
-              className={styles.download}
-              href={result}
-              download="director-cut.mp4"
-            >
-              Download MP4
-            </a>
+            <>
+              <Input
+                aria-label="Export name"
+                value={name}
+                maxLength={120}
+                disabled={busy || saved}
+                onChange={(event) => setName(event.target.value)}
+              />
+              <Button
+                variant="primary"
+                disabled={busy || saved || !name.trim()}
+                onClick={() => void save()}
+              >
+                <Save size={16} />
+                {saved ? 'Saved' : 'Save export'}
+              </Button>
+              <a
+                className={styles.download}
+                href={result}
+                download="director-cut.mp4"
+              >
+                <Download size={16} />
+                Download MP4
+              </a>
+            </>
           ) : (
             <Button
               variant="primary"

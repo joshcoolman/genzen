@@ -1,0 +1,47 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-24);
+}
+.item {
+  min-width: 0;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: var(--bg);
+}
+.caption {
+  padding: var(--space-16);
+  display: grid;
+  gap: var(--space-12);
+}
+.caption h2 {
+  font-size: var(--text-base);
+  overflow-wrap: anywhere;
+}
+.caption p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+.actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin-right: auto;
+}
+.actions input {
+  min-width: 0;
+  flex-basis: 100%;
+}

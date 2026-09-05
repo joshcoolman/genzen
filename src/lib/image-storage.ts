@@ -99,12 +99,14 @@ class S3ImageStorage implements ImageStorage {
     if (!this.client) {
       throw new Error('S3 client not available (missing server credentials)')
     }
-    await this.client.send(
+    const result = await this.client.send(
       new DeleteObjectsCommand({
         Bucket: this.bucket,
         Delete: { Objects: keys.map((Key) => ({ Key })) },
       }),
     )
+    if (result.Errors?.length)
+      throw new Error('Some stored files could not be deleted. Please retry.')
   }
 }
 

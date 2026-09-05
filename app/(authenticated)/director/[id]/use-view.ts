@@ -226,7 +226,11 @@ export function useView(initial: Session) {
     ready,
     busy,
     error,
-    status: savingDraft ? 'Saving draft...' : status,
+    status: savingDraft
+      ? 'Saving draft...'
+      : ready && prompt !== savedDraft.current
+        ? 'Draft not saved'
+        : status,
     submit,
     changeSettings: (settings: Settings) =>
       mutate(() =>

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         const chunk = await reader.read()
         if (chunk.done) break
         size += chunk.value.length
-        if (size > (operation === 'create' ? 16000 : CHUNK_BYTES)) {
+        if (size > (operation === 'create' ? 512000 : CHUNK_BYTES)) {
           await reader.cancel()
           throw new Error('Upload too large.')
         }

@@ -19,3 +19,9 @@
   not reload the currently playing element. Playback remains muted.
 - Drafts debounce to the server with a browser backup; cut revisions and draft
   comparisons reject stale writes. Never report a failed save as successful.
+- Session/Exports tabs are route-owned, not Video groups. Saving stores the
+  finished silent MP4, thumbnail and selected source metadata; only its name
+  can change. A save ID is idempotent, including after a lost response.
+- Export saves reuse the rendered browser Blob after storage failure. Uploads
+  are chunked, temporary and single-replica; completed exports survive restarts.
+  Delete output files before their metadata so failed cleanup remains retryable.

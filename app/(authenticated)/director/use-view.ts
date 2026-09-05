@@ -26,9 +26,21 @@ export function useView(initial: Array<SessionSummary>, owner: string) {
   const [hasLocal, setHasLocal] = useState(false)
   const createId = useRef<string | null>(null)
   useEffect(() => {
+    let cancelled = false
+    void loadSessions()
+      .then((items) => {
+        if (!cancelled) setSessions(items)
+      })
+      .catch(() => {
+        if (!cancelled)
+          setError('Sessions could not be refreshed. Reload to try again.')
+      })
     void localCutAvailable(owner)
       .then(setHasLocal)
       .catch(() => {})
+    return () => {
+      cancelled = true
+    }
   }, [owner])
   async function run(action: () => Promise<void>) {
     if (working.current) return

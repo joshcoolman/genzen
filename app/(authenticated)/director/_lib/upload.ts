@@ -1,4 +1,10 @@
-export async function uploadMedia(sessionId: string, blob: Blob) {
+import type { ExportInput } from './types'
+
+export async function uploadMedia(
+  sessionId: string,
+  blob: Blob,
+  savedExport?: ExportInput,
+) {
   async function post(operation: string, body?: BodyInit, extra = '') {
     const response = await fetch(
       `/director/upload?operation=${operation}${extra}`,
@@ -10,7 +16,7 @@ export async function uploadMedia(sessionId: string, blob: Blob) {
   const type = blob.type.split(';')[0]
   const { id } = await post(
     'create',
-    JSON.stringify({ sessionId, size: blob.size, type }),
+    JSON.stringify({ sessionId, size: blob.size, type, savedExport }),
   )
   try {
     for (let offset = 0; offset < blob.size; offset += 4 * 1024 * 1024)

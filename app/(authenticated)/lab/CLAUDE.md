@@ -558,6 +558,9 @@ not date the lessons:
 
 ## Promotion
 
+Director has been promoted to `/director` (#594). Its former Lab URL redirects;
+the standalone route owns sessions, exports and the preserved Lab import.
+
 A feature comes back into the app when it works the way it is supposed to —
 Josh's bar: _"yes, this works 100% the way I would expect it."_ Worth writing
 down per feature before the work, or it is a judgement relitigated each time. A
