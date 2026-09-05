@@ -36,6 +36,7 @@ export function View() {
         onPick={v.setPicked}
         onClear={v.clearPicked}
         onOpen={() => void v.userImages.refresh()}
+        onRefresh={v.userImages.refresh}
         disabled={v.isRunning}
       />
 

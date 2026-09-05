@@ -29,6 +29,7 @@ export function ImageInput({
   onPick,
   onClear,
   onOpen,
+  onRefresh,
   disabled,
 }: {
   images: Array<UserImage>
@@ -47,6 +48,13 @@ export function ImageInput({
   /** Drop one image, by id. */
   onClear: (id: string) => void
   onOpen: () => void
+  /**
+   * Re-read the library. Passing it turns on Upload inside the picker (#489),
+   * which the lab had no way to reach: getting an image off disk meant leaving
+   * for /images and coming back. Optional only because a page with no library
+   * behind it yet has nothing to refresh.
+   */
+  onRefresh?: () => Promise<void>
   disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
@@ -81,6 +89,7 @@ export function ImageInput({
           )
         }
         max={max}
+        onRefresh={onRefresh}
         /* One image confirms on the click; several need a Done, which is what
            the picker's footer already is. */
         autoConfirm={max === 1}

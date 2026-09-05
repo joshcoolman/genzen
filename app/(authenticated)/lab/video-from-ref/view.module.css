@@ -1,0 +1,79 @@
+/* The Video route's shape, borrowed: controls in a fixed column at the right,
+   results filling whatever is left. 20rem matches it and the Images generator
+   dock, so the three surfaces read as the same thing. */
+.columns {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-24);
+}
+
+.results {
+  flex: 1;
+  min-width: 0;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  flex: 0 0 20rem;
+  width: 20rem;
+}
+
+/* Lower than the Video route's 60rem, because this one sits beside the lab nav:
+   the breakpoint reads the viewport, and ~15rem of it is already spent before
+   the page gets any. */
+@media (max-width: 52rem) {
+  .columns {
+    flex-direction: column;
+  }
+
+  .controls {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+}
+
+.empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.clips {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.clip {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.video {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-md);
+}
+
+.pending {
+  margin: 0;
+  padding: var(--space-16);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
