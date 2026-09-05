@@ -20,7 +20,12 @@ export async function findMedia(owner: string, id: string) {
   `,
   )
 }
-export async function storeMedia(owner: string, sessionId: string, blob: Blob) {
+export async function storeMedia(
+  owner: string,
+  sessionId: string,
+  blob: Blob,
+  finalCutId?: string,
+) {
   const id = randomUUID()
   await requireSession(owner, sessionId)
   const key = `${owner}/director/${sessionId}/${id}`
@@ -32,9 +37,16 @@ export async function storeMedia(owner: string, sessionId: string, blob: Blob) {
         where id = ${sessionId} and user_id = ${owner} for key share`,
       )
       if (!session) throw new Error('Session not found.')
+      if (finalCutId) {
+        const job = first(
+          await tx`select id from director_final_cuts
+          where user_id = ${owner} and session_id = ${sessionId} and id = ${finalCutId} and status = 'running' for share`,
+        )
+        if (!job) throw new Error('Final Cut is no longer running.')
+      }
       await storage.upload(key, blob, { contentType: blob.type })
-      await tx`insert into director_media (id, session_id, user_id, storage_path, mime_type, size)
-        values (${id}, ${sessionId}, ${owner}, ${key}, ${blob.type}, ${blob.size})`
+      await tx`insert into director_media (id, session_id, user_id, storage_path, mime_type, size, final_cut_id)
+        values (${id}, ${sessionId}, ${owner}, ${key}, ${blob.type}, ${blob.size}, ${finalCutId ?? null})`
     })
   } catch (error) {
     await storage.remove([key])

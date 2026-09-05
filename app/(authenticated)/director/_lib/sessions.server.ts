@@ -77,7 +77,7 @@ export async function saveState(
   const ids = cutMediaIds(cut)
   if (ids.length) {
     const media = await sql<Array<{ id: string }>>`select id from director_media
-      where user_id = ${owner} and session_id = ${session.id} and id in ${sql(ids)}`
+      where user_id = ${owner} and session_id = ${session.id} and final_cut_id is null and id in ${sql(ids)}`
     if (media.length !== ids.length)
       throw new Error('Some session media has not finished saving.')
   }
@@ -115,6 +115,14 @@ export async function deleteSession(owner: string, id: string) {
       where id = ${id} and user_id = ${owner} for update`,
     )
     if (!row) return
+    const finishing = first(
+      await tx`select id from director_final_cuts where user_id = ${owner} and session_id = ${id}
+      and (status in ('queued', 'running') or lease_until > now()) for update`,
+    )
+    if (finishing)
+      throw new Error(
+        'Stop the active Final Cut and wait for it to finish before deleting this session.',
+      )
     if (row.cut.pending)
       throw new Error(
         'Resolve or dismiss the pending request before deleting this session.',

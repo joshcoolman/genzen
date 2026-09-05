@@ -22,3 +22,31 @@ fal.config({
 })
 
 export { fal }
+
+/** Paid workflows checkpoint intent before this call. The SDK's queue.submit
+ * retries POSTs internally; an ambiguous response must not spend twice. */
+export async function submitFalOnce(
+  endpoint: string,
+  input: Record<string, unknown>,
+) {
+  if (!process.env.FAL_KEY) throw new Error('FAL_KEY is not set.')
+  if (!/^[a-zA-Z0-9_/-]+$/.test(endpoint))
+    throw new Error('Invalid FAL endpoint.')
+  const response = await falFetch(`https://queue.fal.run/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Key ${process.env.FAL_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+    signal: AbortSignal.timeout(120000),
+  })
+  if (!response.ok)
+    throw new Error(
+      `FAL submission returned ${response.status}. Check the provider before starting another attempt.`,
+    )
+  const result = (await response.json()) as { request_id?: unknown }
+  if (typeof result.request_id !== 'string' || !result.request_id)
+    throw new Error('FAL did not return a request receipt.')
+  return result.request_id
+}

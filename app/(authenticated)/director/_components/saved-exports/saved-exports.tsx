@@ -6,6 +6,8 @@ import {
   removeExport,
 } from '../../_actions/exports.action'
 import { mediaUrl } from '../../_lib/types'
+import { useFinalCuts } from './use-final-cuts'
+import { FinalCuts } from './final-cuts'
 import styles from './saved-exports.module.css'
 import type { SavedExport } from '../../_lib/types'
 import { Button, ConfirmDialog, EmptyState, Input } from '#/components'
@@ -19,6 +21,7 @@ export function SavedExports({
   items: Array<SavedExport>
   onChange: (items: Array<SavedExport>) => void
 }) {
+  const cuts = useFinalCuts(sessionId)
   const [deleting, setDeleting] = useState<SavedExport | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [name, setName] = useState('')
@@ -47,6 +50,7 @@ export function SavedExports({
   return (
     <>
       {error && <p role="alert">{error}</p>}
+      {cuts.error && <p role="alert">{cuts.error}</p>}
       {!items.length ? (
         <EmptyState title="No saved exports" />
       ) : (
@@ -88,7 +92,9 @@ export function SavedExports({
                   <h2>{item.name}</h2>
                 )}
                 <p>
-                  {item.source.length} sections · {item.duration.toFixed(1)}s ·{' '}
+                  {item.source.length}{' '}
+                  {item.source.length === 1 ? 'section' : 'sections'} ·{' '}
+                  {item.duration.toFixed(1)}s ·{' '}
                   <time dateTime={item.created_at}>
                     {new Date(item.created_at).toISOString().slice(0, 10)}
                   </time>
@@ -120,6 +126,11 @@ export function SavedExports({
                     <Trash2 size={16} />
                   </Button>
                 </div>
+                <FinalCuts
+                  exportId={item.id}
+                  duration={item.duration}
+                  cuts={cuts}
+                />
               </div>
             </article>
           ))}
@@ -128,7 +139,7 @@ export function SavedExports({
       <ConfirmDialog
         open={!!deleting}
         title="Delete export?"
-        message={`Permanently delete "${deleting?.name ?? ''}". The session and its clips will remain.`}
+        message={`Permanently delete "${deleting?.name ?? ''}" and its Final Cuts. The session and its clips will remain.`}
         confirmLabel="Delete export"
         onConfirm={() => {
           if (deleting) void run(() => removeExport(sessionId, deleting.id))
