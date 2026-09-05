@@ -1,14 +1,12 @@
 import { clipResult, readReceipt } from '../clip-jobs.server'
+import { sameOrigin } from '../request-origin'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { falFetch } from '#/lib/server/fal-fetch.server'
 
 /** Fetch only a verified job's provider result, never a caller-supplied URL.
  * Same-origin bytes can be persisted and used in a canvas without CORS. */
 export async function POST(request: Request) {
-  if (process.env.NODE_ENV !== 'development')
-    return new Response(null, { status: 403 })
-  if (request.headers.get('origin') !== new URL(request.url).origin)
-    return new Response(null, { status: 403 })
+  if (!sameOrigin(request)) return new Response(null, { status: 403 })
   let owner: string
   try {
     owner = (await resolveAuth()).userId

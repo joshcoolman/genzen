@@ -42,6 +42,10 @@ be set on a deployment.
   ignores an injected `PORT`. A platform that assigns a random port will route
   to the wrong one and serve 502s over a green deployment — the failure looks
   like a crash and isn't one.
+- **One web replica for Director exports.** Upload ownership and temporary
+  files belong to that process. A restart interrupts an export; retry from
+  the browser-saved cut. Encoding stops after four minutes, leaving response
+  headroom below Railway's five-minute idle request timeout.
 
 ## First user
 

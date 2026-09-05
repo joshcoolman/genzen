@@ -8,14 +8,8 @@ import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
 import { assertFalKey } from '#/lib/server/fal-key.server'
 import rules from '#/lib/prompts/director-clips.md'
 
-function localOnly() {
-  if (process.env.NODE_ENV !== 'development')
-    throw new Error('Clip brainstorming is a local Lab experiment.')
-}
-
 export async function submitClip(data: FormData) {
   const { userId } = await resolveAuth()
-  localOnly()
   assertFalKey()
   const request = clipRequestSchema.parse(
     JSON.parse(String(data.get('request'))),
@@ -63,7 +57,6 @@ export async function submitClip(data: FormData) {
 
 export async function checkClip(token: string) {
   const { userId } = await resolveAuth()
-  localOnly()
   const receipt = readReceipt(token, userId)
   const status = await fal.queue.status(ENDPOINTS[receipt.model], {
     requestId: receipt.requestId,

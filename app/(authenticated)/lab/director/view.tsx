@@ -4,7 +4,7 @@ import { LabPage } from '../_components/lab-page/lab-page'
 import { Workspace } from './_components/workspace/workspace'
 import { useView } from './use-view'
 
-export function View({ local, owner }: { local: boolean; owner: string }) {
+export function View({ owner }: { owner: string }) {
   const state = useView(owner)
   return (
     <LabPage
@@ -13,7 +13,7 @@ export function View({ local, owner }: { local: boolean; owner: string }) {
       instructionFile="src/lib/prompts/director-clips.md"
       wide
     >
-      <Workspace state={state} local={local} />
+      <Workspace state={state} />
     </LabPage>
   )
 }
