@@ -1,0 +1,29 @@
+.tile {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-8);
+  min-width: 0;
+  > video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    background: var(--image-backing);
+  }
+  > label {
+    display: flex;
+    gap: var(--space-8);
+    align-items: center;
+    padding-block: var(--space-8);
+  }
+  > p {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    max-height: 5rem;
+    overflow: auto;
+    overflow-wrap: anywhere;
+  }
+  &[data-selected='false'] {
+    opacity: 0.65;
+  }
+}
