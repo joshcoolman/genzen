@@ -44,7 +44,9 @@ be set on a deployment.
   like a crash and isn't one.
 - **One web replica for Director exports.** Upload ownership and temporary
   files belong to that process. A restart interrupts an export; retry from
-  the browser-saved cut. Encoding stops after four minutes, leaving response
+  the saved session. Sessions, clips, pending provider receipts and completed
+  exports are durable in Postgres and the private bucket; temporary uploads
+  and in-progress stitching are not. Encoding stops after four minutes, leaving response
   headroom below Railway's five-minute idle request timeout.
 
 ## First user

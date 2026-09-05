@@ -4,7 +4,7 @@
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
   gap: var(--space-16);
 }
 .toolbar {
@@ -23,9 +23,16 @@
   color: var(--danger);
 }
 .download {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: var(--space-8) var(--space-16);
   text-decoration: underline;
+}
+.toolbar input {
+  flex: 1 1 12rem;
+  min-width: 0;
 }

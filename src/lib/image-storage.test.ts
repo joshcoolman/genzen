@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest'
-import { isLocalEndpoint, resolveStorageEndpoint } from './image-storage'
+import { describe, expect, it, vi } from 'vitest'
+import { S3Client } from '@aws-sdk/client-s3'
+import {
+  createImageStorage,
+  isLocalEndpoint,
+  resolveStorageEndpoint,
+} from './image-storage'
 
 // The endpoint fork, which is the one branch in the storage layer a deployment
 // would hit differently from local dev. Cloudflare is a convenience path here,
@@ -49,4 +54,23 @@ describe('isLocalEndpoint', () => {
   it('is false for a malformed endpoint', () => {
     expect(isLocalEndpoint('not-a-url')).toBe(false)
   })
+})
+
+it('rejects partial bucket deletion failures so callers retain retry metadata', async () => {
+  vi.stubEnv('R2_ENDPOINT', 'http://localhost:9010')
+  vi.stubEnv('R2_ACCESS_KEY_ID', 'test')
+  vi.stubEnv('R2_SECRET_ACCESS_KEY', 'test')
+  const send = vi
+    .spyOn(S3Client.prototype, 'send')
+    .mockImplementationOnce(() =>
+      Promise.resolve({ Errors: [{ Key: 'failed', Code: 'AccessDenied' }] }),
+    )
+  try {
+    await expect(createImageStorage().remove(['failed'])).rejects.toThrow(
+      'could not be deleted',
+    )
+  } finally {
+    send.mockRestore()
+    vi.unstubAllEnvs()
+  }
 })

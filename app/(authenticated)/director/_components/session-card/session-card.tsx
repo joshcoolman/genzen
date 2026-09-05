@@ -57,6 +57,8 @@ export function SessionCard({
         <button onClick={() => onOpen(session)}>{session.name}</button>
         <p>
           {session.count} {session.count === 1 ? 'clip' : 'clips'}
+          {' · '}
+          {session.exports} {session.exports === 1 ? 'export' : 'exports'}
           {session.pending ? ' · generating' : ''}
         </p>
         <div className={styles.strip} aria-hidden="true">

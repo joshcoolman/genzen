@@ -43,6 +43,23 @@ export const storedCutSchema = z.object({
     .default([]),
 })
 export type StoredClip = z.infer<typeof storedClipSchema>
+export const exportInputSchema = z.object({
+  id: idSchema,
+  name: nameSchema,
+  source: z.array(storedClipSchema).min(1).max(50),
+})
+export type ExportInput = z.infer<typeof exportInputSchema>
+export interface SavedExport {
+  id: string
+  session_id: string
+  name: string
+  media_id: string
+  thumbnail_id: string
+  end_frame_id: string
+  duration: number
+  source: Array<StoredClip>
+  created_at: string
+}
 export type StoredCut = z.infer<typeof storedCutSchema>
 export interface Session {
   id: string
@@ -56,6 +73,7 @@ export interface SessionSummary {
   id: string
   name: string
   count: number
+  exports: number
   thumbnails: Array<string>
   updated_at: string
   pending: boolean
