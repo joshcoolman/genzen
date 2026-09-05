@@ -13,6 +13,7 @@ export async function ingestVideo(
   owner: string,
   sessionId: string,
   blob: Blob,
+  finalCutId?: string,
 ) {
   if (!ffmpeg) throw new Error('FFmpeg is unavailable.')
   const binary = ffmpeg
@@ -104,18 +105,20 @@ export async function ingestVideo(
       : 0
     if (!duration || duration > 1800)
       throw new Error('Unsupported clip duration.')
-    const mediaId = await storeMedia(owner, sessionId, blob)
+    const mediaId = await storeMedia(owner, sessionId, blob, finalCutId)
     stored.push(mediaId)
     const endFrameId = await storeMedia(
       owner,
       sessionId,
       new Blob([frame], { type: 'image/png' }),
+      finalCutId,
     )
     stored.push(endFrameId)
     const thumbnailId = await storeMedia(
       owner,
       sessionId,
       new Blob([new Uint8Array(thumb)], { type: 'image/webp' }),
+      finalCutId,
     )
     stored.push(thumbnailId)
     return { mediaId, endFrameId, thumbnailId, duration }

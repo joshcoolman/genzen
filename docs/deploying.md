@@ -48,6 +48,16 @@ be set on a deployment.
   exports are durable in Postgres and the private bucket; temporary uploads
   and in-progress stitching are not. Encoding stops after four minutes, leaving response
   headroom below Railway's five-minute idle request timeout.
+- **Director Final Cut needs both AI keys.** Claude plans from the saved export;
+  FAL renders picture, effects and score. Jobs run after the HTTP response using
+  Next `after()`, so the browser need not stay open. A 90-second Postgres lease
+  prevents duplicate workers. After a container restart, opening that session's
+  Exports tab resumes queued/expired jobs using saved provider receipts. Uncertain
+  submissions stop for review, never automatically spend again. Completed and
+  intermediate assets live in the private bucket, not ephemeral disk. A worker
+  pauses after 45 minutes and can be resumed; the initial limit is 120 seconds
+  per source export and one active Final Cut per user. Stopping cannot undo charges
+  for requests already accepted by the provider.
 
 ## First user
 

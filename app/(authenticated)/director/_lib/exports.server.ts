@@ -48,7 +48,7 @@ export async function prepareExport(
     ),
   ]
   const media =
-    await sql`select id from director_media where user_id = ${owner} and session_id = ${sessionId} and id in ${sql(ids)}`
+    await sql`select id from director_media where user_id = ${owner} and session_id = ${sessionId} and final_cut_id is null and id in ${sql(ids)}`
   if (media.length !== ids.length)
     throw new Error('Export source media is missing.')
   return data
@@ -122,14 +122,26 @@ export async function deleteExport(
       where user_id = ${owner} and session_id = ${sessionId} and id = ${id}`,
     )
     if (!item) return
+    const finishing = first(
+      await tx`select id from director_final_cuts where user_id = ${owner} and export_id = ${id}
+      and (status in ('queued', 'running') or lease_until > now()) for update`,
+    )
+    if (finishing)
+      throw new Error(
+        'Stop the active Final Cut and wait for it to finish before deleting this export.',
+      )
     const ids = [item.media_id, item.thumbnail_id, item.end_frame_id]
     if (cutMediaIds(session.cut).some((mediaId) => ids.includes(mediaId)))
       throw new Error('This export is being used by the session.')
     const media = await tx<
       Array<{ storage_path: string }>
     >`select storage_path from director_media
-      where user_id = ${owner} and session_id = ${sessionId} and id in ${sql(ids)}`
-    await createImageStorage().remove(media.map((row) => row.storage_path))
+      where user_id = ${owner} and session_id = ${sessionId} and (id in ${sql(ids)} or final_cut_id in
+        (select id from director_final_cuts where user_id = ${owner} and export_id = ${id}))`
+    for (let offset = 0; offset < media.length; offset += 500)
+      await createImageStorage().remove(
+        media.slice(offset, offset + 500).map((row) => row.storage_path),
+      )
     await tx`delete from director_exports where user_id = ${owner} and session_id = ${sessionId} and id = ${id}`
     await tx`delete from director_media where user_id = ${owner} and session_id = ${sessionId} and id in ${sql(ids)}`
   })

@@ -29,3 +29,23 @@
 - Export saves reuse the rendered browser Blob after storage failure. Uploads
   are chunked, temporary and single-replica; completed exports survive restarts.
   Delete output files before their metadata so failed cleanup remains retryable.
+- Final Cut belongs to one immutable export, never to the current session cut.
+  Analyze only that export's sampled frames and accepted source directions.
+  Each click creates an independent version; never replace the rough export.
+- The first finishing pipeline is Claude vision planning, H3 Max reference-to-video,
+  MMAudio effects and Stable Audio 2.5 score, assembled with native FFmpeg.
+  Keep instructions in prompts/\*.md. Anthropic uses jsonTool structured output;
+  native output_format rejects our array bounds. Validate the plan before video
+  spending: at most 12 shots and the source duration rounded up to 5s, capped at
+  120s. Exports over 120s or 50 sections are rejected before any AI request.
+- Final Cut runs in Next after(), with a 90s database lease renewed every 20s.
+  Leaving the page does not stop it. Returning to Exports recovers queued or
+  expired running jobs after a process restart; there is no separate worker.
+  A run pauses after 45 minutes; Resume reuses saved receipts and assets.
+- Save paid intent before submitting, use submitFalOnce (the SDK retries POST),
+  then save the receipt. Uncertain planning or provider submission never retries
+  automatically. A definite planning HTTP rejection can be resumed. Stop prevents
+  later steps, but accepted provider work may still bill. No automatic rerolls.
+- All finishing assets carry director_media.final_cut_id. Never use those IDs
+  as rough-cut or source-export assets. Session/export deletion is guarded while
+  a job or worker lease is active; delete bytes before cascading metadata.
