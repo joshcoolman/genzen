@@ -15,6 +15,10 @@
   development and Railway belong to their respective database/bucket.
 - `/director` is the session list; `/director/[id]` is the workspace. The old
   Lab URL redirects here. Cards borrow Video's visual pattern, not grouping.
+- Empty sessions start with Set the scene, not an empty player or section list.
+  Reveal the full workspace after the first saved clip. Use persisted clip count
+  for this decision so existing sessions do not flash the opening view while
+  media hydrates. First-request errors and recovery remain visible.
 - Keep the two-player boundary behavior. Appending or replacing a clip must
   not reload the currently playing element. Playback remains muted.
 - Drafts debounce to the server with a browser backup; cut revisions and draft

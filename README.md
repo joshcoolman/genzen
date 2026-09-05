@@ -224,7 +224,7 @@ that drifts, and one did.
 
 **Last shipped**
 
-- 2026-09-05 — Director is a standalone feature with durable named sessions, a preserved Lab import and multiple saved exports. Railway uses the existing database and private bucket. Earlier-section redo and version history remain out of scope (#593, #594).
+- 2026-09-05 — Director is a standalone feature with durable named sessions, a preserved Lab import and multiple saved exports. Empty sessions start with Set the scene and reveal the workspace after the first clip (#602). Railway uses the existing database and private bucket. Earlier-section redo and version history remain out of scope (#593, #594).
 
 - 2026-09-04 — Select mode's verbs take over the generator column on a wide screen. A bar fixed to the bottom of the viewport is easy to miss unless you already know it is there — it sits in peripheral vision while you are looking at the grid, which is the one place you are not looking; the column is where the page's controls already are. Grey filled rows, two groups either side of a rule (what the selection becomes, then what you take away from it), and a click on the empty column deselects. Images and Video each list their verbs once and hand them to whichever container the width chooses, the column above 60rem and the same bottom drawer below it. Trash keeps the drawer: it has no column to take over. **Focus is gone** — it showed only the selection and hid the rest, and its verb was its only way in, so what is left of it is #590 (#587)
 

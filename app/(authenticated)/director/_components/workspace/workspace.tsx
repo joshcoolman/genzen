@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Clapperboard } from 'lucide-react'
 import { download } from '../../recording'
 import { DURATIONS, ENDPOINTS, PROMPT_LIMIT } from '../../clips'
 import { CutPlayer } from '../cut-player/cut-player'
@@ -24,104 +25,113 @@ export function Workspace({
 }) {
   const { confirm, dialogProps } = useConfirm()
   const { cut } = state
+  const opening = state.session.cut.clips.length === 0
   const [exportClips, setExportClips] = useState<Array<Clip> | null>(null)
   const [exportSource, setExportSource] = useState<Array<StoredClip>>([])
   const locked = !state.ready || state.busy || !!cut.pending
   const canSend = !locked && !!state.prompt.trim()
   const latest = cut.clips.at(-1)
   return (
-    <div className={styles.workspace}>
-      <div className={styles.stage}>
-        <CutPlayer clips={cut.clips} />
-        <p role="status" className={styles.hint}>
-          {state.status}
-        </p>
-        <p className={styles.hint}>
-          New sections append without restarting playback. The ending-to-opening
-          loop may have a visible cut.
-        </p>
-        {cut.clips.some((clip) => clip.imported) && (
-          <p className={styles.notice}>
-            Your saved Director recording is section 1. Send continues from its
-            ending frame; the original remains in Saved recordings below.
+    <div className={styles.workspace} data-opening={opening || undefined}>
+      {!opening && (
+        <div className={styles.stage}>
+          <CutPlayer clips={cut.clips} />
+          <p role="status" className={styles.hint}>
+            {state.status}
           </p>
-        )}
-        {state.error && (
-          <p role="alert" className={styles.failure}>
-            {state.error}
+          <p className={styles.hint}>
+            New sections append without restarting playback. The
+            ending-to-opening loop may have a visible cut.
           </p>
-        )}
-        <div className={styles.actions}>
-          <Button
-            disabled={!state.ready || !cut.clips.length}
-            onClick={() => {
-              setExportSource([...state.session.cut.clips])
-              setExportClips([...cut.clips])
-            }}
-          >
-            Export Final Video
-          </Button>
-        </div>
-      </div>
-      <aside className={styles.history}>
-        <h2>Sections · {cut.clips.length}</h2>
-        <ol>
-          {cut.clips.map((clip, index) => (
-            <li key={clip.id}>
-              <p>{clip.prompt}</p>
-              <span>
-                {clip.duration.toFixed(1)}s · {clip.model}
-                {clip.elapsedMs !== undefined
-                  ? ` · ${(clip.elapsedMs / 1000).toFixed(1)}s request-to-ready`
-                  : ''}
-              </span>
-              <Button
-                size="sm"
-                onClick={() =>
-                  download(
-                    clip.blob,
-                    `section-${index + 1}.${clip.blob.type.includes('webm') ? 'webm' : 'mp4'}`,
-                  )
-                }
-              >
-                Download
-              </Button>
-            </li>
-          ))}
-        </ol>
-        {cut.pending && (
-          <div>
-            <p>
-              {cut.pending.redo ? 'Replacing latest section' : 'Next section'}:{' '}
-              {cut.pending.prompt}
+          {cut.clips.some((clip) => clip.imported) && (
+            <p className={styles.notice}>
+              Your saved Director recording is section 1. Send continues from
+              its ending frame; the original remains in Saved recordings below.
             </p>
-            <p className={styles.hint}>
-              {state.busy ? 'Working…' : 'Request needs attention'}
+          )}
+          {state.error && (
+            <p role="alert" className={styles.failure}>
+              {state.error}
             </p>
-            {!!cut.pending.token && (
-              <Button disabled={state.busy} onClick={state.checkRequest}>
-                Check request
-              </Button>
-            )}
+          )}
+          <div className={styles.actions}>
             <Button
-              disabled={state.busy}
-              onClick={async () => {
-                if (
-                  await confirm({
-                    title: 'Dismiss this request?',
-                    message:
-                      'A submitted job may still finish and be billed. Check FAL first if its submission was interrupted. Your existing sections will stay unchanged.',
-                    confirmLabel: 'Dismiss request',
-                  })
-                )
-                  await state.forgetPending()
+              disabled={!state.ready || !cut.clips.length}
+              onClick={() => {
+                setExportSource([...state.session.cut.clips])
+                setExportClips([...cut.clips])
               }}
             >
-              Dismiss request
+              Export Final Video
             </Button>
           </div>
-        )}
-      </aside>
+        </div>
+      )}
+      {(!opening || cut.pending) && (
+        <aside className={styles.history}>
+          {!opening && <h2>Sections · {cut.clips.length}</h2>}
+          <ol>
+            {cut.clips.map((clip, index) => (
+              <li key={clip.id}>
+                <p>{clip.prompt}</p>
+                <span>
+                  {clip.duration.toFixed(1)}s · {clip.model}
+                  {clip.elapsedMs !== undefined
+                    ? ` · ${(clip.elapsedMs / 1000).toFixed(1)}s request-to-ready`
+                    : ''}
+                </span>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    download(
+                      clip.blob,
+                      `section-${index + 1}.${clip.blob.type.includes('webm') ? 'webm' : 'mp4'}`,
+                    )
+                  }
+                >
+                  Download
+                </Button>
+              </li>
+            ))}
+          </ol>
+          {cut.pending && (
+            <div>
+              <p>
+                {cut.pending.redo
+                  ? 'Replacing latest section'
+                  : opening
+                    ? 'Opening scene'
+                    : 'Next section'}
+                : {cut.pending.prompt}
+              </p>
+              <p className={styles.hint}>
+                {state.busy ? 'Working…' : 'Request needs attention'}
+              </p>
+              {!!cut.pending.token && (
+                <Button disabled={state.busy} onClick={state.checkRequest}>
+                  Check request
+                </Button>
+              )}
+              <Button
+                disabled={state.busy}
+                onClick={async () => {
+                  if (
+                    await confirm({
+                      title: 'Dismiss this request?',
+                      message:
+                        'A submitted job may still finish and be billed. Check FAL first if its submission was interrupted. Your existing sections will stay unchanged.',
+                      confirmLabel: 'Dismiss request',
+                    })
+                  )
+                    await state.forgetPending()
+                }}
+              >
+                Dismiss request
+              </Button>
+            </div>
+          )}
+        </aside>
+      )}
       <form
         className={styles.composer}
         onSubmit={(event) => {
@@ -130,17 +140,18 @@ export function Workspace({
         }}
       >
         <label htmlFor="director-prompt">
-          {cut.clips.length ? 'Next direction' : 'Opening idea'}
+          {opening ? 'Set the scene' : 'Next direction'}
         </label>
         <Textarea
           id="director-prompt"
           value={state.prompt}
-          rows={3}
+          rows={opening ? 5 : 3}
           maxLength={PROMPT_LIMIT}
           disabled={!state.ready}
-          placeholder="Show me a dancing bear…"
+          placeholder={
+            opening ? 'Describe the opening scene...' : 'What happens next?'
+          }
           aria-keyshortcuts="Shift+Enter"
-          aria-describedby="director-shortcut"
           onChange={(event) => state.setPrompt(event.target.value)}
           onKeyDown={(event) => {
             if (
@@ -156,10 +167,8 @@ export function Workspace({
             }
           }}
         />
-        <p id="director-shortcut" className={styles.hint}>
-          Shift+Enter to send · Enter for a new line
-        </p>
         <div className={styles.actions}>
+          {opening && <span>One paid {cut.settings.duration}-second clip</span>}
           {!!latest && (
             <Button
               disabled={!canSend || !!latest.imported}
@@ -175,14 +184,35 @@ export function Workspace({
               Redo latest
             </Button>
           )}
-          <Button type="submit" variant="primary" disabled={!canSend}>
-            Send
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={!canSend}
+            loading={opening && state.busy}
+          >
+            {opening && <Clapperboard size={16} />}
+            {opening ? 'Start story' : 'Send'}
           </Button>
         </div>
-        <p className={styles.hint}>
-          Each Send or Redo generates one paid {cut.settings.duration}-second
-          clip. Playback and waiting do not generate anything.
-        </p>
+        {opening ? (
+          <>
+            {state.status !== 'Saved' && (
+              <p role="status" className={styles.hint}>
+                {state.status}
+              </p>
+            )}
+            {state.error && (
+              <p role="alert" className={styles.failure}>
+                {state.error}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className={styles.hint}>
+            Each Send or Redo generates one paid {cut.settings.duration}-second
+            clip. Playback and waiting do not generate anything.
+          </p>
+        )}
       </form>
       <details className={styles.settings}>
         <summary>Generation settings</summary>

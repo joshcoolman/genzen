@@ -16,6 +16,7 @@ export function SessionContent({
 }) {
   const [items, setItems] = useState(initialExports)
   const [error, setError] = useState<string | null>(null)
+  const opening = state.session.cut.clips.length === 0 && items.length === 0
   async function refresh() {
     try {
       setItems(await loadExports(state.session.id))
@@ -24,6 +25,8 @@ export function SessionContent({
       setError('Exports could not be refreshed. Reload to try again.')
     }
   }
+  if (opening)
+    return <Workspace state={state} onExportSaved={() => void refresh()} />
   return (
     <Tabs.Root
       defaultValue="session"
