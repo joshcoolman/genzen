@@ -209,17 +209,11 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — [#595](https://github.com/joshcoolman/genzen/issues/595): durable Director session storage, part of [#594](https://github.com/joshcoolman/genzen/issues/594).
-The authenticated `/lab/director` experiment works locally and on Railway and generates
-5-, 10-, or 15-second H3 Max/Turbo clips (5s default), loops the growing cut silently, and continues
-from its final frame. Redo replaces the latest section; Next clip and Jump to
-latest inspect joins. Local cuts, drafts and pending requests survive refresh;
-legacy live recordings are preserved and imported as a starting section.
-Shift+Enter sends. Clear session requires confirmation. Visual quality and speed
-were accepted by Josh; no paid generations were run by the agent.
-Export Final Video previews sections in an ordered selection grid and downloads
-the selected cut as one silent MP4; nothing is added to the library. Library Wrap
-and Activity/spend reconciliation remain outside this experiment.
+**Focus** — [#597](https://github.com/joshcoolman/genzen/issues/597): saved exports within Director sessions, part of [#594](https://github.com/joshcoolman/genzen/issues/594).
+Director lives at `/director`, with named sessions, durable clips and pending
+requests, and explicit import of the browser-local Lab cut. The existing
+continuation, latest-section Redo, silent playback and selective MP4 download
+remain. Its media is separate from Video, Images, Activity and shared Trash.
 
 Updated when Focus changes. Everything else is the board at
 `localhost:3210/kanban/genzen` — **Now** is queued and small things to clear

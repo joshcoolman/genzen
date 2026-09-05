@@ -3,7 +3,7 @@ import { sameOrigin } from './request-origin'
 
 describe('Director request origin', () => {
   const proxied = (origin: string, extra = {}) =>
-    new Request('http://0.0.0.0:3000/lab/director/export', {
+    new Request('http://0.0.0.0:3000/director/export', {
       headers: {
         origin,
         host: 'genzen-production.up.railway.app',
@@ -36,7 +36,7 @@ describe('Director request origin', () => {
   it('accepts direct local requests with their port', () => {
     expect(
       sameOrigin(
-        new Request('http://localhost:3000/lab/director/media', {
+        new Request('http://localhost:3000/director/media', {
           headers: { origin: 'http://localhost:3000', host: 'localhost:3000' },
         }),
       ),

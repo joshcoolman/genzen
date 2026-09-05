@@ -4,7 +4,7 @@ import { DURATIONS, ENDPOINTS, PROMPT_LIMIT } from '../../clips'
 import { CutPlayer } from '../cut-player/cut-player'
 import { ExportPreview } from '../export-preview/export-preview'
 import styles from './workspace.module.css'
-import type { useView } from '../../use-view'
+import type { useView } from '../../[id]/use-view'
 import type { Clip, Settings } from '../../clips'
 import {
   Button,
@@ -49,22 +49,6 @@ export function Workspace({ state }: { state: ReturnType<typeof useView> }) {
             onClick={() => setExportClips([...cut.clips])}
           >
             Export Final Video
-          </Button>
-          <Button
-            disabled={locked}
-            onClick={async () => {
-              if (
-                await confirm({
-                  title: 'Clear this session?',
-                  message:
-                    'Permanently remove this account’s cut, draft, initial image and saved Director recordings from this browser. Download anything you want to keep first.',
-                  confirmLabel: 'Clear session',
-                })
-              )
-                await state.clearSession()
-            }}
-          >
-            Clear session
           </Button>
         </div>
       </div>
@@ -115,7 +99,7 @@ export function Workspace({ state }: { state: ReturnType<typeof useView> }) {
                   await confirm({
                     title: 'Dismiss this request?',
                     message:
-                      'This only dismisses the local request. A submitted job may still finish and be billed. Check FAL first if its submission was interrupted. Your existing sections will stay unchanged.',
+                      'A submitted job may still finish and be billed. Check FAL first if its submission was interrupted. Your existing sections will stay unchanged.',
                     confirmLabel: 'Dismiss request',
                   })
                 )
@@ -273,7 +257,6 @@ export function Workspace({ state }: { state: ReturnType<typeof useView> }) {
           shape. Text-only openings default to 16:9.
         </p>
         <p className={styles.hint}>
-          Experimental local storage, not library assets or Activity entries.{' '}
           <a
             href={`https://fal.ai/models/${ENDPOINTS[cut.settings.model]}`}
             target="_blank"

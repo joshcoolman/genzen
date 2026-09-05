@@ -1,4 +1,4 @@
-import { sameOrigin } from '../../lab/director/request-origin'
+import { sameOrigin } from '../request-origin'
 import {
   CHUNK_BYTES,
   appendUpload,

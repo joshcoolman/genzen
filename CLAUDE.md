@@ -85,6 +85,7 @@ live with the one route that renders them:
 | Activity   | `app/(authenticated)/activity/` — the route; the log itself is a feature                                                    |
 | Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                                                            |
 | Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — the route; the lineup is a feature                                       |
+| Director   | `app/(authenticated)/director/` — named narrative sessions and their private media; separate from Video and groups          |
 | App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav                                                     |
 | Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else                                                  |
 | Account    | `app/(authenticated)/account/` — the settings area: its own nav and sub-pages                                               |

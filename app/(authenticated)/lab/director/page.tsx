@@ -1,7 +1,5 @@
-import { View } from './view'
-import { resolveAuth } from '#/lib/server/auth.server'
+import { redirect } from 'next/navigation'
 
-export default async function DirectorPage() {
-  const { userId } = await resolveAuth()
-  return <View owner={userId} />
+export default function DirectorPage() {
+  redirect('/director')
 }

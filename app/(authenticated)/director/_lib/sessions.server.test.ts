@@ -12,7 +12,7 @@ import { beginGeneration, dismissGeneration } from './generation.server'
 import { sql } from '#/lib/server/db.server'
 
 const mocks = vi.hoisted(() => ({ submit: vi.fn(), remove: vi.fn() }))
-vi.mock('../../lab/director/_actions/clips.action', () => ({
+vi.mock('../_actions/clips.action', () => ({
   submitClip: mocks.submit,
   checkClip: vi.fn(),
 }))

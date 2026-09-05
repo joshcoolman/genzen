@@ -1,8 +1,8 @@
 'use server'
 
 import { z } from 'zod'
-import { settingsSchema } from '../../lab/director/clips'
-import { readReceipt } from '../../lab/director/clip-jobs.server'
+import { settingsSchema } from '../clips'
+import { readReceipt } from '../clip-jobs.server'
 import {
   createSession,
   deleteSession,
@@ -14,7 +14,7 @@ import {
   saveState,
 } from '../_lib/sessions.server'
 import { idSchema, storedCutSchema } from '../_lib/types'
-import type { Settings } from '../../lab/director/clips'
+import type { Settings } from '../clips'
 import { resolveAuth } from '#/lib/server/auth.server'
 
 export async function loadSession(id: string) {
@@ -81,7 +81,5 @@ export async function importCut(id: string, input: unknown, draft: string) {
     )
   }
   if (cut.pending?.token) readReceipt(cut.pending.token, owner)
-  const saved = await saveState(owner, session, cut)
-  await saveDraft(owner, id, z.string().max(2000).parse(draft), session.draft)
-  return { ...saved, draft }
+  return saveState(owner, session, cut, z.string().max(2000).parse(draft))
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { settingsSchema } from '../../lab/director/clips'
+import { settingsSchema } from '../clips'
 
 export const idSchema = z.string().uuid()
 export const nameSchema = z.string().trim().min(1).max(120)
@@ -82,7 +82,7 @@ export function cutMediaIds(cut: StoredCut) {
         clip.endFrameId,
         clip.thumbnailId,
       ]),
+      ...cut.archives.map((archive) => archive.mediaId),
     ]),
-    ...cut.archives.map((archive) => archive.mediaId),
   ]
 }

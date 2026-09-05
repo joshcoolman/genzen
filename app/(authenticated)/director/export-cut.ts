@@ -20,7 +20,7 @@ export async function exportCut(
   let id: string | undefined
   async function post(operation: string, body?: BodyInit, extra = '') {
     const response = await fetch(
-      `/lab/director/export?operation=${operation}${id ? `&id=${encodeURIComponent(id)}` : ''}${extra}`,
+      `/director/export?operation=${operation}${id ? `&id=${encodeURIComponent(id)}` : ''}${extra}`,
       {
         method: 'POST',
         body,
@@ -68,7 +68,7 @@ export async function exportCut(
     // an abandoned tab has a server-side expiry as a second cleanup path.
     if (id)
       void fetch(
-        `/lab/director/export?operation=discard&id=${encodeURIComponent(id)}`,
+        `/director/export?operation=discard&id=${encodeURIComponent(id)}`,
         {
           method: 'POST',
           keepalive: true,
