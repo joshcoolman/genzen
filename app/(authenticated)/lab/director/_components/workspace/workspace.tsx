@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { download } from '../../recording'
 import { DURATIONS, ENDPOINTS, PROMPT_LIMIT } from '../../clips'
 import { CutPlayer } from '../cut-player/cut-player'
+import { ExportPreview } from '../export-preview/export-preview'
 import styles from './workspace.module.css'
 import type { useView } from '../../use-view'
-import type { Settings } from '../../clips'
+import type { Clip, Settings } from '../../clips'
 import {
   Button,
   ConfirmDialog,
@@ -21,6 +23,7 @@ export function Workspace({
 }) {
   const { confirm, dialogProps } = useConfirm()
   const { cut } = state
+  const [exportClips, setExportClips] = useState<Array<Clip> | null>(null)
   const locked = !local || !state.ready || state.busy || !!cut.pending
   const canSend = !locked && !!state.prompt.trim()
   const latest = cut.clips.at(-1)
@@ -52,6 +55,12 @@ export function Workspace({
           </p>
         )}
         <div className={styles.actions}>
+          <Button
+            disabled={!local || !state.ready || !cut.clips.length}
+            onClick={() => setExportClips([...cut.clips])}
+          >
+            Export Final Video
+          </Button>
           <Button
             disabled={locked}
             onClick={async () => {
@@ -315,6 +324,12 @@ export function Workspace({
         </details>
       )}
       <ConfirmDialog {...dialogProps} />
+      {exportClips && (
+        <ExportPreview
+          clips={exportClips}
+          onClose={() => setExportClips(null)}
+        />
+      )}
     </div>
   )
 }

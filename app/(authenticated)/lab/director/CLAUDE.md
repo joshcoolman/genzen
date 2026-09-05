@@ -18,3 +18,8 @@
   not reconstructed provider chunks; it can continue but cannot be redone.
 - Clear requires confirmation and an empty-cut tombstone, preventing re-import.
   These browser-local assets are not library masters; do not call download Wrap.
+- Export snapshots the cut and filters selections in playback order, without
+  changing the cut. All sections are selected when the preview opens.
+- Export is download-only: temporary account-owned files, silent H264 MP4, no
+  database or bucket writes. Chunk uploads below the existing proxy body limit.
+  Remove temporary work on completion/failure; expire abandoned uploads.

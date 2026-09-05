@@ -1,0 +1,31 @@
+.preview {
+  --dialog-max-width: 70rem;
+  --dialog-overflow: auto;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-16);
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-12);
+  margin-block: var(--space-16);
+}
+.status {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin-top: var(--space-12);
+}
+.error {
+  color: var(--danger);
+}
+.download {
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-8) var(--space-16);
+  text-decoration: underline;
+}
