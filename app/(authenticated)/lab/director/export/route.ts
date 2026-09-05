@@ -5,16 +5,14 @@ import {
   removeExport,
 } from '../export-jobs.server'
 import { UPLOAD_CHUNK_BYTES } from '../export-policy'
+import { sameOrigin } from '../request-origin'
 import { resolveAuth } from '#/lib/server/auth.server'
 
 export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
-  if (process.env.NODE_ENV !== 'development')
-    return new Response(null, { status: 403 })
   const url = new URL(request.url)
-  if (request.headers.get('origin') !== url.origin)
-    return new Response(null, { status: 403 })
+  if (!sameOrigin(request)) return new Response(null, { status: 403 })
   let owner: string
   try {
     owner = (await resolveAuth()).userId

@@ -14,17 +14,11 @@ import {
   useConfirm,
 } from '#/components'
 
-export function Workspace({
-  state,
-  local,
-}: {
-  state: ReturnType<typeof useView>
-  local: boolean
-}) {
+export function Workspace({ state }: { state: ReturnType<typeof useView> }) {
   const { confirm, dialogProps } = useConfirm()
   const { cut } = state
   const [exportClips, setExportClips] = useState<Array<Clip> | null>(null)
-  const locked = !local || !state.ready || state.busy || !!cut.pending
+  const locked = !state.ready || state.busy || !!cut.pending
   const canSend = !locked && !!state.prompt.trim()
   const latest = cut.clips.at(-1)
   return (
@@ -44,11 +38,6 @@ export function Workspace({
             ending frame; the original remains in Saved recordings below.
           </p>
         )}
-        {!local && (
-          <p className={styles.notice}>
-            Generation is available only in local development.
-          </p>
-        )}
         {state.error && (
           <p role="alert" className={styles.failure}>
             {state.error}
@@ -56,7 +45,7 @@ export function Workspace({
         )}
         <div className={styles.actions}>
           <Button
-            disabled={!local || !state.ready || !cut.clips.length}
+            disabled={!state.ready || !cut.clips.length}
             onClick={() => setExportClips([...cut.clips])}
           >
             Export Final Video

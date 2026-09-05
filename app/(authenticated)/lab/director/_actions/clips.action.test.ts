@@ -91,10 +91,14 @@ describe('bounded authenticated clip generation', () => {
       logs: false,
     })
   })
-  it('rejects production, invalid models and unauthenticated calls before spending', async () => {
+  it('allows authenticated production generation', async () => {
     vi.stubEnv('NODE_ENV', 'production')
-    await expect(submitClip(data())).rejects.toThrow('local Lab')
-    vi.stubEnv('NODE_ENV', 'development')
+    expect(readReceipt(await submitClip(data()), 'owner').requestId).toBe(
+      'job-1',
+    )
+    expect(mocks.submit).toHaveBeenCalledOnce()
+  })
+  it('rejects invalid models and unauthenticated calls before spending', async () => {
     await expect(submitClip(data('other-model'))).rejects.toThrow()
     mocks.auth.mockRejectedValue(new Error('Unauthorized'))
     await expect(submitClip(data())).rejects.toThrow('Unauthorized')

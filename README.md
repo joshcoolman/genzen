@@ -209,8 +209,8 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — None; [#591](https://github.com/joshcoolman/genzen/issues/591) Director
-v1 is approved and complete. The local-only `/lab/director` experiment generates
+**Focus** — [#594](https://github.com/joshcoolman/genzen/issues/594): Director sessions and saved exports.
+The authenticated `/lab/director` experiment works locally and on Railway and generates
 5-, 10-, or 15-second H3 Max/Turbo clips (5s default), loops the growing cut silently, and continues
 from its final frame. Redo replaces the latest section; Next clip and Jump to
 latest inspect joins. Local cuts, drafts and pending requests survive refresh;

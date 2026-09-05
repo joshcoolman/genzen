@@ -35,10 +35,7 @@ const request = (
     },
   )
 describe('export route boundary', () => {
-  it('rejects unauthenticated, production and cross-origin calls', async () => {
-    vi.stubEnv('NODE_ENV', 'production')
-    expect((await POST(request('create', '[]'))).status).toBe(403)
-    vi.stubEnv('NODE_ENV', 'development')
+  it('rejects unauthenticated and cross-origin calls', async () => {
     expect(
       (await POST(request('create', '[]', 'https://attacker.test'))).status,
     ).toBe(403)
@@ -47,6 +44,7 @@ describe('export route boundary', () => {
     expect(mocks.create).not.toHaveBeenCalled()
   })
   it('returns the MP4 as a private attachment, using server-resolved identity', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
     mocks.finish.mockResolvedValue(new Uint8Array([1, 2]))
     const response = await POST(request('finish'))
     expect(response.headers.get('content-type')).toBe('video/mp4')

@@ -2,7 +2,7 @@
 
 - Generate individual clips only on Send or Redo, through the shared FAL client.
   Playback, polling and restore never submit a new paid request.
-- Access is development-only. Signed receipts bind provider request IDs and the
+- Access requires authentication locally and on Railway. Signed receipts bind provider request IDs and the
   model to the authenticated user; never accept arbitrary result URLs.
 - Continue uses the cut's ending frame, not the player's current position.
   Redo uses the preceding section's ending (or the original opening image) and
@@ -23,3 +23,6 @@
 - Export is download-only: temporary account-owned files, silent H264 MP4, no
   database or bucket writes. Chunk uploads below the existing proxy body limit.
   Remove temporary work on completion/failure; expire abandoned uploads.
+- Export ownership is process-local: run one replica. Four-minute encoding
+  deadline leaves headroom below Railway's five-minute idle request timeout.
+  Origin checks use the public proxy host/protocol, not Next's listening URL.

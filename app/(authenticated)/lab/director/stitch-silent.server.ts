@@ -14,7 +14,7 @@ const exec = promisify(execFile)
 export async function stitchSilent(dir: string, clips: ExportManifest) {
   if (!ffmpegPath) throw new Error('FFmpeg is unavailable on this server.')
   const binary = ffmpegPath
-  const signal = AbortSignal.timeout(5 * 60 * 1000)
+  const signal = AbortSignal.timeout(4 * 60 * 1000)
   const run = (args: Array<string>) =>
     exec(
       binary,
