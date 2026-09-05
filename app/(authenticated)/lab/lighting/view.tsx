@@ -70,6 +70,7 @@ export function View() {
             onPick={v.setReference}
             onClear={v.clearReference}
             onOpen={() => void v.userImages.refresh()}
+            onRefresh={v.userImages.refresh}
             disabled={v.isDeriving}
           />
           <ActionButton
@@ -106,6 +107,7 @@ export function View() {
                   onPick={(next) => v.pinSubject(slot, next.at(0))}
                   onClear={() => v.pinSubject(slot, undefined)}
                   onOpen={() => void v.userImages.refresh()}
+                  onRefresh={v.userImages.refresh}
                   disabled={v.isRunning}
                 />
                 <span className={styles.hint}>{hint}</span>
