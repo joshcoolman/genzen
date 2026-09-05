@@ -30,6 +30,9 @@ them, so the same money had two answers.
 
 ## Data Source
 
+Director export copies (`origin = director`) are excluded: saving a finished
+film is not another paid generation. The account aggregates use the same rule.
+
 Reads from `user_images` with `source in ('ai_generated','ai_video')` -- clips were excluded outright until #398, which made the log blind to most of the spend (a 20s Flux 3 clip is $3.40 against $0.08 for the dearest still). No status/deleted_at filters. Timestamps for duration come from `generation_metadata.submitted_at` + `completed_at` | `failed_at` (all ISO strings, in JSONB). Cost stashed at FAL completion in `generation_metadata.provider_cost_cents` (see `src/lib/server/fal-completion.server.ts`), and it may be a **fraction of a cent** since #400 -- do not assume an integer.
 
 ## Shared Dependencies

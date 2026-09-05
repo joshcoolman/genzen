@@ -9,6 +9,12 @@ about the form, the picker and the card; this folder holds only the catalog.
 
 ## Key Files
 
+- `server/director-exports.server.ts` -- publishes saved Director rough exports
+  as independently owned Video assets, also consumed by Director saves. Opening
+  Video/Frames backfills missing publications. A publication tombstone prevents
+  resurrection after Video deletion; originals and copies have independent names
+  and deletion lifecycles. `origin = director` excludes copies from generation
+  Activity and account spend counts. Working/Final Cut assets never publish.
 - `models.ts` -- `VIDEO_MODELS`, `endpointFor`, `aspectRatiosFor`,
   `estimateCostCents`, and the row-facing helpers below
 - `models.test.ts` -- pins every endpoint id and param name against FAL's

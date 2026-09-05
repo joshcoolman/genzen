@@ -9,6 +9,12 @@ source images; `use-view.ts` owns everything after the first paint.
 
 ## Quirks
 
+- Saved Director rough exports appear here and in every Lab video picker (#607).
+  They are ordinary completed `ai_video` rows with `origin = director`, separate
+  files and stored session/export provenance. Video's deletion does not affect
+  Director and Director's deletion does not affect Video. Final Cut experiments
+  and working clips remain private. `listVideos` backfills missing publications;
+  deleted copies never come back automatically.
 - **The wall is `minmax(12rem, 1fr)`, down from 20rem** (#535). 20rem was set
   when a card was a player and a caption; a card is now a player, two end
   frames and a caption, so the same column bought a much taller card -- at a

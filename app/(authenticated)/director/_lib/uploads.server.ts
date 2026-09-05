@@ -9,6 +9,7 @@ import { ingestImage, ingestVideo } from './ingest.server'
 import { exportInputSchema } from './types'
 import { getExport, prepareExport, saveExport } from './exports.server'
 import type { ExportInput } from './types'
+import { publishDirectorExport } from '#/features/video/server/director-exports.server'
 
 export const CHUNK_BYTES = 4 * 1024 * 1024
 const schema = z.object({
@@ -126,6 +127,7 @@ export async function completeUpload(owner: string, id: string) {
         upload.savedExport.id,
       )
       if (saved) {
+        await publishDirectorExport(owner, upload.sessionId, saved.id)
         upload.result = {
           mediaId: saved.media_id,
           thumbnailId: saved.thumbnail_id,

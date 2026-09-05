@@ -130,6 +130,7 @@ export async function listActivity(
   const where = sql`
     where user_id = ${userId}
       and source in ('ai_generated', 'ai_video')
+      and origin <> 'director'
       ${
         data.models?.length
           ? sql`and generation_metadata->>'model' in ${sql(

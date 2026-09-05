@@ -21,6 +21,7 @@ import {
   markGenerationSubmitted,
 } from '#/lib/server/create-pending-generation.server'
 import { uploadLibraryImagesToFal } from '#/lib/server/fal-image-inputs.server'
+import { publishDirectorExports } from '#/features/video/server/director-exports.server'
 
 export interface GenerateVideoInput {
   /** Optional. Without one the model invents the whole shot from the prompt --
@@ -241,6 +242,7 @@ export interface VideoRecord {
  */
 export async function listVideos(): Promise<Array<VideoRecord>> {
   const { userId } = await resolveAuth()
+  await publishDirectorExports(userId)
 
   const rows = await sql<Array<VideoRecord>>`
     select id, title, description, status, generation_error,

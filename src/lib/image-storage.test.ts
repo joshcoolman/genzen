@@ -74,3 +74,28 @@ it('rejects partial bucket deletion failures so callers retain retry metadata', 
     vi.unstubAllEnvs()
   }
 })
+
+it('copies within the private bucket with an encoded source key', async () => {
+  vi.stubEnv('R2_ENDPOINT', 'http://localhost:9010')
+  vi.stubEnv('R2_ACCESS_KEY_ID', 'test')
+  vi.stubEnv('R2_SECRET_ACCESS_KEY', 'test')
+  vi.stubEnv('R2_BUCKET_NAME', 'test-bucket')
+  const send = vi
+    .spyOn(S3Client.prototype, 'send')
+    .mockImplementationOnce(() => Promise.resolve({}))
+  try {
+    await createImageStorage().copy('owner/a frame.png', 'owner/video-copy.png')
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: {
+          Bucket: 'test-bucket',
+          Key: 'owner/video-copy.png',
+          CopySource: 'test-bucket/owner/a%20frame.png',
+        },
+      }),
+    )
+  } finally {
+    send.mockRestore()
+    vi.unstubAllEnvs()
+  }
+})

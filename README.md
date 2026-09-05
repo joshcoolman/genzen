@@ -209,12 +209,14 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Director Final Cut audio [#609](https://github.com/joshcoolman/genzen/issues/609).
+**Focus** — Director exports in Video [#607](https://github.com/joshcoolman/genzen/issues/607).
 Director lives at `/director`, with named sessions, durable clips and pending
 requests, and explicit import of the browser-local Lab cut. The existing
 continuation, latest-section Redo and silent playback remain. Each session has
 multiple named, immutable exports with playback and MP4 download. Its media is
-separate from Video, Images, Activity and shared Trash.
+private while working. Saved rough exports also appear in Video and Extract
+Frames as independent copies with normal Trash behavior; deleting either copy
+does not delete the other. Final Cut versions remain private to Director.
 Final Cut adds independent finishing versions to a saved export: reference-guided
 cinematography and silent output; separate audio generation is paused. One
 click starts paid generation, with saved progress, resume, stop, playback and
@@ -229,6 +231,8 @@ parking lots. The labels are the ranking; a list here would be a second copy
 that drifts, and one did.
 
 **Last shipped**
+
+- 2026-09-05 — Saved Director rough exports join Video and Extract Frames, including existing exports on first visit. Working clips and Final Cut experiments remain private; Video copies have independent storage and deletion (#607).
 
 - 2026-09-05 — New Final Cuts skip effects and music generation and export silently. Existing finished versions stay unchanged; resumed jobs reuse pictures and skip retired audio stages (#609).
 
