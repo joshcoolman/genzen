@@ -45,9 +45,5 @@ framing, and not every reference subject should appear in every shot. Write each
 shot prompt as a self-contained direction for a reference-to-video model, including
 the actual action, staging, camera and fixed visual details. No titles or overlays.
 
-For each shot provide a sound prompt for picture-matched environmental sound and
-foley, with emphasis on the story's salient sounds such as a car engine. No music,
-speech or invented dialogue in these sound prompts. Separately provide one detailed
-instrumental music prompt for a continuous score spanning the entire film: specify
-genre, instrumentation, energy, emotional arc and a resolved ending. No vocals,
-lyrics or imitation of a named artist. Let the sound and score support the story.
+The finished film is silent. Tell the story through visible action, composition
+and editing, without relying on dialogue, sound cues or a soundtrack.

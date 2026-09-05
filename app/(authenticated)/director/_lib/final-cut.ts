@@ -9,14 +9,12 @@ export const planSchema = z.object({
   continuity: z.string().min(1).max(4000),
   style: z.string().min(1).max(2000),
   referenceFrames: z.array(z.number().int().min(0)).min(1).max(6),
-  music: z.string().min(1).max(2000),
   shots: z
     .array(
       z.object({
         sections: z.array(z.number().int().min(0)).min(1).max(50),
         duration: z.union([z.literal(5), z.literal(10), z.literal(15)]),
         prompt: z.string().min(1).max(4000),
-        sound: z.string().min(1).max(2000),
       }),
     )
     .min(1)
@@ -62,14 +60,21 @@ export type FinalCutSummary = Pick<
   'id' | 'export_id' | 'status' | 'stage' | 'error' | 'output' | 'created_at'
 > & { name: string; resumable: boolean; occupied: boolean }
 
+function requiredSteps(work: FinalWork) {
+  // Legacy audio receipts stay recorded, but silent finishing never submits or
+  // polls them. Unknown picture/planning requests still block paid retries.
+  return Object.entries(work.steps ?? {})
+    .filter(([key]) => key !== 'music' && !/^effects-\d+$/.test(key))
+    .map(([, step]) => step)
+}
 export function uncertainWork(work: FinalWork) {
   return (
     (!!work.planning && !work.plan) ||
-    Object.values(work.steps ?? {}).some((step) => step && !step.requestId)
+    requiredSteps(work).some((step) => step && !step.requestId)
   )
 }
 export function rejectedWork(work: FinalWork) {
-  return Object.values(work.steps ?? {}).some((step) => step?.terminal)
+  return requiredSteps(work).some((step) => step?.terminal)
 }
 export function finalCutSummary(item: FinalCut): FinalCutSummary {
   return {

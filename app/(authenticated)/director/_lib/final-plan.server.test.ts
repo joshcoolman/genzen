@@ -27,13 +27,11 @@ it('sends only accepted source directions and exported frames, using Anthropic-c
       continuity: 'Yellow car',
       style: 'Tracking',
       referenceFrames: [0],
-      music: 'Instrumental',
       shots: [
         {
           sections: [0],
           duration: 5,
           prompt: 'Yellow car moving',
-          sound: 'Engine',
         },
       ],
     },
@@ -72,13 +70,11 @@ const treatment = {
   continuity: 'Yellow car',
   style: 'Dynamic',
   referenceFrames: [0],
-  music: 'Instrumental',
   shots: [
     {
       sections: [0],
       duration: 15,
       prompt: 'Follow the yellow car',
-      sound: 'Engine',
     },
   ],
 }

@@ -20,7 +20,6 @@ import {
   runFinalProvider,
 } from './final-provider.server'
 import type { FinalStep } from './final-cut'
-import { fal } from '#/lib/server/fal-client.server'
 import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
 import shotInstructions from '#/lib/prompts/director-final-shot.md'
 
@@ -145,40 +144,15 @@ export async function runFinalCut(owner: string, id: string) {
         reference_image_urls: work.references,
       })
       const videoId = await persist(video, 'video/mp4')
-      await checkpoint(`Sound ${index + 1} of ${plan.shots.length}`)
-      const effectsKey = `effects-${index}`
-      // Re-upload our durable picture only before a new sound request. Existing
-      // receipts continue polling their original input, even after a restart.
-      let videoUrl = ''
-      if (!steps[effectsKey]) {
-        await alive()
-        videoUrl = await fal.storage.upload(await readMedia(owner, videoId))
-      }
-      const effects = await request(effectsKey, FINAL_MODELS.effects, {
-        video_url: videoUrl,
-        prompt: shot.sound,
-        negative_prompt: 'music, speech, dialogue, vocals',
-        duration: shot.duration,
-      })
-      const mediaId = await persist(effects, 'video/mp4')
-      clips.push({ mediaId, duration: shot.duration })
+      clips.push({ mediaId: videoId, duration: shot.duration })
     }
-    await checkpoint('Composing the score')
-    const music = await request('music', FINAL_MODELS.music, {
-      prompt: plan.music,
-      seconds_total: plan.shots.reduce((sum, shot) => sum + shot.duration, 0),
-    })
-    const scoreId = await persist(music, 'audio/wav')
-    await checkpoint('Mixing and finishing')
+    await checkpoint('Finishing the picture')
     const inputs = clips.map((clip) => ({
       blob: () => readMedia(owner, clip.mediaId),
       duration: clip.duration,
     }))
     await alive()
-    const movie = await assembleFinalCut(
-      inputs,
-      await readMedia(owner, scoreId),
-    )
+    const movie = await assembleFinalCut(inputs)
     await alive()
     const output = await ingestVideo(owner, job.session_id, movie, id)
     await finishFinalCut(owner, id, lease, output)
