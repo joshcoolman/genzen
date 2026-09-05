@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { SavedExport } from './types'
 
 export const FINAL_CUT_SECONDS = 120
+export const FINAL_SOURCE_SECONDS = 180
 export const planSchema = z.object({
   title: z.string().min(1).max(120),
   story: z.string().min(1).max(4000),
@@ -94,12 +95,12 @@ export function assertFinalSource(source: SavedExport) {
   if (
     !Number.isFinite(source.duration) ||
     source.duration <= 0 ||
-    source.duration > FINAL_CUT_SECONDS ||
+    source.duration > FINAL_SOURCE_SECONDS ||
     !source.source.length ||
     source.source.length > 50
   )
     throw new Error(
-      'Final Cut currently supports exports up to 2 minutes and 50 sections.',
+      'Final Cut supports rough exports up to 3 minutes and 50 sections, finished into at most 2 minutes.',
     )
 }
 export function validatePlan(
@@ -110,10 +111,18 @@ export function validatePlan(
   assertFinalSource(source)
   const plan = planSchema.parse(value)
   const budget = Math.min(FINAL_CUT_SECONDS, Math.ceil(source.duration / 5) * 5)
-  if (plan.shots.reduce((sum, shot) => sum + shot.duration, 0) > budget)
-    throw new Error(
-      'The proposed treatment exceeds the export duration budget.',
+  if (plan.shots.length * 5 > budget)
+    throw new Error('The treatment needs fewer shots for this short export.')
+  // Timing is ours to enforce. Shorten the longest shots in provider-supported
+  // five-second steps without dropping any of the accepted story coverage.
+  let total = plan.shots.reduce((sum, shot) => sum + shot.duration, 0)
+  while (total > budget) {
+    const longest = plan.shots.reduce((a, b) =>
+      a.duration >= b.duration ? a : b,
     )
+    longest.duration = (longest.duration - 5) as 5 | 10
+    total -= 5
+  }
   if (plan.referenceFrames.some((index) => index >= frameCount))
     throw new Error('The treatment references an unavailable frame.')
   const sections = plan.shots.flatMap((shot) => shot.sections)
@@ -122,11 +131,10 @@ export function validatePlan(
       (section, index) =>
         section >= source.source.length ||
         (index > 0 && section < sections[index - 1]),
-    ) ||
-    new Set(sections).size !== source.source.length
+    )
   )
     throw new Error(
-      'The treatment must preserve all exported sections in order.',
+      'The treatment must reference existing exported sections in story order.',
     )
   return plan
 }

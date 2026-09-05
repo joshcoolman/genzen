@@ -7,7 +7,7 @@ import {
   Square,
   Trash2,
 } from 'lucide-react'
-import { FINAL_CUT_SECONDS } from '../../_lib/final-cut'
+import { FINAL_SOURCE_SECONDS } from '../../_lib/final-cut'
 import { mediaUrl } from '../../_lib/types'
 import styles from './saved-exports.module.css'
 import type { FinalCutSummary } from '../../_lib/final-cut'
@@ -26,7 +26,7 @@ export function FinalCuts({
   const [deleting, setDeleting] = useState<FinalCutSummary | null>(null)
   const items = cuts.items.filter((item) => item.export_id === exportId)
   const active = cuts.items.some((item) => item.occupied)
-  const eligible = duration <= FINAL_CUT_SECONDS
+  const eligible = duration <= FINAL_SOURCE_SECONDS
   return (
     <section className={styles.finals} aria-label="Final cuts">
       <div className={styles.actions}>
@@ -34,15 +34,15 @@ export function FinalCuts({
           disabled={!cuts.loaded || cuts.busy || active || !eligible}
           title={
             eligible
-              ? 'Generate a new paid Final Cut'
-              : 'Final Cut supports exports up to 2 minutes'
+              ? 'Generate a paid Final Cut of up to 2 minutes'
+              : 'Final Cut accepts rough exports up to 3 minutes'
           }
           onClick={() => cuts.start(exportId)}
         >
           <Film size={16} /> Final Cut
         </Button>
         <span className={styles.note}>
-          {eligible ? 'Paid generation' : '2 minute limit'}
+          {eligible ? 'Paid generation' : '3 minute source limit'}
         </span>
       </div>
       {items.map((item, index) => (

@@ -88,7 +88,7 @@ export async function runFinalCut(owner: string, id: string) {
       await checkpoint('Directing the final cut')
       await alive()
       try {
-        work.plan = await planFinalCut(owner, source, work.frames)
+        work.plan = await planFinalCut(owner, source, work.frames, alive)
       } catch (error) {
         if (planningWasRejected(error)) {
           work.planning = false

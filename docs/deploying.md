@@ -55,8 +55,10 @@ be set on a deployment.
   Exports tab resumes queued/expired jobs using saved provider receipts. Uncertain
   submissions stop for review, never automatically spend again. Completed and
   intermediate assets live in the private bucket, not ephemeral disk. A worker
-  pauses after 45 minutes and can be resumed; the initial limit is 120 seconds
-  per source export and one active Final Cut per user. Stopping cannot undo charges
+  pauses after 45 minutes and can be resumed; rough exports can be up to 180 seconds,
+  with generated output capped at 120 seconds and one active Final Cut per user.
+  Planning condenses the story and normalizes timing before video generation.
+  Stopping cannot undo charges
   for requests already accepted by the provider.
 
 ## First user
