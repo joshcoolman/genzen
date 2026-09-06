@@ -209,20 +209,24 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Director exports in Video [#607](https://github.com/joshcoolman/genzen/issues/607).
-Director lives at `/director`, with named sessions, durable clips and pending
-requests, and explicit import of the browser-local Lab cut. The existing
-continuation, latest-section Redo and silent playback remain. Each session has
-multiple named, immutable exports with playback and MP4 download. Its media is
-private while working. Saved rough exports also appear in Video and Extract
-Frames as independent copies with normal Trash behavior; deleting either copy
-does not delete the other. Final Cut versions remain private to Director.
-Final Cut adds independent finishing versions to a saved export: reference-guided
-cinematography and silent output; separate audio generation is paused. One
-click starts paid generation, with saved progress, resume, stop, playback and
-download. Rough exports up to three minutes can become finals of up to two minutes.
-The finishing director selects strong scenes and condenses the accepted story,
-rather than reproducing every clip; judging that result is still yours.
+**Focus** — Frames pulls stills from YouTube
+[#613](https://github.com/joshcoolman/genzen/issues/613). Paste a link into Lab
+Frames and scrub or play it like a clip; the player reports the position and the
+server cuts the frame with yt-dlp and ffmpeg. Development-only, and it says so
+in production rather than hiding the button. Nothing about the video is kept —
+no clip row, no wall entry, just the frames, which land in the library as
+ordinary uploads beside stills cut from generated clips.
+
+Also shipped since the last update:
+
+- Director left the lab: `/director` is a real route with named sessions,
+  durable clips and pending requests, authenticated on Railway.
+- Saved Director rough exports publish into Video and Frames as independent
+  copies, with their own names and deletion lifecycles.
+- Final Cut adds independent finishing versions to a saved export —
+  reference-guided cinematography, silent output, resumable paid generation.
+- Lab Ref Video: video from reference images on Seedance 2.0.
+- Lab Editor trims a clip's ends on the timeline, snapping to round lengths.
 
 Updated when Focus changes. Everything else is the board at
 `localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
@@ -236,15 +240,10 @@ that drifts, and one did.
 
 - 2026-09-05 — Saved Director rough exports join Video and Extract Frames, including existing exports on first visit. Working clips and Final Cut experiments remain private; Video copies have independent storage and deletion (#607).
 
-
 - 2026-09-05 — New Final Cuts skip effects and music generation and export silently. Existing finished versions stay unchanged; resumed jobs reuse pictures and skip retired audio stages (#609).
-
 
 - 2026-09-05 — Final Cut accepts rough exports up to three minutes and condenses them into at most two. It selects the strongest coverage while preserving the story, with internal timing adjustment rather than a duration-budget error (#606).
 
-
 - 2026-09-05 — Saved Director exports gain one-click Final Cut versions: Claude plans from accepted scenes and exported frames, H3 Max renders reference-guided shots, MMAudio supplies effects and Stable Audio supplies the score. Progress and receipts survive navigation, with recoverable resume, stop and private saved playback/download. Source exports stay unchanged; initial limit is two minutes (#604).
 
-
 - 2026-09-05 — Director is a standalone feature with durable named sessions, a preserved Lab import and multiple saved exports. Empty sessions start with Set the scene and reveal the workspace after the first clip (#602). Railway uses the existing database and private bucket. Earlier-section redo and version history remain out of scope (#593, #594).
-

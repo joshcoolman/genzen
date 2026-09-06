@@ -93,3 +93,42 @@
   opacity: 0.5;
   cursor: default;
 }
+
+/* Says where a YouTube frame is cut, which is the one thing that behaves
+   differently from the clip half of this page. */
+.note {
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+}
+
+/* The tile between the click and the frame. Same box the image will occupy, so
+   nothing jumps when it arrives. */
+.waiting,
+.failed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  inline-size: 100%;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-size: var(--text-3xs);
+}
+
+.waiting {
+  animation: pulse var(--duration-slow) var(--ease-in-out) infinite alternate;
+}
+
+.failed {
+  color: var(--danger);
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.45;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
