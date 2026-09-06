@@ -209,16 +209,19 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Frames pulls stills from YouTube
-[#613](https://github.com/joshcoolman/genzen/issues/613). Paste a link into Lab
-Frames and scrub or play it like a clip; the player reports the position and the
-server cuts the frame with yt-dlp and ffmpeg. Development-only, and it says so
-in production rather than hiding the button. Nothing about the video is kept —
-no clip row, no wall entry, just the frames, which land in the library as
-ordinary uploads beside stills cut from generated clips.
+**Focus** — Open [#500](https://github.com/joshcoolman/genzen/issues/500), stop
+faking clip thumbnails now that clips have real ones. Three more sit in Focus
+beside it: [#590](https://github.com/joshcoolman/genzen/issues/590) (Focus has
+no way in), [#552](https://github.com/joshcoolman/genzen/issues/552) (quoted
+cost and recorded cost read different price tables) and
+[#502](https://github.com/joshcoolman/genzen/issues/502) (two dead webhook
+variables on the deployed service). The issue is the spec.
 
-Also shipped since the last update:
+Last shipped:
 
+- Lab Frames pulls stills from a pasted YouTube link — scrub or play it like a
+  clip, the server cuts the frame. Development-only; nothing about the video is
+  kept but the frames.
 - Director left the lab: `/director` is a real route with named sessions,
   durable clips and pending requests, authenticated on Railway.
 - Saved Director rough exports publish into Video and Frames as independent
