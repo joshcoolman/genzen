@@ -29,9 +29,11 @@ about the form, the picker and the card; this folder holds only the catalog.
   takes a structural `ClipShape`, not the route's `VideoRecord`, because nothing
   here may import from `app/`
 - `server/stamp-frame.action.ts` -- writes `frame_source` into the frame's
-  `generation_metadata`, so a still knows which clip it was cut from, and
-  whether it is that clip's end (`kind: 'end'`) or a position someone scrubbed
-  to (`kind: 'scrub'`)
+  `generation_metadata`, so a still knows where it was cut from, and
+  whether it is a clip's end (`kind: 'end'`) or a position someone scrubbed
+  to (`kind: 'scrub'`). The origin is a `clip_id` or a `youtube_id` and never
+  both: Frames can grab a still off a pasted YouTube link (#613), and since that
+  link is thrown away with the session, this stamp is the only record of it
 - `server/find-clip-end-frame.action.ts` -- reads it back: the library row
   already holding a clip's end frame, so Continue reuses one instead of
   extracting a second identical PNG (#542). Provenance rather than

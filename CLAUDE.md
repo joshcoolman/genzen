@@ -24,7 +24,10 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), CSS Mod
 
 Local dev is one command: **`pnpm local:up`** (Postgres + MinIO + schema + a
 populated `.env.local`), then `pnpm dev`. Docker, pnpm and Node 22.13+ are the
-only prerequisites.
+only prerequisites. One lab page wants a system binary on top of them:
+`lab/frames` grabs stills from a pasted YouTube link with `yt-dlp`
+(`brew install yt-dlp`), and that half of the page is development-only for
+exactly that reason (#613). Nothing else needs it and the app runs without it.
 
 genzen is also deployed — Railway, one service plus Postgres and a private
 bucket. `docs/deploying.md` is the contract; do not re-derive it. Logins on any

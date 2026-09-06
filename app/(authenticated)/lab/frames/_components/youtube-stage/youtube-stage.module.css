@@ -1,0 +1,20 @@
+/* Matches `.player` in the page's stylesheet -- a clip and a YouTube video sit
+   in the same slot and should be the same object on screen. The iframe has no
+   intrinsic size, so the ratio is stated here rather than coming from the
+   media the way a `<video>`'s does. */
+.stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  inline-size: 100%;
+  max-block-size: 60vh;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.stage :global(iframe) {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  border: none;
+}

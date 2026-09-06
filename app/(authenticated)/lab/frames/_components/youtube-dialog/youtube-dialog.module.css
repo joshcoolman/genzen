@@ -1,0 +1,19 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.hint,
+.invalid {
+  margin: 0;
+  font-size: var(--text-3xs);
+}
+
+.hint {
+  color: var(--text-muted);
+}
+
+.invalid {
+  color: var(--danger);
+}

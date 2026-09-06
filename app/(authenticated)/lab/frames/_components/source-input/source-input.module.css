@@ -116,3 +116,15 @@
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
 }
+
+/* The YouTube tile. A remote still with a known 16:9 shape, matted into the
+   same square the clip tiles occupy so the row does not change height when the
+   source changes kind. */
+.thumbnail {
+  display: block;
+  width: var(--tile);
+  height: var(--tile);
+  border-radius: 0.25rem;
+  background: var(--surface-sunken);
+  object-fit: contain;
+}

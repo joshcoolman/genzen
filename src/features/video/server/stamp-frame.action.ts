@@ -22,15 +22,27 @@ import { sql } from '#/lib/server/db.server'
  * the arbitrary position `lab/frames` scrubs to, which is what lets
  * `findClipEndFrame` reuse the first without ever handing back the second
  * (#542). Rows written before that carry no `kind` and simply do not match.
+ *
+ * **The origin is a clip or a YouTube video, and exactly one of them** (#613).
+ * Frames can pull a still out of a pasted YouTube link, and that link is thrown
+ * away with the session -- which makes the stamp *more* load-bearing there, not
+ * less, because there is no row anywhere else to recover it from.
+ * `findClipEndFrame` matches on `clip_id` equality and `kind = 'end'`, so a
+ * YouTube stamp -- no clip, always `scrub` -- can never be handed back as a
+ * clip's ending frame.
  */
 export async function stampFrameSource({
   imageId,
-  clipId,
+  clipId = null,
+  youtubeId = null,
   timeSeconds,
   kind,
 }: {
   imageId: string
-  clipId: string
+  /** The clip it was cut from, when it was cut from one of ours. */
+  clipId?: string | null
+  /** The YouTube video it was grabbed from, when it was not. */
+  youtubeId?: string | null
   timeSeconds: number
   /** `end` is the clip's final frame; `scrub` is wherever the user stopped. */
   kind: 'end' | 'scrub'
@@ -44,6 +56,7 @@ export async function stampFrameSource({
       ${sql.json({
         frame_source: {
           clip_id: clipId,
+          youtube_id: youtubeId,
           time_seconds: timeSeconds,
           kind,
         },
