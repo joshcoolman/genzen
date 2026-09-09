@@ -99,11 +99,11 @@ export interface ModelEntry {
    * Endpoint params sent on every submit to this model, on top of the ones
    * `buildFalInput` derives from the schema (#485).
    *
-   * For when a model's *default* is the wrong default for genzen. GPT Image 2
-   * defaults `quality` to `high`, which is a 142-second render; `low` is 17-35s
-   * and a tenth the price, and is the only reason the model is in the lineup at
-   * all. Sending nothing is not neutral — it is agreeing with whatever the
-   * endpoint decided.
+   * For when a model's *default* is the wrong default for genzen. Every GPT
+   * Image endpoint defaults `quality` to `high`, which on GPT Image 2 was a
+   * 142-second render; `low` is 17-35s and a tenth the price, and is the only
+   * reason a GPT entry is in the lineup at all. Sending nothing is not neutral
+   * — it is agreeing with whatever the endpoint decided.
    *
    * Fixed, not user-facing. A dial in the panel is a different change (#486);
    * this is the baseline a dial would start from.
@@ -279,38 +279,58 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     useCase: 'xAI look — edits up to three images at once',
   },
   {
-    slug: 'gpt-image-2',
-    name: 'GPT Image 2',
-    description: 'OpenAI, strong text and scene coherence',
+    slug: 'gpt-image-2.5-flare',
+    name: 'GPT Image 2.5 Flare',
+    description: 'OpenAI, the fast tier — strong text and scene coherence',
     category: 'Specialized',
-    textToImage: 'fal-ai/gpt-image-2',
-    withImages: 'fal-ai/gpt-image-2/edit',
-    // `image_urls` declares `maxItems: 16`, and capacity is maxRefs + 1.
+    textToImage: 'openai/gpt-image-2.5/flare/text-to-image',
+    withImages: 'openai/gpt-image-2.5/flare/edit',
+    // `image_urls` declares "a maximum of 16 images", and capacity is
+    // maxRefs + 1.
     maxRefs: 15,
-    // **Back from retirement on a param, not a new endpoint** (#389 cut it,
-    // #485 returns it). It was dropped for taking 142 seconds a render, which
-    // was `quality` defaulting to `high` because we sent no `quality` at all.
-    // At `low` the same prompt came back in 17-35s, and an edit in 20s.
-    //
-    // ~$0.003 an image at that quality, measured off FAL's usage API across
-    // three runs (two generates and an edit) that billed $0.0094 together --
-    // so this is a good average rather than a per-call figure, and the split
-    // between the two endpoints is below what three runs can resolve. `high`
-    // costs roughly seventy times as much, which is the other half of why the
-    // lineup does not offer it.
-    price: 0.003,
-    editPrice: 0.005,
-    // See `params` on ModelEntry: this is the whole reason the model is
-    // usable, so it lives in the lineup rather than at the call site.
+    // **Estimates, and FAL's pricing API cannot confirm them.** It answers
+    // `1 units` for every gpt-image-2.5 endpoint — the placeholder it returns
+    // when it has no real rate, the same non-answer documented on Grok above.
+    // OpenAI bills these by token ($30/M image output), so a per-image figure
+    // is quality- and size-dependent by construction: roughly half a cent at
+    // `low` 1024px, and past twenty cents at `max`. These are the `low` and
+    // `medium` ends of that, and want re-checking against `/v1/models/usage`
+    // once real runs exist.
+    price: 0.006,
+    editPrice: 0.01,
+    // The GPT lesson, carried forward (#485): `quality` defaults to `high` on
+    // every one of these endpoints, and that default is what took GPT Image 2
+    // out of the lineup in #389 at 142 seconds a render. 2.5 adds `xhigh` and
+    // `max` above it, so the default is a worse trap than before, not a
+    // better one.
     params: { quality: 'low', output_format: 'jpeg' },
     useCase: 'Legible text in the image — signage, labels, UI',
+  },
+  {
+    slug: 'gpt-image-2.5-sunburst',
+    name: 'GPT Image 2.5 Sunburst',
+    description: 'OpenAI, the precision tier — finer detail, slower',
+    category: 'Specialized',
+    textToImage: 'openai/gpt-image-2.5/sunburst/text-to-image',
+    withImages: 'openai/gpt-image-2.5/sunburst/edit',
+    maxRefs: 15,
+    // Same token rates as Flare, so the same estimate at the same quality;
+    // this sits a tier up because pinning Sunburst at `low` would buy the
+    // slower model and throw away the only thing it is for.
+    price: 0.03,
+    editPrice: 0.04,
+    // `medium`, not `low`: Sunburst's whole claim is fidelity on intricate
+    // detail, and `low` is Flare's job. Not `high` either — that is the
+    // default that cost GPT its place in the lineup once already.
+    params: { quality: 'medium', output_format: 'jpeg' },
+    useCase: 'Edits scoped tightly — change one thing, keep the rest',
   },
 ]
 
 /**
  * Params this model is always submitted with (#485).
  *
- * Empty for every model but GPT Image 2, and that is the intended state: a
+ * Empty for every model but the GPT pair, and that is the intended state: a
  * fixed param is an admission that an endpoint's default is wrong for us, not a
  * place to put tuning.
  */
@@ -467,14 +487,16 @@ export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
   // 2.0.
   'fal-ai/flux/schnell': 'FLUX Schnell',
   'fal-ai/flux/dev': 'FLUX Dev',
-  // Cut on speed in #389, and the default *was* the whole story: neither ever
-  // received a `quality` param, so both rendered at `high`. GPT Image 2 is back
-  // in the lineup above at `low`; 1.5 is not, because 2 supersedes it and one
-  // GPT entry is enough. `fal-ai/gpt-image-1-mini` renders in ~9s for half a
-  // cent and remains untried in the app -- the cheap-tier slot if one is ever
-  // wanted.
+  // The GPT line before 2.5. 1.5 and 2 were cut on speed in #389 and the
+  // default *was* the whole story: neither ever received a `quality` param, so
+  // both rendered at `high`. 2 came back at `low` in #485 and is now retired
+  // again, superseded by the 2.5 pair -- Flare takes its fast/cheap slot and
+  // Sunburst the tier above it, both on the same params and the same 16-image
+  // capacity, so nothing 2 could do is lost.
   'fal-ai/gpt-image-1.5': 'GPT Image 1.5',
   'fal-ai/gpt-image-1.5/edit': 'GPT Image 1.5',
+  'fal-ai/gpt-image-2': 'GPT Image 2',
+  'fal-ai/gpt-image-2/edit': 'GPT Image 2',
   // Cut on its results rather than its wiring. Both ids are here because it
   // had two: rows made with an image carry the Kontext endpoint, and rows made
   // without one carry FLUX Dev above, which it borrowed.

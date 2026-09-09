@@ -117,12 +117,26 @@ describe('image truncation', () => {
  * the lineup, and this is the seam that carries it to FAL.
  */
 describe('params the lineup pins', () => {
-  it('sends GPT Image 2 at low quality, on both its endpoints', async () => {
+  it('sends Flare at low quality, on both its endpoints', async () => {
     withSchema({ imageInputParam: 'image_urls' })
-    for (const id of ['fal-ai/gpt-image-2', 'fal-ai/gpt-image-2/edit']) {
+    for (const id of [
+      'openai/gpt-image-2.5/flare/text-to-image',
+      'openai/gpt-image-2.5/flare/edit',
+    ]) {
       const built = await buildFalInput({ modelId: id, prompt: 'x' })
       expect(built.input.quality).toBe('low')
       expect(built.input.output_format).toBe('jpeg')
+    }
+  })
+
+  it('sends Sunburst a tier up, since low is what Flare is for', async () => {
+    withSchema({ imageInputParam: 'image_urls' })
+    for (const id of [
+      'openai/gpt-image-2.5/sunburst/text-to-image',
+      'openai/gpt-image-2.5/sunburst/edit',
+    ]) {
+      const built = await buildFalInput({ modelId: id, prompt: 'x' })
+      expect(built.input.quality).toBe('medium')
     }
   })
 
@@ -131,7 +145,7 @@ describe('params the lineup pins', () => {
     // has to be able to ask for a dearer one.
     withSchema({})
     const built = await buildFalInput({
-      modelId: 'fal-ai/gpt-image-2',
+      modelId: 'openai/gpt-image-2.5/flare/text-to-image',
       prompt: 'x',
       extraParams: { quality: 'high' },
     })
