@@ -219,6 +219,9 @@ variables on the deployed service). The issue is the spec.
 
 Last shipped:
 
+- Image lineup: GPT Image 2.5 Flare and Sunburst replace GPT Image 2, both with
+  edit endpoints; quality is pinned per tier since the endpoint default is
+  still `high`.
 - Lab Frames pulls stills from a pasted YouTube link — scrub or play it like a
   clip, the server cuts the frame. Development-only; nothing about the video is
   kept but the frames.
@@ -229,7 +232,6 @@ Last shipped:
 - Final Cut adds independent finishing versions to a saved export —
   reference-guided cinematography, silent output, resumable paid generation.
 - Lab Ref Video: video from reference images on Seedance 2.0.
-- Lab Editor trims a clip's ends on the timeline, snapping to round lengths.
 
 Updated when Focus changes. Everything else is the board at
 `localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
