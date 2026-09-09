@@ -296,12 +296,12 @@ describe('getModelName', () => {
 
   it('still names both endpoints of a retired two-endpoint model', () => {
     // The GPT pair left the lineup on speed (#389); GPT Image 2 came back at
-    // `low` in #485 and 1.5 did not. Rows outlive both decisions, and a model
-    // with two endpoints needs both named or half its images end up labelled
-    // with a raw id -- the same trap Seedream v4.5's `/edit` suffix set in
-    // #367. The name has to survive the round trip out of the lineup and back
-    // in, which is why 2 is asserted here as well as in the lineup's own
-    // tests.
+    // `low` in #485, and left again when the 2.5 pair superseded it. Rows
+    // outlive every one of those decisions, and a model with two endpoints
+    // needs both named or half its images end up labelled with a raw id -- the
+    // same trap Seedream v4.5's `/edit` suffix set in #367. 2 has now made the
+    // round trip out of the lineup, back in and out again, which is exactly
+    // why both its endpoints are asserted here.
     expect(getModelName('fal-ai/gpt-image-2')).toBe('GPT Image 2')
     expect(getModelName('fal-ai/gpt-image-2/edit')).toBe('GPT Image 2')
     expect(getModelName('fal-ai/gpt-image-1.5/edit')).toBe('GPT Image 1.5')

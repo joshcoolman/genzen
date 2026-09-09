@@ -13,7 +13,7 @@ in the lab (#424), where a change to an instruction can actually be judged.
 | Nano Banana 2      | [Google Cloud: Ultimate prompting guide for Nano Banana](https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-nano-banana)               |
 | Seedream v4 / v4.5 | [fal: Seedream v4.5 prompt guide](https://fal.ai/learn/devs/seedream-v4-5-prompt-guide)                                                                                     |
 | Z-Image Turbo      | [Tongyi-MAI/Z-Image-Turbo prompting guide](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo/discussions/8) (HF discussion, from the authors)                                 |
-| GPT Image 2        | [OpenAI cookbook: GPT Image models prompting guide](https://developers.openai.com/cookbook/examples/multimodal/image-gen-models-prompting-guide)                            |
+| GPT Image 2.5      | [OpenAI cookbook: GPT Image models prompting guide](https://developers.openai.com/cookbook/examples/multimodal/image-gen-models-prompting-guide)                            |
 
 ## Where they disagree
 
