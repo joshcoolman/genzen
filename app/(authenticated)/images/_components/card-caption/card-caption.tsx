@@ -18,6 +18,8 @@ interface CardCaptionProps {
    *  Absent on an upload, which has no run to show, and in select mode, where
    *  every click belongs to the selection. */
   detailId?: string
+  /** Opens image details in the current view. */
+  onDetails?: () => void
 }
 
 /**
@@ -32,7 +34,7 @@ interface CardCaptionProps {
  *
  * Three lines, no expand: the caption is there to jog your memory, not to be
  * read in full. The whole thing is one click away on the clipboard, and
- * Activity shows it entire. Unclamped (#284) a long prompt gave its card twice
+ * Details shows it entire. Unclamped (#284) a long prompt gave its card twice
  * the height of its neighbours, for text nobody read past the third line.
  *
  * `detailId` is the one thing that legitimately differs between the two
@@ -48,6 +50,7 @@ export function CardCaption({
   onUsePrompt,
   onLoad,
   detailId,
+  onDetails,
 }: CardCaptionProps) {
   return (
     <div className={styles.caption}>
@@ -74,7 +77,7 @@ export function CardCaption({
           destination: close the tab and the grid is exactly as you left it,
           scroll position and all. `stopPropagation` because the card's own
           click would otherwise open the viewer on the way out. */}
-      {(detailId || onLoad) && (
+      {(detailId || onDetails || onLoad) && (
         <div className={styles.actions}>
           {detailId ? (
             <a
@@ -86,6 +89,17 @@ export function CardCaption({
             >
               Details
             </a>
+          ) : onDetails ? (
+            <button
+              type="button"
+              className={styles.details}
+              onClick={(e) => {
+                e.stopPropagation()
+                onDetails()
+              }}
+            >
+              Details
+            </button>
           ) : (
             <span />
           )}

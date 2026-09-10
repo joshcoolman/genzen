@@ -8,6 +8,7 @@ import { ImageGallery } from './_components/image-gallery/image-gallery'
 import { DownloadDialog } from './_components/download-dialog/download-dialog'
 import { GeneratorDock } from './_components/generator-dock/generator-dock'
 import { ImageViewer } from './_components/image-viewer/image-viewer'
+import { ImageDetailsDialog } from './_components/image-details-dialog/image-details-dialog'
 import { OutpaintDialog } from './_components/outpaint-dialog/outpaint-dialog'
 import { OrderRow } from './_components/order-row/order-row'
 import { ScopeRow } from './_components/scope-row/scope-row'
@@ -48,6 +49,9 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     loadIntoPanel,
     outpaintTarget,
     startOutpaint,
+    imageDetails,
+    setImageDetailsId,
+    descriptionStates,
     describeImage,
     cancelOutpaint,
     outpainting,
@@ -204,7 +208,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onRetry={gallery.retryImage}
           onDownload={download.start}
           onOutpaint={startOutpaint}
-          onDescribe={describeImage}
+          onImageDetails={(img) => setImageDetailsId(img.id)}
           onOpen={viewer.open}
           onAddReference={addReference}
           onUsePrompt={usePromptText}
@@ -302,6 +306,24 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         />
       )}
 
+      <ImageDetailsDialog
+        image={imageDetails}
+        imageUrl={imageDetails ? gallery.imageUrls[imageDetails.id] : undefined}
+        busy={
+          imageDetails
+            ? (descriptionStates[imageDetails.id]?.busy ?? false)
+            : false
+        }
+        error={
+          imageDetails ? descriptionStates[imageDetails.id]?.error : undefined
+        }
+        onLoad={(img) => {
+          setImageDetailsId(null)
+          void loadIntoPanel(img)
+        }}
+        onGenerate={describeImage}
+        onClose={() => setImageDetailsId(null)}
+      />
       {/* One picture, one or more shapes (#430). Opened from a card's `...`;
           it owns nothing but its own selection, so closing it is enough to
           undo it. */}

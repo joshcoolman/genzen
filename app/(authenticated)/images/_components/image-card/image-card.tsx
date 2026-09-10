@@ -40,9 +40,8 @@ interface ImageCardProps {
   onDownload?: (img: SavedAiImage) => void
   /** Reframe it to other shapes (#430). Opens the ratio dialog. */
   onOutpaint?: (img: SavedAiImage) => void
-  /** Write a prompt for this picture onto the row (#586). Runs in place; the
-   *  caption is what changes. */
-  onDescribe?: (img: SavedAiImage) => void
+  /** Open the image's prompt, description, and related details. */
+  onImageDetails?: (img: SavedAiImage) => void
   /** The card click: opens the lightbox over everything. */
   onOpen?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click on the image: add it to the generator's reference images,
@@ -92,7 +91,7 @@ export function ImageCard({
   onHide,
   onDownload,
   onOutpaint,
-  onDescribe,
+  onImageDetails,
   onOpen,
   onAddReference,
   onUsePrompt,
@@ -117,26 +116,12 @@ export function ImageCard({
         }
       />
       <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
-        {/* The order is the one they get reached in, not the one they were
-            added in: describe it, file it, reshape it, take a copy, throw it
-            away. Animate was above these and is gone -- /video takes a first
-            frame of its own, and the handoff was a verb nobody used.
-
-            Describe is first because it is the one that tells you what the
-            thing is; the rest act on a picture you have already identified. */}
-
-        {/* Only on an upload with pixels. A generation's caption is its own
-            prompt, already the better text, and #582 made the card read that
-            from `generation_metadata` -- describing one would write a worse
-            copy over the record of how it was actually made. */}
-        {onDescribe &&
-          img.status === 'completed' &&
-          !img.generation_metadata && (
-            <DropdownMenuItem onClick={() => onDescribe(img)}>
-              <ScanText />
-              Describe
-            </DropdownMenuItem>
-          )}
+        {onImageDetails && img.status === 'completed' && (
+          <DropdownMenuItem onClick={() => onImageDetails(img)}>
+            <ScanText />
+            Details
+          </DropdownMenuItem>
+        )}
 
         {/* Groups (#319). One item, opening a dialog -- see `onAddToGroup`. */}
         {onAddToGroup && (
@@ -355,7 +340,16 @@ export function ImageCard({
              would open a panel about nothing. Absent in select mode for the
              same reason the caption stops being a copy button there: every
              click belongs to the selection. */
-          detailId={!isUpload && !selectionActive ? img.id : undefined}
+          detailId={
+            !isUpload && !selectionActive && !onImageDetails
+              ? img.id
+              : undefined
+          }
+          onDetails={
+            img.status === 'completed' && !selectionActive && onImageDetails
+              ? () => onImageDetails(img)
+              : undefined
+          }
         />
       )}
 

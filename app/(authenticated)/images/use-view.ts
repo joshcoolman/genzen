@@ -1247,38 +1247,52 @@ export function useView(initial: Array<SavedAiImage>) {
     [gallery, groups, prefs, activeGroupId],
   )
 
-  /**
-   * Write a prompt for this picture onto its own row (#586).
-   *
-   * `reconstruct`, not `anchor`: the stored text is meant to be run, not read.
-   * Once it lands the caption is a prompt, so Cmd-clicking it loads a fresh
-   * take on the same subject into the panel -- which is the point, and is why
-   * this is worth a menu item rather than a trip to the Describe lab.
-   *
-   * Optimistic nothing: the row is patched only from what came back. A
-   * describe takes a few seconds and the toast is the only thing saying so,
-   * so it is dismissed by id rather than left to time out under the result.
-   */
+  const [imageDetailsId, setImageDetailsId] = useState<string | null>(null)
+  const imageDetails =
+    gallery.images.find((img) => img.id === imageDetailsId) ?? null
+  const describingIds = useRef(new Set<string>())
+  const [descriptionStates, setDescriptionStates] = useState<
+    Partial<Record<string, { busy: boolean; error?: string }>>
+  >({})
+
   const describeImage = useCallback(
     async (img: SavedAiImage) => {
-      const pending = toast('Describing...', { duration: Infinity })
+      if (img.status !== 'completed' || describingIds.current.has(img.id))
+        return
+      describingIds.current.add(img.id)
+      setDescriptionStates((states) => ({
+        ...states,
+        [img.id]: { busy: true },
+      }))
       try {
-        const { caption } = await captionImage({
+        const { caption, generationMetadata } = await captionImage({
           imageId: img.id,
           mode: 'reconstruct',
           persist: true,
         })
-        gallery.patchImages([img.id], { description: caption })
-        toast.dismiss(pending)
-        toast.success('Described')
-      } catch (err) {
-        toast.dismiss(pending)
-        // The likeliest cause by far is an empty ANTHROPIC_API_KEY, which is
-        // normal locally -- so the message names the reason rather than
-        // reporting a generic failure.
-        toast.error(
-          err instanceof Error ? err.message : 'Could not describe that image',
+        gallery.patchImages(
+          [img.id],
+          img.origin === 'upload'
+            ? { description: caption }
+            : { generation_metadata: generationMetadata },
         )
+        setDescriptionStates((states) => ({
+          ...states,
+          [img.id]: { busy: false },
+        }))
+      } catch (err) {
+        setDescriptionStates((states) => ({
+          ...states,
+          [img.id]: {
+            busy: false,
+            error:
+              err instanceof Error
+                ? err.message
+                : 'Could not describe that image',
+          },
+        }))
+      } finally {
+        describingIds.current.delete(img.id)
       }
     },
     [gallery],
@@ -1405,6 +1419,9 @@ export function useView(initial: Array<SavedAiImage>) {
     addReference,
     usePromptText,
     loadIntoPanel,
+    imageDetails,
+    setImageDetailsId,
+    descriptionStates,
     describeImage,
     outpaintTarget,
     startOutpaint: setOutpaintTarget,

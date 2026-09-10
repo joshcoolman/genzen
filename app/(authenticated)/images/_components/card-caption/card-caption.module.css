@@ -55,6 +55,10 @@
    on. `align-self: start` keeps the target the width of the word rather than
    the column, so the dead space beside it still belongs to the card. */
 .details {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
   align-self: start;
   font-size: var(--text-3xs);
   line-height: 1.5;

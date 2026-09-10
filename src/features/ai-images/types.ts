@@ -34,6 +34,8 @@ export interface SavedAiImage {
   description?: string | null
   generation_error: string | null
   generation_metadata: {
+    /** Description of the resulting pixels, independent of the original prompt. */
+    image_description?: string
     /** What the user would call their prompt -- the textarea contents, or the
      *  describer's text when they generated from a picture and typed nothing.
      *  This is what every caption, lightbox and variation seed shows. Since
