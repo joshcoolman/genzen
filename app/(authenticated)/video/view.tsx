@@ -1,25 +1,20 @@
 'use client'
 
 import { ExistingImagePicker } from '../_components/existing-image-picker/existing-image-picker'
-import { ModelSelector } from '../_components/model-selector/model-selector'
 import { GroupHeading } from '../_components/group-heading/group-heading'
 import { GroupPickerDialog } from '../_components/group-picker-dialog/group-picker-dialog'
 import { HiddenBar } from '../_components/hidden-bar/hidden-bar'
 import { useSelectionPanelFits } from '../_components/selection-panel/selection-panel'
+import { ImageInputs } from './_components/image-inputs/image-inputs'
+import { ModelPicker } from './_components/model-picker/model-picker'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { VideoForm } from './_components/video-form/video-form'
 import { VideoList } from './_components/video-list/video-list'
 import { useView } from './use-view'
 import styles from './video.module.css'
 import type { VideoRecord } from './_actions/generate-video.action'
-import { frameCapacityFor } from '#/features/video/models'
-import {
-  ConfirmDialog,
-  NameDialog,
-  PageHeader,
-  RefImageStrip,
-  Stack,
-} from '#/components'
+import { MAX_VIDEO_IMAGES } from '#/features/video/inputs'
+import { ConfirmDialog, NameDialog, PageHeader, Stack } from '#/components'
 
 export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
   const {
@@ -27,20 +22,19 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     modelSlug,
     selectModel,
     durationOptions,
-    modelTakesEndFrame,
-    modelTakesFirstFrame,
+    endpoint,
+    compatibilityError,
     aspectOptions,
     resolutionOptions,
-    hasFirstFrame,
     userImages,
     sources,
-    endSources,
-    pickerTarget,
-    setPickerTarget,
+    pickerOpen,
+    setPickerOpen,
     openPicker,
     collectSources,
     clearSources,
-    clearEndSources,
+    removeSource,
+    setImageRole,
     cells,
     visibility,
     hideSelected,
@@ -138,19 +132,15 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
       )}
 
       <ExistingImagePicker
-        open={pickerTarget !== null}
-        onOpenChange={(open) => !open && setPickerTarget(null)}
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
         images={userImages.images}
         imageUrls={userImages.imageUrls}
         isLoading={userImages.isLoading}
-        alreadyCollectedIds={
-          new Set(
-            (pickerTarget === 'last' ? endSources : sources).map((s) => s.id),
-          )
-        }
+        alreadyCollectedIds={new Set(sources.map((s) => s.id))}
         onConfirm={collectSources}
-        max={1}
-        autoConfirm
+        max={Math.max(0, MAX_VIDEO_IMAGES - sources.length)}
+        onRefresh={userImages.refresh}
       />
 
       <div className={styles.columns}>
@@ -230,79 +220,26 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
               isSubmitting={isSubmitting}
               canSubmit={canSubmit}
               onSubmit={submit}
-              /* Under the prompts, where the generator panel puts its reference
-               strip. The generator panel's widget, twice, with one picker
-               behind both -- a second dialog would be the same component
-               mounted twice to answer the same question. Labelled, which that
-               panel's single strip is not: two slots that do different things
-               cannot both be unlabelled. */
               framesSlot={
-                <>
-                  {/* Absent for a text-to-video-only model, not disabled: a slot
-                    that cannot be sent anywhere is worse than no slot. What is
-                    already staged is kept, so switching back restores it --
-                    the frame is simply not sent meanwhile. */}
-                  {modelTakesFirstFrame && (
-                    <div className={styles.frame}>
-                      <p className={styles.frameLabel}>
-                        First frame (optional)
-                      </p>
-                      <RefImageStrip
-                        images={sources}
-                        max={1}
-                        onAdd={() => openPicker('first')}
-                        onRemove={clearSources}
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  )}
-
-                  {/* Optional, and it stays visible when empty rather than
-                    hiding behind a disclosure -- an empty slot is the only
-                    thing that says the capability exists. */}
-                  {modelTakesFirstFrame &&
-                    modelTakesEndFrame &&
-                    hasFirstFrame && (
-                      <div className={styles.frame}>
-                        <p className={styles.frameLabel}>
-                          Last frame (optional)
-                        </p>
-                        <RefImageStrip
-                          images={endSources}
-                          max={1}
-                          onAdd={() => openPicker('last')}
-                          onRemove={clearEndSources}
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                    )}
-                </>
+                <ImageInputs
+                  images={sources}
+                  endpoint={endpoint}
+                  disabled={isSubmitting}
+                  onAdd={openPicker}
+                  onRemove={removeSource}
+                  onClear={clearSources}
+                  onRoleChange={setImageRole}
+                  error={compatibilityError}
+                />
               }
-              /* Last, as it is in the generator panel, and single-select: the
-               controls above it are this model's, not an intersection of
-               several models' (see the lineup's header comment). Its two
-               right-hand columns are the same two numbers read differently --
-               dollars per second, and frames rather than references. `price`
-               is the model's headline rate; where it has resolution tiers the
-               Resolution control moves the real figure, and `CostNote` is
-               where that lands. */
               modelSlot={
-                <ModelSelector
-                  mode="single"
-                  selectedIds={[modelSlug]}
-                  visibleModels={pickerModels.map((m) => ({
-                    id: m.slug,
-                    name: m.label,
-                    description: m.description,
-                    capability: 'video' as const,
-                    price: m.pricePerSecondCents / 100,
-                    capacity: frameCapacityFor(m),
-                  }))}
-                  onToggleSelected={selectModel}
-                  stagedImageCount={sources.length + endSources.length}
-                  priceLabel="$/s"
-                  capacityLabel="Frames"
-                  persistKey="genzen:video:model-panel:expanded"
+                <ModelPicker
+                  models={pickerModels}
+                  selectedSlug={modelSlug}
+                  images={sources}
+                  resolution={resolution}
+                  disabled={isSubmitting}
+                  onSelect={selectModel}
                 />
               }
             />

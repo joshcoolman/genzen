@@ -1,40 +1,6 @@
-/**
- * The video lineup (#305, #385). One entry per model, and the only place to add
- * or remove one -- the form and the submit are both driven off the record.
- *
- * Route-owned on purpose: `src/features/` is earned by two consumers and this
- * has one. Promote it the day Canvas wants to animate a card.
- *
- * **A mode is an endpoint, and an endpoint is a descriptor, not an id** (#385).
- * The three models here disagree about more than their names:
- *
- *   - Flux 3 puts first+last frame on a *separate* endpoint, which requires
- *     both frames and calls the first one `start_image_url`. LTX and H3 take
- *     an optional `end_image_url` on their ordinary image endpoint.
- *   - MiniMax H3's image endpoint has no `aspect_ratio` at all -- the output
- *     follows the image -- so there is no control to show, which is a
- *     different thing from a list with one option in it.
- *   - `generate_audio` is Flux 3 and LTX only.
- *
- * So each endpoint carries what it takes, and `generate-video.action.ts` builds
- * its input from that rather than from a fixed list of params.
- *
- * **One model at a time, and it gets its whole capability.** Multi-select
- * (#417) forced every control down to what all the ticked models agreed on --
- * an intersection of durations, of aspect ratios, and it would have been an
- * intersection of resolutions too. That is tolerable on the image side, where
- * the models mostly agree; here they disagree about almost everything, so the
- * common denominator kept shrinking as the lineup grew and the differences
- * between these models -- which are the reason to have more than one -- became
- * the exact thing the form could not express. Single-select is what lets a
- * model offer what only it can: h3-max's resolution tiers, Flux 3's
- * first+last endpoint, an audio toggle for the two that generate it. Do not
- * reintroduce a `shared*` intersection helper. Same idea as the
- * image side's `buildFalInput`, minus the schema fetch: this lineup is three
- * entries and every field below was read off FAL's OpenAPI spec by hand.
- *
- * Endpoint ids verified against https://fal.ai/models -- note the `lightricks/`,
- * `blackforestlabs/` and `minimax/` namespaces, none of them `fal-ai/`.
+/** Video endpoints and capabilities, shared by the composer, server and Activity.
+ * Verified from fal OpenAPI on 2026-09-10 (#516). Image roles select an
+ * endpoint; unsupported inputs are refused rather than dropped.
  */
 export interface VideoEndpoint {
   id: string
@@ -51,6 +17,19 @@ export interface VideoEndpoint {
    * sending one is how you find out.
    */
   aspectRatios: Array<string>
+  /** A last frame without a first, explicitly supported by H3 Max. */
+  acceptsEndOnly?: boolean
+  references?: {
+    param: 'image_urls' | 'reference_image_urls'
+    max: number
+    notation: 'Image ' | '@Image'
+    includedInPrice?: number
+    extraImageCents?: number
+  }
+  durationAsString?: boolean
+  omitResolution?: boolean
+  defaults?: Record<string, string | boolean>
+  maxPromptLength?: number
 }
 
 /**
@@ -75,12 +54,7 @@ export interface VideoModel {
   endpoints: {
     /** No first frame: the model invents the whole shot from the prompt. */
     textToVideo: VideoEndpoint
-    /**
-     * A first frame is set. **Optional**: a text-to-video-only model has no
-     * such endpoint, and a staged frame is ignored for it rather than
-     * refused. The route is multi-select, so throwing would fail the whole
-     * submit -- including the models that could have used the frame.
-     */
+    /** First frame, optionally with a last frame. */
     withImage?: VideoEndpoint
     /**
      * Both frames, where that is its own endpoint. Absent means the end frame
@@ -88,6 +62,7 @@ export interface VideoModel {
      * exception that forced the slot to exist.
      */
     withFirstAndLastImage?: VideoEndpoint
+    withReferences?: VideoEndpoint
   }
   /**
    * Cents per second of output, at the resolution below -- and where
@@ -157,6 +132,19 @@ export const VIDEO_MODELS: Array<VideoModel> = [
         // own note is "the output aspect ratio follows this image", so there
         // is nothing to choose and the form shows no pills.
         aspectRatios: [],
+      },
+      withReferences: {
+        id: 'minimax/h3/reference-to-video',
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive'],
+        references: {
+          param: 'reference_image_urls',
+          max: 9,
+          notation: 'Image ',
+          includedInPrice: 5,
+          extraImageCents: 8,
+        },
+        defaults: { prompt_expansion_mode: 'balanced' },
+        maxPromptLength: 50000,
       },
     },
     // **6, from FAL's own invoice, not 8 from its rate card.** FAL bills this
@@ -229,18 +217,22 @@ export const VIDEO_MODELS: Array<VideoModel> = [
   {
     slug: 'minimax-h3-max',
     label: 'MiniMax H3 Max',
-    description: 'Text only, follows a long prompt closely',
+    description: 'Fast image animation, with optional first and last frames',
     endpoints: {
-      // **The only entry with no `withImage`.** A post-trained H3 tuned for
-      // prompt adherence, and fal ships it text-to-video only. That is the
-      // reason it is here: the multi-shot writer in
-      // `src/lib/prompts/multi-shot/` produces a shot-by-shot script whose
-      // whole value is whether the model honours the order, and adherence is
-      // the axis this variant was tuned on. A staged first frame is ignored
-      // for this model, not refused -- see `endpointFor`.
       textToVideo: {
         id: 'minimax/h3-max/text-to-video',
+        defaults: { prompt_expansion_mode: 'balanced' },
+        maxPromptLength: 50000,
         aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'],
+      },
+      withImage: {
+        id: 'minimax/h3-max/image-to-video',
+        firstFrameParam: 'image_url',
+        acceptsEndImage: true,
+        acceptsEndOnly: true,
+        aspectRatios: [],
+        defaults: { prompt_expansion_mode: 'balanced' },
+        maxPromptLength: 50000,
       },
     },
     // **Rate-card numbers, not invoice numbers, and that distinction has
@@ -267,6 +259,47 @@ export const VIDEO_MODELS: Array<VideoModel> = [
     defaultDuration: 6,
     // No `generate_audio` param, same as H3.
     supportsAudio: false,
+  },
+  {
+    slug: 'kling-o3-pro',
+    label: 'Kling O3 Pro',
+    description: 'Reference images alongside first and last frames',
+    endpoints: {
+      textToVideo: {
+        id: 'fal-ai/kling-video/o3/pro/text-to-video',
+        aspectRatios: ['16:9', '9:16', '1:1'],
+        durationAsString: true,
+        omitResolution: true,
+        maxPromptLength: 2500,
+      },
+      withImage: {
+        id: 'fal-ai/kling-video/o3/pro/reference-to-video',
+        firstFrameParam: 'start_image_url',
+        acceptsEndImage: true,
+        aspectRatios: ['16:9', '9:16', '1:1'],
+        durationAsString: true,
+        omitResolution: true,
+        maxPromptLength: 2500,
+      },
+      withReferences: {
+        id: 'fal-ai/kling-video/o3/pro/reference-to-video',
+        firstFrameParam: 'start_image_url',
+        acceptsEndImage: true,
+        aspectRatios: ['16:9', '9:16', '1:1'],
+        // Conservative app limit: fal documents four with video elements.
+        // This composer only sends stills; do not imply this is the model's ceiling.
+        references: { param: 'image_urls', max: 4, notation: '@Image' },
+        durationAsString: true,
+        omitResolution: true,
+        maxPromptLength: 2500,
+      },
+    },
+    // fal's rate card, audio on: $0.14/s. No resolution parameter on this API.
+    pricePerSecondCents: 14,
+    resolution: '1080p',
+    durations: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    defaultDuration: 8,
+    supportsAudio: true,
   },
 ]
 
@@ -308,28 +341,26 @@ export function endpointFor(
   hasFirstFrame: boolean,
   hasLastFrame = false,
 ): VideoEndpoint {
-  if (!hasFirstFrame) return model.endpoints.textToVideo
-  if (hasLastFrame && model.endpoints.withFirstAndLastImage) {
+  if (!hasFirstFrame && !hasLastFrame) return model.endpoints.textToVideo
+  if (
+    hasLastFrame &&
+    !hasFirstFrame &&
+    !model.endpoints.withImage?.acceptsEndOnly
+  ) {
+    throw new Error('A last frame needs a first frame')
+  }
+  if (hasLastFrame && hasFirstFrame && model.endpoints.withFirstAndLastImage) {
     return model.endpoints.withFirstAndLastImage
   }
-  // **A model with no image endpoint falls back to text-to-video rather than
-  // failing.** h3-max takes no frame at all. Frames are staged before a model
-  // is picked as often as after, so refusing here would turn an ordinary
-  // switch into an error the person has to undo by clearing work they may
-  // still want for the next model. The form hides the slots for such a model
-  // (`takesFirstFrame`), which is where the person is told -- this is the
-  // backstop, not the message.
-  return model.endpoints.withImage ?? model.endpoints.textToVideo
+  if (!model.endpoints.withImage)
+    throw new Error('This model takes no first frame')
+  if (hasLastFrame && !model.endpoints.withImage.acceptsEndImage) {
+    throw new Error('This model takes no last frame')
+  }
+  return model.endpoints.withImage
 }
 
-/**
- * Whether a staged first frame reaches this model at all.
- *
- * False only for a text-to-video-only entry, whose clip is generated from the
- * prompt alone however many frames are staged. Drives the form's note and the
- * row's `generationType`, so a clip is never recorded as `image_to_video` when
- * no image was sent.
- */
+/** Whether the model offers a first-frame endpoint. */
 export function takesFirstFrame(model: VideoModel): boolean {
   return !!model.endpoints.withImage
 }
@@ -352,7 +383,7 @@ export function supportsEndImage(model: VideoModel): boolean {
  * pair.
  */
 export function frameCapacityFor(model: VideoModel): number {
-  return supportsEndImage(model) ? 2 : 1
+  return supportsEndImage(model) ? 2 : takesFirstFrame(model) ? 1 : 0
 }
 
 export function aspectRatiosFor(
@@ -424,11 +455,9 @@ export function formatCost(cents: number): string {
  * model -- naming one, filtering for one -- has to expand through this.
  */
 export function videoEndpointIds(model: VideoModel): Array<string> {
-  const { textToVideo, withImage, withFirstAndLastImage } = model.endpoints
-  const ids = [textToVideo.id]
-  if (withImage) ids.push(withImage.id)
-  if (withFirstAndLastImage) ids.push(withFirstAndLastImage.id)
-  return ids
+  return [
+    ...new Set(Object.values(model.endpoints).map((endpoint) => endpoint.id)),
+  ]
 }
 
 const ENDPOINT_LABELS = new Map<string, string>(

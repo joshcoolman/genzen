@@ -209,16 +209,13 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Open [#500](https://github.com/joshcoolman/genzen/issues/500), stop
-faking clip thumbnails now that clips have real ones. Three more sit in Focus
-beside it: [#590](https://github.com/joshcoolman/genzen/issues/590) (Focus has
-no way in), [#552](https://github.com/joshcoolman/genzen/issues/552) (quoted
-cost and recorded cost read different price tables) and
-[#502](https://github.com/joshcoolman/genzen/issues/502) (two dead webhook
-variables on the deployed service). The issue is the spec.
+**Focus** — No active implementation; pick the next card from the board.
 
 Last shipped:
 
+- Video images have First frame, Reference, and Last frame roles; compatible
+  models follow the selection. H3 Max image input, H3 references, and Kling O3
+  mixed inputs are available; Continue preserves reference images (#516).
 - Image lineup: GPT Image 2.5 Flare and Sunburst replace GPT Image 2, both with
   edit endpoints; quality is pinned per tier since the endpoint default is
   still `high`.
@@ -231,7 +228,6 @@ Last shipped:
   copies, with their own names and deletion lifecycles.
 - Final Cut adds independent finishing versions to a saved export —
   reference-guided cinematography, silent output, resumable paid generation.
-- Lab Ref Video: video from reference images on Seedance 2.0.
 
 Updated when Focus changes. Everything else is the board at
 `localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
