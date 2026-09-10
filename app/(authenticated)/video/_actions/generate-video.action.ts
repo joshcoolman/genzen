@@ -1,17 +1,14 @@
 'use server'
 
+import type { VideoImageInput } from '#/features/video/inputs'
 import { fal } from '#/lib/server/fal-client.server'
 import { withNetworkRetry } from '#/lib/server/fal-retry.server'
+import { DEFAULT_VIDEO_MODEL, videoModelBySlug } from '#/features/video/models'
 import {
-  DEFAULT_VIDEO_MODEL,
-  aspectRatiosFor,
-  endpointFor,
-  estimateCostCents,
-  resolutionFor,
-  resolutionsFor,
-  takesFirstFrame,
-  videoModelBySlug,
-} from '#/features/video/models'
+  videoFalInput,
+  videoImagesSchema,
+  videoRequestPlan,
+} from '#/features/video/inputs'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { sql } from '#/lib/server/db.server'
 import {
@@ -24,12 +21,7 @@ import { uploadLibraryImagesToFal } from '#/lib/server/fal-image-inputs.server'
 import { publishDirectorExports } from '#/features/video/server/director-exports.server'
 
 export interface GenerateVideoInput {
-  /** Optional. Without one the model invents the whole shot from the prompt --
-   *  a different endpoint, and the one that needs the better prompt. */
-  imageId?: string
-  /** Optional last frame. With one, the model solves the move between the two
-   *  stills rather than inventing where the shot goes. */
-  endImageId?: string
+  images?: Array<VideoImageInput>
   prompt: string
   duration: number
   aspectRatio: string
@@ -54,8 +46,7 @@ export interface GenerateVideoInput {
  * settles it -- nothing here waits.
  */
 export async function generateVideo({
-  imageId,
-  endImageId,
+  images: rawImages = [],
   prompt,
   duration,
   aspectRatio,
@@ -65,81 +56,47 @@ export async function generateVideo({
 }: GenerateVideoInput): Promise<{ recordId: string }> {
   const { userId } = await resolveAuth()
 
-  const trimmed = prompt.trim()
-  if (!trimmed) throw new Error('A prompt is required')
-
-  const model =
-    (modelSlug && videoModelBySlug(modelSlug)) || DEFAULT_VIDEO_MODEL
-  if (!model.durations.includes(duration)) {
-    throw new Error(`Unsupported duration: ${duration}`)
-  }
-
-  // **A model that takes no frame ignores the ones it was given.** h3-max is
-  // text-to-video only. The form already withholds them, so reaching here with
-  // one means a caller that does not know the lineup -- and dropping the frame
-  // is the same answer the endpoint would give, arrived at before a row is
-  // reserved and before the bytes are uploaded for nothing.
-  const modelTakesFrames = takesFirstFrame(model)
-  const firstFrameId = modelTakesFrames ? imageId : undefined
-  const endFrameId = modelTakesFrames ? endImageId : undefined
-
-  const hasFirstFrame = !!firstFrameId
-  const hasLastFrame = !!endFrameId
-  const endpoint = endpointFor(model, hasFirstFrame, hasLastFrame)
-
-  // The tier actually rendered: the requested one where the model offers it,
-  // its fixed `resolution` otherwise. Resolved once, because the estimate and
-  // the submit have to name the same thing -- a price quoted at 480P against a
-  // clip rendered at 768P is the bug this shape prevents.
-  const sentResolution = resolutionFor(model, resolution)
-  if (
-    resolution &&
-    resolutionsFor(model).length > 0 &&
-    sentResolution !== resolution
-  ) {
-    throw new Error(`Unsupported resolution: ${resolution}`)
-  }
-
-  // Checked against the endpoint, not the model: `auto` is valid only where
-  // there is an image to match, and an endpoint with an empty list has no
-  // `aspect_ratio` param at all -- H3's image endpoint follows the frame it is
-  // given, so any value is one param too many.
-  const ratios = aspectRatiosFor(model, hasFirstFrame, hasLastFrame)
-  if (ratios.length > 0 && !ratios.includes(aspectRatio)) {
-    throw new Error(`Unsupported aspect ratio: ${aspectRatio}`)
-  }
-
-  if (endFrameId && !hasFirstFrame) {
-    throw new Error('An end frame needs a first frame')
-  }
-
-  // Both frames are checked in one statement: two round trips to prove the
-  // same thing, and a partial check would let an unreadable end frame fail
-  // after the row was reserved.
-  const wanted = [firstFrameId, endFrameId].filter((id): id is string => !!id)
+  const images = videoImagesSchema.parse(rawImages)
+  const model = modelSlug ? videoModelBySlug(modelSlug) : DEFAULT_VIDEO_MODEL
+  if (!model) throw new Error('Unknown video model')
+  const plan = videoRequestPlan(
+    model,
+    images,
+    prompt,
+    duration,
+    aspectRatio,
+    resolution,
+  )
+  const {
+    endpoint,
+    prompt: trimmed,
+    resolution: sentResolution,
+    estimatedCostCents,
+  } = plan
+  const firstFrameId = images.find((i) => i.role === 'first')?.id
+  const endFrameId = images.find((i) => i.role === 'last')?.id
+  const referenceIds = images
+    .filter((i) => i.role === 'reference')
+    .map((i) => i.id)
+  const wanted = images.map((i) => i.id)
   if (wanted.length > 0) {
     const found = await sql<Array<{ id: string }>>`
       select id from user_images
       where id in ${sql(wanted)} and user_id = ${userId}
         and deleted_at is null and status = 'completed'
+        and source in ('upload', 'ai_generated')
     `
     if (found.length !== new Set(wanted).size) {
       throw new Error('Source image not found')
     }
   }
 
-  if (endFrameId && !endpoint.acceptsEndImage) {
-    throw new Error(`${model.label} takes no end frame`)
-  }
-
-  const estimatedCostCents = estimateCostCents(model, duration, sentResolution)
-
   const { recordId } = await createPendingGeneration({
     userId,
     origin: 'images',
     source: 'ai_video',
     groupId,
-    generationType: hasFirstFrame ? 'image_to_video' : 'text_to_video',
+    generationType: images.length > 0 ? 'image_to_video' : 'text_to_video',
     falModelId: endpoint.id,
     prompt: trimmed,
     aspectRatio,
@@ -152,6 +109,8 @@ export async function generateVideo({
       // Read back by `processVideoResult` for the row's title, so a
       // `.server.ts` module never has to import the route-owned catalog.
       model_label: model.label,
+      input_images: images,
+      reference_image_ids: referenceIds,
       ...(firstFrameId ? { source_image_id: firstFrameId } : {}),
       ...(endFrameId ? { end_image_id: endFrameId } : {}),
       duration_seconds: duration,
@@ -169,7 +128,6 @@ export async function generateVideo({
     // route already wanted -- it used to length-check the result by hand,
     // because dropping a frame silently was never acceptable here either.
     const uploaded = await uploadLibraryImagesToFal(wanted, userId)
-    const [uploadedUrl, uploadedEndUrl] = uploaded
 
     // Built from the endpoint descriptor, never from a fixed list (#385). Three
     // models, three disagreements: Flux 3's first+last endpoint names the first
@@ -178,21 +136,13 @@ export async function generateVideo({
     // does not declare is how a submit fails at FAL rather than here.
     const { request_id } = await withNetworkRetry('queue.submit', () =>
       fal.queue.submit(endpoint.id, {
-        input: {
+        input: videoFalInput(endpoint, images, uploaded, {
           prompt: trimmed,
-          ...(uploadedUrl && endpoint.firstFrameParam
-            ? { [endpoint.firstFrameParam]: uploadedUrl }
-            : {}),
-          ...(uploadedEndUrl && endpoint.acceptsEndImage
-            ? { end_image_url: uploadedEndUrl }
-            : {}),
           duration,
-          ...(endpoint.aspectRatios.length > 0
-            ? { aspect_ratio: aspectRatio }
-            : {}),
+          aspectRatio,
           resolution: sentResolution,
-          ...(model.supportsAudio ? { generate_audio: true } : {}),
-        },
+          supportsAudio: model.supportsAudio,
+        }),
       }),
     )
 

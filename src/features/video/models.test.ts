@@ -207,23 +207,16 @@ describe('endpoint identity', () => {
  * both of which an intersection made unrepresentable.
  */
 describe('per-model capability', () => {
-  it('lets a text-to-video-only model say so', () => {
-    // The one model in the lineup with no image endpoint. The form hides both
-    // frame slots for it; the action drops a frame it is handed anyway.
-    expect(takesFirstFrame(H3_MAX)).toBe(false)
-    expect(H3_MAX.endpoints.withImage).toBeUndefined()
-    for (const model of VIDEO_MODELS) {
-      if (model === H3_MAX) continue
-      expect(takesFirstFrame(model), model.slug).toBe(true)
-    }
-  })
-
-  it('falls back to text-to-video rather than failing on a staged frame', () => {
-    // Refusing would turn an ordinary model switch into an error the person
-    // has to undo by clearing work they may still want.
-    expect(endpointFor(H3_MAX, true, true)).toBe(H3_MAX.endpoints.textToVideo)
-    expect(supportsEndImage(H3_MAX)).toBe(false)
-    expect(frameCapacityFor(H3_MAX)).toBe(1)
+  it('enables H3 Max first and last frames instead of dropping them', () => {
+    expect(takesFirstFrame(H3_MAX)).toBe(true)
+    expect(endpointFor(H3_MAX, true, true).id).toBe(
+      'minimax/h3-max/image-to-video',
+    )
+    expect(endpointFor(H3_MAX, false, true).id).toBe(
+      'minimax/h3-max/image-to-video',
+    )
+    expect(supportsEndImage(H3_MAX)).toBe(true)
+    expect(frameCapacityFor(H3_MAX)).toBe(2)
   })
 
   it('offers a resolution control only where the model has tiers', () => {

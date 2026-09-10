@@ -1,4 +1,4 @@
-The video lineup: three FAL models, their endpoints, and what each endpoint
+The video lineup: five FAL models, their endpoints, and what each endpoint
 takes, plus pulling a still frame out of a clip. Headless -- no `.tsx` here.
 
 `models.ts` was `app/(authenticated)/video/models.ts` until #398, which is when
@@ -17,6 +17,9 @@ about the form, the picker and the card; this folder holds only the catalog.
   Activity and account spend counts. Working/Final Cut assets never publish.
 - `models.ts` -- `VIDEO_MODELS`, `endpointFor`, `aspectRatiosFor`,
   `estimateCostCents`, and the row-facing helpers below
+- `inputs.ts` -- role compatibility, endpoint selection, provider reference
+  labels, estimates including reference surcharges, and validated request
+  construction. `inputs.test.ts` covers mixed inputs, limits and field ordering.
 - `models.test.ts` -- pins every endpoint id and param name against FAL's
   OpenAPI spec, which was read by hand. A wrong id fails at FAL, not here
 - `frame-capture.ts` -- `captureFrame` (a mounted player's current frame) and

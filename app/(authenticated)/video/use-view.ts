@@ -2,22 +2,27 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { continueImages } from './_lib/image-selection'
 import { generateVideo, listVideos } from './_actions/generate-video.action'
 import type { VideoRecord } from './_actions/generate-video.action'
 import type {
   GroupWrite,
   ImageGroupSummary,
 } from '#/features/groups/hooks/use-groups'
+import type { VideoImageRole } from '#/features/video/inputs'
 import {
   DEFAULT_VIDEO_MODEL,
   aspectRatiosFor,
-  estimateCostCents,
   resolutionsFor,
-  supportsEndImage,
-  takesFirstFrame,
-  videoModelBySlug,
   videoModelsByPrice,
 } from '#/features/video/models'
+import {
+  MAX_VIDEO_IMAGES,
+  compatibleModel,
+  endpointForImages,
+  estimateVideoCost,
+  imageCompatibility,
+} from '#/features/video/inputs'
 import {
   deleteGalleryImage,
   trashGalleryImages,
@@ -74,12 +79,12 @@ function readSlug(): string {
   return raw
 }
 
-/** What the strip renders and the submit sends. One, not a set: this model
- *  takes a single first frame. */
+/** One thumbnail and its explicit role in the next video. */
 export interface SourceImage {
   id: string
   url: string
   title: string
+  role: VideoImageRole
 }
 
 /**
@@ -109,32 +114,34 @@ export function useView(initialVideos: Array<VideoRecord>) {
     DEFAULT_VIDEO_MODEL.slug,
   )
 
-  // Resolved through the lineup, so a stored slug for a model that has since
-  // been dropped falls out rather than crashing. Cheapest first, matching the
-  // picker, so the estimate and the list agree on order.
-  // Resolved through the lineup, so a stored slug for a model that has since
-  // been dropped falls back rather than crashing. Never null: the form always
-  // has a model, and `canSubmit` gates on the prompt instead.
-  const model = useMemo(
-    () => videoModelBySlug(modelSlug) ?? DEFAULT_VIDEO_MODEL,
-    [modelSlug],
-  )
+  const [sources, setSources] = useState<Array<SourceImage>>([])
+  const pickerModels = useMemo(() => videoModelsByPrice(), [])
+  const selectedModel = compatibleModel(pickerModels, modelSlug, sources)
+  const model = selectedModel ?? DEFAULT_VIDEO_MODEL
+  const endpoint = selectedModel
+    ? endpointForImages(selectedModel, sources)
+    : undefined
+  const compatibilityError = selectedModel
+    ? null
+    : 'No model supports this combination. Change an image role or remove an image.'
 
   useEffect(() => {
-    // Waits on `hydrated`, or the fallback lands on top of the stored value on
-    // mount and the setting resets on every page load.
     if (modelHydrated)
       localStorage.setItem(MODEL_KEY, JSON.stringify(modelSlug))
   }, [modelHydrated, modelSlug])
 
-  const selectModel = useCallback(
-    (slug: string) => setModelSlug(slug),
-    [setModelSlug],
-  )
+  useEffect(() => {
+    if (modelHydrated && selectedModel && selectedModel.slug !== modelSlug)
+      setModelSlug(selectedModel.slug)
+  }, [modelHydrated, selectedModel, modelSlug, setModelSlug])
 
-  // Cheapest first, and stable across renders so the picker's rows are not a
-  // new array on every keystroke in the prompt box.
-  const pickerModels = useMemo(() => videoModelsByPrice(), [])
+  const selectModel = useCallback(
+    (slug: string) => {
+      const next = pickerModels.find((m) => m.slug === slug)
+      if (next && !imageCompatibility(next, sources)) setModelSlug(slug)
+    },
+    [pickerModels, sources, setModelSlug],
+  )
 
   const userImages = useUserImages(user.id)
 
@@ -174,29 +181,20 @@ export function useView(initialVideos: Array<VideoRecord>) {
   // them is cheaper than sitting through one before writing the next. Same
   // component the generator panel uses.
   const [prompts, setPrompts] = useState<Array<string>>([''])
-  const [duration, setDuration] = useState(DEFAULT_VIDEO_MODEL.defaultDuration)
+  const [chosenDuration, setDuration] = useState(
+    DEFAULT_VIDEO_MODEL.defaultDuration,
+  )
   // Seeded for the mode the route opens in (no first frame -> no `auto`).
-  const [aspectRatio, setAspectRatio] = useState(
+  const [chosenAspectRatio, setAspectRatio] = useState(
     aspectRatiosFor(DEFAULT_VIDEO_MODEL, false)[0],
   )
   // Only meaningful for a model with tiers; for the rest the submit sends the
   // model's fixed `resolution` and this is never read.
-  const [resolution, setResolution] = useState(DEFAULT_VIDEO_MODEL.resolution)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  // One picker, two slots. A second dialog would be the same component mounted
-  // twice to answer the same question; the target says where the pick lands.
-  const [pickerTarget, setPickerTarget] = useState<'first' | 'last' | null>(
-    null,
+  const [chosenResolution, setResolution] = useState(
+    DEFAULT_VIDEO_MODEL.resolution,
   )
-
-  // The set is one image, held as an array so `RefImageStrip` can render it
-  // unchanged. Anything past the first is dropped rather than queued -- the
-  // endpoint takes a single `image_url`.
-  const [sources, setSources] = useState<Array<SourceImage>>([])
-  // Optional. With one, the model solves the move between the two stills
-  // rather than inventing where the shot goes -- the same instruction a prompt
-  // spends three sentences failing to pin down.
-  const [endSources, setEndSources] = useState<Array<SourceImage>>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   // `?image=<id>` pre-loads the first frame from a library row. It was how
   // Images' `Animate` menu item handed a card over; that item is gone, so
@@ -205,15 +203,24 @@ export function useView(initialVideos: Array<VideoRecord>) {
   // future handoff would use. It resolves once the library has loaded, because
   // the strip needs a URL and a title, not just an id.
   const handoffId = searchParams.get('image')
+  const appliedHandoff = useRef<string | null>(null)
   useEffect(() => {
-    if (!handoffId || sources.length > 0 || userImages.isLoading) return
+    if (
+      !handoffId ||
+      handoffId === appliedHandoff.current ||
+      sources.length > 0 ||
+      userImages.isLoading
+    )
+      return
     const match = userImages.images.find((image) => image.id === handoffId)
     if (match) {
+      appliedHandoff.current = handoffId
       setSources([
         {
           id: match.id,
           url: userImages.imageUrls[match.id] ?? imageUrl(match.id, 'thumb'),
           title: match.title,
+          role: 'first',
         },
       ])
     }
@@ -652,26 +659,43 @@ export function useView(initialVideos: Array<VideoRecord>) {
     router,
   ])
 
-  const openPicker = useCallback(
-    (target: 'first' | 'last') => {
-      void userImages.refresh()
-      setPickerTarget(target)
-    },
-    [userImages],
-  )
+  const openPicker = useCallback(() => {
+    void userImages.refresh()
+    setPickerOpen(true)
+  }, [userImages])
 
   const collectSources = useCallback(
-    (picked: Array<SourceImage>) => {
-      // `max={1}` already bounds the picker; this is the belt to that brace.
-      const one = picked.slice(0, 1)
-      if (pickerTarget === 'last') setEndSources(one)
-      else setSources(one)
+    (picked: Array<Omit<SourceImage, 'role'>>) => {
+      const added = picked.filter(
+        (image) => !sources.some((i) => i.id === image.id),
+      )
+      if (sources.length + added.length > MAX_VIDEO_IMAGES) {
+        toast.error(`Add up to ${MAX_VIDEO_IMAGES} images`)
+        return
+      }
+      setSources([
+        ...sources,
+        ...added.map(
+          (image, index): SourceImage => ({
+            ...image,
+            role: sources.length === 0 && index === 0 ? 'first' : 'reference',
+          }),
+        ),
+      ])
     },
-    [pickerTarget],
+    [sources],
   )
 
+  const removeSource = useCallback(
+    (id: string) => setSources((current) => current.filter((i) => i.id !== id)),
+    [],
+  )
   const clearSources = useCallback(() => setSources([]), [])
-  const clearEndSources = useCallback(() => setEndSources([]), [])
+  const setImageRole = useCallback((id: string, role: VideoImageRole) => {
+    setSources((current) =>
+      current.map((image) => (image.id === id ? { ...image, role } : image)),
+    )
+  }, [])
 
   const updatePrompt = useCallback((index: number, value: string) => {
     setPrompts((current) => current.map((p, i) => (i === index ? value : p)))
@@ -800,17 +824,13 @@ export function useView(initialVideos: Array<VideoRecord>) {
 
         const frame = existing ?? (await extractEndFrame(video))
 
-        setSources([
-          {
+        setSources((current) =>
+          continueImages(current, {
             id: frame.id,
             url: imageUrl(frame.id, 'thumb'),
-            /* `title` is nullable on the row and not on a source chip. The
-               fallback is the name the extraction path gives a fresh frame,
-               so a reused one is labelled identically to a new one. */
-            title: frame.title ?? `Frame \u00b7 ${video.title}`,
-          },
-        ])
-        setEndSources([])
+            title: frame.title ?? `Frame · ${video.title}`,
+          }),
+        )
         /* The clip's own prompt, not an empty box. Continuing is usually the
            same shot carried on, so what you want in front of you is what made
            the clip you are continuing from -- edited, not retyped. It cleared
@@ -835,81 +855,30 @@ export function useView(initialVideos: Array<VideoRecord>) {
     [prompts],
   )
 
-  const sourceId = sources.at(0)?.id ?? null
-  const endImageId = endSources.at(0)?.id ?? null
-  const hasFirstFrame = !!sourceId
-  const hasLastFrame = !!endImageId
-
-  // **Whether a staged frame reaches this model at all.** h3-max is
-  // text-to-video only, and a frame staged before the switch is kept rather
-  // than cleared -- switching back should not cost the person the pick. It is
-  // simply not sent, and the form hides the slots so nothing on screen claims
-  // otherwise.
-  const modelTakesFirstFrame = takesFirstFrame(model)
-  const sendsFirstFrame = hasFirstFrame && modelTakesFirstFrame
-  const sendsLastFrame = hasLastFrame && modelTakesFirstFrame
-
-  // The options change with the mode *and* with the model, so a value carried
-  // across either switch can be one the endpoint rejects -- `auto` has nothing
-  // to match once the first frame is cleared, and H3's image endpoint has no
-  // aspect param at all. Coerced here rather than validated at submit, so the
-  // control never shows a selection the request would refuse. An empty list is
-  // the "no control" case: the form renders nothing and the submit sends
-  // nothing, so there is no value to coerce to.
-  const aspectOptions = useMemo(
-    () => aspectRatiosFor(model, sendsFirstFrame, sendsLastFrame),
-    [model, sendsFirstFrame, sendsLastFrame],
-  )
-  useEffect(() => {
-    if (aspectOptions.length > 0 && !aspectOptions.includes(aspectRatio)) {
-      setAspectRatio(aspectOptions[0])
-    }
-  }, [aspectOptions, aspectRatio])
-
-  // Same coercion, for the same reason: switching from LTX (6-20) to H3
-  // (5-15) leaves 18s selected against a model whose ceiling is 15.
+  // Resolve controls synchronously: the first render after a role/model change
+  // must already submit settings accepted by the newly selected endpoint.
+  const aspectOptions = endpoint?.aspectRatios ?? []
+  const aspectRatio = aspectOptions.includes(chosenAspectRatio)
+    ? chosenAspectRatio
+    : (aspectOptions[0] ?? '16:9')
   const durationOptions = model.durations
-  useEffect(() => {
-    if (!durationOptions.includes(duration)) {
-      setDuration(model.defaultDuration)
-    }
-  }, [durationOptions, duration, model])
-
-  // Only where the model offers a choice; empty is "no control", and the
-  // submit sends the model's fixed `resolution` instead. This is the first
-  // control that exists for one model and not the others, which is the whole
-  // point of dropping multi-select -- an intersection would have deleted it.
-  const resolutionOptions = useMemo(() => resolutionsFor(model), [model])
-  useEffect(() => {
-    if (resolutionOptions.length === 0) return
-    if (!resolutionOptions.some((r) => r.id === resolution)) {
-      setResolution(model.resolution)
-    }
-  }, [resolutionOptions, resolution, model])
-
-  const modelTakesEndFrame = supportsEndImage(model)
-  useEffect(() => {
-    if (!modelTakesEndFrame && endSources.length > 0) setEndSources([])
-  }, [modelTakesEndFrame, endSources.length])
-
-  // An end frame needs a start. Dropping it on clear beats sending a request
-  // the action would refuse.
-  useEffect(() => {
-    if (!hasFirstFrame && endSources.length > 0) setEndSources([])
-  }, [hasFirstFrame, endSources.length])
-
-  // One clip per prompt, one model. The count is the prompt list.
+  const duration = durationOptions.includes(chosenDuration)
+    ? chosenDuration
+    : model.defaultDuration
+  const resolutionOptions = resolutionsFor(model)
+  const resolution = resolutionOptions.some((r) => r.id === chosenResolution)
+    ? chosenResolution
+    : model.resolution
   const clipCount = Math.max(filledPrompts.length, 1)
-  const estimatedCost =
-    estimateCostCents(model, duration, resolution) * clipCount
-  // A prompt. With no first frame the model invents the whole shot, so the
-  // frames stay optional.
-  const canSubmit = filledPrompts.length > 0 && !isSubmitting
+  const estimatedCost = selectedModel
+    ? estimateVideoCost(model, duration, resolution, sources) * clipCount
+    : null
+  const canSubmit = filledPrompts.length > 0 && !isSubmitting && !!selectedModel
   /** Above this the form asks first -- see `CONFIRM_ABOVE_CENTS`. */
-  const needsConfirm = estimatedCost > CONFIRM_ABOVE_CENTS
+  const needsConfirm = (estimatedCost ?? 0) > CONFIRM_ABOVE_CENTS
 
   const submit = useCallback(async () => {
-    if (filledPrompts.length === 0) return
+    if (!canSubmit) return
 
     setIsSubmitting(true)
     try {
@@ -922,11 +891,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
       // half way has covered the prompts rather than one prompt thoroughly.
       for (const prompt of filledPrompts) {
         await generateVideo({
-          // Withheld rather than sent-and-ignored: the action records the row
-          // as `text_to_video` off what it actually received, so passing a
-          // frame this model never sees would mislabel the clip.
-          ...(sendsFirstFrame && sourceId ? { imageId: sourceId } : {}),
-          ...(sendsLastFrame && endImageId ? { endImageId } : {}),
+          images: sources.map(({ id, role }) => ({ id, role })),
           prompt,
           duration,
           aspectRatio,
@@ -945,10 +910,8 @@ export function useView(initialVideos: Array<VideoRecord>) {
       setIsSubmitting(false)
     }
   }, [
-    sourceId,
-    endImageId,
-    sendsFirstFrame,
-    sendsLastFrame,
+    sources,
+    canSubmit,
     filledPrompts,
     duration,
     aspectRatio,
@@ -961,23 +924,22 @@ export function useView(initialVideos: Array<VideoRecord>) {
   return {
     model,
     pickerModels,
-    modelSlug,
+    modelSlug: selectedModel?.slug,
+    endpoint,
+    compatibilityError,
     selectModel,
     durationOptions,
-    modelTakesEndFrame,
-    modelTakesFirstFrame,
     aspectOptions,
     resolutionOptions,
-    hasFirstFrame,
     userImages,
     sources,
-    endSources,
-    pickerTarget,
-    setPickerTarget,
+    pickerOpen,
+    setPickerOpen,
     openPicker,
     collectSources,
     clearSources,
-    clearEndSources,
+    removeSource,
+    setImageRole,
     videos: shownVideos,
     cells,
     visibility,

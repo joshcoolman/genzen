@@ -13,6 +13,8 @@ export interface SingleSelectProps<T extends string> {
   /** `null` means no choice -- for a filter, that is "everything". */
   value: T | null
   onChange: (value: T | null) => void
+  wrap?: boolean
+  disabled?: boolean
 }
 
 /** A segmented pill group where one option is chosen at a time, and choosing
@@ -21,15 +23,18 @@ export function SingleSelect<T extends string>({
   options,
   value,
   onChange,
+  wrap = false,
+  disabled = false,
 }: SingleSelectProps<T>) {
   return (
-    <div className={styles.group}>
+    <div className={clsx(styles.group, wrap && styles.wrap)}>
       {options.map((o) => {
         const active = value === o.value
         return (
           <button
             key={o.value}
             type="button"
+            disabled={disabled}
             aria-pressed={active}
             onClick={() => onChange(active ? null : o.value)}
             className={clsx(

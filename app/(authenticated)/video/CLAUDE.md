@@ -1,7 +1,7 @@
 # Video
 
-An image you already made, plus a note, comes back moving (#305). Four FAL
-models -- LTX-2.5 Fast, MiniMax H3, MiniMax H3 Max, Flux 3 -- **one at a time**,
+An image you already made, plus a note, comes back moving (#305). Five FAL
+models -- LTX-2.5 Fast, MiniMax H3, MiniMax H3 Max, Flux 3, Kling O3 Pro -- **one at a time**,
 one clip per prompt.
 
 Built to `docs/reference/route-shape.md`. `page.tsx` reads the clip list and the
@@ -48,48 +48,43 @@ source images; `use-view.ts` owns everything after the first paint.
   works.** H3's image endpoint follows the frame it is given, so the form
   renders no Aspect row and the submit sends no `aspect_ratio`. A control with
   no options would say the choice exists and had been taken away.
-- **The picker is `ModelSelector` in `mode="single"`, the generator panel's
-  own.** Its two right-hand columns are the same two numbers read differently
-  -- dollars per _second_, and _frames_ rather than references -- which is all
-  the component needed to be shared: two optional label props, not a fork.
-
-  **It was multi-select between #417 and now, and going back was not a
-  simplification.** Multi-select bought a cross-model comparison and paid for
-  it by intersecting every control down to what all the ticked models agreed
-  on. On video the models disagree about nearly everything, so the common
-  denominator shrank as the lineup grew, and the differences between the models
-  -- the entire reason to carry more than one -- became the one thing the form
-  could not express. h3-max is where it broke: it has resolution tiers no other
-  model has and takes no frame at all, and neither fact is representable in an
-  intersection. Comparing serially costs a second submit. That is cheaper than
-  a form that cannot reach what a model can do.
-
-  So a control may now exist for one model and not the others, and the form is
-  expected to change shape when the model changes. The frame slots vanish for a
-  text-to-video-only model; a Resolution row appears for one with tiers.
-  **Do not reintroduce a `shared*` intersection helper** -- the lineup's header
-  comment says the same thing, because this is the rule most likely to be
-  re-derived backwards.
-
-  **Prompts are still the axis that multiplies**, which is why the confirm
-  triggers on **price rather than count**, unlike `GeneratorPanel`'s
-  five-images rule: two Flux 3 clips at 20s is $6.80 and eight LTX clips at 6s
-  is $4.32, so a count says little about the size of the click. The estimate
-  under Generate (#416) and the confirm above `CONFIRM_ABOVE_CENTS` are what
-  keep a click that costs real money from being silent.
-
-- **The control column is ordered like `GeneratorPanel`, and that is the
-  point.** Prompts, then the frame slots, then the settings, then a full-width
-  Generate, then a `CostNote`, then the model picker -- the same order, inheriting the same
-  `--panel-rhythm` custom property, so the two surfaces read as the same room.
-  A person moves between them in one session. It is not a copy: two image
-  slots instead of one (and **labelled**, which that panel's single strip is
-  not -- two slots that do different things cannot both be unlabelled),
-  duration where the count stepper is (and no stepper at all), and an aspect
-  control that can be absent entirely. `RefImageStrip`,
-  `ExistingImagePicker` (`max={1}`, `autoConfirm`) and `PromptList` are
-  borrowed unmodified; the frames and the picker are passed into `VideoForm` as
-  slots, because the view owns the picker dialog they open.
+- **Images carry roles (#516).** One thumbnail strip under the prompts, with
+  First frame / Reference / Last frame on every image. The first added image
+  defaults to First frame; subsequent additions default to Reference. The
+  library picker also supports uploading. Clearing or changing roles never
+  silently reassigns another image.
+- **Capabilities select the model, never the input.** `imageCompatibility` in
+  `src/features/video/inputs.ts` drives unavailable model explanations and the
+  server validation. A compatible selection stays selected; otherwise the
+  first compatible model is selected visibly. No compatible model means no
+  generation and no cost estimate. All images remain editable.
+- **The model picker is route-owned.** Images' shared picker can truncate to a
+  single numeric capacity; Video needs role combinations, reference counts and
+  reasons. `model-picker/` keeps the same single-select rows, with capabilities
+  beneath each model and the per-second price alongside. Controls and estimates
+  resolve synchronously for the selected endpoint. No shared intersection of
+  durations, resolutions or aspect ratios.
+- **Reference arrays preserve strip order, excluding frames.** H3 labels them
+  `Image 1`, `Image 2`; Kling labels them `@Image1`, `@Image2`. Labels and the
+  submitted order derive from the same roles. H3 takes up to nine references
+  without fixed frames; Kling supports combining references and first/last
+  frames. The current app cap for Kling is four references, conservatively
+  below its still-only ceiling; video elements are not part of this UI.
+- **H3 Max accepts first, last, or both frames.** The image endpoint sends
+  `prompt_expansion_mode: balanced` and omits aspect ratio. The text-only
+  restriction in the old catalog was stale. LTX and Flux keep their existing
+  image endpoints; Flux has a distinct first+last endpoint.
+- **Validation precedes paid work.** The action validates roles, settings and
+  ownership of every completed, non-deleted still before reserving a row or
+  uploading. Unknown model IDs are errors. `input_images` captures the complete
+  role selection; source/end/reference fields also remain in metadata. Upload
+  failure cannot degrade into text-only generation.
+- **Cost depends on inputs too.** H3 references at 768P cost 6c/second plus 8c
+  per reference after the first five. Kling uses audio-on pricing, 14c/second.
+  The estimate, confirmation and recorded estimate use the same helper.
+- **Controls stay in the familiar order:** prompts, image strip, duration and
+  shape, Generate, estimate, then model list. Prompts multiply clips; confirmation
+  still triggers above the price threshold rather than by image count.
 - **A clip's card is `video-thumb/`, not `Thumbnail`.** The difference is the
   `<video>`: a clip has a duration, native controls, and no poster frame
   anywhere in the app, so bending the primitive every still renders through
@@ -137,7 +132,8 @@ source images; `use-view.ts` owns everything after the first paint.
   the continuity, the words are about what happens next -- and was wrong about
   the work: continuing is usually the same shot carried on, so an empty box
   meant retyping most of a prompt to change a clause. Any end frame is still
-  dropped, because unlike a prompt there is no part of it to edit.
+  dropped, because unlike a prompt there is no part of it to edit. Reference
+  images are preserved; an incompatible combination stays visible for repair.
 
 - **The card is built to be scanned, because a wall of takes is near-identical
   cards** (#537). Three things do it, and all three are about the numbers being
@@ -257,25 +253,10 @@ source images; `use-view.ts` owns everything after the first paint.
   it. That is a real crop, not a 5% one, and it is the thing to revisit if
   portrait clips start mattering. There are six in the library today.
 
-- **Last frame is optional, and its slot stays visible when empty.** With one,
-  the model solves the move between two stills instead of inventing where the
-  shot goes -- the same instruction a prompt spends three sentences failing to
-  pin down. Hidden behind a disclosure, nothing would say the capability
-  exists. One picker serves both slots; `pickerTarget` says where the pick
-  lands, because a second dialog would be the same component mounted twice to
-  answer the same question.
-- **Several prompts, one model, one first frame, one clip each.** The submit
-  loops sequentially rather than `Promise.all` -- each call reserves a row
-  before it contacts FAL, and firing them together interleaves the reservations
-  against a queue that answers in its own order.
-- **The prompt is the only required input.** Every frame slot is optional, and
-  the frames decide which endpoint runs -- `textToVideo` with none,
-  `withImage` with a first, `withFirstAndLastImage` with both where the model
-  has one -- all resolved by `endpointFor(model, hasFirst, hasLast)`, which
-  also answers `textToVideo` for a model with no image endpoint. Different
-  acts, not a switch: with a first frame you are animating something you made,
-  with both the model solves the move between two stills, and with neither it
-  invents the whole shot and the prompt has to carry it.
+- **Several prompts, one model, one clip each.** The prompt remains required.
+  Role selection routes through `endpointForImages`; the submit runs sequentially
+  and refreshes once. Reference-only and end-only runs are recorded as
+  `image_to_video`, not `text_to_video`.
 - **Settings are the selected model's, whole.** No intersection: `use-view`
   reads `model.durations`, `aspectRatiosFor(model, ...)` and
   `resolutionsFor(model)` directly, and coerces the current value when the
@@ -283,14 +264,6 @@ source images; `use-view.ts` owns everything after the first paint.
   would refuse. An **empty list means there is no control** -- for aspect
   ratios and resolutions alike -- and the submit sends nothing, or the model's
   fixed `resolution`.
-- **h3-max takes no frame, and a staged one is dropped rather than refused.**
-  It is the only entry with no `withImage` endpoint, so `endpointFor` falls
-  back to `textToVideo` and `takesFirstFrame` is false. The form hides both
-  frame slots for it -- that is where the person is told -- but what is already
-  staged is **kept**, not cleared, so switching back restores the pick. The
-  action drops the frame before it reserves a row or uploads bytes, and records
-  the clip as `text_to_video`, because a caller that does not know the lineup
-  must not be able to mislabel a row.
 - **Resolution is a control for one model only, and that is the point.**
   h3-max renders at 480P or 768P at different prices, so the tier lives on the
   record (`resolutions`) and `resolutionFor` resolves what is actually sent --

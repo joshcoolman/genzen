@@ -15,35 +15,7 @@ import { formatCents } from '#/lib/format'
 
 const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
 
-/**
- * The control column: prompts, frames, what shape and how long, Generate.
- *
- * **Ordered like `GeneratorPanel` on purpose** -- prompt first, images under
- * it, the request's own settings below those, then a full-width Generate, with
- * the model picker last. It should feel like the same room: the two surfaces do
- * the same job and a person moves between them in one session. It inherits
- * `--panel-rhythm` from that panel's stylesheet for the same reason -- one
- * value for every gap down a narrow column, because the eye reads unequal gaps
- * as misalignment rather than as hierarchy.
- *
- * Not a copy of it. The differences are all real:
- *
- * - **Two image slots, and they are labelled.** `GeneratorPanel` dropped its
- *   "Reference images" heading because one unlabelled strip under a prompt is
- *   unambiguous. Two are not -- first frame and last frame do different things
- *   -- so they carry the same quiet label the settings below use.
- * - **Duration where the count stepper is, and there is no stepper.** One clip
- *   per model, always (#417). Video is slow and finicky enough that nobody
- *   wants four takes of one request from one model -- the useful axis is
- *   across models, not within one.
- * - **The aspect control can be absent entirely**, because some endpoints have
- *   no `aspect_ratio` param at all (#385).
- * - **Generate asks above a price, not above a count.** `GeneratorPanel`
- *   confirms above five images; here two Flux 3 clips at 20s is $6.80 and
- *   eight LTX clips at 6s is $4.32, so the number of clips says little about
- *   the size of the click. Money is what is being risked, so money is the
- *   trigger.
- */
+/** Prompts, role-aware image inputs, endpoint settings, Generate and models. */
 export function VideoForm({
   durationOptions,
   promptCount,
@@ -74,7 +46,7 @@ export function VideoForm({
   promptCount: number
   /** The estimate crossed the threshold; ask before submitting. */
   needsConfirm: boolean
-  /** The first/last frame strips, between the prompts and the settings --
+  /** The role-aware image strip, between the prompts and the settings --
    *  where the reference strip sits in `GeneratorPanel`. Passed in because the
    *  view owns the picker they open. */
   framesSlot: ReactNode
@@ -98,7 +70,7 @@ export function VideoForm({
   /** Empty for a model that renders at one size -- see `resolutionsFor`. */
   resolutionOptions: Array<{ id: string; pricePerSecondCents: number }>
   onResolutionChange: (value: string) => void
-  estimatedCost: number
+  estimatedCost: number | null
   isSubmitting: boolean
   canSubmit: boolean
   onSubmit: () => void
@@ -117,7 +89,7 @@ export function VideoForm({
     if (needsConfirm) {
       const ok = await confirm({
         title: `Generate ${pendingCount} clips?`,
-        message: `${plural(promptCount, 'prompt')}, one clip each, about ${formatCents(estimatedCost)}. Cancel to change the model, the duration or the resolution.`,
+        message: `${plural(promptCount, 'prompt')}, one clip each, about ${formatCents(estimatedCost ?? 0)}. Cancel to change the model, the duration or the resolution.`,
         confirmLabel: `Generate ${pendingCount}`,
         destructive: false,
       })
@@ -150,6 +122,8 @@ export function VideoForm({
           {/* SingleSelect clears on re-click, and a clip with no duration is
               not a request -- so an unset value falls back to the model's. */}
           <SingleSelect
+            wrap
+            disabled={isSubmitting}
             value={String(duration)}
             onChange={(value) =>
               onDurationChange(Number(value ?? durationOptions[0]))
@@ -167,6 +141,8 @@ export function VideoForm({
           <div className={styles.control}>
             <span className={styles.label}>Aspect</span>
             <SingleSelect
+              wrap
+              disabled={isSubmitting}
               value={aspectRatio}
               onChange={(value) =>
                 onAspectRatioChange(value ?? aspectOptions[0])
@@ -186,6 +162,8 @@ export function VideoForm({
           <div className={styles.control}>
             <span className={styles.label}>Resolution</span>
             <SingleSelect
+              wrap
+              disabled={isSubmitting}
               value={resolution}
               onChange={(value) =>
                 onResolutionChange(value ?? resolutionOptions[0].id)
@@ -216,7 +194,7 @@ export function VideoForm({
 
       <ConfirmDialog {...dialogProps} />
 
-      <CostNote cents={estimatedCost} />
+      {estimatedCost !== null && <CostNote cents={estimatedCost} />}
 
       {modelSlot}
     </div>
