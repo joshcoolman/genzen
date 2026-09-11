@@ -2,6 +2,13 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), CSS Mod
 
 ## Commands
 
+- **Pasted Activity URL:** follow `AGENTS.md`'s Activity URL workflow immediately,
+  including opening output and reference images, even in a fresh conversation.
+  `pnpm activity:inspect '<URL>'` retrieves the context without a browser.
+- **Vague references to app work:** follow `AGENTS.md`'s lookup workflow.
+  `pnpm context:find` locates uploads/generations by recency, local date and text;
+  `pnpm context:inspect '<URL or UUID>'` loads their stored data and media.
+
 - `pnpm check` -- prettier, eslint fix, and the colour and token checks (run before commit)
 - `pnpm build` -- production build (run after check, before commit)
 - `pnpm test` -- vitest

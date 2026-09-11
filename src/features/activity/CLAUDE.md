@@ -2,6 +2,11 @@ Chronological record of every AI generation -- **images and clips**, success and
 
 ## Key Files
 
+- `scripts/inspect-activity.mjs` reads a pasted Activity entry URL for agent
+  context: full stored detail plus ordered media downloads, including clips.
+  The root `AGENTS.md` makes this automatic in fresh repository sessions;
+  `docs/reference/activity-context.md` documents the command and environment.
+
 - `types.ts` -- `ActivityEntry`, `ActivityEntryDetail`, `ActivityReferenceImage` (an alias of ai-images' `GenerationInputImage`, not its own shape), `ActivityGenerationMetadata`, `ActivityFilters`, `ListActivityResult`, `GenerationStatus`
 - `server/list-activity.action.ts` -- paginated query over `user_images` for `source in ('ai_generated','ai_video')`. NO status filter, NO `deleted_at` filter. Optional filter params (models, statuses). Windowed to the last `ACTIVE_DAYS` (3) days that **produced runs** — idle days do not count, so a week away does not empty the page. The window is computed over the filtered set, so narrowing to a model last used months ago still shows that model's last three working days. Cost comes from `generation_metadata.provider_cost_cents` — what FAL charged. There is no second, user-facing currency.
 
