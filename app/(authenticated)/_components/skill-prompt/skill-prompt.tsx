@@ -110,7 +110,9 @@ export function SkillPrompt({
       {command && (
         <div className={styles.active}>
           <strong>{command.label}</strong>
-          <span>{shotLabel} · 16:9 each · 2–9 supported</span>
+          <span>
+            {shotLabel} · separate full-size images · 16:9 each · 2–9 supported
+          </span>
         </div>
       )}
     </div>

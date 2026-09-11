@@ -66,6 +66,7 @@ function pendingCard(
     prompt: string
     sourceImageId?: string
     referenceImageIds?: Array<string>
+    storyboardShot?: number
   },
   groupId: string | null,
 ): SavedAiImage {
@@ -85,6 +86,9 @@ function pendingCard(
     generation_metadata: {
       prompt: placeholder.prompt,
       model: placeholder.model,
+      ...(placeholder.storyboardShot
+        ? { storyboard_shot: placeholder.storyboardShot }
+        : {}),
       reference_image_ids: placeholder.referenceImageIds,
       ...(placeholder.sourceImageId
         ? { source_image_id: placeholder.sourceImageId }

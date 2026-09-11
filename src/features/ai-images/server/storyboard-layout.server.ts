@@ -15,29 +15,17 @@ const ratioValue = (ratio: string) => {
   return a / b
 }
 
-/** A regular grid with at most two unused cells, rather than tiny strips for prime counts. */
-export function storyboardGrid(count: number) {
-  const columns = count <= 3 ? 1 : count <= 5 ? 2 : 3
-  return { columns, rows: Math.ceil(count / columns) }
-}
-
-export function layoutForSchema(
-  count: number,
-  schema: FalModelSchema,
-): StoryboardLayout {
-  if (!Number.isInteger(count) || count < 2 || count > 9)
-    throw new Error('Storyboard supports 2–9 shots.')
-  const { columns, rows } = storyboardGrid(count)
-  const idealSheetRatio = `${16 * columns}:${9 * rows}`
-  const target = ratioValue(idealSheetRatio)
+/** Resolve one full-size canvas per shot. Legacy sheets keep their saved settings. */
+export function layoutForSchema(schema: FalModelSchema): StoryboardLayout {
+  const target = 16 / 9
   const common = {
-    columns,
-    rows,
-    emptyCells: columns * rows - count,
+    columns: 1,
+    rows: 1,
+    emptyCells: 0,
     readingOrder: 'left-to-right, top-to-bottom' as const,
     shotAspectRatio: '16:9' as const,
-    idealSheetRatio,
-    fit: 'letterbox' as const,
+    idealSheetRatio: '16:9',
+    fit: 'fill' as const,
   }
   if (
     schema.sizeParam === 'image_size' &&
@@ -85,6 +73,6 @@ export function layoutForSchema(
   }
 }
 
-export async function resolveStoryboardLayout(model: string, count: number) {
-  return layoutForSchema(count, await fetchModelSchema(model, { strict: true }))
+export async function resolveStoryboardLayout(model: string) {
+  return layoutForSchema(await fetchModelSchema(model, { strict: true }))
 }

@@ -57,6 +57,11 @@ export function FailedImageCard({
     <>
       <Thumbnail
         status="failed"
+        topLeftBadge={
+          img.generation_metadata?.storyboard_shot
+            ? `Shot ${img.generation_metadata.storyboard_shot}`
+            : undefined
+        }
         /* The same corner badge a pending and a finished card carry (#367).
            It was centred under "Failed", so the one label you track across a
            generation moved on the way to *both* of its endings. */

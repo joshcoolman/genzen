@@ -39,6 +39,7 @@ export interface GenerationCallbacks {
       prompt: string
       sourceImageId?: string
       referenceImageIds?: Array<string>
+      storyboardShot?: number
     }>,
   ) => void
   /**
@@ -77,16 +78,22 @@ export async function submitGenerationBatch(batch: GenerationBatch) {
   const invocations = prompts.map(parsePromptInvocation)
   const calls = invocations.flatMap((invocation) =>
     batch.selectedModels.flatMap((model) =>
-      Array.from({ length: batch.gensPerModel }, () => ({
-        placeholderId: optimisticId(),
-        model,
-        resolved: endpointFor(model, !!sourceImageId),
-        invocation,
-        typedPrompt:
-          invocation.kind === 'skill'
-            ? invocation.originalInput
-            : invocation.text,
-      })),
+      Array.from({ length: batch.gensPerModel }, () =>
+        Array.from(
+          { length: invocation.kind === 'skill' ? invocation.shots : 1 },
+          (_, shotIndex) => ({
+            placeholderId: optimisticId(),
+            model,
+            resolved: endpointFor(model, !!sourceImageId),
+            invocation,
+            shotNumber: invocation.kind === 'skill' ? shotIndex + 1 : undefined,
+            typedPrompt:
+              invocation.kind === 'skill'
+                ? invocation.originalInput
+                : invocation.text,
+          }),
+        ),
+      ).flat(),
     ),
   )
   batch.onSubmitStart?.(
@@ -94,6 +101,7 @@ export async function submitGenerationBatch(batch: GenerationBatch) {
       placeholderId: c.placeholderId,
       model: c.model,
       title: modelTitleFor(c.resolved),
+      ...(c.shotNumber ? { storyboardShot: c.shotNumber } : {}),
       prompt: c.typedPrompt,
       ...(sourceImageId ? { sourceImageId } : {}),
       ...(referenceImageIds.length ? { referenceImageIds } : {}),
@@ -126,7 +134,9 @@ export async function submitGenerationBatch(batch: GenerationBatch) {
             preparations.set(invocation.originalInput, preparation)
           }
           variant = (await preparation).find(
-            (v) => v.skill.model === c.resolved,
+            (v) =>
+              v.skill.model === c.resolved &&
+              v.skill.shotNumber === c.shotNumber,
           )
           if (!variant)
             throw new Error(

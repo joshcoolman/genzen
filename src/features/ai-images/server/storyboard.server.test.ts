@@ -89,7 +89,7 @@ describe('authenticated storyboard preparation', () => {
       { type: 'image', image: 'environment', mediaType: 'image/jpeg' },
     ])
     expect(content[4].text).toContain('image 1 is the fighter')
-    expect(results).toHaveLength(2)
+    expect(results).toHaveLength(8)
     expect(results[0].skill.preparationId).toBe(results[1].skill.preparationId)
     expect(results[0].skill).toMatchObject({
       originalInput: input.originalInput,
@@ -99,6 +99,14 @@ describe('authenticated storyboard preparation', () => {
     })
     expect(results[0].prompt).not.toContain('/storyboard')
     expect(results[0].prompt).toContain('fighter')
+    expect(results[0].skill.shotNumber).toBe(1)
+    expect(results[0].skill.layout.size).toEqual({
+      image_size: { width: 2048, height: 1152 },
+    })
+    expect(results[0].prompt).toContain('Beat 1')
+    expect(results[0].prompt).not.toContain('Beat 2')
+    expect(results[1].prompt).toContain('Beat 2')
+    expect(results[1].prompt).not.toContain('Beat 1')
   })
   it('plans from a brief alone with no image reads or invented reference assignments', async () => {
     mocks.generate.mockResolvedValueOnce({
@@ -173,6 +181,14 @@ describe('authenticated storyboard preparation', () => {
         '/storyboard a different scene',
       ),
     ).rejects.toThrow('no longer matches')
+    await expect(
+      validatePreparedSkill(
+        { ...skill, shotNumber: 99 },
+        skill.model,
+        ids,
+        input.originalInput,
+      ),
+    ).rejects.toThrow('Invalid storyboard shot')
     expect(mocks.generate).toHaveBeenCalledTimes(2)
   })
 })

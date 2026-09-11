@@ -272,6 +272,7 @@ export function ImageGallery({
                   key={keyFor?.(img.id) ?? img.id}
                   prompt={img.generation_metadata?.prompt ?? ''}
                   model={getModelName(img.generation_metadata?.model ?? '')}
+                  storyboardShot={img.generation_metadata?.storyboard_shot}
                   isVariation={
                     img.generation_metadata?.generation_type === 'variation'
                   }

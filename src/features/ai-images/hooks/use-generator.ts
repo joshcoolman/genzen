@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { promptImageCount } from '../skills/registry'
+
 import { submitGenerationBatch } from '../submit-generation-batch'
 import type { GenerationOrigin } from '#/lib/types/db'
 import type { GenerationCallbacks } from '../submit-generation-batch'
@@ -310,7 +312,10 @@ export function useGenerator({
   const activePromptCount = prompts.filter((p) => p.trim()).length
   const hasImages = refImages.length > 0
   const runsPerModel =
-    Math.max(activePromptCount, hasImages ? 1 : 0) * gensPerModel
+    Math.max(
+      prompts.reduce((sum, p) => sum + promptImageCount(p), 0),
+      hasImages ? 1 : 0,
+    ) * gensPerModel
   const totalImages = runsPerModel * selectedModels.length
   // Priced off the lineup rather than FAL's pricing API -- see
   // `estimateImageCostCents` (#416, #400).

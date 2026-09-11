@@ -200,6 +200,10 @@
   left: var(--space-8);
 }
 
+.badgeAfterAction {
+  left: var(--space-40);
+}
+
 .badgeBottomLeft {
   bottom: var(--space-8);
   left: var(--space-8);

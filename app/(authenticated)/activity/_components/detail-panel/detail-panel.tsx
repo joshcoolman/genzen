@@ -372,11 +372,19 @@ export function DetailPanel({ entryId, onClose }: DetailPanelProps) {
                       {detail.imageSkill.plan.shots.length} ×{' '}
                       {detail.imageSkill.plan.shotAspectRatio}
                     </DetailRow>
-                    <DetailRow label="Sheet">
-                      {detail.imageSkill.layout.columns} columns ×{' '}
-                      {detail.imageSkill.layout.rows} rows ·{' '}
-                      {detail.imageSkill.layout.sheetAspectRatio}
-                    </DetailRow>
+                    {detail.imageSkill.shotNumber ? (
+                      <DetailRow label="Output">
+                        Shot {detail.imageSkill.shotNumber} · full-size
+                        individual image ·{' '}
+                        {detail.imageSkill.layout.sheetAspectRatio}
+                      </DetailRow>
+                    ) : (
+                      <DetailRow label="Sheet">
+                        {detail.imageSkill.layout.columns} columns ×{' '}
+                        {detail.imageSkill.layout.rows} rows ·{' '}
+                        {detail.imageSkill.layout.sheetAspectRatio}
+                      </DetailRow>
+                    )}
                     <DetailRow label="Planning">
                       {formatDurationMs(
                         detail.imageSkill.preparation.durationMs,
@@ -392,6 +400,7 @@ export function DetailPanel({ entryId, onClose }: DetailPanelProps) {
                       <JsonBlock
                         json={JSON.stringify(
                           {
+                            shotNumber: detail.imageSkill.shotNumber,
                             preparationId: detail.imageSkill.preparationId,
                             referenceIds: detail.imageSkill.referenceIds,
                             layout: detail.imageSkill.layout,

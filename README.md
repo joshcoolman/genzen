@@ -209,14 +209,14 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — No active implementation; Extract frames v1 is shipped (#622).
+**Focus** — No active implementation; full-size storyboard shots shipped (#626).
 
 Last shipped:
 
 - Extract frames reviews, adjusts and saves selected panels from uploaded or
   generated images as original-resolution crops in an ordered group (#622).
-- `/storyboard` works in the Images/Canvas prompt area, with immediate processing
-  thumbnails, an available composer, inspectable plans and replayable renders (#619).
+- `/storyboard` generates separate full-size shots, with immediate per-shot
+  thumbnails, shared continuity, accurate output counts and replayable renders (#626).
 - Video images have First frame, Reference, and Last frame roles; compatible
   models follow the selection. H3 Max image input, H3 references, and Kling O3
   mixed inputs are available; Continue preserves reference images (#516).

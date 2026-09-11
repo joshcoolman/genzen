@@ -12,7 +12,13 @@ client-safe registry owns command metadata; authenticated server dispatch plans
 from the brief and ordered library images. Default six 16:9 shots, override
 2–9 with prose or `--shots N`. Strict reference capacity and model sizing are
 checked before Claude. One plan per distinct brief/reference snapshot feeds all
-requested variants; shot ratio and resolved contact-sheet ratio are separate.
+requested shots and variants. Since #626 (v2), every shot renders as its own
+full-size image, using the shared continuity, original references and only that
+shot description. `shotNumber` identifies the output; the retained layout shape
+now describes a single full-size canvas. V1 contact-sheet metadata stays readable
+and its saved rendering request remains retryable. Counts and estimates multiply
+shots × selected models × variants. No group is created; the submit destination
+is captured before planning. Reference-sheet assembly is an optional separate tool.
 
 `submit-generation-batch.ts` captures each click and draws every optimistic card
 before planning or rendering. The composer remains available during background
