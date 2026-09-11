@@ -110,10 +110,15 @@
   gap: var(--space-8);
 }
 .footer {
+  flex-wrap: wrap;
   justify-content: space-between;
   font-size: var(--text-sm);
 }
 @media (max-width: 700px) {
+  .footer > p {
+    flex-basis: 100%;
+    order: -1;
+  }
   .workspace {
     grid-template-columns: 1fr;
   }
