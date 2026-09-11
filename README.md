@@ -209,10 +209,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — No active implementation; `/storyboard` reached its first milestone (#619).
+**Focus** — No active implementation; Extract frames v1 is shipped (#622).
 
 Last shipped:
 
+- Extract frames reviews, adjusts and saves selected panels from uploaded or
+  generated images as original-resolution crops in an ordered group (#622).
 - `/storyboard` works in the Images/Canvas prompt area, with immediate processing
   thumbnails, an available composer, inspectable plans and replayable renders (#619).
 - Video images have First frame, Reference, and Last frame roles; compatible
@@ -226,8 +228,6 @@ Last shipped:
   kept but the frames.
 - Director left the lab: `/director` is a real route with named sessions,
   durable clips and pending requests, authenticated on Railway.
-- Saved Director rough exports publish into Video and Frames as independent
-  copies, with their own names and deletion lifecycles.
 
 Updated when Focus changes. Everything else is the board at
 `localhost:3210/kanban/genzen` — **Now** is queued and small things to clear

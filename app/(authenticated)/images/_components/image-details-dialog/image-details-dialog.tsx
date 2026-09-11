@@ -72,6 +72,7 @@ function DetailsContent({
 }) {
   const isUpload = image.origin === 'upload'
   const metadata = image.generation_metadata
+  const isExtraction = metadata?.generation_type === 'frame_extraction'
   const prompt = metadata?.prompt ?? image.description ?? ''
   const description = isUpload
     ? (image.description ?? '')
@@ -92,7 +93,11 @@ function DetailsContent({
     <>
       <DialogHeader>
         <DialogTitle>
-          {isUpload ? 'Upload details' : 'Generation details'}
+          {isExtraction
+            ? 'Extracted frame details'
+            : isUpload
+              ? 'Upload details'
+              : 'Generation details'}
         </DialogTitle>
         <DialogDescription className={styles.filename}>
           {isUpload
@@ -112,6 +117,19 @@ function DetailsContent({
           role="img"
           aria-label={isUpload ? image.title : 'Generated image'}
         />
+      )}
+      {isExtraction && metadata.source_image_id && (
+        <section className={styles.section} aria-label="Source image">
+          <h3 className={styles.label}>Extracted from</h3>
+          <a
+            href={referenceUrl(metadata.source_image_id)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ReferenceImage id={metadata.source_image_id} number={1} />
+            Open source image
+          </a>
+        </section>
       )}
       {isUpload ? (
         descriptionSection

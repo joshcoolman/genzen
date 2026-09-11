@@ -4,7 +4,7 @@ import { useId, useState } from 'react'
 import styles from './skill-prompt.module.css'
 import type { ComponentProps } from 'react'
 import {
-  IMAGE_SKILLS,
+  PROMPT_IMAGE_SKILLS,
   storyboardShotCount,
 } from '#/features/ai-images/skills/registry'
 import { Textarea } from '#/components'
@@ -20,11 +20,13 @@ export function SkillPrompt({
   const [focused, setFocused] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const text = typeof props.value === 'string' ? props.value.trimStart() : ''
-  const command = IMAGE_SKILLS.find(
+  const command = PROMPT_IMAGE_SKILLS.find(
     (skill) => text.match(/^\S+/)?.[0].toLowerCase() === skill.command,
   )
   const choice = /^\/[a-z]*$/i.test(text)
-    ? IMAGE_SKILLS.find((skill) => skill.command.startsWith(text.toLowerCase()))
+    ? PROMPT_IMAGE_SKILLS.find((skill) =>
+        skill.command.startsWith(text.toLowerCase()),
+      )
     : undefined
   let shotLabel = '6 shots'
   try {

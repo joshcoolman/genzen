@@ -10,7 +10,21 @@ export const IMAGE_SKILLS = [
     input: { briefRequired: true, references: 'optional' },
     defaults: { shots: 6, shotAspectRatio: '16:9' },
   },
+  {
+    id: 'extract-frames',
+    version: 1,
+    label: 'Extract frames',
+    description: 'Review the panels in an image and save each selected crop.',
+    input: { imageRequired: true },
+    review: 'required',
+    output: 'source-crops',
+  },
 ] as const satisfies ReadonlyArray<ImageSkillDefinition>
+
+export const PROMPT_IMAGE_SKILLS = IMAGE_SKILLS.filter(
+  (skill) => skill.id === 'storyboard',
+)
+export const EXTRACT_FRAMES_SKILL = IMAGE_SKILLS[1]
 
 export type PromptInvocation =
   | { kind: 'plain'; text: string }
@@ -64,7 +78,9 @@ export function parsePromptInvocation(input: string): PromptInvocation {
   const text = input.trim()
   if (!text.startsWith('/')) return { kind: 'plain', text }
   const token = text.match(/^\S+/)![0]
-  const skill = IMAGE_SKILLS.find((s) => s.command === token.toLowerCase())
+  const skill = PROMPT_IMAGE_SKILLS.find(
+    (s) => s.command === token.toLowerCase(),
+  )
   if (!skill)
     throw new Error(
       `Unknown image command “${token}”. Use /storyboard followed by a scene idea, or remove the leading slash.`,
