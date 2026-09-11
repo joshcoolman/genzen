@@ -1,0 +1,13 @@
+.dialog {
+  --dialog-max-width: 80rem;
+  --dialog-max-height: 92dvh;
+  --dialog-padding: var(--space-16);
+}
+
+.player {
+  display: block;
+  width: 100%;
+  max-height: calc(92dvh - 7rem);
+  object-fit: contain;
+  background: var(--image-backing);
+}
