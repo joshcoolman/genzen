@@ -34,6 +34,7 @@ const schemaCache = new Map<string, FalModelSchema>()
 
 export async function fetchModelSchema(
   modelId: string,
+  options?: { strict?: boolean },
 ): Promise<FalModelSchema> {
   const cached = schemaCache.get(modelId)
   if (cached) return cached
@@ -53,7 +54,10 @@ export async function fetchModelSchema(
     schemaCache.set(modelId, schema)
     return schema
   } catch {
-    schemaCache.set(modelId, DEFAULT_SCHEMA)
+    if (options?.strict)
+      throw new Error(
+        'Could not verify this image model’s supported inputs. Try again before planning a storyboard.',
+      )
     return DEFAULT_SCHEMA
   }
 }

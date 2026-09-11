@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { RetryNotReproducible, planHasImages, planRetry } from './retry-plan'
+import {
+  RetryNotReproducible,
+  planHasImages,
+  planRetry,
+  replayRenderingRequest,
+} from './retry-plan'
 
 const base = { prompt: 'a cat', model: 'nano-banana-2' }
 
@@ -72,4 +77,57 @@ describe('planHasImages', () => {
   it('is false for text-only', () => {
     expect(planHasImages(planRetry(base))).toBe(false)
   })
+})
+
+describe('storyboard retry', () => {
+  const request = {
+    model: 'saved-endpoint',
+    settings: {
+      prompt: 'exact prepared prompt',
+      image_size: { width: 2048, height: 768 },
+      quality: 'medium',
+      num_images: 1,
+    },
+    imageInputParam: 'image_urls' as const,
+  }
+  it('replays stored settings and ordered references with fresh URLs', () => {
+    const plan = planRetry({
+      ...base,
+      prompt: '/storyboard a chase',
+      sent_prompt: 'exact prepared prompt',
+      image_skill: { id: 'storyboard' },
+      rendering_request: request,
+      source_image_id: 'first',
+      reference_image_ids: ['second', 'third'],
+    })
+    expect(plan.prompt).toBe('exact prepared prompt')
+    expect(plan.renderingRequest).toEqual(request)
+    expect(plan.source).toEqual({ kind: 'library', imageId: 'first' })
+    expect(plan.referenceImageIds).toEqual(['second', 'third'])
+    expect(
+      replayRenderingRequest(plan.renderingRequest!, [
+        'fresh-first',
+        'fresh-second',
+        'fresh-third',
+      ]),
+    ).toEqual({
+      ...request.settings,
+      image_urls: ['fresh-first', 'fresh-second', 'fresh-third'],
+    })
+  })
+  it('refuses an incomplete saved storyboard instead of rendering the slash command', () =>
+    expect(() =>
+      planRetry({
+        ...base,
+        prompt: '/storyboard a chase',
+        image_skill: { id: 'storyboard' },
+      }),
+    ).toThrow('missing its saved rendering request'))
+  it('refuses to drop images from the saved request', () =>
+    expect(() =>
+      replayRenderingRequest({ ...request, imageInputParam: 'image_url' }, [
+        'a',
+        'b',
+      ]),
+    ).toThrow('all references'))
 })

@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto'
+import { parsePromptInvocation } from '../skills/registry'
+import { validatePreparedSkill } from './storyboard.server'
 import { buildFalInput } from './fal-params.server'
+import type { PreparedImageSkill } from '../skills/types'
 import type { GenerationOrigin } from '#/lib/types/db'
 import { fal } from '#/lib/server/fal-client.server'
 import { withNetworkRetry } from '#/lib/server/fal-retry.server'
@@ -31,6 +34,7 @@ export interface GenerateImageInput {
   /** The textarea contents at submit, when `prompt` is not that -- canvas
    *  prepends auto-generated `[Image 1, ...]` labels. Absent when identical. */
   typedPrompt?: string
+  skill?: PreparedImageSkill
   model: string
   /** Which surface authored this request (#207). Required: a generation with no
    *  origin is the absence-of-evidence the column exists to end. */
@@ -59,6 +63,18 @@ function buildRefinePrompt(userPrompt: string): string {
   return `Re-imagine this: ${userPrompt}`
 }
 
+/** Preserve the reserved row when submission fails, so optimistic callers
+ * reconcile to its failed card instead of drawing a duplicate. */
+export class GenerationSubmissionError extends Error {
+  constructor(
+    public readonly recordId: string,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'GenerationSubmissionError'
+  }
+}
+
 export interface GenerateImageResult {
   recordId: string
   request_id: string
@@ -77,6 +93,37 @@ export async function generateImageInternal(
   data: GenerateImageInput,
 ): Promise<GenerateImageResult> {
   const { userId } = await resolveAuth()
+
+  const invocation = parsePromptInvocation(data.typedPrompt ?? data.prompt)
+  if (invocation.kind === 'skill' && !data.skill)
+    throw new Error(
+      'Prepare the storyboard before rendering. Submit it from the image prompt area.',
+    )
+  if (data.skill) {
+    const preparedPrompt = await validatePreparedSkill(
+      data.skill,
+      data.model,
+      [
+        ...(data.sourceImageId ? [data.sourceImageId] : []),
+        ...(data.referenceImageIds ?? []),
+      ],
+      data.typedPrompt ?? data.prompt,
+    )
+    if (
+      data.sourceImageBase64 ||
+      data.sourceImageUrl ||
+      data.isRefine ||
+      data.parentImageId
+    )
+      throw new Error(
+        'Storyboard requires its original ordered library references.',
+      )
+    data = {
+      ...data,
+      prompt: preparedPrompt,
+      aspectRatio: data.skill.layout.sheetAspectRatio,
+    }
+  }
 
   const {
     prompt,
@@ -139,6 +186,38 @@ export async function generateImageInternal(
     ? createHash('sha256').update(sourceBuffer).digest('hex')
     : null
 
+  let renderingRequest:
+    | {
+        model: string
+        settings: Record<string, unknown>
+        imageInputParam: 'image_url' | 'image_urls' | null
+      }
+    | undefined
+  if (data.skill) {
+    const preview = await buildFalInput({
+      modelId: data.skill.model,
+      prompt,
+      aspectRatio,
+      imageUrls: data.skill.referenceIds.map((_, i) => `reference-${i + 1}`),
+      safetyLevel: 'permissive',
+      extraParams: data.skill.layout.size,
+    })
+    if (preview.imagesUsed !== data.skill.referenceIds.length)
+      throw new Error(
+        'Storyboard requires every reference; this model cannot accept the full set.',
+      )
+    const { image_urls, image_url, ...settings } = preview.input
+    renderingRequest = {
+      model: data.skill.model,
+      settings,
+      imageInputParam: image_urls
+        ? 'image_urls'
+        : image_url
+          ? 'image_url'
+          : null,
+    }
+  }
+
   // Reserve the row BEFORE anything that can fail. Unlike the edit path this
   // one used to write its row with an inline insert *after* FAL accepted the
   // job, so every earlier failure — a bad key, an unreachable source image, a
@@ -161,6 +240,9 @@ export async function generateImageInternal(
     canvasId: data.canvasId,
     groupId: data.groupId,
     extraMetadata: {
+      ...(data.skill
+        ? { image_skill: data.skill, rendering_request: renderingRequest }
+        : {}),
       // Captured with no reader today, deliberately: unused *code* rots, unused
       // *data* accrues, and a UI can be built over a captured fact at any time
       // while an uncaptured one is gone. See docs/DELTAS.md.
@@ -198,8 +280,10 @@ export async function generateImageInternal(
       recordId,
       describeGenerationError(err, 'Generation failed'),
     )
-    // Rethrown so the client can toast. The card is already marked failed.
-    throw err
+    throw new GenerationSubmissionError(
+      recordId,
+      describeGenerationError(err, 'Generation failed'),
+    )
   }
 
   async function runGenerate(): Promise<string> {
@@ -308,8 +392,13 @@ export async function generateImageInternal(
       aspectRatio,
       ...(allImageUrls.length > 0 ? { imageUrls: allImageUrls } : {}),
       safetyLevel: 'permissive',
+      ...(data.skill ? { extraParams: data.skill.layout.size } : {}),
     })
 
+    if (data.skill && imagesUsed !== imagesRequested)
+      throw new Error(
+        'Storyboard requires every reference; this model cannot accept the full set.',
+      )
     // Submit to FAL async queue (returns immediately)
 
     const { request_id } = await withNetworkRetry<{ request_id: string }>(

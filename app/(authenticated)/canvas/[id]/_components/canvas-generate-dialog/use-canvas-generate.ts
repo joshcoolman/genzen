@@ -6,8 +6,8 @@ import {
   getImagePrompt,
 } from '../../_actions/canvas'
 import { canvasModelIdsForRefCount } from '../../_lib/canvas-models'
-import { mapOutcomesToPlaceholders } from '../../_lib/generation-mapping'
 import type { CanvasImage } from '../../_lib/types'
+import type { GenerationCallbacks } from '#/features/ai-images/submit-generation-batch'
 import { imageUrl } from '#/lib/image-url'
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
@@ -76,23 +76,13 @@ export function useCanvasGenerate(
 
   const sourceRef = useRef<CanvasImage | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const pendingPlaceholdersRef = useRef<Array<string>>([])
+  const preparingIdsRef = useRef<Set<string>>(new Set())
   // Shared tracking for the single poll loop. Multiple batches (a fresh submit
   // plus a mount-time resume, or two back-to-back generations) accumulate into
   // these refs rather than each replacing the interval, so no batch loses its
   // tracking when another starts.
   const recordToPlaceholderRef = useRef<Map<string, string>>(new Map())
   const pendingRecordIdsRef = useRef<Set<string>>(new Set())
-  // Geometry of the current placeholder row, so handleAfterSubmit can append
-  // extra placeholders if the server returns more results than we predicted.
-  const placeholderLayoutRef = useRef<{
-    startX: number
-    y: number
-    placeholderW: number
-    placeholderH: number
-    gap: number
-  } | null>(null)
-
   // Only models whose edit endpoint can hold the current reference count are
   // offered; a single image (groupRefCount 0) exposes every curated model.
   const allowedIds = useMemo(
@@ -119,7 +109,7 @@ export function useCanvasGenerate(
         pendingRecordIdsRef.current.add(recordId)
       }
       if (pendingRecordIdsRef.current.size === 0) {
-        setIsGenerating(false)
+        setIsGenerating(preparingIdsRef.current.size > 0)
         return
       }
 
@@ -133,7 +123,7 @@ export function useCanvasGenerate(
             clearInterval(pollRef.current)
             pollRef.current = null
           }
-          setIsGenerating(false)
+          setIsGenerating(preparingIdsRef.current.size > 0)
           return
         }
 
@@ -203,7 +193,7 @@ export function useCanvasGenerate(
             clearInterval(pollRef.current)
             pollRef.current = null
           }
-          setIsGenerating(false)
+          setIsGenerating(preparingIdsRef.current.size > 0)
         }
       }
 
@@ -217,76 +207,45 @@ export function useCanvasGenerate(
     [setImages],
   )
 
-  // Map each ordered submit outcome (outcomes[i] ↔ placeholderIds[i]) to its
-  // placeholder: stamp recordId + model on successes (then poll), mark failures
-  // failed in place (model + error) so nothing silently vanishes.
-  const handleAfterSubmit = useCallback(
-    (
-      outcomes: Array<{
-        model: string
-        recordId: string | null
-        error: string | null
-      }>,
-    ) => {
-      let placeholderIds = pendingPlaceholdersRef.current
-      if (placeholderIds.length === 0) return
-
-      // Defensive: if the server somehow returned more outcomes than predicted,
-      // append placeholders so none is dropped. (Counts normally match exactly.)
-      if (outcomes.length > placeholderIds.length) {
-        const layout = placeholderLayoutRef.current
-        const added: Array<string> = []
-        const extra: Array<CanvasImage> = []
-        for (let i = placeholderIds.length; i < outcomes.length; i++) {
-          const id = crypto.randomUUID()
-          added.push(id)
-          extra.push({
-            id,
-            recordId: '',
-            storagePath: '',
-            x: layout
-              ? layout.startX + i * (layout.placeholderW + layout.gap)
-              : 0,
-            y: layout ? layout.y : 0,
-            width: layout ? layout.placeholderW : 300,
-            height: layout ? layout.placeholderH : 300,
-            pending: true,
-          })
-        }
-        setImages((prev) => [...prev, ...extra])
-        placeholderIds = [...placeholderIds, ...added]
-      }
-      pendingPlaceholdersRef.current = placeholderIds
-
-      const { recordToPlaceholder, updates } = mapOutcomesToPlaceholders(
-        outcomes,
-        placeholderIds,
-      )
-      const updateById = new Map(updates.map((u) => [u.placeholderId, u]))
-
-      // Apply per-placeholder updates in one pass: successes get recordId+model;
-      // failures (submit rejected, no DB record) become failed tiles with model +
-      // error. A success needs no membership write here -- the generation insert
-      // wrote its `canvas_images` row unplaced at reserve time (#212), which is
-      // what makes it reclaimable if the tab goes away before FAL answers.
+  // Outcomes carry their own tile id, including failures before a DB row
+  // exists. Concurrent batches never share an array of placeholder positions.
+  const handleSubmitOutcome = useCallback<
+    NonNullable<GenerationCallbacks['onSubmitOutcome']>
+  >(
+    ({ placeholderId, recordId, model, error: submitError }) => {
+      preparingIdsRef.current.delete(placeholderId)
       setImages((prev) =>
-        prev.map((ci) => {
-          const u = updateById.get(ci.id)
-          if (!u) return ci
-          if (u.recordId) {
-            return { ...ci, recordId: u.recordId, model: u.model }
-          }
-          return {
-            ...ci,
-            pending: false,
-            failed: true,
-            errorMessage: u.errorMessage,
-            model: u.model,
-          }
-        }),
+        prev.map((ci) =>
+          ci.id !== placeholderId
+            ? ci
+            : recordId
+              ? {
+                  ...ci,
+                  recordId,
+                  model,
+                  ...(submitError
+                    ? {
+                        pending: false,
+                        failed: true,
+                        errorMessage: submitError,
+                      }
+                    : {}),
+                }
+              : {
+                  ...ci,
+                  pending: false,
+                  failed: true,
+                  model,
+                  errorMessage:
+                    submitError ?? 'Generation could not be started',
+                },
+        ),
       )
-
-      startPolling(recordToPlaceholder)
+      startPolling(
+        recordId && !submitError
+          ? new Map([[recordId, placeholderId]])
+          : new Map(),
+      )
     },
     [setImages, startPolling],
   )
@@ -353,7 +312,8 @@ export function useCanvasGenerate(
     gensPerModel: modelSelector.gensPerModel,
     setError,
     storagePrefix: 'genzen-canvas',
-    onAfterSubmit: handleAfterSubmit,
+    onSubmitStart: (placeholders) => createPlaceholders(placeholders),
+    onSubmitOutcome: handleSubmitOutcome,
     canvasId,
   })
 
@@ -362,7 +322,9 @@ export function useCanvasGenerate(
   // images, the block is relocated to clear space below everything so previews
   // never land on top of other images. For a single image the source moves with
   // its previews (keeping them together); for a group the inputs stay put.
-  const handleGenerateOptimistic = useCallback(() => {
+  function createPlaceholders(
+    calls: Parameters<NonNullable<GenerationCallbacks['onSubmitStart']>>[0],
+  ) {
     const source = sourceRef.current
     if (!source || !generator.canGenerate) return
 
@@ -370,22 +332,17 @@ export function useCanvasGenerate(
     const placeholderH = source.height
     const placeholderW = Math.round(placeholderH * ratio)
     // generator.totalImages already accounts for prompts x models x gensPerModel.
-    const totalCount = generator.totalImages
+    const totalCount = calls.length
     const gap = 40
 
     // One input image. Was `refImages.length === 0`, when the first image lived
     // in a separate source slot and the strip held only the extras; the set
     // holds all of them now, so one input reads as length 1 (#297).
     const isSingle = generator.refImages.length <= 1
-    // Models expanded by gensPerModel — placeholder[i] maps to
-    // modelsExpanded[i % len] matching the submit order from useGenerator.
-    const modelsExpanded = modelSelector.selectedIds.flatMap((id) =>
-      Array.from({ length: modelSelector.gensPerModel }, () => id),
-    )
     // Images the previews must not overlap. For single, exclude the source (it
     // may move with the block); for a group the inputs stay where they are.
-    const obstacles = getImages().filter(
-      (img) => !img.pending && (isSingle ? img.id !== source.id : true),
+    const obstacles = getImages().filter((img) =>
+      isSingle ? img.id !== source.id : true,
     )
 
     let originX = source.x
@@ -418,14 +375,6 @@ export function useCanvasGenerate(
       }
     }
 
-    placeholderLayoutRef.current = {
-      startX,
-      y: originY,
-      placeholderW,
-      placeholderH,
-      gap,
-    }
-
     // If the single-image block moved, carry the source image with it.
     if (isSingle && (originX !== source.x || originY !== source.y)) {
       setImages((prev) =>
@@ -438,8 +387,9 @@ export function useCanvasGenerate(
     const placeholderIds: Array<string> = []
     const placeholders: Array<CanvasImage> = []
     for (let i = 0; i < totalCount; i++) {
-      const id = crypto.randomUUID()
+      const id = calls[i].placeholderId
       placeholderIds.push(id)
+      preparingIdsRef.current.add(id)
       placeholders.push({
         id,
         recordId: '',
@@ -449,10 +399,9 @@ export function useCanvasGenerate(
         width: placeholderW,
         height: placeholderH,
         pending: true,
-        model: modelsExpanded[i % modelsExpanded.length],
+        model: calls[i].model,
       })
     }
-    pendingPlaceholdersRef.current = placeholderIds
 
     setImages((prev) => [...prev, ...placeholders])
     // Single-image generate: auto-group the origin with its generations so they
@@ -473,31 +422,12 @@ export function useCanvasGenerate(
       w: rowEnd - revealX,
       h: Math.max(isSingle ? source.height : 0, placeholderH),
     })
+  }
 
-    generator.handleGenerate().catch((err: unknown) => {
-      // handleGenerate normally surfaces partial failures via onAfterSubmit (per
-      // tile) and its own setError; this guards a hard rejection before any
-      // outcome lands -- mark the still-pending placeholders failed rather than
-      // delete them, so the failure stays visible.
-      const message = err instanceof Error ? err.message : 'Generation failed'
-      setError(message)
-      setImages((prev) =>
-        prev.map((ci) =>
-          placeholderIds.includes(ci.id) && ci.pending && !ci.recordId
-            ? { ...ci, pending: false, failed: true, errorMessage: message }
-            : ci,
-        ),
-      )
-      setIsGenerating(false)
-    })
-  }, [
-    generator,
-    modelSelector,
-    setImages,
-    getImages,
-    revealBounds,
-    groupImages,
-  ])
+  const handleGenerateOptimistic = () => {
+    if (!sourceRef.current) return
+    void generator.handleGenerate()
+  }
 
   // Open the Generate dialog for a selection. The first image is the primary
   // (Image 1, the source, shown up top); the rest pre-fill the reference strip

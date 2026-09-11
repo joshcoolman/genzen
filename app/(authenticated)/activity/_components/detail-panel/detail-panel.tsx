@@ -363,6 +363,64 @@ export function DetailPanel({ entryId, onClose }: DetailPanelProps) {
                   </Section>
                 )}
 
+                {detail.imageSkill && (
+                  <Section title="Storyboard plan">
+                    <DetailRow label="Skill">
+                      Storyboard v{detail.imageSkill.version}
+                    </DetailRow>
+                    <DetailRow label="Shots">
+                      {detail.imageSkill.plan.shots.length} ×{' '}
+                      {detail.imageSkill.plan.shotAspectRatio}
+                    </DetailRow>
+                    <DetailRow label="Sheet">
+                      {detail.imageSkill.layout.columns} columns ×{' '}
+                      {detail.imageSkill.layout.rows} rows ·{' '}
+                      {detail.imageSkill.layout.sheetAspectRatio}
+                    </DetailRow>
+                    <DetailRow label="Planning">
+                      {formatDurationMs(
+                        detail.imageSkill.preparation.durationMs,
+                      )}{' '}
+                      · {detail.imageSkill.preparation.model}
+                    </DetailRow>
+                    <p className={styles.prompt}>
+                      Claude planning is additional to the image cost. This
+                      preparation is shared by renders with the same preparation
+                      ID.
+                    </p>
+                    <div className={styles.copyWrap}>
+                      <JsonBlock
+                        json={JSON.stringify(
+                          {
+                            preparationId: detail.imageSkill.preparationId,
+                            referenceIds: detail.imageSkill.referenceIds,
+                            layout: detail.imageSkill.layout,
+                            plan: detail.imageSkill.plan,
+                            preparation: detail.imageSkill.preparation,
+                          },
+                          null,
+                          2,
+                        )}
+                      />
+                      <CopyButton
+                        text={JSON.stringify(detail.imageSkill, null, 2)}
+                        label="Copy storyboard plan"
+                      />
+                    </div>
+                  </Section>
+                )}
+                {detail.sentPrompt && (
+                  <Section title="Prepared prompt">
+                    <div className={styles.copyWrap}>
+                      <p className={styles.prompt}>{detail.sentPrompt}</p>
+                      <CopyButton
+                        text={detail.sentPrompt}
+                        label="Copy prepared prompt"
+                      />
+                    </div>
+                  </Section>
+                )}
+
                 {detail.errorMessage && (
                   <Section title="Error">
                     <div className={styles.copyWrap}>

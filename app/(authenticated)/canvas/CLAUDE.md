@@ -17,6 +17,12 @@ cascades on `canvas_id` and no `user_images` row is touched. The index creates
 nothing on read: an account with no boards shows an empty state, because a list
 that silently re-seeded itself would make deleting your last board look broken.
 
+The shared generator supports `/storyboard` (#619). Its `onSubmitStart` creates
+canvas tiles before planning, and each outcome identifies its own tile so
+concurrent submissions cannot overwrite one another. Pending tiles count as
+placement obstacles. Preparation failures remain failed tiles; successful
+submissions enter the existing shared poll loop.
+
 ## Not in the nav, on purpose (2026-08-19)
 
 Canvas is **unlisted**: its entry in `src/lib/nav-items.ts` is commented out,

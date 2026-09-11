@@ -4,7 +4,15 @@
  *  reading of `generation_metadata`, and the reasons a retry is impossible are
  *  facts about that row rather than about the network. */
 
+export interface RenderingRequest {
+  model: string
+  settings: Record<string, unknown>
+  imageInputParam: 'image_url' | 'image_urls' | null
+}
+
 export interface RetryMetadata {
+  image_skill?: unknown
+  rendering_request?: RenderingRequest
   /** What the user would call their prompt. Display, not replay (#367). */
   prompt?: string
   /** The string FAL actually received -- system instructions, canvas image
@@ -30,6 +38,7 @@ export type RetrySource =
   | { kind: 'none' }
 
 export interface RetryPlan {
+  renderingRequest?: RenderingRequest
   prompt: string
   /** The base model id. The endpoint is derived, never read from the row -- see
    *  `unreproducible` note below on why the stored one cannot be trusted. */
@@ -58,6 +67,11 @@ export function planRetry(meta: RetryMetadata): RetryPlan {
     )
   }
 
+  if (meta.image_skill && !meta.rendering_request)
+    throw new RetryNotReproducible(
+      'This storyboard is missing its saved rendering request. Load it into the composer to generate again.',
+    )
+
   let source: RetrySource = { kind: 'none' }
   if (meta.source_image_id) {
     source = { kind: 'library', imageId: meta.source_image_id }
@@ -74,6 +88,9 @@ export function planRetry(meta: RetryMetadata): RetryPlan {
   }
 
   return {
+    ...(meta.rendering_request
+      ? { renderingRequest: meta.rendering_request }
+      : {}),
     // The sent string when the row has one, else `prompt` -- which on a
     // pre-#367 row is the sent string anyway, so both eras replay correctly.
     prompt: meta.sent_prompt ?? meta.prompt,
@@ -94,4 +111,26 @@ export function planRetry(meta: RetryMetadata): RetryPlan {
  *  does not take them. */
 export function planHasImages(plan: RetryPlan): boolean {
   return plan.source.kind !== 'none' || plan.referenceImageIds.length > 0
+}
+
+/** Original provider settings, with only temporary upload URLs replaced. */
+export function replayRenderingRequest(
+  request: RenderingRequest,
+  imageUrls: Array<string>,
+): Record<string, unknown> {
+  if (
+    (imageUrls.length > 0 && !request.imageInputParam) ||
+    (request.imageInputParam === 'image_url' && imageUrls.length !== 1)
+  )
+    throw new RetryNotReproducible(
+      'The saved rendering request cannot replay all references.',
+    )
+  return {
+    ...request.settings,
+    ...(request.imageInputParam === 'image_urls'
+      ? { image_urls: imageUrls }
+      : request.imageInputParam === 'image_url'
+        ? { image_url: imageUrls[0] }
+        : {}),
+  }
 }

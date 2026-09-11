@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Copy, RotateCcw } from 'lucide-react'
+import { Check, Copy, FileInput, RotateCcw } from 'lucide-react'
 import styles from './failed-image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
+import { isOptimisticId } from '#/lib/optimistic-id'
 import { classifyError } from '#/features/ai-images/error-classification'
 import { getModelName } from '#/features/ai-images/models'
 import {
@@ -18,18 +19,20 @@ interface FailedImageCardProps {
   img: SavedAiImage
   onDelete: (img: SavedAiImage) => void
   onRetry?: (img: SavedAiImage) => void
+  onLoad?: (img: SavedAiImage) => void
 }
 
 export function FailedImageCard({
   img,
   onDelete,
   onRetry,
+  onLoad,
 }: FailedImageCardProps) {
   const [retrying, setRetrying] = useState(false)
   const [errorOpen, setErrorOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const { category } = classifyError(img.generation_error)
-  const isRetryable = category === 'retryable'
+  const isRetryable = category === 'retryable' && !isOptimisticId(img.id)
   const modelName = getModelName(img.generation_metadata?.model ?? '')
   const rawError = img.generation_error
 
@@ -74,6 +77,19 @@ export function FailedImageCard({
               title="Retry generation"
             >
               <RotateCcw className={retrying ? styles.spinning : undefined} />
+            </button>
+          ) : isOptimisticId(img.id) && onLoad ? (
+            <button
+              type="button"
+              className={styles.retry}
+              aria-label="Load into the generator"
+              title="Load prompt and references to try again"
+              onClick={(e) => {
+                e.stopPropagation()
+                onLoad(img)
+              }}
+            >
+              <FileInput />
             </button>
           ) : undefined
         }

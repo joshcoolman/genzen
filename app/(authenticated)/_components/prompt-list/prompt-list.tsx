@@ -1,6 +1,7 @@
 'use client'
 
 import { Plus, X } from 'lucide-react'
+import { SkillPrompt } from '../skill-prompt/skill-prompt'
 import styles from './prompt-list.module.css'
 import type { ReactNode } from 'react'
 import { MiniButton, Textarea } from '#/components'
@@ -10,6 +11,7 @@ interface PromptListProps {
   onUpdatePrompt: (index: number, value: string) => void
   onAddPrompt: () => void
   onRemovePrompt: (index: number) => void
+  imageCommands?: boolean
   disabled?: boolean
   placeholders?: { first: string; additional: string }
   // Optional: clear all prompts back to single empty textarea
@@ -33,6 +35,7 @@ export function PromptList({
   onAddPrompt,
   onRemovePrompt,
   disabled,
+  imageCommands = false,
   placeholders = {
     first: 'Describe your image...',
     additional: 'Additional prompt...',
@@ -44,6 +47,7 @@ export function PromptList({
   // appear on the first keystroke in an empty field, shifting every control
   // below it while the user was typing. A row being added is already a shift;
   // typing should never be one.
+  const PromptInput = imageCommands ? SkillPrompt : Textarea
   const canClearPrompts = prompts.length > 1
   return (
     <div className={styles.root}>
@@ -64,7 +68,13 @@ export function PromptList({
       {prompts.map((promptText, index) => {
         return (
           <div key={index} className={styles.field}>
-            <Textarea
+            <PromptInput
+              {...(imageCommands
+                ? {
+                    onCommandSelect: (value: string) =>
+                      onUpdatePrompt(index, value),
+                  }
+                : {})}
               id={index === 0 ? 'prompt-textarea' : `prompt-textarea-${index}`}
               placeholder={
                 index === 0 ? placeholders.first : placeholders.additional
@@ -80,6 +90,7 @@ export function PromptList({
               onClick={() => onRemovePrompt(index)}
               className={styles.remove}
               title="Remove this prompt"
+              disabled={disabled}
             >
               <X size={14} />
             </button>

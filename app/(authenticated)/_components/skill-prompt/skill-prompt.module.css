@@ -1,0 +1,47 @@
+.root {
+  position: relative;
+  width: 100%;
+}
+.menu {
+  position: absolute;
+  z-index: 5;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding: var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+
+  > button {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+    width: 100%;
+    padding: var(--space-8);
+    text-align: left;
+    color: var(--text);
+    background: var(--field-hover);
+    border: 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+
+    > span {
+      color: var(--text-muted);
+      font-size: var(--text-xs);
+    }
+  }
+}
+.active {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-8);
+  padding: var(--space-4) 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+
+  > strong {
+    color: var(--accent);
+  }
+}

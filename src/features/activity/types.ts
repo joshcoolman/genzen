@@ -1,3 +1,4 @@
+import type { PreparedImageSkill } from '#/features/ai-images/skills/types'
 import type { GenerationInputImage } from '#/features/ai-images/generation-inputs'
 
 export type GenerationStatus = 'pending' | 'completed' | 'failed'
@@ -11,6 +12,8 @@ export type GenerationStatus = 'pending' | 'completed' | 'failed'
 export type ActivitySource = 'ai_generated' | 'ai_video'
 
 export interface ActivityGenerationMetadata {
+  image_skill?: PreparedImageSkill
+  sent_prompt?: string
   prompt?: string
   model?: string
   provider?: string
@@ -78,6 +81,8 @@ export interface ListActivityResult {
 export type ActivityReferenceImage = GenerationInputImage
 
 export interface ActivityEntryDetail extends ActivityEntry {
+  imageSkill?: PreparedImageSkill
+  sentPrompt?: string
   storagePath: string | null
   fileName: string | null
   mimeType: string | null
