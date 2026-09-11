@@ -12,13 +12,10 @@ longer talks to the database.
 - `lib/file-hash.ts` -- Client-side SHA-256 hashing for duplicate detection
 - `lib/save-to-library.ts` -- `saveFileToLibrary()`: object to storage, then the
   row, then a background thumbnail, with a rollback if the insert fails.
-  **The client upload write path into the library** (#215). **Standalone, not a hook**, so
+  **The only write path into the library** (#215). **Standalone, not a hook**, so
   a caller that only needs to write one image does not mount `useUserImages` --
   that hook fetches the whole library on mount, and a second copy on the same
   page doubles the query. `useUserImages.create` delegates to it
-- `server/save-derived-image.server.ts` -- trusted server transforms save PNG crops
-  with ownership-scoped idempotency, upload rollback, and background thumbnails
-  (#622). Callers authenticate and validate source bytes/bounds before using it.
 - `lib/filename-parser.ts` -- Converts filenames to title-case display names
 - `server/images.action.ts` -- list / create / update / soft-delete, user scoped by `resolveAuth()`
 - `server/image-groups.action.ts` -- `listImageGroupNames()`: every group's id

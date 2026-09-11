@@ -54,7 +54,6 @@ interface ImageGalleryProps {
   onRetry?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
   onOutpaint?: (img: SavedAiImage) => void
-  onExtractFrames?: (img: SavedAiImage) => void
   onImageDetails?: (img: SavedAiImage) => void
   onOpen?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click: the power moves (#284 follow-up). Plain sets the source,
@@ -116,7 +115,6 @@ export function ImageGallery({
   onRetry,
   onDownload,
   onOutpaint,
-  onExtractFrames,
   onImageDetails,
   keyFor,
   onOpen,
@@ -293,11 +291,7 @@ export function ImageGallery({
                   img={img}
                   onDelete={onDelete}
                   onRetry={onRetry}
-                  onLoad={
-                    img.id.startsWith('optimistic-extract-')
-                      ? undefined
-                      : onLoad
-                  }
+                  onLoad={onLoad}
                 />
               )
             }
@@ -319,7 +313,6 @@ export function ImageGallery({
                 onDelete={onDelete}
                 onDownload={onDownload}
                 onOutpaint={onOutpaint}
-                onExtractFrames={onExtractFrames}
                 onImageDetails={onImageDetails}
                 onOpen={onOpen}
                 onAddReference={onAddReference}

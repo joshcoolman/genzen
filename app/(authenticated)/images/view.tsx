@@ -17,21 +17,14 @@ import { LightingDialog } from './_components/lighting-dialog/lighting-dialog'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
-import { ExtractFramesDialog } from './_components/extract-frames-dialog/extract-frames-dialog'
 import { useView } from './use-view'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import {
-  Button,
-  ConfirmDialog,
-  NameDialog,
-  ZipDownloadDialog,
-} from '#/components'
+import { ConfirmDialog, NameDialog, ZipDownloadDialog } from '#/components'
 import { countedBaseName } from '#/lib/download-name'
 
 export function View({ initial }: { initial: Array<SavedAiImage> }) {
   const {
     images,
-    extraction,
     cells,
     gallery,
     userImages,
@@ -132,7 +125,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           it was Deselect all or Escape here (#439). Passed only while
           something is picked, so an ordinary click on the background of an
           ordinary page stays an ordinary click. */}
-      <ExtractFramesDialog extraction={extraction} />
       <Workspace
         pushed={dock.open || selectionSurface === 'panel'}
         onBackgroundClick={selectMode ? selection.clearSelection : undefined}
@@ -204,15 +196,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           />
         )}
 
-        {extraction.target && !extraction.isOpen && (
-          <Button onClick={() => extraction.setOpen(true)}>
-            {extraction.detecting
-              ? 'Finding frames…'
-              : extraction.saving
-                ? 'Saving frames…'
-                : 'Review frame extraction'}
-          </Button>
-        )}
         <ImageGallery
           cells={cells}
           imageUrls={gallery.imageUrls}
@@ -225,7 +208,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onRetry={gallery.retryImage}
           onDownload={download.start}
           onOutpaint={startOutpaint}
-          onExtractFrames={(img) => void extraction.open(img)}
           onImageDetails={(img) => setImageDetailsId(img.id)}
           onOpen={viewer.open}
           onAddReference={addReference}
