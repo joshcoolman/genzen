@@ -1,4 +1,4 @@
-import type { ImageSkillDefinition } from './types'
+import type { PromptImageSkillDefinition } from './types'
 
 export const IMAGE_SKILLS = [
   {
@@ -10,21 +10,9 @@ export const IMAGE_SKILLS = [
     input: { briefRequired: true, references: 'optional' },
     defaults: { shots: 6, shotAspectRatio: '16:9' },
   },
-  {
-    id: 'extract-frames',
-    version: 1,
-    label: 'Extract frames',
-    description: 'Review the panels in an image and save each selected crop.',
-    input: { imageRequired: true },
-    review: 'required',
-    output: 'source-crops',
-  },
-] as const satisfies ReadonlyArray<ImageSkillDefinition>
+] as const satisfies ReadonlyArray<PromptImageSkillDefinition>
 
-export const PROMPT_IMAGE_SKILLS = IMAGE_SKILLS.filter(
-  (skill) => skill.id === 'storyboard',
-)
-export const EXTRACT_FRAMES_SKILL = IMAGE_SKILLS[1]
+export const PROMPT_IMAGE_SKILLS = IMAGE_SKILLS
 
 export type PromptInvocation =
   | { kind: 'plain'; text: string }

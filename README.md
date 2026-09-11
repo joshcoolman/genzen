@@ -213,8 +213,6 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 Last shipped:
 
-- Extract frames reviews, adjusts and saves selected panels from uploaded or
-  generated images as original-resolution crops in an ordered group (#622).
 - `/storyboard` generates separate full-size shots, with immediate per-shot
   thumbnails, shared continuity, accurate output counts and replayable renders (#626).
 - Video images have First frame, Reference, and Last frame roles; compatible

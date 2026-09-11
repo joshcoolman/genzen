@@ -72,6 +72,7 @@ function DetailsContent({
 }) {
   const isUpload = image.origin === 'upload'
   const metadata = image.generation_metadata
+  // Keep source links readable for crops saved before the extraction skill retired.
   const isExtraction = metadata?.generation_type === 'frame_extraction'
   const prompt = metadata?.prompt ?? image.description ?? ''
   const description = isUpload

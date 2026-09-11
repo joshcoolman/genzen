@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { useExtractFrames } from './_components/extract-frames-dialog/use-extract-frames'
 import { useDock } from './_hooks/use-dock'
 import { useDownload } from './_hooks/use-download'
 import { useReferenceSheet } from './_hooks/use-reference-sheet'
@@ -221,46 +220,6 @@ export function useView(initial: Array<SavedAiImage>) {
   })
 
   const [error, setError] = useState<string | null>(null)
-
-  const extraction = useExtractFrames({
-    onStart: (frames, source, retry) => {
-      prefs.revealAll()
-      for (const frame of frames) {
-        const id = `optimistic-extract-${frame.id}`
-        if (retry)
-          gallery.replaceOptimisticCard(id, (card) => ({
-            ...card,
-            status: 'pending',
-            generation_error: null,
-          }))
-        else
-          gallery.addOptimisticCard({
-            ...pendingCard(
-              {
-                placeholderId: id,
-                model: 'Extract frames',
-                title: frame.label,
-                prompt: `Extract ${frame.label}`,
-                sourceImageId: source.id,
-              },
-              activeGroupId,
-            ),
-            origin: 'upload',
-          })
-      }
-    },
-    onOutcome: (frameId, recordId, message) => {
-      gallery.replaceOptimisticCard(`optimistic-extract-${frameId}`, (card) =>
-        recordId
-          ? { ...card, id: recordId }
-          : { ...card, status: 'failed', generation_error: message },
-      )
-    },
-    onSettled: () => {
-      void gallery.refresh({ silent: true })
-      void groups.refresh()
-    },
-  })
 
   const generator = useGenerator({
     origin: 'images',
@@ -1438,7 +1397,6 @@ export function useView(initial: Array<SavedAiImage>) {
   )
 
   return {
-    extraction,
     images,
     cells,
     gallery,

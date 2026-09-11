@@ -53,16 +53,3 @@ export interface PreparedImageSkill {
     durationMs: number
   }
 }
-
-export interface ImageActionSkillDefinition {
-  id: 'extract-frames'
-  version: number
-  label: string
-  description: string
-  input: { imageRequired: true }
-  review: 'required'
-  output: 'source-crops'
-}
-export type ImageSkillDefinition =
-  | PromptImageSkillDefinition
-  | ImageActionSkillDefinition

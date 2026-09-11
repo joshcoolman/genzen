@@ -34,11 +34,6 @@ and Load restores the editable invocation. Planning adds Claude usage beyond
 the image estimate shown in the composer. Instructions stay in lazy Markdown
 files under `src/lib/prompts/storyboard/`.
 
-The skill registry also describes image actions: Extract frames (#622) requires
-a source image and explicit review, and returns literal crops. `PROMPT_IMAGE_SKILLS`
-keeps this action out of slash-command completion and dispatch. Its execution and
-review UI belong to the Images route.
-
 ## Images on the way to FAL
 
 **Every image the app sends FAL goes through `uploadBufferToFal`**, which

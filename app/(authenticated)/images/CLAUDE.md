@@ -786,21 +786,6 @@ dialog holds "type, get one result, close" and nothing more. They come back when
 they work the way they are supposed to, and until then this route behaves as
 though they never existed.
 
-## Extract frames (#622)
-
-The image-card menu offers Extract frames for completed uploaded or generated
-still images. `_lib/extract-frames.server.ts` owns Claude detection and Sharp
-cropping; `_actions/extract-frames.action.ts` returns explicit errors so production
-retains useful failure messages. The review dialog lets users select, add, adjust
-and reorder up to 32 rectangular regions. Nothing is saved before Extract N frames.
-
-Approved crops preserve original oriented pixels as PNGs, with source hash, bounds
-and order in metadata, in a new manually ordered group. Crops use upload origin
-because no image generation occurred; their details link to the source image.
-Stable batch/frame keys make retries reuse saved rows. Per-frame optimistic cards
-appear immediately after approval, and the latest review can reopen after closing
-during detection or saving. This is a card action, not a prompt slash command.
-
 ## Storyboard outputs (#626)
 
 `/storyboard` submits one full-size generation per planned shot, model and
