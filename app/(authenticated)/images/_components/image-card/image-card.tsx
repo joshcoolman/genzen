@@ -9,6 +9,7 @@ import {
   ImageIcon,
   Maximize2,
   MoreHorizontal,
+  Scan,
   ScanText,
   Trash2,
 } from 'lucide-react'
@@ -16,6 +17,7 @@ import { useState } from 'react'
 import { CardCaption } from '../card-caption/card-caption'
 import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
+import { EXTRACT_FRAMES_SKILL } from '#/features/ai-images/skills/registry'
 import { refUsageNote } from '#/features/ai-images/ref-usage'
 import { useModifierHeld } from '#/lib/use-modifier-held'
 import { cx } from '#/lib/utils'
@@ -40,6 +42,7 @@ interface ImageCardProps {
   onDownload?: (img: SavedAiImage) => void
   /** Reframe it to other shapes (#430). Opens the ratio dialog. */
   onOutpaint?: (img: SavedAiImage) => void
+  onExtractFrames?: (img: SavedAiImage) => void
   /** Open the image's prompt, description, and related details. */
   onImageDetails?: (img: SavedAiImage) => void
   /** The card click: opens the lightbox over everything. */
@@ -91,6 +94,7 @@ export function ImageCard({
   onHide,
   onDownload,
   onOutpaint,
+  onExtractFrames,
   onImageDetails,
   onOpen,
   onAddReference,
@@ -140,6 +144,12 @@ export function ImageCard({
           </DropdownMenuItem>
         )}
 
+        {onExtractFrames && img.status === 'completed' && (
+          <DropdownMenuItem onClick={() => onExtractFrames(img)}>
+            <Scan />
+            {EXTRACT_FRAMES_SKILL.label}
+          </DropdownMenuItem>
+        )}
         {onDownload && (
           <DropdownMenuItem onClick={() => onDownload(img)}>
             <Download />

@@ -1,0 +1,131 @@
+.popup {
+  --dialog-max-width: 72rem;
+  --dialog-max-height: 92vh;
+  --dialog-overflow: auto;
+  width: min(72rem, 95vw);
+}
+.note {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+.error {
+  color: var(--danger);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.source {
+  max-height: 55vh;
+  object-fit: contain;
+  width: 100%;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 17rem;
+  gap: var(--space-16);
+}
+.preview {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+}
+.overlay {
+  width: 100%;
+  max-height: 65vh;
+  touch-action: none;
+  user-select: none;
+}
+.frame,
+.activeFrame {
+  fill: transparent;
+  stroke: var(--text);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  cursor: move;
+}
+.activeFrame {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+.number {
+  fill: var(--text);
+  stroke: var(--bg);
+  stroke-width: 2;
+  paint-order: stroke;
+  pointer-events: none;
+}
+.handle {
+  fill: var(--accent);
+  cursor: nwse-resize;
+}
+.excluded {
+  opacity: 0.4;
+}
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  max-height: 65vh;
+  overflow: auto;
+}
+.frames {
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+.frameRow {
+  display: flex;
+  gap: var(--space-8);
+  align-items: center;
+}
+.selectFrame {
+  text-align: left;
+  color: var(--text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.selectFrame[aria-pressed='true'] {
+  color: var(--accent);
+}
+.bounds {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8);
+  border: 1px solid var(--border);
+  padding: var(--space-8);
+}
+.bounds legend,
+.bounds label {
+  font-size: var(--text-xs);
+}
+.bounds > p,
+.actions {
+  grid-column: 1 / -1;
+}
+.actions,
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+.footer {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+}
+@media (max-width: 700px) {
+  .footer > p {
+    flex-basis: 100%;
+    order: -1;
+  }
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .controls {
+    max-height: 35vh;
+  }
+  .overlay {
+    max-height: 40vh;
+  }
+}
