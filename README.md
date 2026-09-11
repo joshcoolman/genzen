@@ -209,10 +209,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Finish `/storyboard` in the Images/Canvas composer (#619).
+**Focus** — No active implementation; `/storyboard` reached its first milestone (#619).
 
 Last shipped:
 
+- `/storyboard` works in the Images/Canvas prompt area, with immediate processing
+  thumbnails, an available composer, inspectable plans and replayable renders (#619).
 - Video images have First frame, Reference, and Last frame roles; compatible
   models follow the selection. H3 Max image input, H3 references, and Kling O3
   mixed inputs are available; Continue preserves reference images (#516).
@@ -226,8 +228,6 @@ Last shipped:
   durable clips and pending requests, authenticated on Railway.
 - Saved Director rough exports publish into Video and Frames as independent
   copies, with their own names and deletion lifecycles.
-- Final Cut adds independent finishing versions to a saved export —
-  reference-guided cinematography, silent output, resumable paid generation.
 
 Updated when Focus changes. Everything else is the board at
 `localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
