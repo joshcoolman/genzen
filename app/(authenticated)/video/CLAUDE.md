@@ -85,40 +85,10 @@ source images; `use-view.ts` owns everything after the first paint.
 - **Controls stay in the familiar order:** prompts, image strip, duration and
   shape, Generate, estimate, then model list. Prompts multiply clips; confirmation
   still triggers above the price threshold rather than by image count.
-- **A clip's card is `video-thumb/`, not `Thumbnail`.** The difference is the
-  `<video>`: a clip has a duration, native controls, and no poster frame
-  anywhere in the app, so bending the primitive every still renders through
-  around a media element would serve one route at everything's expense. What it
-  _does_ borrow is the type scale -- the prompt is `--text-3xs` at 1.5 clamped
-  to three lines, matching the image card exactly, and the model reads at that
-  size too. Hand-written, they had drifted to `--text-sm` and no model label at
-  all, so a clip and a still read as different
-  kinds of record when they are the same row in the same table. **The player and
-  both frames are one thumbnail, and the chrome sits on its corners** (#534) --
-  `...` top-left, the corner action top-right and the select tick bottom-left,
-  the gallery card's own corners. **The model is not up there** (#536): it is a
-  fact in the caption, because at #535's density a label nearly half the card's
-  width, over a half-width end frame, was the loudest thing on a card whose job
-  is to show the clip -- which is the corner #537 then filled with Hide, making
-  that a port rather than a decision. All three are 20px, which is #536's rule
-  about a matched set. Every marker is **always
-  on**, where a still hides its `...` until hover: a clip card is a player, a
-  pair of end frames and a caption, so it already reads as an object with
-  controls rather than as a bare picture -- and the menu is the only route to
-  Download and Delete, so one you have to hover to discover is one nobody
-  discovers.
-  `video-list/` is now the grid and nothing else.
-
-  **This replaced the no-overlay-actions rule**, which said the file verbs had
-  to be text in the caption because native controls own the player's bottom
-  edge. Two things retired it, both consequences of earlier changes: treating
-  the block as one unit puts the player's bottom edge in the _middle_ of it, so
-  the bottom corners belong to the two frames, which never have controls; and
-  since #530 a card has controls only while it is playing, where before every
-  card carried a scrubber permanently. It holds in the one case worth checking
-  -- a pending or failed clip has no frames block, so the corners land on the
-  player, but such a clip never plays. The frames exist exactly when the clip
-  is playable; the controls exist only while it plays.
+- **A clip's card is `video-thumb/`.** It combines a poster button, two end
+  frames, model, prompt, shape, duration, and Continue. The always-visible menu,
+  Hide/Trash corner action, and selection tick operate independently of playback.
+  `video-list/` supplies the grid; the route owns the playback dialog.
 
 - **Continue carries on from a clip's last frame** (#494). One press reads the
   frame at the end of a finished clip, saves it as an ordinary upload, and sets
@@ -173,36 +143,17 @@ source images; `use-view.ts` owns everything after the first paint.
   was per-item noise beside a Download button. `clipFacts` and the shape
   helpers are `src/features/video/clip-facts.ts` -- they moved out of
   `lab/_components/` when this card became their second consumer.
-- **The player shows a poster and one play button until it is played.** A grid
-  of cards was five sets of scrubbers, timecodes and overflow menus competing
-  with five pictures, and the pictures are what the page is for. Pressing Play
-  hands the card to the native controls, which then stay: sticky rather than
-  on hover, because chrome that follows the pointer flickers across a grid and
-  a scrubber has to stay put while it is in use.
+- **Click a thumbnail to review the clip in a large dialog.** The card is a
+  poster button; it never plays inline or loads video bytes. `playingId` in
+  `use-view` selects the single `VideoPlayerDialog`. Playback starts on open,
+  with native controls and fullscreen support. The player uses `contain` and
+  viewport height limits so portrait and wide clips show their complete frame.
+  Escape, Close, or backdrop dismissal unmounts the video and stops playback.
+  Entering selection also clears playback. Card crops are only previews.
 
-  The real win is not visual. `poster` (the row's own `thumbnail_path`, #499)
-  plus `preload="none"` means a card fetches an image it already has and no
-  video at all until asked. That also retires `firstFrameSrc` on this
-  surface -- the `#t=0.001` seek existed to make a `<video>` paint frame one
-  when nothing else could, which is #500's job everywhere else.
-
-  **One clip plays at a time, and `use-view` owns which** (`playingId`). A card
-  cannot know another one started, so left to themselves six of them play at
-  once. A card is engaged only while it holds the id; taking it away rewinds
-  that card to its first frame and drops it back to a poster and a play button.
-  Pausing with the native controls does _not_ release it -- only another card's
-  Play does, or the controls would vanish under a pointer that was using them.
-
-  The rewind is guarded on the card having actually played. Touching
-  `currentTime` on a `preload="none"` element that never loaded asks the
-  browser to fetch the clip, which is the thing the poster exists to avoid.
-
-- **The player and the clip's two ends are one block.** Half the card each,
-  flush under the player, no gap between them and none at the edges. The player
-  stays -- it is most of what the card is for -- and the frames are the two it
-  is worst at showing: the one it opens on, and the one the next clip has to
-  start from. Any gap in there and they read as three things that happen to be
-  stacked rather than one bigger thumbnail.
+- **The poster and the clip's two ends are one block.** The first and last
+  frames sit flush beneath the poster, half the card each. Playback lives in
+  the dialog; these images remain useful for scanning the library.
 
   They are plain `<img>` on `thumbnail_path` and `?v=end`, deliberately not the
   lab's `ClipFrames`, which draws frame one as a `<video>` because a lab tile

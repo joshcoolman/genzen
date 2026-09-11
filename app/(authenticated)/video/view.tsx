@@ -9,6 +9,7 @@ import { ImageInputs } from './_components/image-inputs/image-inputs'
 import { ModelPicker } from './_components/model-picker/model-picker'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { VideoForm } from './_components/video-form/video-form'
+import { VideoPlayerDialog } from './_components/video-player-dialog/video-player-dialog'
 import { VideoList } from './_components/video-list/video-list'
 import { useView } from './use-view'
 import styles from './video.module.css'
@@ -64,7 +65,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     selectedCount,
     isBatchDeleting,
     deleteSelected,
-    playingId,
+    playingVideo,
     setPlayingId,
     deleteVideo,
     continueFrom,
@@ -113,6 +114,10 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
 
   return (
     <Stack gap={24}>
+      <VideoPlayerDialog
+        video={playingVideo}
+        onClose={() => setPlayingId(null)}
+      />
       {/* The group's name **replaces** the route's header rather than sitting
           under it (#517), which is what Images does and for the same reason:
           two titles is two `h1`s, and the second one is the answer to "where
@@ -170,7 +175,6 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             onDelete={(id) => void deleteVideo(id)}
             onHide={(id) => void visibility.hide([id])}
             onContinue={(video) => void continueFrom(video)}
-            playingId={playingId}
             onPlay={setPlayingId}
             continuingId={isContinuing}
             selectedIds={selectedIds}

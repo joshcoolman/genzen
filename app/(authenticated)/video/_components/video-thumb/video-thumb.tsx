@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -52,109 +52,9 @@ function durationOf(video: VideoRecord): string | null {
   return typeof seconds === 'number' ? `${seconds}s` : null
 }
 
-/**
- * One clip: the player, the model on it, the prompt under it.
- *
- * **Its own component rather than `Thumbnail`, and the difference is the
- * `<video>`.** A clip is not a picture with a play button -- it has a duration
- * and native controls, so the element itself paints frame one. Bending
- * `Thumbnail` around that would put a media element inside the primitive every
- * still in the app renders through, to serve one route.
- *
- * Ingest has written a real poster frame for every clip since #499 and nothing
- * here reads it; #500 is the switchover, and it has to keep this path for the
- * clips made before it that were never backfilled.
- *
- * **What it does borrow is the type scale**, deliberately: the prompt is
- * `--text-3xs` at 1.5 clamped to three lines exactly as `CardCaption` does,
- * and the model reads at that size too. Written by hand here, those drifted to
- * `--text-sm` and no model label at all, so a clip and a still read as different
- * kinds of record when they are the same row in the same table.
- *
- * **The player and both frames are one thumbnail, and the chrome sits on its
- * corners** (#534). This replaces the no-overlay-actions rule, which said the
- * file verbs had to be text in the caption because native controls own the
- * player's bottom edge and a second row of buttons above them is two sets of
- * controls arguing.
- *
- * Two things retired it, and both are consequences of changes already made:
- *
- * - **The unit's bottom corners are corners of the *frames*, not the player.**
- *   Treating the block as one thumbnail puts the player's bottom edge in the
- *   *middle* of the unit, so native controls appear where no chrome is and the
- *   collision the rule protected against cannot happen.
- * - **A card has controls only while it is playing** (#530), and only one card
- *   can be playing. Before that, every card carried a scrubber permanently.
- *
- * It holds in the one case worth checking: a pending or failed clip has no
- * frames block, so the corners land on the player -- but such a clip never
- * plays, so there are still no controls there. The frames exist exactly when
- * the clip is playable; the controls exist only while it plays. The two never
- * overlap.
- *
- * **Which is what Continue paid for.** It was the last frame itself (#530),
- * having been a caption text link before that (#494) -- and a picture with a
- * button embedded in its right half is exactly why nothing else could go
- * there. Moving it to the caption, beside the prompt, is what makes the block
- * a picture rather than a control, and the corners free. Read as a straight
- * reversal it looks like drift; it is not, because Continue is now buying the
- * whole unit's uniformity, which was not on the table when #530 chose the
- * frame.
- *
- * **Three markers on the picture, all always on**: `...` top-left, the corner
- * action top-right and the select tick bottom-left -- which is exactly the
- * gallery card's arrangement, and it is a port rather than a decision because
- * #536 emptied that corner. The model held it until then and is now a fact in
- * the caption: at the density #535 set, a label nearly half the card's width,
- * sitting over a half-width end frame, was the loudest thing on a card whose
- * job is to show the clip. All three are 20px, which is #536's rule about a
- * matched set rather than a coincidence.
- *
- * **The player has no controls until it is played.** A poster, one play button,
- * and nothing else -- a grid of cards was five sets of scrubbers, timecodes and
- * overflow menus competing with five pictures, and the pictures are what the
- * page is for. Pressing Play hands the card to the native controls and they
- * stay, sticky rather than on hover: chrome that follows the pointer flickers
- * across a grid, and a scrubber has to stay put while it is being used.
- *
- * **Which card that is belongs to the page, not to this component** -- see
- * `isPlaying`. Playing one clip rewinds and un-engages whatever was playing
- * before, so a page of clips cannot end up as six of them talking at once.
- *
- * The real win is not visual. `poster` plus `preload="none"` means a card
- * fetches an image the row already has and no video at all until asked.
- *
- * **Continue sits beside the prompt, and it is still the one act that starts
- * new work** rather than acting on this row -- which is why it is on the
- * prompt's line and not in the `...` menu with Download and Delete.
- *
- * **The player and both frames are one block**, flush, half the card each. The
- * player is kept -- watching the clip is most of what this card is for, and a
- * pair of stills cannot replace it -- and the frames are the two it is worst at
- * showing: the one it opens on and the one it stops at, which is the frame the
- * next clip has to start from.
- *
- * They deliberately do *not* use `ClipFrames`, which the lab's run and picker
- * share. That draws frame one as a `<video>` because a lab tile has no player
- * of its own; here there is one directly above, and a second media element per
- * card across a wall of clips is a real cost for a picture the row can already
- * serve as an `<img>` from `thumbnail_path` (#499).
- *
- * **The tick is the only way to select.** The card does not become one big
- * toggle in select mode the way a still does: half of it is a player and the
- * other half is Continue, so a full-card click target would take Play and the
- * last frame away exactly when they still work.
- *
- * **Shape first, then duration, and no cost.** Shape is the fact that decides
- * whether two clips can cut together (#512) and it was the one thing about a
- * clip no surface showed. Cost came off: it is on every row of the Activity
- * log, which is where a spend question gets asked, and on a card it was
- * priced-per-item noise. The row is now only those two facts -- Download and
- * Delete left it for the menu -- so there is nothing here you might click.
- */
+/** A poster and end frames for scanning; playback opens the page dialog. */
 export function VideoThumb({
   video,
-  isPlaying,
   onPlay,
   onDelete,
   onHide,
@@ -165,8 +65,6 @@ export function VideoThumb({
   onSelect,
 }: {
   video: VideoRecord
-  /** Whether this is the one card holding the page's playback. */
-  isPlaying: boolean
   onPlay: (id: string) => void
   onDelete: (id: string) => void
   /** Take it off the wall without destroying it (#537). What the corner icon
@@ -203,42 +101,6 @@ export function VideoThumb({
    */
   const stripShape = { aspectRatio: String(stage * 2) }
   const isDone = video.status === 'completed'
-
-  /**
-   * **One clip plays at a time, and the page owns which.** `isPlaying` is the
-   * only thing that puts native controls on this card, so a card that loses it
-   * goes back to a poster and a play button -- there is no way to end up with
-   * six scrubbers on screen, because there is no way to have two cards
-   * engaged.
-   *
-   * Sticky within the card, not tied to hover: controls that come and go with
-   * the pointer flicker their way across a grid, and a scrubber has to stay
-   * put while it is being used. Pausing with the native controls keeps the
-   * card engaged -- only another card's Play takes it away.
-   */
-  const player = useRef<HTMLVideoElement>(null)
-
-  /**
-   * Rewind on the way out, so a card that lost playback is at its first frame
-   * next time rather than halfway through.
-   *
-   * Guarded on having actually been playing, rather than run whenever
-   * `isPlaying` is false. Touching `currentTime` on a `preload="none"` element
-   * that has never loaded would ask the browser to fetch the clip, which is
-   * the one thing the poster is there to avoid.
-   */
-  const wasPlaying = useRef(false)
-
-  useEffect(() => {
-    if (wasPlaying.current && !isPlaying) {
-      const el = player.current
-      if (el) {
-        el.pause()
-        el.currentTime = 0
-      }
-    }
-    wasPlaying.current = isPlaying
-  }, [isPlaying])
 
   const menu = (
     <DropdownMenu>
@@ -294,42 +156,24 @@ export function VideoThumb({
       <div className={styles.unit}>
         <div className={styles.stage}>
           {isDone ? (
-            <>
-              <video
-                ref={player}
+            <button
+              type="button"
+              className={styles.openPlayer}
+              onClick={() => onPlay(video.id)}
+              aria-label="Play this clip"
+              aria-haspopup="dialog"
+            >
+              <img
                 className={styles.player}
-                /* **The stage is the clip's own shape**, clamped -- see
-                   `WIDEST`. Within the clamp there is nothing to letterbox and
-                   nothing to crop, so the poster and the playing clip are the
-                   same picture in the same box and pressing Play changes
-                   nothing but the controls. */
                 style={stageShape}
-                src={`/img/${video.id}`}
-                /* The real poster (#499), which is why there is no
-                   `firstFrameSrc` here any more. Part of #500, on this surface
-                   only. */
-                poster={imageUrl(video.id, 'thumb')}
-                /* Nothing is fetched until Play. A wall of clips used to pull
-                   a header and a seek each on load; now it pulls an image the
-                   row already has and no video at all. */
-                preload="none"
-                controls={isPlaying}
-                playsInline
+                src={imageUrl(video.id, 'thumb')}
+                alt=""
+                loading="lazy"
               />
-              {!isPlaying ? (
-                <button
-                  type="button"
-                  className={styles.play}
-                  onClick={() => {
-                    onPlay(video.id)
-                    void player.current?.play()
-                  }}
-                  aria-label="Play this clip"
-                >
-                  <Play size={20} />
-                </button>
-              ) : null}
-            </>
+              <span className={styles.play} aria-hidden="true">
+                <Play size={20} />
+              </span>
+            </button>
           ) : video.status === 'failed' ? (
             <div className={styles.state}>
               <AlertTriangle size={16} />

@@ -743,33 +743,13 @@ export function useView(initialVideos: Array<VideoRecord>) {
    * something that was. So it lands in Images, and the library is re-read
    * because the picker's list is what the strip resolves against.
    */
-  /**
-   * The one clip the page is playing, if any.
-   *
-   * **Here rather than in the card**, which is the whole point: a card cannot
-   * know that another one started, so six of them could be playing at once.
-   * The page holds it, a card is engaged only while it holds the id, and
-   * starting a clip is what takes it away from whatever had it.
-   */
+  // One dialog owns playback; entering selection closes it.
   const [playingId, setPlayingId] = useState<string | null>(null)
+  const playingVideo =
+    shownVideos.find(
+      (video) => video.id === playingId && video.status === 'completed',
+    ) ?? null
 
-  /**
-   * **Entering select mode stops whatever was playing** (#538).
-   *
-   * Picking and watching are different things to be doing, and the wall should
-   * be one or the other: in select mode every card is a poster and a tick, so
-   * the whole picture can be the select target with nothing underneath it that
-   * a click would rather have gone to.
-   *
-   * This is what removes the exception the overlay used to carry. It covered
-   * every card *except* the playing one, whose scrubber was in use -- a rule
-   * that had to be stated, and read on the card as one tile behaving unlike
-   * its neighbours. Nothing is playing here now, so there is no exception.
-   *
-   * The card rewinds itself on the way out: losing `isPlaying` pauses it and
-   * returns it to its first frame, which is the same thing that happens when
-   * another card takes playback.
-   */
   useEffect(() => {
     if (selectMode) setPlayingId(null)
   }, [selectMode])
@@ -972,7 +952,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
     selectedCount: selection.count,
     isBatchDeleting,
     deleteSelected,
-    playingId,
+    playingVideo,
     setPlayingId,
     deleteVideo,
     continueFrom,

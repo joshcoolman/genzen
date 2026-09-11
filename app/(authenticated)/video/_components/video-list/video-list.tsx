@@ -29,7 +29,6 @@ export function VideoList({
   onDelete,
   onHide,
   onContinue,
-  playingId,
   onPlay,
   continuingId,
   selectedIds,
@@ -53,9 +52,6 @@ export function VideoList({
    *  to the card's corner icon. */
   onHide: (id: string) => void
   onContinue: (video: VideoRecord) => void
-  /** The one clip holding playback, if any. Lifted here so that starting a
-   *  second clip stops the first (#530). */
-  playingId: string | null
   onPlay: (id: string) => void
   /** The clip whose last frame is being read, if any -- one at a time. */
   continuingId: string | null
@@ -114,7 +110,6 @@ export function VideoList({
           <VideoThumb
             key={cell.key}
             video={cell.video}
-            isPlaying={playingId === cell.video.id}
             onPlay={onPlay}
             onDelete={onDelete}
             onHide={onHide}

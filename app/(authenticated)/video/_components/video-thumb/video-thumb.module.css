@@ -72,12 +72,12 @@
   cursor: pointer;
 }
 
-.play:hover {
+.openPlayer:hover .play {
   background: var(--accent);
   color: var(--accent-contrast);
 }
 
-.play:focus-visible {
+.openPlayer:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -409,4 +409,13 @@
    click, and easing it makes the wall feel like it is deciding. */
 .selectTickOn {
   color: var(--accent);
+}
+
+.openPlayer {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--image-backing);
+  cursor: pointer;
 }
