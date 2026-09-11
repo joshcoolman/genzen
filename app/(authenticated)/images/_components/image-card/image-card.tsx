@@ -242,6 +242,11 @@ export function ImageCard({
 
   return (
     <Thumbnail
+      topLeftBadge={
+        img.generation_metadata?.storyboard_shot
+          ? `Shot ${img.generation_metadata.storyboard_shot}`
+          : undefined
+      }
       url={imageUrl}
       alt={img.title}
       status="complete"

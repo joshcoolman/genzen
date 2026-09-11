@@ -800,3 +800,12 @@ because no image generation occurred; their details link to the source image.
 Stable batch/frame keys make retries reuse saved rows. Per-frame optimistic cards
 appear immediately after approval, and the latest review can reopen after closing
 during detection or saving. This is a card action, not a prompt slash command.
+
+## Storyboard outputs (#626)
+
+`/storyboard` submits one full-size generation per planned shot, model and
+variant. Optimistic, completed and failed cards carry a Shot N badge. Counts and
+estimates include every shot. The shared generator captures the current group
+(or top level) before planning and never creates a storyboard group. The composer
+remains usable while planning and rendering; Create reference sheet stays an
+optional selection action after the images exist.

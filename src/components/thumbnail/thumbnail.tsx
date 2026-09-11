@@ -201,7 +201,13 @@ export function Thumbnail({
         </div>
 
         {topLeftBadge && (
-          <span className={cx(styles.badge, styles.badgeTopLeft)}>
+          <span
+            className={cx(
+              styles.badge,
+              styles.badgeTopLeft,
+              !!overlayActionsLeft && styles.badgeAfterAction,
+            )}
+          >
             {topLeftBadge}
           </span>
         )}

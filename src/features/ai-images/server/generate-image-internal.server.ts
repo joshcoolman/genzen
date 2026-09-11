@@ -241,7 +241,11 @@ export async function generateImageInternal(
     groupId: data.groupId,
     extraMetadata: {
       ...(data.skill
-        ? { image_skill: data.skill, rendering_request: renderingRequest }
+        ? {
+            image_skill: data.skill,
+            rendering_request: renderingRequest,
+            storyboard_shot: data.skill.shotNumber,
+          }
         : {}),
       // Captured with no reader today, deliberately: unused *code* rots, unused
       // *data* accrues, and a UI can be built over a captured fact at any time

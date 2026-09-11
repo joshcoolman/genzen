@@ -3,10 +3,10 @@ import type { ImageSkillDefinition } from './types'
 export const IMAGE_SKILLS = [
   {
     id: 'storyboard',
-    version: 1,
+    version: 2,
     command: '/storyboard',
     label: 'Storyboard',
-    description: 'Plan a scene as one coherent shot sheet.',
+    description: 'Generate a coherent sequence of full-size images.',
     input: { briefRequired: true, references: 'optional' },
     defaults: { shots: 6, shotAspectRatio: '16:9' },
   },
@@ -95,5 +95,15 @@ export function parsePromptInvocation(input: string): PromptInvocation {
     brief,
     originalInput: input,
     shots: storyboardShotCount(brief),
+  }
+}
+
+/** Preview the output count while typing; invalid commands still fail at submit. */
+export function promptImageCount(prompt: string): number {
+  if (!/^\s*\/storyboard(?:\s|$)/i.test(prompt)) return prompt.trim() ? 1 : 0
+  try {
+    return storyboardShotCount(prompt)
+  } catch {
+    return 0
   }
 }

@@ -77,6 +77,10 @@ export function GeneratorPanel({
   onShots,
   onLighting,
 }: GeneratorPanelProps) {
+  const activePrompts = generator.prompts.filter((p) => p.trim())
+  const storyboardOnly =
+    activePrompts.length > 0 &&
+    activePrompts.every((p) => /^\s*\/storyboard(?:\s|$)/i.test(p))
   const [pickerOpen, setPickerOpen] = useState(false)
   const { confirm, dialogProps } = useConfirm()
 
@@ -109,14 +113,13 @@ export function GeneratorPanel({
   async function handleGenerateClick() {
     const count = generator.totalImages
     if (count > CONFIRM_ABOVE) {
-      const prompts = generator.prompts.filter((p) => p.trim()).length || 1
       const models = modelSelector.selectedIds.length
       // The multiplication spelled out, because the surprise is never the
       // number itself -- it is which of the three factors was larger than you
       // remembered.
       const ok = await confirm({
         title: `Generate ${count} images?`,
-        message: `${plural(prompts, 'prompt')} x ${plural(models, 'model')} x ${modelSelector.gensPerModel} each, about ${formatCents(generator.estimatedCost.cents)}. Cancel to change the count or the models.`,
+        message: `${plural(count, 'image')} across ${plural(models, 'model')} (including every storyboard shot), about ${formatCents(generator.estimatedCost.cents)}. Cancel to change the count or the models.`,
         confirmLabel: `Generate ${count}`,
         destructive: false,
       })
@@ -256,11 +259,11 @@ export function GeneratorPanel({
           spells the whole multiplication out. */}
       <div className={styles.controls}>
         <AspectRatioSelect
-          orientation={generator.orientation}
-          aspectRatio={generator.aspectRatio}
+          orientation={storyboardOnly ? 'landscape' : generator.orientation}
+          aspectRatio={storyboardOnly ? '16:9' : generator.aspectRatio}
           onOrientationChange={generator.setOrientation}
           onAspectRatioChange={generator.setAspectRatio}
-          disabled={generator.loading}
+          disabled={storyboardOnly || generator.loading}
         />
         <NumberStepper
           value={modelSelector.gensPerModel}
@@ -293,8 +296,9 @@ export function GeneratorPanel({
           resolution and whether audio is included, which nothing else says. */}
       {generator.prompts.some((p) => /^\s*\/storyboard(?:\s|$)/i.test(p)) && (
         <p className={styles.skillNote}>
-          Storyboard chooses the sheet layout for 16:9 shots. Image estimate
-          below excludes Claude planning, charged once per distinct brief.
+          Storyboard generates each shot as a separate full-size 16:9 image.
+          Image estimate below excludes Claude planning, charged once per
+          distinct brief.
         </p>
       )}
       <CostNote

@@ -20,16 +20,15 @@ function deferred<T>() {
   })
   return { promise, resolve, reject }
 }
-const prepared = [
-  {
-    prompt: 'Prepared sheet prompt',
-    skill: {
-      model: 'openai/gpt-image-2.5/sunburst/edit',
-      originalInput: '/storyboard A chase',
-      layout: { sheetAspectRatio: '8:3' },
-    } as PreparedImageSkill,
-  },
-]
+const prepared = Array.from({ length: 6 }, (_, i) => ({
+  prompt: `Prepared shot ${i + 1}`,
+  skill: {
+    model: 'openai/gpt-image-2.5/sunburst/edit',
+    originalInput: '/storyboard A chase',
+    shotNumber: i + 1,
+    layout: { sheetAspectRatio: '16:9' },
+  } as PreparedImageSkill,
+}))
 function batch() {
   return {
     prompts: ['/storyboard A chase'],
@@ -65,25 +64,25 @@ describe('background generation batches', () => {
       return plan.promise
     })
     const running = submitGenerationBatch(input)
-    expect(input.onSubmitStart.mock.calls[0][0]).toHaveLength(2)
+    expect(input.onSubmitStart.mock.calls[0][0]).toHaveLength(12)
     expect(mocks.prepare).toHaveBeenCalledOnce()
     expect(mocks.generate).not.toHaveBeenCalled()
     plan.resolve(prepared)
     await running
-    expect(mocks.generate).toHaveBeenCalledTimes(2)
+    expect(mocks.generate).toHaveBeenCalledTimes(12)
     expect(mocks.generate.mock.calls[0][0]).toMatchObject({
-      prompt: 'Prepared sheet prompt',
+      prompt: 'Prepared shot 1',
       typedPrompt: '/storyboard A chase',
       sourceImageId: 'reference-one',
       referenceImageIds: ['reference-two'],
-      aspectRatio: '8:3',
+      aspectRatio: '16:9',
       groupId: 'original-group',
       skill: prepared[0].skill,
     })
     const ids = input.onSubmitStart.mock.calls[0][0].map(
       (c: { placeholderId: string }) => c.placeholderId,
     )
-    expect(new Set(ids).size).toBe(2)
+    expect(new Set(ids).size).toBe(12)
     expect(
       input.onSubmitOutcome.mock.calls.map(([o]) => o.placeholderId),
     ).toEqual(ids)
@@ -111,7 +110,7 @@ describe('background generation batches', () => {
     ])
     plan.resolve(prepared)
     await firstRunning
-    expect(first.onAfterSubmit.mock.calls[0][0]).toHaveLength(2)
+    expect(first.onAfterSubmit.mock.calls[0][0]).toHaveLength(7)
     expect(mocks.generate.mock.lastCall?.[0].groupId).toBe('original-group')
   })
 
@@ -126,7 +125,7 @@ describe('background generation batches', () => {
     plan.reject(new Error('Reference image unavailable'))
     await failure
     expect(mocks.generate).not.toHaveBeenCalled()
-    expect(input.onSubmitOutcome).toHaveBeenCalledTimes(2)
+    expect(input.onSubmitOutcome).toHaveBeenCalledTimes(12)
     for (const [outcome] of input.onSubmitOutcome.mock.calls) {
       expect(outcome).toMatchObject({
         recordId: null,
@@ -154,9 +153,9 @@ describe('background generation batches', () => {
   })
   it('preserves the same typed invocation across preparation and rendering, including surrounding whitespace', async () => {
     const originalInput = '  /storyboard A chase  '
-    mocks.prepare.mockResolvedValueOnce([
-      { ...prepared[0], skill: { ...prepared[0].skill, originalInput } },
-    ])
+    mocks.prepare.mockResolvedValueOnce(
+      prepared.map((p) => ({ ...p, skill: { ...p.skill, originalInput } })),
+    )
     await submitGenerationBatch({ ...batch(), prompts: [originalInput] })
     expect(mocks.prepare.mock.calls[0][0].originalInput).toBe(originalInput)
     expect(mocks.generate.mock.calls[0][0].typedPrompt).toBe(originalInput)
@@ -181,7 +180,7 @@ describe('background generation batches', () => {
     await expect(submitGenerationBatch(input)).rejects.toThrow(
       'Queue unavailable',
     )
-    expect(input.onAfterSubmit.mock.calls[0][0]).toEqual([
+    expect(input.onAfterSubmit.mock.calls[0][0].slice(0, 2)).toEqual([
       expect.objectContaining({ recordId: null, error: 'Queue unavailable' }),
       expect.objectContaining({ recordId: expect.any(String), error: null }),
     ])

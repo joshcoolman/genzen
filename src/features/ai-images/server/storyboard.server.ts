@@ -75,7 +75,7 @@ async function prepareStoryboard(
         throw new Error(
           'This model cannot accept all storyboard references. Choose another model.',
         )
-      return resolveStoryboardLayout(model, count)
+      return resolveStoryboardLayout(model)
     }),
   )
   const rows = data.referenceIds.length
@@ -138,30 +138,46 @@ async function prepareStoryboard(
     durationMs: Date.now() - started,
   }
   return Promise.all(
-    models.map(async (model, index) => {
-      const skill: PreparedImageSkill = {
-        id: 'storyboard',
-        version: IMAGE_SKILLS[0].version,
-        preparationId,
-        originalInput: data.originalInput,
-        brief: data.brief,
-        referenceIds: data.referenceIds,
-        plan,
-        model,
-        layout: layouts[index],
-        preparation,
-      }
-      return { skill, prompt: await assembleStoryboardPrompt(skill) }
-    }),
+    models.flatMap((model, index) =>
+      plan.shots.map(async (shot) => {
+        const skill: PreparedImageSkill = {
+          id: 'storyboard',
+          version: IMAGE_SKILLS[0].version,
+          shotNumber: shot.number,
+          preparationId,
+          originalInput: data.originalInput,
+          brief: data.brief,
+          referenceIds: data.referenceIds,
+          plan,
+          model,
+          layout: layouts[index],
+          preparation,
+        }
+        return { skill, prompt: await assembleStoryboardPrompt(skill) }
+      }),
+    ),
   )
 }
 
 export async function assembleStoryboardPrompt(
   skill: PreparedImageSkill,
 ): Promise<string> {
+  const shot = skill.plan.shots.find((s) => s.number === skill.shotNumber)
+  if (!shot)
+    throw new Error('The selected storyboard shot is missing. Generate again.')
   const { default: instruction } =
-    await import('#/lib/prompts/storyboard/render.md')
-  return `${instruction.trim()}\n\n${JSON.stringify({ brief: skill.brief.replace(/(?:^|\s)--shots(?:=|\s+)\S+/gi, '').trim(), layout: skill.layout, plan: skill.plan }, null, 2)}`
+    await import('#/lib/prompts/storyboard/render-shot.md')
+  return `${instruction.trim()}\n\n${JSON.stringify(
+    {
+      brief: skill.brief.replace(/(?:^|\s)--shots(?:=|\s+)\S+/gi, '').trim(),
+      aspectRatio: skill.layout.sheetAspectRatio,
+      continuity: skill.plan.continuity,
+      references: skill.plan.references,
+      shot,
+    },
+    null,
+    2,
+  )}`
 }
 
 /** Revalidate the preparation crossing the action boundary before reserving a render. */
@@ -184,12 +200,14 @@ export async function validatePreparedSkill(
   const invocation = parsePromptInvocation(typedPrompt)
   if (invocation.kind !== 'skill' || invocation.brief !== skill.brief)
     throw new Error('Invalid storyboard invocation. Generate again.')
-  validateSkillReferences([model], referenceIds)
   validateStoryboardPlan(skill.plan, referenceIds.length, invocation.shots)
-  const layout = await resolveStoryboardLayout(
-    skill.model,
-    skill.plan.shots.length,
+  if (
+    !Number.isInteger(skill.shotNumber) ||
+    !skill.plan.shots.some((s) => s.number === skill.shotNumber)
   )
+    throw new Error('Invalid storyboard shot. Generate again.')
+  validateSkillReferences([model], referenceIds)
+  const layout = await resolveStoryboardLayout(skill.model)
   if (JSON.stringify(layout) !== JSON.stringify(skill.layout))
     throw new Error(
       'Storyboard dimensions changed. Generate again to prepare the new layout.',

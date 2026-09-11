@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { parsePromptInvocation, storyboardShotCount } from './registry'
+import {
+  parsePromptInvocation,
+  promptImageCount,
+  storyboardShotCount,
+} from './registry'
 
 describe('image prompt commands', () => {
   it.each([
@@ -58,4 +62,13 @@ describe('image prompt commands', () => {
     expect(
       storyboardShotCount('Two characters fight, image 3 is the environment'),
     ).toBe(6))
+})
+
+it('counts storyboard outputs, plain prompts and incomplete commands for the composer', () => {
+  expect(promptImageCount('/storyboard A chase')).toBe(6)
+  expect(promptImageCount('/storyboard --shots 4 A chase')).toBe(4)
+  expect(promptImageCount('/storyboard')).toBe(6)
+  expect(promptImageCount('A portrait')).toBe(1)
+  expect(promptImageCount('')).toBe(0)
+  expect(promptImageCount('/storyboard --shots 99 A chase')).toBe(0)
 })

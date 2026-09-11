@@ -5,6 +5,7 @@ interface PendingImageCardProps {
   prompt: string
   model: string
   isVariation?: boolean
+  storyboardShot?: number
   sourceImageUrl?: string
   onDelete?: () => void
 }
@@ -26,6 +27,7 @@ export function PendingImageCard({
   prompt,
   model,
   isVariation,
+  storyboardShot,
   sourceImageUrl,
   onDelete,
 }: PendingImageCardProps) {
@@ -34,7 +36,13 @@ export function PendingImageCard({
       status="pending"
       bottomRightBadge={model}
       pendingBackgroundUrl={sourceImageUrl}
-      topLeftBadge={isVariation ? 'Variation' : undefined}
+      topLeftBadge={
+        storyboardShot
+          ? `Shot ${storyboardShot}`
+          : isVariation
+            ? 'Variation'
+            : undefined
+      }
       onDelete={onDelete}
       alwaysShowOverlay={!!onDelete}
     >

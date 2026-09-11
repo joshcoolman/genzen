@@ -37,6 +37,8 @@ export interface StoryboardLayout {
 export interface PreparedImageSkill {
   id: 'storyboard'
   version: number
+  /** Present on v2 individual-shot renders; absent on legacy contact sheets. */
+  shotNumber?: number
   preparationId: string
   originalInput: string
   brief: string
