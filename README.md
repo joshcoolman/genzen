@@ -209,7 +209,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — No active implementation; pick the next card from the board.
+**Focus** — Finish `/storyboard` in the Images/Canvas composer (#619).
 
 Last shipped:
 

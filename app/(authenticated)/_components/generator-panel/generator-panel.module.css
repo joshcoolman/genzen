@@ -105,3 +105,9 @@
 .refsClear:hover {
   color: var(--text);
 }
+
+.skillNote {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}

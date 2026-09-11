@@ -1,11 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { submitGenerationBatch } from '../submit-generation-batch'
 import type { GenerationOrigin } from '#/lib/types/db'
-import { imageLabelPrefix, pushRef } from '#/features/ai-images/ref-images'
+import type { GenerationCallbacks } from '../submit-generation-batch'
+import { pushRef } from '#/features/ai-images/ref-images'
 import { usePersistedState } from '#/lib/use-persisted-state'
-import { optimisticId } from '#/lib/optimistic-id'
-import { generateImage } from '#/features/ai-images/server/generate-image.action'
 import { useReportError } from '#/components'
 import {
   LANDSCAPE_RATIOS,
@@ -14,10 +14,8 @@ import {
   getRatioOptions,
 } from '#/features/ai-images/constants'
 import {
-  endpointFor,
   estimateImageCostCents,
   imageCapacityFor,
-  modelTitleFor,
 } from '#/features/ai-images/models'
 import { systemInstructionsPrefix } from '#/features/ai-images/system-instructions'
 
@@ -34,7 +32,7 @@ export interface RefImage {
   title: string
 }
 
-interface UseGeneratorOptions {
+interface UseGeneratorOptions extends GenerationCallbacks {
   selectedModels: Array<string>
   gensPerModel: number
   setError: (error: string | null) => void
@@ -42,53 +40,6 @@ interface UseGeneratorOptions {
    *  (#207). Required so a new host cannot be an unmarked generation source. */
   origin: GenerationOrigin
   storagePrefix?: string
-  // Ordered per-call outcomes (one per submitted generation, in submit order),
-  // so callers can map each result to its placeholder and attribute failures.
-  // `model` is the user-facing base id; `recordId` is null when the submit
-  // itself failed (no DB record), with `error` carrying the reason.
-  onAfterSubmit?: (
-    results: Array<{
-      model: string
-      placeholderId: string
-      recordId: string | null
-      error: string | null
-    }>,
-  ) => void
-  /**
-   * Fires **before any request**, one entry per generation about to be
-   * submitted, in submit order (#313).
-   *
-   * A submit reserves its row before it does anything fallible, so the row
-   * exists roughly 100ms in -- but `recordId` was not returned until after the
-   * bucket read, the FAL upload and the queue submit, and the host only heard
-   * about any of it once every call had settled. That was ~10s of an unchanged
-   * grid after pressing Generate. The host does not need the row to draw a
-   * card; it needs the model and the prompt, and it has both at click time.
-   */
-  onSubmitStart?: (
-    placeholders: Array<{
-      placeholderId: string
-      model: string
-      /** The row's eventual title, resolved here rather than by the host: it
-       *  comes from the endpoint the submit will use, which only this hook has
-       *  worked out. Same function the reserve and the completion call, so the
-       *  badge cannot change when the card becomes real (#367). */
-      title: string
-      prompt: string
-      sourceImageId?: string
-    }>,
-  ) => void
-  /**
-   * Fires as each generation settles, rather than after all of them. One slow
-   * model no longer holds up the rest -- which is the whole reason the calls
-   * are fired together in the first place.
-   */
-  onSubmitOutcome?: (outcome: {
-    placeholderId: string
-    model: string
-    recordId: string | null
-    error: string | null
-  }) => void
   /** The canvas being worked in, if the host is a board. Generations join it
    *  at reserve time, so they are reclaimable on load. Membership only -- which
    *  surface made it is `origin` (#207). */
@@ -204,7 +155,6 @@ export function useGenerator({
     () => localStorage.getItem(aspectRatioKey) ?? '16:9',
     '16:9',
   )
-  const [loading, setLoading] = useState(false)
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null)
   const [refImages, setRefImages] = useState<Array<RefImage>>([])
 
@@ -381,164 +331,28 @@ export function useGenerator({
   }
 
   async function handleGenerate() {
-    if (loading || !canGenerate) return
-
-    // Each entry keeps the user-facing `base` id (for labelling) alongside the
-    // `resolved` endpoint we actually submit to (edit/img2img variant).
-    const modelsToUse = selectedModels.flatMap((modelId) => {
-      const resolved = endpointFor(modelId, hasImages)
-      return Array.from({ length: gensPerModel }, () => ({
-        base: modelId,
-        resolved,
-      }))
-    })
-
-    // Collect non-empty prompts; if none but sourceImage exists, use ['']
-    const activePrompts = prompts.filter((p) => p.trim())
-    const promptsToRun = activePrompts.length > 0 ? activePrompts : ['']
-
-    setLoading(true)
+    if (!canGenerate) return
     setError(null)
-
     try {
-      // The set goes out as `[first, ...rest]` -- the wire keeps a source field
-      // and a references field, and the server concatenates them back into one
-      // ordered `image_urls`. Index 0 is first because it was concatenated
-      // first and for no other reason; the split survives only because
-      // `generation_metadata` (and so Retry, #214) is written in those terms.
-      const [primary, ...rest] = refImages
-      const restIds = rest.map((r) => r.id)
-      const referenceImageIds = restIds.length > 0 ? restIds : undefined
-      const sourceImageId = hasImages ? primary.id : undefined
-
-      // What "image 2" means, established for the model in the only place it
-      // can be: a generation is one prompt string plus one ordered array, with
-      // no per-image field to fill in (#436). So the numbers are words in the
-      // prompt, and they have to match the order the set goes out in.
-      //
-      // Derived here from the set rather than passed by the host, which is how
-      // Canvas did it: it computed the labels once when its dialog opened, so
-      // adding or removing an image in the panel afterwards left the prompt
-      // describing the previous selection. Nothing to label at one image --
-      // "[Image 1]" is a number for a picture nothing needs to distinguish.
-      const labelPrefix = imageLabelPrefix(refImages.length)
-
-      // Two distinct facts, and the row has room for one: what was typed and
-      // what was sent. `prompt` stays the sent string, because retry replays
-      // it; the typed one rides along so a past generation's input is
-      // recoverable (#210).
-      const promptPlans = promptsToRun.map((promptText) => {
-        const typedPrompt = promptText.trim()
-        // System instructions (#272) lead, then the image labels -- they
-        // describe the references this prompt talks about, so they belong next
-        // to the prompt. Instructions are read from storage at submit rather
-        // than passed in: one global value, and every host gets it for free.
-        const finalPrompt = `${systemInstructionsPrefix()}${labelPrefix}${typedPrompt}`
-        return {
-          typedPrompt,
-          finalPrompt,
-        }
+      await submitGenerationBatch({
+        prompts: [...prompts],
+        referenceIds: refImages.map((r) => r.id),
+        selectedModels: [...selectedModels],
+        gensPerModel,
+        aspectRatio,
+        systemInstructions: systemInstructionsPrefix(),
+        selectedStyleId,
+        origin,
+        canvasId,
+        groupId: groupIdRef.current,
+        onSubmitStart,
+        onSubmitOutcome,
+        onAfterSubmit,
       })
-
-      // One descriptor per generation, so a placeholder, its submit and its
-      // outcome all line up -- by id now rather than by array index.
-      const calls = promptPlans.flatMap((plan) =>
-        modelsToUse.map((m) => ({
-          placeholderId: optimisticId(),
-          model: m.base,
-          resolved: m.resolved,
-          plan,
-        })),
-      )
-
-      // Before any await. Everything above this line is synchronous, so the
-      // host can draw its cards in the same tick as the click (#313).
-      onSubmitStart?.(
-        calls.map((c) => ({
-          placeholderId: c.placeholderId,
-          model: c.model,
-          title: modelTitleFor(c.resolved),
-          prompt: c.plan.typedPrompt,
-          ...(sourceImageId ? { sourceImageId } : {}),
-        })),
-      )
-
-      const results = await Promise.allSettled(
-        calls.map((c) => {
-          const { typedPrompt, finalPrompt } = c.plan
-          return generateImage({
-            origin,
-            prompt: finalPrompt,
-            ...(typedPrompt !== finalPrompt ? { typedPrompt } : {}),
-            model: c.resolved,
-            aspectRatio,
-            idempotencyKey: crypto.randomUUID(),
-            ...(sourceImageId ? { sourceImageId } : {}),
-            ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
-            ...(referenceImageIds ? { referenceImageIds } : {}),
-            ...(canvasId ? { canvasId } : {}),
-            ...(groupIdRef.current ? { groupId: groupIdRef.current } : {}),
-          }).then(
-            (value) => {
-              onSubmitOutcome?.({
-                placeholderId: c.placeholderId,
-                model: c.model,
-                recordId: value.recordId,
-                error: null,
-              })
-              return value
-            },
-            (reason: unknown) => {
-              onSubmitOutcome?.({
-                placeholderId: c.placeholderId,
-                model: c.model,
-                recordId: null,
-                error:
-                  reason instanceof Error ? reason.message : String(reason),
-              })
-              throw reason
-            },
-          )
-        }),
-      )
-      // Ordered outcomes (one per call) so the caller can map each to its
-      // placeholder and mark per-model failures instead of dropping slots.
-      const outcomes = results.map((r, i) => ({
-        model: calls[i].model,
-        placeholderId: calls[i].placeholderId,
-        recordId:
-          r.status === 'fulfilled'
-            ? (r.value as { recordId: string }).recordId
-            : null,
-        error:
-          r.status === 'rejected'
-            ? r.reason instanceof Error
-              ? r.reason.message
-              : String(r.reason)
-            : null,
-      }))
-      // Report outcomes (successes AND failures) so the caller stamps/persists/
-      // polls what went through and surfaces what didn't -- no silent drops.
-      if (onAfterSubmit && outcomes.length > 0) {
-        onAfterSubmit(outcomes)
-      }
-      const firstError = results.find(
-        (r): r is PromiseRejectedResult => r.status === 'rejected',
-      )
-      if (firstError) {
-        throw firstError.reason
-      }
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === 'string'
-            ? err
-            : String(err)
+      const message = err instanceof Error ? err.message : String(err)
       setError(message)
       reportError(err, message)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -558,7 +372,8 @@ export function useGenerator({
     setOrientation,
     aspectRatio,
     setAspectRatio,
-    loading,
+    // Background work belongs to the cards; the composer stays available.
+    loading: false,
     totalImages,
     estimatedCost,
     canGenerate,

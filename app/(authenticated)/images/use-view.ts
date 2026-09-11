@@ -18,6 +18,7 @@ import type { GalleryCell } from './_components/image-gallery/image-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useVisibility } from '#/features/visibility/hooks/use-visibility'
 import { useGroups } from '#/features/groups/hooks/use-groups'
+import { isOptimisticId } from '#/lib/optimistic-id'
 import { loadGeneration } from '#/features/ai-images/server/load-generation.action'
 import { generateImage } from '#/features/ai-images/server/generate-image.action'
 import {
@@ -63,6 +64,7 @@ function pendingCard(
     title: string
     prompt: string
     sourceImageId?: string
+    referenceImageIds?: Array<string>
   },
   groupId: string | null,
 ): SavedAiImage {
@@ -82,6 +84,7 @@ function pendingCard(
     generation_metadata: {
       prompt: placeholder.prompt,
       model: placeholder.model,
+      reference_image_ids: placeholder.referenceImageIds,
       ...(placeholder.sourceImageId
         ? { source_image_id: placeholder.sourceImageId }
         : {}),
@@ -241,16 +244,25 @@ export function useView(initial: Array<SavedAiImage>) {
     },
     // Each card resolves on its own submit rather than on the slowest one's.
     // A success swaps in the real row id so the refresh below recognises the
-    // card it already drew; a failure that never reached the database takes
-    // the card with it. The tile survives the swap -- `keyFor` (#353).
-    onSubmitOutcome: ({ placeholderId, recordId }) => {
+    // card it already drew; preparation failures stay visible with their error.
+    // The tile survives the swap -- `keyFor` (#353).
+    onSubmitOutcome: ({ placeholderId, recordId, error: submitError }) => {
       if (recordId) {
         gallery.replaceOptimisticCard(placeholderId, (card) => ({
           ...card,
           id: recordId,
+          ...(submitError
+            ? { status: 'failed', generation_error: submitError }
+            : {}),
         }))
       } else {
-        gallery.removeOptimisticCard(placeholderId)
+        gallery.replaceOptimisticCard(placeholderId, (card) => ({
+          ...card,
+          status: 'failed',
+          generation_error:
+            submitError ??
+            'Generation could not be started. Try generating again.',
+        }))
       }
     },
     onAfterSubmit: () => {
@@ -947,6 +959,22 @@ export function useView(initial: Array<SavedAiImage>) {
     async (img: SavedAiImage) => {
       dock.setOpen(true)
       try {
+        if (isOptimisticId(img.id)) {
+          const meta = img.generation_metadata
+          generator.replacePrompts([meta?.prompt ?? ''])
+          const ids = [
+            meta?.source_image_id,
+            ...(meta?.reference_image_ids ?? []),
+          ].filter((id): id is string => !!id)
+          generator.replaceRefImages(
+            ids.map((id) => ({
+              id,
+              url: imageUrl(id),
+              title: 'Reference image',
+            })),
+          )
+          return
+        }
         const loaded = await loadGeneration(img.id)
 
         // The whole list, not row 0. `setPrompt` writes prompts[0] and leaves

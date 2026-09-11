@@ -5,6 +5,29 @@ no `.tsx` here.** The generation UI Images and Canvas share lives in
 `app/(authenticated)/_components/` (`generator-panel/` and what it composes);
 anything one route renders lives with that route.
 
+## Prompt commands
+
+`/storyboard` runs inside the shared Images/Canvas prompt field (#619). The
+client-safe registry owns command metadata; authenticated server dispatch plans
+from the brief and ordered library images. Default six 16:9 shots, override
+2–9 with prose or `--shots N`. Strict reference capacity and model sizing are
+checked before Claude. One plan per distinct brief/reference snapshot feeds all
+requested variants; shot ratio and resolved contact-sheet ratio are separate.
+
+`submit-generation-batch.ts` captures each click and draws every optimistic card
+before planning or rendering. The composer remains available during background
+work. Outcomes carry their own placeholder IDs; preparation failures keep a
+failed card with its prompt/references, and submission failures return their
+reserved row through `submit-generator-image.action.ts` for reconciliation.
+Trashing a pending card is not cancellation (tracked separately in #620).
+
+`image_skill` and `rendering_request` metadata preserve the plan, original input,
+reference order, preparation usage, resolved settings and exact sent prompt.
+Activity exposes these; Retry replays saved rendering settings without Claude,
+and Load restores the editable invocation. Planning adds Claude usage beyond
+the image estimate shown in the composer. Instructions stay in lazy Markdown
+files under `src/lib/prompts/storyboard/`.
+
 ## Images on the way to FAL
 
 **Every image the app sends FAL goes through `uploadBufferToFal`**, which

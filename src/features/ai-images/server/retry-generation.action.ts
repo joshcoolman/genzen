@@ -1,7 +1,12 @@
 'use server'
 
 import { endpointFor } from '../models'
-import { RetryNotReproducible, planHasImages, planRetry } from '../retry-plan'
+import {
+  RetryNotReproducible,
+  planHasImages,
+  planRetry,
+  replayRenderingRequest,
+} from '../retry-plan'
 import { buildFalInput } from './fal-params.server'
 import type { RetryMetadata } from '../retry-plan'
 import { fal } from '#/lib/server/fal-client.server'
@@ -56,7 +61,8 @@ export async function retryGeneration(data: RetryGenerationInput) {
   // as the base model and only patched to the resolved endpoint at submit, so a
   // generation that failed *before* submit kept the text-to-image endpoint --
   // and those are exactly the rows a user retries.
-  const falModelId = endpointFor(plan.model, planHasImages(plan))
+  const falModelId =
+    plan.renderingRequest?.model ?? endpointFor(plan.model, planHasImages(plan))
 
   // A retry reuses the failed row rather than inserting a new one. Retrying is
   // "try that again", not "make another" -- a new row left the original behind
@@ -130,13 +136,19 @@ export async function retryGeneration(data: RetryGenerationInput) {
       input: falInput,
       imagesRequested,
       imagesUsed,
-    } = await buildFalInput({
-      modelId: falModelId,
-      prompt: plan.prompt,
-      aspectRatio: plan.aspectRatio,
-      ...(imageUrls.length > 0 ? { imageUrls } : {}),
-      safetyLevel: 'permissive',
-    })
+    } = plan.renderingRequest
+      ? {
+          input: replayRenderingRequest(plan.renderingRequest, imageUrls),
+          imagesRequested: imageUrls.length,
+          imagesUsed: imageUrls.length,
+        }
+      : await buildFalInput({
+          modelId: falModelId,
+          prompt: plan.prompt,
+          aspectRatio: plan.aspectRatio,
+          ...(imageUrls.length > 0 ? { imageUrls } : {}),
+          safetyLevel: 'permissive',
+        })
 
     const { request_id } = await withNetworkRetry<{ request_id: string }>(
       'queue.submit',

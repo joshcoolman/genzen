@@ -122,6 +122,8 @@ export async function getActivityEntry(
 
   return {
     id: r.id,
+    imageSkill: m.image_skill,
+    sentPrompt: m.sent_prompt,
     thumbnailPath: resolveThumbnailPath(r),
     prompt: m.prompt ?? '',
     model: m.model ?? null,

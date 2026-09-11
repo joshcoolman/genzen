@@ -290,6 +290,7 @@ export function ImageGallery({
                   img={img}
                   onDelete={onDelete}
                   onRetry={onRetry}
+                  onLoad={onLoad}
                 />
               )
             }

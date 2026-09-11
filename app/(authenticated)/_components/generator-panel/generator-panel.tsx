@@ -129,13 +129,14 @@ export function GeneratorPanel({
     <div className={styles.root}>
       {/* Prompt textareas. Nothing above them any more. */}
       <PromptList
+        imageCommands
         prompts={generator.prompts}
         onUpdatePrompt={generator.setPromptAtIndex}
         onAddPrompt={generator.addPrompt}
         onRemovePrompt={generator.removePrompt}
         disabled={generator.loading}
         placeholders={{
-          first: 'Describe your image...',
+          first: 'Describe your image, or type / for a command...',
           additional: 'Additional prompt...',
         }}
         onClearPrompts={generator.clearPrompts}
@@ -290,6 +291,12 @@ export function GeneratorPanel({
           "Multiple (8 models)" already, and two lines saying the same thing is
           one line of noise. Video passes a spec because its own carries the
           resolution and whether audio is included, which nothing else says. */}
+      {generator.prompts.some((p) => /^\s*\/storyboard(?:\s|$)/i.test(p)) && (
+        <p className={styles.skillNote}>
+          Storyboard chooses the sheet layout for 16:9 shots. Image estimate
+          below excludes Claude planning, charged once per distinct brief.
+        </p>
+      )}
       <CostNote
         cents={generator.estimatedCost.cents}
         unpriced={generator.estimatedCost.unpriced}
