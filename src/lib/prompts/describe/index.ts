@@ -32,6 +32,16 @@ export const DESCRIBE_MODES = [
     userText: 'Describe this image.',
     system: () => import('./anchor.md'),
   },
+  {
+    id: 'style',
+    label: 'Style',
+    // Writes the look alone -- medium, palette, grade -- for a reference staged
+    // in the Style role (#635), so a picture can lend its treatment to a
+    // generation without being sent to it.
+    file: 'src/lib/prompts/describe/style.md',
+    userText: 'Write the look of this image.',
+    system: () => import('./style.md'),
+  },
 ] as const
 
 export type DescribeMode = (typeof DESCRIBE_MODES)[number]['id']

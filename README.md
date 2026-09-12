@@ -268,7 +268,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — No active implementation; full-size storyboards and video playback shipped.
+**Focus** — #635: a staged reference can be read for its lighting, style or subject instead of sent. Branch `reference-roles`, PR open.
 
 Recent highlights:
 

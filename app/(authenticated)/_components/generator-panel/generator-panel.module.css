@@ -106,6 +106,45 @@
   color: var(--text);
 }
 
+/* What the read roles said (#635), one entry per picture in strip order --
+   the blocks the prompt will carry, shown before the press so a bad reading is
+   caught with the picture beside it, not on the card afterwards. */
+.readings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin: var(--space-8) 0 0;
+  padding: var(--space-8) 0 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
+}
+
+.reading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.readingLabel {
+  font-size: var(--text-3xs);
+  line-height: 1;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.readingPending,
+.readingError {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--text-muted);
+}
+
+.readingError {
+  color: var(--danger);
+}
+
 .skillNote {
   margin: 0;
   font-size: var(--text-xs);

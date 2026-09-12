@@ -88,6 +88,26 @@ list once when the seed comes back full, so the grid is never short.
   ordinary pending cards, filed into the open group like any other generation.
   `Animate` was removed from the same menu; `/video` still accepts `?image=<id>`
   but nothing links to it
+- **A staged reference carries a role, and every role but Reference is read,
+  not sent** (#635). A select under each thumbnail: Reference (today's
+  behaviour, the default), Lighting, Style, Subject. Choosing a read role
+  calls `readReference` at once -- Lighting's own derive with its gels filled
+  in, the Style describe mode, or Reconstruct -- and the text appears under
+  the strip, cached on the thumbnail, gone with it. At submit the picture is
+  left out of the image list and its text goes under the typed prompt as a
+  labelled block (`ref-roles.ts`, `promptWithReadings`); the ordinals, the
+  `[Image N]` labels, the price and the endpoint count only what is sent. The
+  point is the failure it ends: "image 2 is only for lighting" never worked,
+  because image 2 was still in the request and pixels outweigh a sentence.
+  **A prompt of blocks alone is a prompt** -- a Reference plus a Style and a
+  Lighting with nothing typed reads as "this picture, in this style, lit like
+  this", and being non-empty it never trips the image-only describe fallback.
+  Generate waits while a reading is in flight or failed; the thumbnail says
+  why. The blocks are recorded on the row as `reference_readings` beside the
+  `sent_prompt` they are already in, so Retry never reads again. **Read roles
+  do not reach `/storyboard`**: its brief is checked byte for byte against the
+  typed command, and the plan takes its look from the references it is handed.
+  Requires `ANTHROPIC_API_KEY`, and fails loudly on the thumbnail without it
 - **Shots is the panel's action, not a card's** (#553). The staged reference
   set is already the answer to "which pictures", so the way in is a `Shots`
   button in the Ref images header -- absent until something is staged. The

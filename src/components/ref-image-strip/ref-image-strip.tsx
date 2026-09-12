@@ -2,8 +2,13 @@ import { Plus, X } from 'lucide-react'
 import styles from './ref-image-strip.module.css'
 import { cx } from '#/lib/utils'
 
-interface RefImageStripProps {
-  images: Array<{ id: string; url: string; title: string }>
+export interface RefImageStripRole<TRole extends string> {
+  value: TRole
+  label: string
+}
+
+interface RefImageStripProps<TRole extends string = string> {
+  images: Array<{ id: string; url: string; title: string; role?: TRole }>
   /**
    * Hard limit on the strip. Omit for an unbounded one, which is what the
    * generator panel is since #341: models take what they hold at submit and the
@@ -20,9 +25,19 @@ interface RefImageStripProps {
   disabled?: boolean
   /** Show element label under each thumbnail */
   showLabels?: boolean
+  /**
+   * What each picture is for (#635). Given, every thumbnail carries a select
+   * under it, and only images whose role is the first option -- the one that
+   * is sent -- are numbered, because the numbers are the prompt's image labels
+   * and a picture that is read rather than sent has none.
+   */
+  roles?: {
+    options: Array<RefImageStripRole<TRole>>
+    onChange: (id: string, role: TRole) => void
+  }
 }
 
-export function RefImageStrip({
+export function RefImageStrip<TRole extends string = string>({
   images,
   max,
   onAdd,
@@ -30,16 +45,28 @@ export function RefImageStrip({
   onClear,
   disabled,
   showLabels,
-}: RefImageStripProps) {
+  roles,
+}: RefImageStripProps<TRole>) {
   const removable = !!onRemove && !disabled
+  const sentRole = roles?.options[0]?.value
+  const isSent = (role: TRole | undefined) =>
+    !roles || role === undefined || role === sentRole
+  const sent = images.filter((img) => isSent(img.role))
   /** Derived, not a prop: the number matters exactly when a prompt could name
    *  it, and that is the same condition the submit prefix uses. A host opting
    *  out would be a strip whose numbers disagree with the prompt. */
-  const numbered = images.length > 1
+  const numbered = sent.length > 1
 
   return (
-    <div className={cx(styles.root, showLabels && styles.rootLabelled)}>
-      {images.map((img, index) => {
+    <div
+      className={cx(
+        styles.root,
+        showLabels && styles.rootLabelled,
+        roles && styles.rootRoles,
+      )}
+    >
+      {images.map((img) => {
+        const ordinal = sent.findIndex((s) => s.id === img.id)
         const frame = (
           <>
             <img src={img.url} alt={img.title} className={styles.image} />
@@ -48,9 +75,9 @@ export function RefImageStrip({
                 without it the strip and the prompt agree only by luck (#436).
                 Hidden at one image, where the prefix does not apply either and
                 a lone "1" is a badge for nothing. */}
-            {numbered && (
+            {numbered && ordinal >= 0 && (
               <span className={styles.ordinal} aria-hidden="true">
-                {index + 1}
+                {ordinal + 1}
               </span>
             )}
             {/* Revealed on hover, and not the target: aiming at a 12px corner
@@ -80,6 +107,26 @@ export function RefImageStrip({
               <div className={styles.frame}>{frame}</div>
             )}
             {showLabels && <p className={styles.label}>{img.title}</p>}
+            {roles && (
+              <select
+                className={cx(
+                  styles.role,
+                  !isSent(img.role) && styles.roleRead,
+                )}
+                aria-label={`Role of ${img.title}`}
+                value={img.role ?? sentRole}
+                disabled={disabled}
+                onChange={(event) =>
+                  roles.onChange(img.id, event.target.value as TRole)
+                }
+              >
+                {roles.options.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )
       })}
