@@ -268,7 +268,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — #634: Script on a saved rough export, a text-only Final Cut of copyable multi-shot sections. Branch `final-cut-script`, PR open.
+**Focus** — #640: Generate Final Cut video from a finished Script, each section chained from the last frame. Branch `render-script`, PR open.
 
 Recent highlights:
 

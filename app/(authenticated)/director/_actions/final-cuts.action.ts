@@ -37,7 +37,7 @@ export async function startFinalCut(
       idSchema.parse(sessionId),
       idSchema.parse(exportId),
       idSchema.parse(id),
-      scriptOnly,
+      { scriptOnly },
     )
     if (item.status === 'queued' || item.status === 'running')
       scheduleFinalCut(owner, item.id)
@@ -47,6 +47,37 @@ export async function startFinalCut(
       item: null,
       error:
         error instanceof Error ? error.message : 'Could not start Final Cut.',
+    }
+  }
+}
+/**
+ * Render a finished Script end to end (#640). Paid, so the caller confirms
+ * with the estimate first; FAL only, no Claude.
+ */
+export async function renderScript(
+  sessionId: string,
+  exportId: string,
+  scriptId: string,
+  id: string,
+) {
+  const owner = (await resolveAuth()).userId
+  try {
+    assertFalKey()
+    const item = await createFinalCut(
+      owner,
+      idSchema.parse(sessionId),
+      idSchema.parse(exportId),
+      idSchema.parse(id),
+      { fromScript: idSchema.parse(scriptId) },
+    )
+    if (item.status === 'queued' || item.status === 'running')
+      scheduleFinalCut(owner, item.id)
+    return { item: finalCutSummary(item), error: null }
+  } catch (error) {
+    return {
+      item: null,
+      error:
+        error instanceof Error ? error.message : 'Could not start the render.',
     }
   }
 }
@@ -70,9 +101,12 @@ export async function manageFinalCut(id: string, command: string) {
     const item = await getFinalCut(owner, id)
     if (!item) throw new Error('Final Cut not found.')
     if (action === 'resume') {
-      requireAiRole('vision')
-      if (item.work.scriptOnly) requireAiRole('reasoning')
-      else assertFalKey()
+      if (item.work.fromScript) assertFalKey()
+      else {
+        requireAiRole('vision')
+        if (item.work.scriptOnly) requireAiRole('reasoning')
+        else assertFalKey()
+      }
       await resumeFinalCut(owner, id)
       scheduleFinalCut(owner, id)
     } else if (action === 'stop') await stopFinalCut(owner, id)

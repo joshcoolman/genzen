@@ -65,6 +65,17 @@
   It never uploads references or submits to FAL, needs no FAL key, and
   finishes with no output. The Exports tab lists sections with per-section
   and whole-script copy; running one is a paste into Video.
+- Generate Final Cut video (#640) renders a finished Script: a new job with
+  `work.fromScript`, plan and script copied in, no planning. Section 1 is
+  H3 Max Turbo text-to-video at 480P; every later section is image-to-video
+  from the previous clip's end frame (`FinalStep.endFrameId`), which is what
+  makes the joins seamless and why it is sequential. Each clip is ingested
+  as it lands and checkpointed; the request input is saved before the first
+  submit so Resume replays it. Clips are stitched with their native sound
+  through the lab editor's stitcher (`assembleScriptCut`), unlike the
+  reference render. The dialog quotes cost and minutes before creating the
+  job; a toast says when it is ready. Rate and per-section time are in
+  `final-script.ts`.
 - All finishing assets carry director_media.final_cut_id. Never use those IDs
   as rough-cut or source-export assets. Session/export deletion is guarded while
   a job or worker lease is active; delete bytes before cascading metadata.

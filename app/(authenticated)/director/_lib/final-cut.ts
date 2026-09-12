@@ -53,12 +53,19 @@ export type FinalStep = {
   requestId?: string
   url?: string
   mediaId?: string
+  /** A script render's clip keeps its last frame (#640): it is the next
+   *  section's first frame, so it has to survive a resume. */
+  endFrameId?: string
   terminal?: boolean
 }
 export type FinalWork = {
   /** A Script job (#634): plan, write each section as text, stop. Never
    *  uploads references or submits to FAL, and finishes with no output. */
   scriptOnly?: boolean
+  /** A render of a finished Script (#640), by that job's id. `plan` and
+   *  `script` are copied in at creation; each section is generated from the
+   *  previous clip's end frame and the clips are stitched with their sound. */
+  fromScript?: string
   planning?: boolean
   plan?: FinalPlan
   frames?: Array<{ mediaId: string; time: number; section: number }>
@@ -87,6 +94,8 @@ export type FinalCutSummary = Pick<
   resumable: boolean
   occupied: boolean
   kind: 'render' | 'script'
+  /** The Script job this render was made from (#640), if any. */
+  fromScript: string | null
   /** How many sections the plan called for, once there is a plan. */
   sectionCount: number | null
   /** Present once a Script job has planned, growing as sections land. */
@@ -124,6 +133,7 @@ export function finalCutSummary(item: FinalCut): FinalCutSummary {
     name:
       item.work.plan?.title ?? (item.work.scriptOnly ? 'Script' : 'Final Cut'),
     kind: item.work.scriptOnly ? 'script' : 'render',
+    fromScript: item.work.fromScript ?? null,
     sectionCount: item.work.plan?.shots.length ?? null,
     script:
       item.work.scriptOnly && item.work.plan && item.work.script

@@ -8,6 +8,7 @@ import ffmpeg from 'ffmpeg-static'
 import sharp from 'sharp'
 import { sampleTimes } from './final-cut'
 import type { SavedExport } from './types'
+import { stitchTimeline } from '#/lib/server/stitch-timeline.server'
 
 const exec = promisify(execFile)
 async function run(args: Array<string>) {
@@ -155,6 +156,47 @@ export async function assembleFinalCut(
       '+faststart',
       output,
     ])
+    return new Blob([new Uint8Array(await readFile(output))], {
+      type: 'video/mp4',
+    })
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+}
+
+/**
+ * Join a script render's clips in order, keeping their sound (#640).
+ *
+ * The other assembler discards audio because the reference-to-video render
+ * was built silent. A script render is the hand-run made automatic, and the
+ * hand-run kept H3 Max's native track, so this one goes through the lab
+ * editor's stitcher with no crossfade: every clip normalised to the first
+ * one's canvas, given a silent track if it has none, and hard-cut.
+ */
+export async function assembleScriptCut(
+  clips: Array<{ blob: () => Promise<Blob>; duration: number }>,
+) {
+  if (!clips.length || clips.length > 12)
+    throw new Error('Invalid script section count.')
+  const dir = await mkdtemp(join(tmpdir(), 'genzen-script-mix-'))
+  try {
+    const segments = []
+    for (const [index, clip] of clips.entries()) {
+      if (
+        !Number.isFinite(clip.duration) ||
+        clip.duration <= 0 ||
+        clip.duration > 15
+      )
+        throw new Error('Invalid section duration.')
+      const file = join(dir, `source-${index}.mp4`)
+      await writeFile(
+        file,
+        new Uint8Array(await (await clip.blob()).arrayBuffer()),
+      )
+      segments.push({ file, inSeconds: 0, outSeconds: clip.duration })
+    }
+    const output = join(dir, 'final.mp4')
+    await stitchTimeline(segments, output, 0)
     return new Blob([new Uint8Array(await readFile(output))], {
       type: 'video/mp4',
     })

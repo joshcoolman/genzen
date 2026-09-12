@@ -85,6 +85,29 @@ export function nearestAspect(width: number, height: number) {
   )[0]
 }
 
+/**
+ * What rendering a script costs (#640). H3 Max Turbo at 480P, from FAL's
+ * rate card on 2026-09-12: $0.00625 per second of clip. H3 has billed on 1.2x
+ * the requested duration before (`video/models.ts`), so this is an estimate
+ * and the dialog says so.
+ */
+export const RENDER_USD_PER_SECOND = 0.00625
+/** Wall-clock per section: queue, a Turbo generation, download, end frame.
+ *  Sequential by nature, since each section starts on the last one's end
+ *  frame. A round number from the hand-run, not a measurement. */
+export const RENDER_SECONDS_PER_SECTION = 75
+export function renderEstimate(sections: ReadonlyArray<{ duration: number }>) {
+  const seconds = sections.reduce((sum, s) => sum + s.duration, 0)
+  return {
+    seconds,
+    usd: seconds * RENDER_USD_PER_SECOND,
+    minutes: Math.max(
+      1,
+      Math.round((sections.length * RENDER_SECONDS_PER_SECTION) / 60),
+    ),
+  }
+}
+
 /** The whole script as one copyable text. */
 export function scriptText(script: {
   title: string
