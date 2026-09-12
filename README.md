@@ -1,81 +1,137 @@
 # GenZen
 
-The multi-step prompt work that makes AI images good, packaged as things you
-can click. Pick a picture, pick a light, press Go. There is no graph to
-assemble.
+A personal workspace for making, comparing, and organizing AI images and video.
+Work from prompts and reference images, try several models at once, and keep the
+results together with the context that made them.
 
-Fan one prompt across several models and compare what comes back side by side.
-Keep the results in a library with groups rather than a folder of downloads.
-Take one picture and get sixteen camera angles of the same subject, or relight
-it under a named lighting setup. Nothing is a credit or a surprise: tick three
-models and a count of two and the panel quotes those six generations at $0.304
-before you press.
+The working principle is immediate feedback: capture the idea, show the work in
+progress, and let the next idea follow. Image submissions show pending thumbnails
+before planning or rendering finishes, so you can keep prompting while earlier
+batches run in the background.
 
-![The Images route: a group of results, each card labelled with the model that
-made it, and the generator panel with three models
-ticked](public/screenshots/genzen-images.jpg)
+![Images with grouped results, model labels, reference images, and a multi-model
+generator](public/screenshots/genzen-images.jpg)
 
-_One prompt, two reference images, three models, six pictures — quoted at
-$0.304 before the press. Shots and Lighting sit above the references._
+## Images: explore several directions at once
 
-These are estimates rather than invoices — FAL's image queue never returns a
-cost, so the figure is computed from a published rate and it is the estimate
-that gets recorded. Close enough to plan a session against and to know what an
-afternoon cost, not close enough to reconcile a bill to the penny. Every
-generation's is kept, and Activity and the account page total them.
+Send one or several prompts to multiple models, choose how many results you want
+from each, and compare the outputs side by side. Attach uploaded or generated
+images as references, with their order visible in the composer. The panel shows
+the output count and estimated cost before you generate.
 
-![The account Overview: total spend, images and videos, a per-model breakdown,
-and a status panel showing auth, Postgres, FAL and Anthropic
-connected](public/screenshots/genzen-account.jpg)
+Images is also the working library. Generate inside a group and the results land
+there; generate at the top level and they stay there. Hide the takes you do not
+want to look at, restore hidden images when needed, and use Trash for removal.
+Open an image at a larger size to judge it, inspect its details, or load its
+prompt and references back into the composer for another pass.
 
-_Spend to date, split by model, with a running count of what each one made._
+## Storyboards: full-size shots from one idea
+
+Type `/storyboard` directly in the image prompt field, followed by a scene idea.
+Attach references for the subject, setting, or look you want to carry through.
+For example:
+
+```text
+/storyboard Six shots of this vehicle driving through an empty downtown.
+Start wide, move closer, and finish beside a deserted fountain.
+```
+
+A shared plan establishes continuity and assigns each shot its own composition.
+Every shot is generated as a separate full-size image using the original
+references. The default is six 16:9 shots; request two through nine in the brief
+or with `--shots N`.
+
+The output count includes shots, models, and variants. After any batch
+confirmation, every shot gets its own numbered pending thumbnail immediately,
+and the composer remains available for more work. Results stay in the current
+group or at the top level.
+
+If you later want a single sheet, select the images and use **Reference sheet**
+to assemble a downloadable composite.
+
+## Develop a picture further
+
+**Shots** explores camera angles around a subject. **Lighting** applies named
+lighting setups to the reference images. Both use a reasoning model to inspect
+the actual subject and turn the chosen direction into rendering instructions.
+**Outpaint** reframes a finished image into other aspect ratios.
+
+These tools create new images, keeping the source available for another attempt.
+Download individual results, a group, or a selection as a ZIP. **Explore** offers
+a quieter browsing view of finished images, with their prompts available when
+you open one.
+
+## Video: direct the motion and review the result
+
+Generate a clip from a prompt, add a first or last frame, or supply reference
+images where the chosen model supports them. Image roles are explicit, and model
+compatibility, duration, shape, and resolution guide the available choices.
+Several prompts can produce several clips in one submission.
+
+Click a video thumbnail to open a large player with the complete frame, playback
+controls, and fullscreen support. First and last frame previews help you scan
+clips in the library. **Continue** takes a clip's ending as the starting image
+for the next generation and brings its prompt forward for editing.
+
+Organize clips in video groups, hide takes while comparing results, and use
+Trash for removal. Generating inside a video group keeps the new clips there.
+
+## Director: build a sequence over time
+
+Director provides named sessions for developing a sequence section by section.
+Start by setting the scene, continue the action, and redo the latest section
+when needed. Sessions, working clips, and pending requests are saved so you can
+return to the work.
+
+Save a rough export as a snapshot of the sequence. Saved rough exports also
+appear in Video as independent copies for playback and organization. **Final
+Cut** can create a separate, AI-assisted finished version from a saved rough
+export. New rough exports and Final Cuts are silent.
+
+## Keep the context and the cost
+
+**Activity** records generation prompts, references, model settings, timing,
+estimated cost, and failures. Storyboard runs retain the shared plan and each
+shot's rendering request. For images, **Load** restores an editable starting
+point, while **Retry** replays a failed request's saved inputs and settings.
+
+**Account** summarizes recorded spend and output counts by model, alongside
+connection status, appearance settings, and keyboard shortcuts. Costs are
+estimates, not invoices: provider billing can differ, and AI planning can add
+usage beyond the image estimate shown in the composer.
+
+![Account overview with estimated spend, output counts, model breakdowns, and
+connection status](public/screenshots/genzen-account.jpg)
+
+## Lab
+
+Lab is where ideas, model capabilities, and workflows are being worked out and
+experimented with. Its tools can change as we learn what is useful; the main
+workspaces are where established workflows live.
 
 ## Who it is for
 
-One person, on their own machine, spending their own money at fal.ai. There is
-no signup and no hosted version — you supply a FAL key and generations bill
-your account directly. It has real accounts and per-user isolation, but no
-orgs, teams or sharing. [`docs/OVERVIEW.md`](docs/OVERVIEW.md) says what it
-deliberately is not.
+GenZen is a personal creative workspace, with real accounts and per-user
+isolation but no public signup, teams, or sharing. Run it locally or deploy your
+own instance; generations bill the provider accounts whose keys you configure.
 
-Running it is one FAL key and one command. Postgres, storage and auth come up
-as local containers, so there is no cloud account to open and nothing to
-provision before the app boots; deploying it to Railway is roughly as short.
-Setup is below.
-
-## Where this is going
-
-Shots and Lighting look like two features. They are two instances of one
-mechanism: a reasoning model looks at your particular picture and inventories
-what is actually in it, then applies craft knowledge — photography, lighting,
-composition — bound to the surfaces it found. Pass one grounds, pass two
-art-directs; `writeLightingSubject`, then `writeLighting`.
-
-The image models cannot do that half. They render what a prompt asks for, and
-have no view on why a corner gives a hard vertical edge where a flat wall gives
-a gradient, or that a truck has no cheek. The reasoning model is what turns a
-vague intention into the instruction an art director would have given.
-
-The same shape has other slots — lens and depth, composition and blocking,
-grade and palette — and none of them are built. The one that matters most is
-already half-built inside Shots: sixteen frames of one subject have to agree
-with each other, and a set that agrees is the hard part of multi-shot video.
-Stills are the cheap rehearsal for it.
-
-That is intent rather than a promise. What is actually queued is on the board.
+Postgres and media storage run locally with Docker. FAL provides image and video
+generation, and Anthropic provides the reasoning and vision used by AI-assisted
+workflows such as storyboards. The app can start without provider keys; the
+features that call those providers need their keys configured.
 
 ## Run it locally
 
-You need Docker, pnpm, and **Node 22.13+**. No cloud account is required
-anywhere — Postgres, auth and storage all run as local containers.
+You need Docker, pnpm, and **Node 22.13+**. Postgres and media storage run
+in local containers; the app handles authentication.
 
 The Node floor is not cosmetic: `packageManager` pins pnpm 11, which imports
 `node:sqlite` and cannot run on Node 20. Corepack fetches pnpm before anything
 reads `engines`, so an older Node fails during `pnpm install` with
 `ERR_UNKNOWN_BUILTIN_MODULE: node:sqlite` and no mention of your Node version.
 
-A `FAL_KEY` is optional to start — the app runs without one and only image
-generation fails. Supplying one means generations bill your fal.ai account;
+A `FAL_KEY` is optional to start — the app runs without one, but image and video
+generation need it. Supplying one means generations bill your fal.ai account;
 nothing is mocked.
 
 ```bash
@@ -88,8 +144,8 @@ That is the whole setup — there is no global CLI to install and no env file to
 copy or edit. `local:up`
 starts Postgres and MinIO (S3-compatible storage) from `docker-compose.yml`,
 writes `.env.local` for you, applies any migrations the database has not seen,
-generates and provisions a login, and prompts for the FAL key. Re-run it any
-time: it is idempotent, it keeps your key, and it never resets a database you
+generates and provisions a login, and prompts for your FAL and optional
+Anthropic keys. Re-run it any time: it is idempotent, it keeps your key, and it never resets a database you
 have been working in. `pnpm local:reset` is the deliberate way to start over.
 
 | Thing         | Where                                               |
@@ -108,7 +164,7 @@ deployed instance — list, add, delete — and takes `--local` to work on the
 docker stack instead.
 
 FAL is not mocked — generation calls fal.ai for real and costs real money. The
-app boots and everything else works without a key. Every generation's cost lands
+app boots and everything else works without a key. Generation cost estimates are recorded
 in the Activity log.
 
 Ports: MinIO is on 9010/9011 rather than its default 9000/9001, so this stack
@@ -203,46 +259,25 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   are served by the app at `/img/[id]`, which resolves identity from the cookie
   and filters the row by `user_id`. `src/lib/image-url.ts` is the only place a
   URL is built, and it returns an app path, never a storage key (#226).
-- Every generate path reserves its `user_images` row _before_ any fallible work,
-  so a click always leaves a card behind — pending, completed, or failed with a
-  reason and a Retry.
+- Image batches create optimistic cards before preparation starts, then reconcile
+  them with saved generation rows. Preparation and submission failures remain
+  visible instead of silently dropping the request.
 
 ## Status
 
-**Focus** — No active implementation; full-size storyboard shots shipped (#626).
+**Focus** — No active implementation; full-size storyboards and video playback shipped.
 
-Last shipped:
+Recent highlights:
 
-- `/storyboard` generates separate full-size shots, with immediate per-shot
-  thumbnails, shared continuity, accurate output counts and replayable renders (#626).
-- Video images have First frame, Reference, and Last frame roles; compatible
-  models follow the selection. H3 Max image input, H3 references, and Kling O3
-  mixed inputs are available; Continue preserves reference images (#516).
-- Image lineup: GPT Image 2.5 Flare and Sunburst replace GPT Image 2, both with
-  edit endpoints; quality is pinned per tier since the endpoint default is
-  still `high`.
-- Lab Frames pulls stills from a pasted YouTube link — scrub or play it like a
-  clip, the server cuts the frame. Development-only; nothing about the video is
-  kept but the frames.
-- Director left the lab: `/director` is a real route with named sessions,
-  durable clips and pending requests, authenticated on Railway.
+- `/storyboard` produces separate full-size shots with shared planning, original
+  references, immediate numbered thumbnails, and accurate batch counts (#626).
+- Video thumbnails open a large player for reviewing the complete frame (#629).
+- Video inputs have explicit First frame, Reference, and Last frame roles, with
+  compatible model choices; Continue preserves reference images (#516).
+- Director has durable named sessions and saved rough exports that also appear
+  in Video (#602, #607).
+- The image extract-frames skill was retired in favor of generating full-size
+  storyboard shots directly (#628).
 
-Updated when Focus changes. Everything else is the board at
-`localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
-first, **Next** is an honest read on what follows, Later and Unsorted are
-parking lots. The labels are the ranking; a list here would be a second copy
-that drifts, and one did.
-
-**Last shipped**
-
-- 2026-09-05 — Lab: a Ref Video page. Up to nine reference images and a prompt that names them as `@Image1`..`@ImageN`, on Seedance 2.0's reference-to-video endpoint — the question being whether that naming actually controls what ends up in the clip. Pinned to 720p, the one tier that can be quoted before the press, and 4 seconds rather than `auto`, which is a 2.5x cost range. The clip is an ordinary generation, so it is in the library, Activity and Trash like any other. The lab's image picker can also upload from disk now, which used to mean leaving for /images and coming back (#462)
-
-- 2026-09-05 — Saved Director rough exports join Video and Extract Frames, including existing exports on first visit. Working clips and Final Cut experiments remain private; Video copies have independent storage and deletion (#607).
-
-- 2026-09-05 — New Final Cuts skip effects and music generation and export silently. Existing finished versions stay unchanged; resumed jobs reuse pictures and skip retired audio stages (#609).
-
-- 2026-09-05 — Final Cut accepts rough exports up to three minutes and condenses them into at most two. It selects the strongest coverage while preserving the story, with internal timing adjustment rather than a duration-budget error (#606).
-
-- 2026-09-05 — Saved Director exports gain one-click Final Cut versions: Claude plans from accepted scenes and exported frames, H3 Max renders reference-guided shots, MMAudio supplies effects and Stable Audio supplies the score. Progress and receipts survive navigation, with recoverable resume, stop and private saved playback/download. Source exports stay unchanged; initial limit is two minutes (#604).
-
-- 2026-09-05 — Director is a standalone feature with durable named sessions, a preserved Lab import and multiple saved exports. Empty sessions start with Set the scene and reveal the workspace after the first clip (#602). Railway uses the existing database and private bucket. Earlier-section redo and version history remain out of scope (#593, #594).
+The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
+what is in progress and what comes next; this README describes what is available.
