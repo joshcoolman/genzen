@@ -162,3 +162,140 @@ describe('video request contract', () => {
     )
   })
 })
+
+describe('Seedance 2.5 in the shared Video workflow', () => {
+  const seedance = videoModelBySlug('seedance-2.5')!
+
+  it('routes text, first/last frames, and references without mixing their contracts', () => {
+    const text = videoRequestPlan(
+      seedance,
+      [],
+      'A vehicle drives past',
+      30,
+      '21:9',
+      '1080p',
+    )
+    expect(text.endpoint.id).toBe('bytedance/seedance-2.5/text-to-video')
+    expect(
+      videoFalInput(text.endpoint, [], [], {
+        ...settings,
+        duration: 30,
+        resolution: '1080p',
+        aspectRatio: '21:9',
+        supportsAudio: true,
+      }),
+    ).toEqual({
+      prompt: settings.prompt,
+      duration: '30',
+      resolution: '1080p',
+      aspect_ratio: '21:9',
+      generate_audio: true,
+    })
+    const frames = [image('end', 'last'), image('start', 'first')]
+    const framed = videoRequestPlan(
+      seedance,
+      frames,
+      'Drive forward',
+      4,
+      '16:9',
+      '720p',
+    )
+    expect(framed.endpoint.id).toBe('bytedance/seedance-2.5/image-to-video')
+    expect(
+      videoFalInput(framed.endpoint, frames, ['end-url', 'start-url'], {
+        ...settings,
+        duration: 4,
+        resolution: '720p',
+        supportsAudio: true,
+      }),
+    ).toEqual({
+      prompt: settings.prompt,
+      duration: '4',
+      resolution: '720p',
+      aspect_ratio: 'auto',
+      generate_audio: true,
+      image_url: 'start-url',
+      end_image_url: 'end-url',
+    })
+    expect(imageCompatibility(seedance, [...frames, ...refs(1)])).toMatch(
+      /references or frames/,
+    )
+    expect(imageCompatibility(seedance, [image('end', 'last')])).toMatch(
+      /needs a first/,
+    )
+  })
+
+  it('preserves nine ordered reference images and their prompt labels', () => {
+    const images = refs(9)
+    const plan = videoRequestPlan(
+      seedance,
+      images,
+      '@Image1 drives past @Image2',
+      10,
+      '16:9',
+      '720p',
+    )
+    expect(plan.endpoint.id).toBe('bytedance/seedance-2.5/reference-to-video')
+    const payload = videoFalInput(
+      plan.endpoint,
+      images,
+      images.map((i) => `url-${i.id}`),
+      {
+        ...settings,
+        prompt: plan.prompt,
+        duration: 10,
+        resolution: '720p',
+        supportsAudio: true,
+      },
+    )
+    expect(payload).toEqual({
+      task: 'reference',
+      prompt: plan.prompt,
+      duration: '10',
+      resolution: '720p',
+      aspect_ratio: '16:9',
+      generate_audio: true,
+      image_urls: images.map((i) => `url-${i.id}`),
+    })
+    expect(referenceLabel(plan.endpoint, 8)).toBe('@Image9')
+    expect(compatibleModel(VIDEO_MODELS, seedance.slug, images)).toBe(seedance)
+    expect(imageCompatibility(seedance, refs(10))).toMatch(/9 images/)
+  })
+
+  it('quotes the chosen resolution and refuses unsupported settings before submission', () => {
+    expect(estimateVideoCost(seedance, 10, '480p', refs(2))).toBe(221)
+    expect(estimateVideoCost(seedance, 10, '720p', refs(9))).toBe(473)
+    expect(estimateVideoCost(seedance, 10, '1080p', [])).toBe(1164)
+    expect(() => videoRequestPlan(seedance, [], 'Drive', 31, '16:9')).toThrow(
+      /duration/,
+    )
+    expect(() =>
+      videoRequestPlan(seedance, [], 'Drive', 10, '16:9', '4k'),
+    ).toThrow(/resolution/)
+  })
+})
+
+describe('native audio selection', () => {
+  it('sends explicit silence for supporting models and omits the field for others', () => {
+    for (const model of VIDEO_MODELS) {
+      const payload = videoFalInput(model.endpoints.textToVideo, [], [], {
+        ...settings,
+        supportsAudio: model.supportsAudio,
+        generateAudio: false,
+      })
+      if (model.supportsAudio)
+        expect(payload.generate_audio, model.slug).toBe(false)
+      else expect(payload, model.slug).not.toHaveProperty('generate_audio')
+    }
+  })
+  it('prices silent Kling requests lower and keeps Seedance audio price unchanged', () => {
+    expect(estimateVideoCost(kling, 10, undefined, refs(2), false)).toBe(112)
+    expect(estimateVideoCost(kling, 10, undefined, refs(2), true)).toBe(140)
+    const seedance = videoModelBySlug('seedance-2.5')!
+    expect(estimateVideoCost(seedance, 10, '720p', refs(2), false)).toBe(473)
+    expect(
+      videoRequestPlan(kling, [], 'Drive', 10, '16:9', undefined, false)
+        .estimatedCostCents,
+    ).toBe(112)
+  })
+})

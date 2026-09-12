@@ -180,6 +180,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
   // A list, not a field: one first frame can carry several takes, and queueing
   // them is cheaper than sitting through one before writing the next. Same
   // component the generator panel uses.
+  const [generateAudio, setGenerateAudio] = useState(true)
   const [prompts, setPrompts] = useState<Array<string>>([''])
   const [chosenDuration, setDuration] = useState(
     DEFAULT_VIDEO_MODEL.defaultDuration,
@@ -851,7 +852,8 @@ export function useView(initialVideos: Array<VideoRecord>) {
     : model.resolution
   const clipCount = Math.max(filledPrompts.length, 1)
   const estimatedCost = selectedModel
-    ? estimateVideoCost(model, duration, resolution, sources) * clipCount
+    ? estimateVideoCost(model, duration, resolution, sources, generateAudio) *
+      clipCount
     : null
   const canSubmit = filledPrompts.length > 0 && !isSubmitting && !!selectedModel
   /** Above this the form asks first -- see `CONFIRM_ABOVE_CENTS`. */
@@ -877,6 +879,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
           aspectRatio,
           resolution,
           modelSlug: model.slug,
+          generateAudio,
           // Every clip made while a group is open is filed into it. This is
           // the half that makes a group a place to work rather than a folder.
           groupId: activeGroupId,
@@ -893,6 +896,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
     sources,
     canSubmit,
     filledPrompts,
+    generateAudio,
     duration,
     aspectRatio,
     resolution,
@@ -903,6 +907,9 @@ export function useView(initialVideos: Array<VideoRecord>) {
 
   return {
     model,
+    supportsAudio: model.supportsAudio,
+    generateAudio,
+    setGenerateAudio,
     pickerModels,
     modelSlug: selectedModel?.slug,
     endpoint,

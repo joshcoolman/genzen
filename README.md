@@ -66,7 +66,10 @@ you open one.
 Generate a clip from a prompt, add a first or last frame, or supply reference
 images where the chosen model supports them. Image roles are explicit, and model
 compatibility, duration, shape, and resolution guide the available choices.
-Several prompts can produce several clips in one submission.
+Several prompts can produce several clips in one submission. Seedance 2.5 is
+available alongside Kling, MiniMax, LTX, and Flux, with reference images or
+first/last frames, native audio, and clips up to 30 seconds. For models that
+support sound, **Generate audio** lets you choose audio or silent output.
 
 Click a video thumbnail to open a large player with the complete frame, playback
 controls, and fullscreen support. First and last frame previews help you scan
@@ -268,6 +271,9 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 **Focus** — No active implementation; full-size storyboards and video playback shipped.
 
 Recent highlights:
+
+- Seedance 2.5 joins Video with reference images, first/last frames, and up to
+  30-second clips. Audio-capable models offer a Generate audio toggle.
 
 - `/storyboard` produces separate full-size shots with shared planning, original
   references, immediate numbered thumbnails, and accurate batch counts (#626).

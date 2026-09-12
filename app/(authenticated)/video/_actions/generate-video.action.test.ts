@@ -84,6 +84,75 @@ describe('Video server action', () => {
     expect(ownershipCall[0].join(' ')).toMatch(/user_id =/)
     expect(ownershipCall).toContain('owner-1')
   })
+  it('submits Seedance through the normal group, metadata, and queue lifecycle', async () => {
+    const images = [
+      { id: a, role: 'reference' as const },
+      { id: b, role: 'reference' as const },
+    ]
+    await generateVideo({
+      ...base,
+      modelSlug: 'seedance-2.5',
+      images,
+      duration: 4,
+      resolution: '480p',
+    })
+    expect(mocks.reserve).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'owner-1',
+        groupId: 'group-1',
+        title: 'Seedance 2.5',
+        falModelId: 'bytedance/seedance-2.5/reference-to-video',
+        extraMetadata: expect.objectContaining({
+          input_images: images,
+          reference_image_ids: [a, b],
+          resolution: '480p',
+          duration_seconds: 4,
+          estimated_cost_cents: 88,
+        }),
+      }),
+    )
+    expect(mocks.submit).toHaveBeenCalledWith(
+      'bytedance/seedance-2.5/reference-to-video',
+      {
+        input: {
+          task: 'reference',
+          prompt: base.prompt,
+          duration: '4',
+          resolution: '480p',
+          aspect_ratio: '16:9',
+          generate_audio: true,
+          image_urls: ['url-a', 'url-b'],
+        },
+      },
+    )
+    expect(mocks.submitted).toHaveBeenCalledWith('record-1', 'request-1')
+    expect(mocks.reserve.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.submit.mock.invocationCallOrder[0],
+    )
+  })
+  it('persists audio-off and prices and submits the same silent request', async () => {
+    mocks.upload.mockResolvedValue([])
+    await generateVideo({
+      ...base,
+      modelSlug: 'kling-o3-pro',
+      duration: 10,
+      generateAudio: false,
+    })
+    expect(mocks.reserve).toHaveBeenCalledWith(
+      expect.objectContaining({
+        extraMetadata: expect.objectContaining({
+          generate_audio: false,
+          estimated_cost_cents: 112,
+        }),
+      }),
+    )
+    expect(mocks.submit).toHaveBeenCalledWith(
+      'fal-ai/kling-video/o3/pro/text-to-video',
+      {
+        input: expect.objectContaining({ generate_audio: false }),
+      },
+    )
+  })
   it('rejects missing, deleted or inaccessible images before reserving or uploading', async () => {
     mocks.sql.mockImplementation((query: unknown) =>
       Array.isArray(query) && 'raw' in query ? Promise.resolve([]) : query,

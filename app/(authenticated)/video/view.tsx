@@ -20,6 +20,9 @@ import { ConfirmDialog, NameDialog, PageHeader, Stack } from '#/components'
 export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
   const {
     pickerModels,
+    supportsAudio,
+    generateAudio,
+    setGenerateAudio,
     modelSlug,
     selectModel,
     durationOptions,
@@ -203,6 +206,9 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             selectionActions
           ) : (
             <VideoForm
+              supportsAudio={supportsAudio}
+              generateAudio={generateAudio}
+              onGenerateAudioChange={setGenerateAudio}
               durationOptions={durationOptions}
               promptCount={promptCount}
               needsConfirm={needsConfirm}
@@ -242,6 +248,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
                   selectedSlug={modelSlug}
                   images={sources}
                   resolution={resolution}
+                  generateAudio={generateAudio}
                   disabled={isSubmitting}
                   onSelect={selectModel}
                 />

@@ -30,6 +30,7 @@ export interface GenerateVideoInput {
    *  switch cannot fail a submit. */
   resolution?: string
   modelSlug?: string
+  generateAudio?: boolean
   /** File the clip into a group at birth (#517), the way a generation made
    *  inside an image group is. This is the half that makes a group a place to
    *  work rather than a folder. Verified server-side against both the caller's
@@ -52,6 +53,7 @@ export async function generateVideo({
   aspectRatio,
   resolution,
   modelSlug,
+  generateAudio = true,
   groupId,
 }: GenerateVideoInput): Promise<{ recordId: string }> {
   const { userId } = await resolveAuth()
@@ -66,6 +68,7 @@ export async function generateVideo({
     duration,
     aspectRatio,
     resolution,
+    generateAudio,
   )
   const {
     endpoint,
@@ -116,6 +119,7 @@ export async function generateVideo({
       duration_seconds: duration,
       resolution: sentResolution,
       estimated_cost_cents: estimatedCostCents,
+      ...(model.supportsAudio ? { generate_audio: generateAudio } : {}),
     },
   })
 
@@ -142,6 +146,7 @@ export async function generateVideo({
           aspectRatio,
           resolution: sentResolution,
           supportsAudio: model.supportsAudio,
+          generateAudio,
         }),
       }),
     )

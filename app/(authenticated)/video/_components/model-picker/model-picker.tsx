@@ -12,6 +12,7 @@ export function ModelPicker({
   selectedSlug,
   images,
   resolution,
+  generateAudio,
   disabled,
   onSelect,
 }: {
@@ -19,6 +20,7 @@ export function ModelPicker({
   selectedSlug?: string
   images: Array<VideoImageInput>
   resolution: string
+  generateAudio: boolean
   disabled: boolean
   onSelect: (slug: string) => void
 }) {
@@ -61,8 +63,11 @@ export function ModelPicker({
             </span>
             <span className={styles.price}>
               {(
-                pricePerSecondFor(model, selected ? resolution : undefined) /
-                100
+                pricePerSecondFor(
+                  model,
+                  selected ? resolution : undefined,
+                  generateAudio,
+                ) / 100
               ).toFixed(2)}
             </span>
           </button>

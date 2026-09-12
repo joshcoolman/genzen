@@ -224,7 +224,7 @@ describe('per-model capability', () => {
     // Empty is "no control", not "no resolution" -- the others still send
     // their fixed one.
     for (const model of VIDEO_MODELS) {
-      if (model === H3_MAX) continue
+      if (model === H3_MAX || model.slug === 'seedance-2.5') continue
       expect(resolutionsFor(model), model.slug).toEqual([])
       expect(model.resolution, model.slug).toBeTruthy()
     }
