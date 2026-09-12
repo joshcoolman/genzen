@@ -25,7 +25,7 @@ export function useFinalCuts(sessionId: string) {
       try {
         const result = await loadFinalCuts(sessionId)
         for (const item of result) {
-          const key = `director-final-start:${sessionId}:${item.export_id}`
+          const key = `director-final-start:${sessionId}:${item.export_id}:${item.kind}`
           if (sessionStorage.getItem(key) === item.id)
             sessionStorage.removeItem(key)
         }
@@ -72,13 +72,13 @@ export function useFinalCuts(sessionId: string) {
       working.current = false
     }
   }
-  function start(exportId: string) {
+  function start(exportId: string, kind: 'render' | 'script' = 'render') {
     void run(async () => {
-      const key = `director-final-start:${sessionId}:${exportId}`
+      const key = `director-final-start:${sessionId}:${exportId}:${kind}`
       // Keep the same ID after a lost response, including across a page reload.
       const id = sessionStorage.getItem(key) ?? crypto.randomUUID()
       sessionStorage.setItem(key, id)
-      const result = await startFinalCut(sessionId, exportId, id)
+      const result = await startFinalCut(sessionId, exportId, id, kind)
       if (!result.item) throw new Error(result.error)
       const item = result.item
       setItems((previous) => [

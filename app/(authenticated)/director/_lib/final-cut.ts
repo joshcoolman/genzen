@@ -21,6 +21,26 @@ export const planSchema = z.object({
     .max(12),
 })
 export type FinalPlan = z.infer<typeof planSchema>
+/**
+ * The text-only result (#634): the plan's framing plus one H3 multi-shot
+ * script per shot of the plan, written to be copied into Video by hand.
+ * `sections` grows as the writer works, so a resumed job carries on from the
+ * last one saved.
+ */
+export const scriptSchema = z.object({
+  aspectRatio: z.string().min(3).max(5),
+  sections: z
+    .array(
+      z.object({
+        index: z.number().int().min(0),
+        duration: z.union([z.literal(5), z.literal(10), z.literal(15)]),
+        sources: z.array(z.number().int().min(0)),
+        text: z.string().min(1).max(8000),
+      }),
+    )
+    .max(12),
+})
+export type FinalScript = z.infer<typeof scriptSchema>
 export type FinalOutput = {
   mediaId: string
   thumbnailId: string
@@ -36,11 +56,15 @@ export type FinalStep = {
   terminal?: boolean
 }
 export type FinalWork = {
+  /** A Script job (#634): plan, write each section as text, stop. Never
+   *  uploads references or submits to FAL, and finishes with no output. */
+  scriptOnly?: boolean
   planning?: boolean
   plan?: FinalPlan
   frames?: Array<{ mediaId: string; time: number; section: number }>
   references?: Array<string>
   steps?: Partial<Record<string, FinalStep>>
+  script?: FinalScript
 }
 export type FinalCut = {
   id: string
@@ -58,7 +82,19 @@ export type FinalCut = {
 export type FinalCutSummary = Pick<
   FinalCut,
   'id' | 'export_id' | 'status' | 'stage' | 'error' | 'output' | 'created_at'
-> & { name: string; resumable: boolean; occupied: boolean }
+> & {
+  name: string
+  resumable: boolean
+  occupied: boolean
+  kind: 'render' | 'script'
+  /** How many sections the plan called for, once there is a plan. */
+  sectionCount: number | null
+  /** Present once a Script job has planned, growing as sections land. */
+  script:
+    | (FinalScript &
+        Pick<FinalPlan, 'title' | 'story' | 'continuity' | 'style'>)
+    | null
+}
 
 function requiredSteps(work: FinalWork) {
   // Legacy audio receipts stay recorded, but silent finishing never submits or
@@ -85,7 +121,20 @@ export function finalCutSummary(item: FinalCut): FinalCutSummary {
     error: item.error,
     output: item.output,
     created_at: item.created_at,
-    name: item.work.plan?.title ?? 'Final Cut',
+    name:
+      item.work.plan?.title ?? (item.work.scriptOnly ? 'Script' : 'Final Cut'),
+    kind: item.work.scriptOnly ? 'script' : 'render',
+    sectionCount: item.work.plan?.shots.length ?? null,
+    script:
+      item.work.scriptOnly && item.work.plan && item.work.script
+        ? {
+            title: item.work.plan.title,
+            story: item.work.plan.story,
+            continuity: item.work.plan.continuity,
+            style: item.work.plan.style,
+            ...item.work.script,
+          }
+        : null,
     resumable:
       item.status === 'failed' &&
       !uncertainWork(item.work) &&

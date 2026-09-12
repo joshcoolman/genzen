@@ -16,20 +16,28 @@ import { resolveAuth } from '#/lib/server/auth.server'
 import { requireAiRole } from '#/lib/server/ai.server'
 import { assertFalKey } from '#/lib/server/fal-key.server'
 
+const kindSchema = z.enum(['render', 'script']).default('render')
+
 export async function startFinalCut(
   sessionId: string,
   exportId: string,
   id: string,
+  kind?: 'render' | 'script',
 ) {
   const owner = (await resolveAuth()).userId
   try {
+    const scriptOnly = kindSchema.parse(kind) === 'script'
     requireAiRole('vision')
-    assertFalKey()
+    // A Script job (#634) writes with Claude and never reaches FAL, so a
+    // missing FAL key is not its problem.
+    if (scriptOnly) requireAiRole('reasoning')
+    else assertFalKey()
     const item = await createFinalCut(
       owner,
       idSchema.parse(sessionId),
       idSchema.parse(exportId),
       idSchema.parse(id),
+      scriptOnly,
     )
     if (item.status === 'queued' || item.status === 'running')
       scheduleFinalCut(owner, item.id)
@@ -59,10 +67,12 @@ export async function manageFinalCut(id: string, command: string) {
   try {
     idSchema.parse(id)
     const action = z.enum(['resume', 'stop', 'delete']).parse(command)
-    if (!(await getFinalCut(owner, id))) throw new Error('Final Cut not found.')
+    const item = await getFinalCut(owner, id)
+    if (!item) throw new Error('Final Cut not found.')
     if (action === 'resume') {
       requireAiRole('vision')
-      assertFalKey()
+      if (item.work.scriptOnly) requireAiRole('reasoning')
+      else assertFalKey()
       await resumeFinalCut(owner, id)
       scheduleFinalCut(owner, id)
     } else if (action === 'stop') await stopFinalCut(owner, id)

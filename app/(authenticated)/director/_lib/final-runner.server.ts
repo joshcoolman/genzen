@@ -6,9 +6,11 @@ import {
   claimFinalCut,
   failFinalCut,
   finishFinalCut,
+  finishScript,
   releaseFinalCut,
   renewFinalCut,
 } from './final-cuts.server'
+import { frameAspect, writeSectionScript } from './final-script.server'
 import { getExport } from './exports.server'
 import { readMedia, storeMedia } from './media.server'
 import { ingestVideo } from './ingest.server'
@@ -98,6 +100,42 @@ export async function runFinalCut(owner: string, id: string) {
       await checkpoint()
     }
     const plan = work.plan
+    // A Script job (#634) stops at text. One section per call, checkpointed
+    // as each lands so a resume carries on from the last one saved, and
+    // nothing below this block -- references, FAL, assembly -- ever runs.
+    if (work.scriptOnly) {
+      const script = (work.script ??= {
+        aspectRatio: await frameAspect(
+          await readMedia(owner, work.frames[0].mediaId),
+        ),
+        sections: [],
+      })
+      for (
+        let index = script.sections.length;
+        index < plan.shots.length;
+        index++
+      ) {
+        await checkpoint(`Writing section ${index + 1} of ${plan.shots.length}`)
+        const text = await writeSectionScript({
+          plan,
+          source,
+          index,
+          aspectRatio: script.aspectRatio,
+          previous: script.sections[index - 1]?.text ?? null,
+          beforeRequest: alive,
+        })
+        const shot = plan.shots[index]
+        script.sections.push({
+          index,
+          duration: shot.duration,
+          sources: shot.sections,
+          text,
+        })
+        await checkpoint()
+      }
+      await finishScript(owner, id, lease, work)
+      return
+    }
     if (!work.references) {
       const references = []
       for (const index of plan.referenceFrames) {
