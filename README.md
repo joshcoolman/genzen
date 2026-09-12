@@ -268,21 +268,22 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — #640: Generate Final Cut video from a finished Script, each section chained from the last frame. Branch `render-script`, PR open.
+**Focus** — Nothing in progress. Next: rank #632, #633, #638, #639 on the board.
 
 Recent highlights:
 
+- Director: a saved rough export becomes a Script of copyable multi-shot
+  sections, and Generate Final Cut video renders it end to end, each section
+  chained from the last frame and stitched with sound (#634, #640).
 - A staged reference can be read for its Lighting, Style or Subject instead
   of sent: Claude writes the block, the picture never reaches the model (#635).
 - Seedance 2.5 joins Video with reference images, first/last frames, and up to
-  30-second clips. Audio-capable models offer a Generate audio toggle.
-
+  30-second clips. Audio-capable models offer a Generate audio toggle (#631).
 - `/storyboard` produces separate full-size shots with shared planning, original
   references, immediate numbered thumbnails, and accurate batch counts (#626).
 - Video thumbnails open a large player for reviewing the complete frame (#629).
 - Video inputs have explicit First frame, Reference, and Last frame roles, with
   compatible model choices; Continue preserves reference images (#516).
-- Director has durable named sessions and saved rough exports that also appear
-  in Video (#602, #607).
-  The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
-  what is in progress and what comes next; this README describes what is available.
+
+The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
+what is in progress and what comes next; this README describes what is available.
