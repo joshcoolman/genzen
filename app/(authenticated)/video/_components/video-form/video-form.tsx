@@ -9,6 +9,7 @@ import {
   ConfirmDialog,
   CostNote,
   SingleSelect,
+  Switch,
   useConfirm,
 } from '#/components'
 import { formatCents } from '#/lib/format'
@@ -17,6 +18,9 @@ const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
 
 /** Prompts, role-aware image inputs, endpoint settings, Generate and models. */
 export function VideoForm({
+  supportsAudio,
+  generateAudio,
+  onGenerateAudioChange,
   durationOptions,
   promptCount,
   needsConfirm,
@@ -41,6 +45,9 @@ export function VideoForm({
   canSubmit,
   onSubmit,
 }: {
+  supportsAudio: boolean
+  generateAudio: boolean
+  onGenerateAudioChange: (value: boolean) => void
   /** This model's, since the picker is single-select. */
   durationOptions: Array<number>
   promptCount: number
@@ -109,7 +116,9 @@ export function VideoForm({
         disabled={isSubmitting}
         placeholders={{
           first:
-            'What happens in the shot? Name the camera move and where it ends. Dialogue in quotes is spoken aloud.',
+            supportsAudio && generateAudio
+              ? 'What happens in the shot? Name the camera move and where it ends. Dialogue in quotes is spoken aloud.'
+              : 'What happens in the shot? Name the camera move and where it ends.',
           additional: 'Another take...',
         }}
       />
@@ -176,6 +185,17 @@ export function VideoForm({
           </div>
         )}
       </div>
+
+      {supportsAudio && (
+        <label className={styles.audio}>
+          <span>Generate audio</span>
+          <Switch
+            checked={generateAudio}
+            onCheckedChange={onGenerateAudioChange}
+            disabled={isSubmitting}
+          />
+        </label>
+      )}
 
       {/* The button takes the row whole, as it does in the panel. Its label is
           the act; the price sits in the CostNote below, where it can carry the

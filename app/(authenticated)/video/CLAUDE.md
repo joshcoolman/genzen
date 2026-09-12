@@ -415,3 +415,18 @@ source images; `use-view.ts` owns everything after the first paint.
   15s under five, 30s after) and its pause while the tab is hidden -- which dispatches
   on `source` to `processVideoResult`, because FAL returns `video.url` here and
   `images[]` for a still.
+
+## Seedance 2.5
+
+Seedance is a normal model choice, with the existing image-role picker and
+resolution/duration controls. Use references or first/last frames, not both.
+Its first-frame endpoint follows the image shape and shows no aspect-ratio
+control. Continue reuses that same endpoint; reference-only input uses `@ImageN`
+labels. The shared nine-image limit applies. Prices are estimates based on
+FAL's published per-second approximations for token billing.
+
+Generate audio is a shared switch shown only for audio-capable models. It
+starts on and keeps the user's choice when switching models. It controls new
+generation, not playback mute, and is captured with each batch. Audio-off
+Kling estimates use its lower rate. Prompt guidance mentions speech only when
+the chosen model and audio setting support it.

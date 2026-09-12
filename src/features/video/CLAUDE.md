@@ -1,4 +1,4 @@
-The video lineup: five FAL models, their endpoints, and what each endpoint
+The video lineup: six FAL models, their endpoints, and what each endpoint
 takes, plus pulling a still frame out of a clip. Headless -- no `.tsx` here.
 
 `models.ts` was `app/(authenticated)/video/models.ts` until #398, which is when
@@ -84,3 +84,26 @@ something else.
   importable from `.server.ts` that is no longer forced, but it is still right:
   the label is pinned at submit time, so cutting a model from the lineup does
   not rename the clips it made.
+
+## Seedance 2.5
+
+Integrated directly into Video's model catalog, without Lab imports. Text,
+first-frame (with optional last frame), and reference-image requests select
+separate endpoints. References cannot be mixed with fixed frames; image-to-video
+always sends `aspect_ratio: auto`. Reference images use ordered `@ImageN` labels.
+The app keeps its nine-image cap even though this provider accepts 30 images.
+Native audio defaults on and follows Video’s Generate audio switch. Duration
+choices run from 4 to 30 seconds; no auto-duration spending. Resolution choices
+are 480p, 720p, and 1080p. Estimates use FAL's approximate per-second rates;
+actual token billing varies with output dimensions. Verified 2026-09-11 against
+https://fal.ai/models/bytedance/seedance-2.5/reference-to-video/api and its
+text/image siblings. Groups, Continue, Activity, polling, ingestion, playback,
+and Trash use the existing shared lifecycle. Video/audio reference uploads and
+provider editing/extension tasks are outside this image-input integration.
+
+Video's audio choice is sent explicitly as `generate_audio` only for models
+that support it, and saved in generation metadata. Omitted caller settings
+preserve the previous audio-on behavior. Kling O3 Pro uses $0.112/s with audio
+off and $0.14/s with audio on (FAL rate card, 2026-09-11); Seedance pricing
+is unchanged by audio. The same choice drives the composer estimate, model
+price, and server reservation. Unsupported models receive no audio parameter.

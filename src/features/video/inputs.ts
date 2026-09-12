@@ -107,6 +107,7 @@ export function estimateVideoCost(
   duration: number,
   resolution: string | undefined,
   images: Array<VideoImageInput>,
+  generateAudio = true,
 ): number {
   const refs = model.endpoints.withReferences?.references
   const count = images.filter((i) => i.role === 'reference').length
@@ -114,7 +115,9 @@ export function estimateVideoCost(
     ? Math.max(0, count - (refs.includedInPrice ?? count)) *
       (refs.extraImageCents ?? 0)
     : 0
-  return estimateCostCents(model, duration, resolution) + surcharge
+  return (
+    estimateCostCents(model, duration, resolution, generateAudio) + surcharge
+  )
 }
 
 /** All validation happens before reservation, storage uploads or a paid call. */
@@ -125,7 +128,10 @@ export function videoRequestPlan(
   duration: number,
   aspectRatio: string,
   resolution?: string,
+  generateAudio = true,
 ) {
+  if (typeof generateAudio !== 'boolean')
+    throw new Error('Invalid audio setting')
   const endpoint = endpointForImages(model, images)
   const trimmed = prompt.trim()
   if (!trimmed) throw new Error('A prompt is required')
@@ -156,6 +162,7 @@ export function videoRequestPlan(
       duration,
       sentResolution,
       images,
+      generateAudio,
     ),
   }
 }
@@ -172,6 +179,7 @@ export function videoFalInput(
     aspectRatio: string
     resolution: string
     supportsAudio: boolean
+    generateAudio?: boolean
   },
 ): Record<string, unknown> {
   if (urls.length !== images.length || urls.some((url) => !url))
@@ -193,7 +201,9 @@ export function videoFalInput(
       ? { aspect_ratio: settings.aspectRatio }
       : {}),
     ...(!endpoint.omitResolution ? { resolution: settings.resolution } : {}),
-    ...(settings.supportsAudio ? { generate_audio: true } : {}),
+    ...(settings.supportsAudio
+      ? { generate_audio: settings.generateAudio ?? true }
+      : {}),
     ...(first && endpoint.firstFrameParam
       ? { [endpoint.firstFrameParam]: first }
       : {}),

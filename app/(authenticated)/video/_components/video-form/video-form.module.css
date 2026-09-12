@@ -54,3 +54,11 @@
   line-height: 1.5;
   text-align: center;
 }
+
+.audio {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  font-size: var(--text-xs);
+}

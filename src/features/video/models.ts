@@ -1,5 +1,5 @@
 /** Video endpoints and capabilities, shared by the composer, server and Activity.
- * Verified from fal OpenAPI on 2026-09-10 (#516). Image roles select an
+ * Verified from fal OpenAPI on 2026-09-10 (#516); Seedance 2.5 on 2026-09-11. Image roles select an
  * endpoint; unsupported inputs are refused rather than dropped.
  */
 export interface VideoEndpoint {
@@ -85,6 +85,8 @@ export interface VideoModel {
   defaultDuration: number
   /** Sends `generate_audio`. H3 has no such param. */
   supportsAudio: boolean
+  /** Optional lower rate when native audio is disabled. */
+  silentPricePerSecondCents?: number
 }
 
 export const VIDEO_MODELS: Array<VideoModel> = [
@@ -296,9 +298,52 @@ export const VIDEO_MODELS: Array<VideoModel> = [
     },
     // fal's rate card, audio on: $0.14/s. No resolution parameter on this API.
     pricePerSecondCents: 14,
+    silentPricePerSecondCents: 11.2,
     resolution: '1080p',
     durations: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
     defaultDuration: 8,
+    supportsAudio: true,
+  },
+  {
+    slug: 'seedance-2.5',
+    label: 'Seedance 2.5',
+    description: 'Reference-guided video with native audio, up to 30 seconds',
+    endpoints: {
+      textToVideo: {
+        id: 'bytedance/seedance-2.5/text-to-video',
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'],
+        durationAsString: true,
+      },
+      withImage: {
+        id: 'bytedance/seedance-2.5/image-to-video',
+        firstFrameParam: 'image_url',
+        acceptsEndImage: true,
+        // The image endpoint always follows the starting frame's shape.
+        aspectRatios: [],
+        defaults: { aspect_ratio: 'auto' },
+        durationAsString: true,
+      },
+      withReferences: {
+        id: 'bytedance/seedance-2.5/reference-to-video',
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'],
+        // FAL accepts 30 images; Video deliberately keeps its nine-image limit.
+        references: { param: 'image_urls', max: 9, notation: '@Image' },
+        defaults: { task: 'reference' },
+        durationAsString: true,
+      },
+    },
+    // FAL's approximate output-second rates, verified 2026-09-11 for all
+    // three endpoints. Actual billing is token-based and varies with frame area.
+    // https://fal.ai/models/bytedance/seedance-2.5/reference-to-video
+    pricePerSecondCents: 47.3,
+    resolution: '720p',
+    resolutions: [
+      { id: '480p', pricePerSecondCents: 22.05 },
+      { id: '720p', pricePerSecondCents: 47.3 },
+      { id: '1080p', pricePerSecondCents: 116.4 },
+    ],
+    durations: [4, 6, 8, 10, 12, 15, 20, 25, 30],
+    defaultDuration: 4,
     supportsAudio: true,
   },
 ]
@@ -414,7 +459,10 @@ export function resolutionsFor(model: VideoModel): Array<VideoResolution> {
 export function pricePerSecondFor(
   model: VideoModel,
   resolution?: string,
+  generateAudio = true,
 ): number {
+  if (!generateAudio && model.silentPricePerSecondCents != null)
+    return model.silentPricePerSecondCents
   const tier = resolutionsFor(model).find((r) => r.id === resolution)
   return tier?.pricePerSecondCents ?? model.pricePerSecondCents
 }
@@ -437,9 +485,11 @@ export function estimateCostCents(
   model: VideoModel,
   duration: number,
   resolution?: string,
+  generateAudio = true,
 ): number {
   return Math.round(
-    pricePerSecondFor(model, resolutionFor(model, resolution)) * duration,
+    pricePerSecondFor(model, resolutionFor(model, resolution), generateAudio) *
+      duration,
   )
 }
 
