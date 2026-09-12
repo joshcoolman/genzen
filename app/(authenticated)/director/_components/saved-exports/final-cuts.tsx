@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   Download,
+  FileText,
   Film,
   LoaderCircle,
   RotateCw,
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react'
 import { FINAL_SOURCE_SECONDS } from '../../_lib/final-cut'
 import { mediaUrl } from '../../_lib/types'
+import { FinalScript } from '../final-script/final-script'
 import styles from './saved-exports.module.css'
 import type { FinalCutSummary } from '../../_lib/final-cut'
 import type { useFinalCuts } from './use-final-cuts'
@@ -41,15 +43,41 @@ export function FinalCuts({
         >
           <Film size={16} /> Final Cut
         </Button>
+        {/* Script (#634): the same planning, then each shot written as a
+            copyable H3 multi-shot prompt, and nothing sent to FAL. Text you
+            paste into Video one section at a time, on the same row shape and
+            the same one-at-a-time rule as a render. */}
+        <Button
+          disabled={!cuts.loaded || cuts.busy || active || !eligible}
+          title={
+            eligible
+              ? 'Write the finished film as copyable section prompts, no video'
+              : 'Script accepts rough exports up to 3 minutes'
+          }
+          onClick={() => cuts.start(exportId, 'script')}
+        >
+          <FileText size={16} /> Script
+        </Button>
         <span className={styles.note}>
-          {eligible ? 'Paid generation' : '3 minute source limit'}
+          {eligible
+            ? 'Final Cut is paid generation. Script is text only.'
+            : '3 minute source limit'}
         </span>
       </div>
       {items.map((item, index) => (
         <div className={styles.final} key={item.id}>
           <h3>
             {index + 1}. {item.name}
+            {item.kind === 'script' && (
+              <span className={styles.note}> · script</span>
+            )}
           </h3>
+          {item.script && (
+            <FinalScript
+              script={item.script}
+              expectedSections={item.sectionCount ?? undefined}
+            />
+          )}
           {item.output && (
             <video
               className={styles.video}

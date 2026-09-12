@@ -268,7 +268,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Nothing in progress. Next: rank #632, #633, #634 on the board.
+**Focus** — #634: Script on a saved rough export, a text-only Final Cut of copyable multi-shot sections. Branch `final-cut-script`, PR open.
 
 Recent highlights:
 
@@ -284,5 +284,5 @@ Recent highlights:
   compatible model choices; Continue preserves reference images (#516).
 - Director has durable named sessions and saved rough exports that also appear
   in Video (#602, #607).
-The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
-what is in progress and what comes next; this README describes what is available.
+  The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
+  what is in progress and what comes next; this README describes what is available.

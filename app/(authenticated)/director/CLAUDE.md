@@ -55,6 +55,16 @@
   then save the receipt. Uncertain planning or provider submission never retries
   automatically. A definite planning HTTP rejection can be resumed. Stop prevents
   later steps, but accepted provider work may still bill. No automatic rerolls.
+- Script (#634) is a Final Cut job that stops at text: the same row, runner,
+  lease and one-at-a-time rule, with `work.scriptOnly`. After the plan it
+  writes one H3 multi-shot prompt per shot (`final-script.server.ts`,
+  `prompts/director-script.md`), each given the previous section's text and
+  the next section's direction, checkpointed per section so Resume carries
+  on. `final-script.ts` holds the timing check: a section whose shot
+  timestamps do not sum to its duration is repaired once, then fails loudly.
+  It never uploads references or submits to FAL, needs no FAL key, and
+  finishes with no output. The Exports tab lists sections with per-section
+  and whole-script copy; running one is a paste into Video.
 - All finishing assets carry director_media.final_cut_id. Never use those IDs
   as rough-cut or source-export assets. Session/export deletion is guarded while
   a job or worker lease is active; delete bytes before cascading metadata.

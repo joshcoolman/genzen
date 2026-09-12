@@ -27,6 +27,8 @@ export async function createFinalCut(
   sessionId: string,
   exportId: string,
   id: string,
+  /** A Script job (#634): same row, same runner, stops at text. */
+  scriptOnly = false,
 ) {
   const source = await getExport(owner, sessionId, exportId)
   if (!source) throw new Error('Export not found.')
@@ -54,8 +56,8 @@ export async function createFinalCut(
       throw new Error(
         'Another Final Cut is still running. Wait or stop it before starting another.',
       )
-    await tx`insert into director_final_cuts (id, session_id, user_id, export_id)
-      values (${id}, ${sessionId}, ${owner}, ${exportId})`
+    await tx`insert into director_final_cuts (id, session_id, user_id, export_id, work)
+      values (${id}, ${sessionId}, ${owner}, ${exportId}, ${jsonb(scriptOnly ? { scriptOnly: true } : {})})`
   })
   const item = await getFinalCut(owner, id)
   if (!item) throw new Error('Final Cut could not be saved.')
@@ -102,6 +104,19 @@ export async function finishFinalCut(
     error = null, updated_at = now() where user_id = ${owner} and id = ${id} and lease_id = ${lease}
     and status = 'running' and lease_until > now() returning id`
   if (!rows.length) throw new Error('Final Cut stopped before publication.')
+}
+/** A Script job's end (#634): complete with its text in `work`, no output. */
+export async function finishScript(
+  owner: string,
+  id: string,
+  lease: string,
+  work: FinalWork,
+) {
+  const rows =
+    await sql`update director_final_cuts set status = 'complete', stage = 'Script ready', work = ${jsonb(work)},
+    error = null, updated_at = now() where user_id = ${owner} and id = ${id} and lease_id = ${lease}
+    and status = 'running' and lease_until > now() returning id`
+  if (!rows.length) throw new Error('Script stopped before it was saved.')
 }
 export async function failFinalCut(
   owner: string,
