@@ -14,7 +14,11 @@ import { frameAspect, writeSectionScript } from './final-script.server'
 import { getExport } from './exports.server'
 import { readMedia, storeMedia } from './media.server'
 import { ingestVideo } from './ingest.server'
-import { assembleFinalCut, extractFinalFrames } from './final-media.server'
+import {
+  assembleFinalCut,
+  assembleScriptCut,
+  extractFinalFrames,
+} from './final-media.server'
 import { planFinalCut, planningWasRejected } from './final-plan.server'
 import {
   FINAL_MODELS,
@@ -24,6 +28,18 @@ import {
 import type { FinalStep } from './final-cut'
 import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
 import shotInstructions from '#/lib/prompts/director-final-shot.md'
+
+/**
+ * What a script render generates on (#640). Turbo, because the hand-run
+ * showed it is good enough at 480P and its speed is what makes twelve
+ * sequential sections tolerable. Both endpoints checked against FAL's
+ * schema on 2026-09-12: text-to-video takes `aspect_ratio`, image-to-video
+ * takes `image_url` and follows the frame's shape.
+ */
+export const SCRIPT_MODELS = {
+  textToVideo: 'minimax/h3-max-turbo/text-to-video',
+  imageToVideo: 'minimax/h3-max-turbo/image-to-video',
+} as const
 
 export function scheduleFinalCut(owner: string, id: string) {
   after(async () => {
@@ -70,6 +86,94 @@ export async function runFinalCut(owner: string, id: string) {
       )
     const source = await getExport(owner, job.session_id, job.export_id)
     if (!source) throw new Error('Source export not found.')
+    // A render of a finished Script (#640): the hand-run made automatic.
+    // Section 1 is text-to-video; every later section is image-to-video from
+    // the previous clip's end frame, which is what makes the joins seamless
+    // and why this is sequential by nature. Plan and script were copied in
+    // at creation, so nothing here samples frames or plans; the clips are
+    // stitched with their own sound.
+    if (work.fromScript) {
+      const script = work.script
+      const plan = work.plan
+      if (!script || !plan)
+        throw new Error('This render has no script to work from.')
+      const steps = (work.steps ??= {})
+      const clips: Array<{ mediaId: string; duration: number }> = []
+      for (const [index, section] of script.sections.entries()) {
+        await checkpoint(`Section ${index + 1} of ${script.sections.length}`)
+        const key = `section-${index}`
+        let step = steps[key]
+        if (!step?.requestId) {
+          // The input is fixed before the first submit and saved with it, so
+          // a resume replays the same request rather than re-uploading a
+          // frame under a new URL.
+          const previous = index > 0 ? steps[`section-${index - 1}`] : undefined
+          let imageUrl: string | undefined
+          if (index > 0) {
+            if (!previous?.endFrameId)
+              throw new Error(
+                `Section ${index} has no end frame to continue from.`,
+              )
+            await alive()
+            const frame = await readMedia(owner, previous.endFrameId)
+            imageUrl = await uploadBufferToFal(await frame.arrayBuffer())
+          }
+          step = await runFinalProvider({
+            steps,
+            key,
+            endpoint: imageUrl
+              ? SCRIPT_MODELS.imageToVideo
+              : SCRIPT_MODELS.textToVideo,
+            input: {
+              prompt: section.text,
+              duration: section.duration,
+              resolution: '480P',
+              prompt_expansion_mode: 'balanced',
+              enable_safety_checker: true,
+              ...(imageUrl
+                ? { image_url: imageUrl }
+                : { aspect_ratio: script.aspectRatio }),
+            },
+            checkpoint,
+            alive,
+          })
+        } else {
+          step = await runFinalProvider({
+            steps,
+            key,
+            endpoint: step.endpoint,
+            input: step.input ?? {},
+            checkpoint,
+            alive,
+          })
+        }
+        if (!step.mediaId) {
+          await alive()
+          const clip = await ingestVideo(
+            owner,
+            job.session_id,
+            await downloadFinalMedia(step.url!, 'video/mp4'),
+            id,
+          )
+          step.mediaId = clip.mediaId
+          step.endFrameId = clip.endFrameId
+          await checkpoint()
+        }
+        clips.push({ mediaId: step.mediaId, duration: section.duration })
+      }
+      await checkpoint('Finishing the picture')
+      await alive()
+      const movie = await assembleScriptCut(
+        clips.map((clip) => ({
+          blob: () => readMedia(owner, clip.mediaId),
+          duration: clip.duration,
+        })),
+      )
+      await alive()
+      const output = await ingestVideo(owner, job.session_id, movie, id)
+      await finishFinalCut(owner, id, lease, output)
+      return
+    }
     if (!work.frames) {
       await checkpoint('Reading the rough cut')
       const frames = await extractFinalFrames(

@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   loadFinalCuts,
   manageFinalCut,
+  renderScript,
   startFinalCut,
 } from '../../_actions/final-cuts.action'
 import type { FinalCutSummary } from '../../_lib/final-cut'
+import { toast } from '#/components'
 
 export function useFinalCuts(sessionId: string) {
   const [items, setItems] = useState<Array<FinalCutSummary>>([])
@@ -30,7 +32,21 @@ export function useFinalCuts(sessionId: string) {
             sessionStorage.removeItem(key)
         }
         if (mounted) {
-          setItems(result)
+          // A render finishing while the page is open says so (#640): the
+          // run is minutes long and the row is below the fold of a long
+          // script, so the stage line alone is easy to miss.
+          setItems((previous) => {
+            for (const item of result)
+              if (
+                item.kind === 'render' &&
+                item.status === 'complete' &&
+                previous.some(
+                  (p) => p.id === item.id && p.status !== 'complete',
+                )
+              )
+                toast(`Final Cut ready: ${item.name}`)
+            return result
+          })
           setLoaded(true)
         }
       } catch (cause) {
@@ -88,12 +104,28 @@ export function useFinalCuts(sessionId: string) {
       sessionStorage.removeItem(key)
     })
   }
+  function render(exportId: string, scriptId: string) {
+    void run(async () => {
+      const key = `director-final-start:${sessionId}:${exportId}:render:${scriptId}`
+      const id = sessionStorage.getItem(key) ?? crypto.randomUUID()
+      sessionStorage.setItem(key, id)
+      const result = await renderScript(sessionId, exportId, scriptId, id)
+      if (!result.item) throw new Error(result.error)
+      const item = result.item
+      setItems((previous) => [
+        ...previous.filter((entry) => entry.id !== item.id),
+        item,
+      ])
+      sessionStorage.removeItem(key)
+    })
+  }
   return {
     items,
     loaded,
     busy,
     error,
     start,
+    render,
     manage: (id: string, command: 'resume' | 'stop' | 'delete') =>
       run(async () => {
         const result = await manageFinalCut(id, command)

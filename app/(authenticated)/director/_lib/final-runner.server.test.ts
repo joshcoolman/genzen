@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
   result: vi.fn(),
   upload: vi.fn(),
   finishScript: vi.fn(),
+  assembleScript: vi.fn(),
+  fetch: vi.fn(),
   write: vi.fn(),
   aspect: vi.fn(),
 }))
@@ -42,6 +44,7 @@ vi.mock('./media.server', () => ({
 vi.mock('./ingest.server', () => ({ ingestVideo: mocks.ingest }))
 vi.mock('./final-media.server', () => ({
   assembleFinalCut: mocks.assemble,
+  assembleScriptCut: mocks.assembleScript,
   extractFinalFrames: mocks.frames,
 }))
 vi.mock('./final-plan.server', () => ({
@@ -55,6 +58,7 @@ vi.mock('./final-script.server', () => ({
 vi.mock('#/lib/server/fal-image-upload.server', () => ({
   uploadBufferToFal: mocks.upload,
 }))
+vi.mock('#/lib/server/fal-fetch.server', () => ({ falFetch: mocks.fetch }))
 vi.mock('#/lib/server/fal-client.server', () => ({
   submitFalOnce: mocks.submit,
   fal: { queue: { status: mocks.status, result: mocks.result } },
@@ -201,4 +205,75 @@ it('resumes a script from the last saved section', async () => {
     previous: 'kept',
   })
   expect(work.script.sections.map((s) => s.text)).toEqual(['kept', 'written'])
+})
+it('renders a script section by section from the last frame and stitches with sound (#640)', async () => {
+  const work: FinalWork = {
+    fromScript: 'script-job',
+    plan: savedWork().plan,
+    script: {
+      aspectRatio: '16:9',
+      sections: [
+        { index: 0, duration: 5, sources: [0], text: 'first section' },
+        { index: 1, duration: 10, sources: [0], text: 'second section' },
+      ],
+    },
+  }
+  mocks.submit.mockResolvedValueOnce('req-1').mockResolvedValueOnce('req-2')
+  mocks.status.mockResolvedValue({ status: 'COMPLETED' })
+  mocks.result
+    .mockResolvedValueOnce({
+      data: { video: { url: 'https://fal.media/1.mp4' } },
+    })
+    .mockResolvedValueOnce({
+      data: { video: { url: 'https://fal.media/2.mp4' } },
+    })
+  mocks.ingest
+    .mockResolvedValueOnce({ mediaId: 'clip-1', endFrameId: 'end-1' })
+    .mockResolvedValueOnce({ mediaId: 'clip-2', endFrameId: 'end-2' })
+    .mockResolvedValueOnce({ mediaId: 'film' })
+  mocks.upload.mockResolvedValue('https://fal.media/end-1.png')
+  mocks.assembleScript.mockResolvedValue(new Blob(['film']))
+  mocks.claim.mockResolvedValue({
+    lease_id: 'lease',
+    session_id: 'session',
+    export_id: 'export',
+    stage: 'Queued',
+    work,
+  })
+  mocks.fetch.mockImplementation(() =>
+    Promise.resolve(new Response(new Blob(['clip']))),
+  )
+  await runFinalCut('owner', 'job')
+  expect(mocks.fail).not.toHaveBeenCalled()
+  expect(mocks.frames).not.toHaveBeenCalled()
+  expect(mocks.plan).not.toHaveBeenCalled()
+  expect(mocks.assemble).not.toHaveBeenCalled()
+  expect(mocks.submit).toHaveBeenCalledTimes(2)
+  const [firstEndpoint, firstInput] = mocks.submit.mock.calls[0]
+  expect(firstEndpoint).toBe('minimax/h3-max-turbo/text-to-video')
+  expect(firstInput).toMatchObject({
+    prompt: 'first section',
+    duration: 5,
+    aspect_ratio: '16:9',
+  })
+  // The second section continues from the first clip's end frame.
+  expect(mocks.read).toHaveBeenCalledWith('owner', 'end-1')
+  const [secondEndpoint, secondInput] = mocks.submit.mock.calls[1]
+  expect(secondEndpoint).toBe('minimax/h3-max-turbo/image-to-video')
+  expect(secondInput).toMatchObject({
+    prompt: 'second section',
+    duration: 10,
+    image_url: 'https://fal.media/end-1.png',
+  })
+  expect(secondInput).not.toHaveProperty('aspect_ratio')
+  expect(work.steps?.['section-0']).toMatchObject({
+    requestId: 'req-1',
+    mediaId: 'clip-1',
+    endFrameId: 'end-1',
+  })
+  const stitched = mocks.assembleScript.mock.calls[0][0]
+  expect(stitched.map((c: { duration: number }) => c.duration)).toEqual([5, 10])
+  expect(mocks.finish).toHaveBeenCalledWith('owner', 'job', 'lease', {
+    mediaId: 'film',
+  })
 })

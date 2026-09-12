@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  Clapperboard,
   Download,
   FileText,
   Film,
@@ -11,6 +12,7 @@ import {
 import { FINAL_SOURCE_SECONDS } from '../../_lib/final-cut'
 import { mediaUrl } from '../../_lib/types'
 import { FinalScript } from '../final-script/final-script'
+import { renderEstimate } from '../../final-script'
 import styles from './saved-exports.module.css'
 import type { FinalCutSummary } from '../../_lib/final-cut'
 import type { useFinalCuts } from './use-final-cuts'
@@ -26,6 +28,10 @@ export function FinalCuts({
   cuts: ReturnType<typeof useFinalCuts>
 }) {
   const [deleting, setDeleting] = useState<FinalCutSummary | null>(null)
+  const [rendering, setRendering] = useState<FinalCutSummary | null>(null)
+  const estimate = rendering?.script
+    ? renderEstimate(rendering.script.sections)
+    : null
   const items = cuts.items.filter((item) => item.export_id === exportId)
   const active = cuts.items.some((item) => item.occupied)
   const eligible = duration <= FINAL_SOURCE_SECONDS
@@ -77,6 +83,25 @@ export function FinalCuts({
               script={item.script}
               expectedSections={item.sectionCount ?? undefined}
             />
+          )}
+          {item.kind === 'script' && item.status === 'complete' && (
+            <div className={styles.actions}>
+              {/* The hand-run made one button (#640): each section from the
+                  last frame of the one before, stitched with sound. Paid and
+                  minutes long, so it confirms with both numbers first. */}
+              <Button
+                variant="primary"
+                disabled={cuts.busy || active}
+                title="Generate every section from the previous one's last frame and stitch the film"
+                onClick={() => setRendering(item)}
+              >
+                <Clapperboard size={16} /> Generate Final Cut video
+              </Button>
+              <span className={styles.note}>Paid. Runs for minutes.</span>
+            </div>
+          )}
+          {item.kind === 'render' && item.fromScript && (
+            <p className={styles.note}>Rendered from the script.</p>
           )}
           {item.output && (
             <video
@@ -147,6 +172,21 @@ export function FinalCuts({
           )}
         </div>
       ))}
+      <ConfirmDialog
+        open={!!rendering}
+        title="Generate the Final Cut video?"
+        message={
+          estimate
+            ? `${rendering?.script?.sections.length} sections, ${estimate.seconds} seconds of video on MiniMax H3 Max Turbo at 480P. Estimated cost $${estimate.usd.toFixed(2)}, and roughly ${estimate.minutes} minute${estimate.minutes === 1 ? '' : 's'} to finish. Each section starts on the previous one's last frame; the clips are stitched with their sound. You can leave the page.`
+            : ''
+        }
+        confirmLabel="Generate"
+        onCancel={() => setRendering(null)}
+        onConfirm={() => {
+          if (rendering) cuts.render(exportId, rendering.id)
+          setRendering(null)
+        }}
+      />
       <ConfirmDialog
         open={!!deleting}
         title="Delete Final Cut?"

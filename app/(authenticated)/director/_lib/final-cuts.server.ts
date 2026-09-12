@@ -27,12 +27,35 @@ export async function createFinalCut(
   sessionId: string,
   exportId: string,
   id: string,
-  /** A Script job (#634): same row, same runner, stops at text. */
-  scriptOnly = false,
+  options: {
+    /** A Script job (#634): same row, same runner, stops at text. */
+    scriptOnly?: boolean
+    /** A render of a finished Script (#640), by its job id. Its plan and
+     *  script are copied in so the render never plans again. */
+    fromScript?: string
+  } = {},
 ) {
   const source = await getExport(owner, sessionId, exportId)
   if (!source) throw new Error('Export not found.')
   assertFinalSource(source)
+  let work: FinalWork = options.scriptOnly ? { scriptOnly: true } : {}
+  if (options.fromScript) {
+    const script = await getFinalCut(owner, options.fromScript)
+    if (
+      !script ||
+      script.export_id !== exportId ||
+      !script.work.scriptOnly ||
+      script.status !== 'complete' ||
+      !script.work.plan ||
+      !script.work.script?.sections.length
+    )
+      throw new Error('Render needs a finished Script of this export.')
+    work = {
+      fromScript: script.id,
+      plan: script.work.plan,
+      script: script.work.script,
+    }
+  }
   await sql.begin(async (tx) => {
     // Serialize against deletion and concurrent starts, including other sessions.
     await tx`select id from users where id = ${owner} for update`
@@ -57,7 +80,7 @@ export async function createFinalCut(
         'Another Final Cut is still running. Wait or stop it before starting another.',
       )
     await tx`insert into director_final_cuts (id, session_id, user_id, export_id, work)
-      values (${id}, ${sessionId}, ${owner}, ${exportId}, ${jsonb(scriptOnly ? { scriptOnly: true } : {})})`
+      values (${id}, ${sessionId}, ${owner}, ${exportId}, ${jsonb(work)})`
   })
   const item = await getFinalCut(owner, id)
   if (!item) throw new Error('Final Cut could not be saved.')
