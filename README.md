@@ -268,10 +268,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — #635: a staged reference can be read for its lighting, style or subject instead of sent. Branch `reference-roles`, PR open.
+**Focus** — Nothing in progress. Next: rank #632, #633, #634 on the board.
 
 Recent highlights:
 
+- A staged reference can be read for its Lighting, Style or Subject instead
+  of sent: Claude writes the block, the picture never reaches the model (#635).
 - Seedance 2.5 joins Video with reference images, first/last frames, and up to
   30-second clips. Audio-capable models offer a Generate audio toggle.
 
@@ -282,8 +284,5 @@ Recent highlights:
   compatible model choices; Continue preserves reference images (#516).
 - Director has durable named sessions and saved rough exports that also appear
   in Video (#602, #607).
-- The image extract-frames skill was retired in favor of generating full-size
-  storyboard shots directly (#628).
-
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.
