@@ -174,6 +174,50 @@ describe('background generation batches', () => {
     expect(mocks.generate).not.toHaveBeenCalled()
   })
 
+  it('sends read-role references as blocks under the prompt, never as images (#635)', async () => {
+    const readings = [
+      { imageId: 'lit', role: 'lighting' as const, text: 'One hard source.' },
+      { imageId: 'look', role: 'style' as const, text: 'Cut paper.' },
+    ]
+    const input = {
+      ...batch(),
+      prompts: ['a fox'],
+      referenceIds: ['reference-one'],
+      readings,
+    }
+    await submitGenerationBatch(input)
+    expect(mocks.generate).toHaveBeenCalledOnce()
+    const sent = mocks.generate.mock.calls[0][0]
+    expect(sent.sourceImageId).toBe('reference-one')
+    expect(sent.referenceImageIds).toBeUndefined()
+    expect(sent.prompt).toBe(
+      'Style. a fox\n\nLighting:\nOne hard source.\n\nStyle:\nCut paper.',
+    )
+    expect(sent.typedPrompt).toBe('a fox')
+    expect(sent.readings).toEqual(readings)
+  })
+
+  it('makes a prompt of the blocks alone when nothing was typed, and shows them as the prompt', async () => {
+    const readings = [
+      { imageId: 'look', role: 'style' as const, text: 'Cut paper.' },
+    ]
+    const input = {
+      ...batch(),
+      prompts: [''],
+      systemInstructions: '',
+      referenceIds: ['reference-one'],
+      readings,
+    }
+    await submitGenerationBatch(input)
+    const sent = mocks.generate.mock.calls[0][0]
+    // Non-empty, so the server's describe fallback has nothing to do.
+    expect(sent.prompt).toBe('Style:\nCut paper.')
+    expect(sent.typedPrompt).toBeUndefined()
+    expect(input.onSubmitStart.mock.calls[0][0][0].prompt).toBe(
+      'Style:\nCut paper.',
+    )
+  })
+
   it('reports a render failure on its own card without losing a sibling success', async () => {
     mocks.generate.mockRejectedValueOnce(new Error('Queue unavailable'))
     const input = { ...batch(), gensPerModel: 2 }

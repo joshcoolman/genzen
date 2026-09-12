@@ -4,8 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { promptImageCount } from '../skills/registry'
 
 import { submitGenerationBatch } from '../submit-generation-batch'
+import { readReference } from '../server/read-reference.action'
+import { isReadRole } from '../ref-roles'
 import type { GenerationOrigin } from '#/lib/types/db'
 import type { GenerationCallbacks } from '../submit-generation-batch'
+import type { RefRole, ReferenceReading } from '../ref-roles'
 import { pushRef } from '#/features/ai-images/ref-images'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { useReportError } from '#/components'
@@ -32,6 +35,15 @@ export interface RefImage {
   id: string
   url: string
   title: string
+  /** What the picture is for (#635). Absent means `reference`: sent to the
+   *  model as pixels. Any other role is read once and never sent. */
+  role?: RefRole
+  /** The reading a read role produced, or where it is. Absent on a plain
+   *  reference. Lives on the thumbnail so it dies with it. */
+  reading?:
+    | { status: 'reading' }
+    | { status: 'done'; text: string }
+    | { status: 'error'; message: string }
 }
 
 interface UseGeneratorOptions extends GenerationCallbacks {
@@ -89,6 +101,9 @@ export interface GeneratorState {
   pushRefImage: (image: RefImage) => void
   replaceRefImages: (images: Array<RefImage>) => void
   removeRefImage: (id: string) => void
+  /** Change what a staged picture is for (#635). A read role starts its
+   *  reading at once; back to `reference` drops the text. */
+  setRefRole: (id: string, role: RefRole) => void
   /** How many images the *smallest* selected model holds. Advisory since #341:
    *  nothing clamps the set to it. It is what the panel reports, and the submit
    *  truncates per model rather than to this minimum. Zero selected models is
@@ -266,11 +281,79 @@ export function useGenerator({
     setRefImages((prev) => prev.filter((img) => img.id !== id))
   }, [])
 
+  /**
+   * The role is set and the reading started in one step, so a read role is
+   * never on screen without either its text or a reason there is none. The
+   * result is written back only if the thumbnail still carries the role it
+   * was read for -- a change mid-flight, or a removal, discards it.
+   */
+  const setRefRole = useCallback((id: string, role: RefRole) => {
+    setRefImages((prev) =>
+      prev.map((img) =>
+        img.id !== id
+          ? img
+          : isReadRole(role)
+            ? { ...img, role, reading: { status: 'reading' } }
+            : { id: img.id, url: img.url, title: img.title },
+      ),
+    )
+    if (!isReadRole(role)) return
+    readReference({ imageId: id, role })
+      .then(({ text }) => {
+        setRefImages((prev) =>
+          prev.map((img) =>
+            img.id === id && img.role === role
+              ? { ...img, reading: { status: 'done', text } }
+              : img,
+          ),
+        )
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        setRefImages((prev) =>
+          prev.map((img) =>
+            img.id === id && img.role === role
+              ? { ...img, reading: { status: 'error', message } }
+              : img,
+          ),
+        )
+      })
+  }, [])
+
+  // What goes to the model as pixels, and what goes as words (#635). Every
+  // count, price and endpoint choice below is about the first list; the
+  // second becomes blocks under the prompt.
+  const sentImages = useMemo(
+    () => refImages.filter((img) => !isReadRole(img.role)),
+    [refImages],
+  )
+  const readImages = useMemo(
+    () => refImages.filter((img) => isReadRole(img.role)),
+    [refImages],
+  )
+  const readings = useMemo(
+    () =>
+      readImages.flatMap(
+        (img): Array<ReferenceReading> =>
+          img.reading?.status === 'done' && isReadRole(img.role)
+            ? [{ imageId: img.id, role: img.role, text: img.reading.text }]
+            : [],
+      ),
+    [readImages],
+  )
+  // A read role still reading, or that failed, has nothing to send. Rather
+  // than submit a prompt with a hole where the block should be, wait -- the
+  // thumbnail says why.
+  const readingsSettled = readImages.every(
+    (img) => img.reading?.status === 'done',
+  )
+
   // The aspect ratio follows whatever is in slot 0 (#297). One effect rather
   // than a call inside every mutator: a removal that promotes image 2 to the
   // front is just as much "a new first image" as a pick is, and only a
-  // derivation keyed on the slot gets that for free.
-  const primaryUrl = refImages[0]?.url
+  // derivation keyed on the slot gets that for free. Slot 0 of what is sent:
+  // a picture read for its style says nothing about the shape of the result.
+  const primaryUrl = sentImages[0]?.url
   useEffect(() => {
     if (!primaryUrl) return
     let cancelled = false
@@ -310,11 +393,15 @@ export function useGenerator({
   // soon as the set is non-empty. Was `sourceImage ? 1 : 0`; the set replaced
   // the slot, and "is it non-empty" is the same rule stated over it.
   const activePromptCount = prompts.filter((p) => p.trim()).length
-  const hasImages = refImages.length > 0
+  // Pixels only: a read role costs no reference surcharge and picks no image
+  // endpoint. It still floors the run count -- a style and a lighting with
+  // nothing typed is a prompt, made of their blocks.
+  const hasImages = sentImages.length > 0
+  const hasInput = activePromptCount > 0 || refImages.length > 0
   const runsPerModel =
     Math.max(
       prompts.reduce((sum, p) => sum + promptImageCount(p), 0),
-      hasImages ? 1 : 0,
+      hasInput ? 1 : 0,
     ) * gensPerModel
   const totalImages = runsPerModel * selectedModels.length
   // Priced off the lineup rather than FAL's pricing API -- see
@@ -324,8 +411,7 @@ export function useGenerator({
     runsPerModel,
     hasImages,
   )
-  const canGenerate =
-    (activePromptCount > 0 || hasImages) && selectedModels.length > 0
+  const canGenerate = hasInput && readingsSettled && selectedModels.length > 0
 
   const ratioOptions = getRatioOptions(orientation)
 
@@ -341,7 +427,8 @@ export function useGenerator({
     try {
       await submitGenerationBatch({
         prompts: [...prompts],
-        referenceIds: refImages.map((r) => r.id),
+        referenceIds: sentImages.map((r) => r.id),
+        readings,
         selectedModels: [...selectedModels],
         gensPerModel,
         aspectRatio,
@@ -395,6 +482,7 @@ export function useGenerator({
     pushRefImage,
     replaceRefImages,
     removeRefImage,
+    setRefRole,
     maxRefImages,
   }
 }

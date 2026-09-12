@@ -85,6 +85,15 @@ transport concern, and the library row keeps its full-resolution original.
 - **`useGenerator` takes a required `origin`** (`images | canvas`), written to
   every row it creates, so a new host cannot be an unmarked generation source
   (#207).
+- **`ref-roles.ts` is what a staged reference is for** (#635). `reference` is
+  sent as pixels; `lighting`, `style` and `subject` are read once by
+  `server/read-reference.action.ts` when the role is chosen and travel as
+  labelled blocks under the prompt, assembled by `promptWithReadings` in the
+  submit. The readers are the app's existing ones pointed at the strip --
+  `derive-lighting.server.ts` (moved out of the lab for this, since the app
+  may not import from `lab/`), and the Style and Reconstruct describe modes.
+  Reference-only ids reach `referenceIds`; readings ride separately and are
+  recorded as `reference_readings`. The reasoning is with the Images route.
 - **`outpaint.ts` holds the one knob, the prompt assembly, and what the lab
   proved.** Outpainting is a card action on /images; the lab page that vetted it
   is gone (#528). The model is a constant rather than a control because that

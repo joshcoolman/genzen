@@ -3,6 +3,7 @@ import { parsePromptInvocation } from '../skills/registry'
 import { validatePreparedSkill } from './storyboard.server'
 import { buildFalInput } from './fal-params.server'
 import type { PreparedImageSkill } from '../skills/types'
+import type { ReferenceReading } from '../ref-roles'
 import type { GenerationOrigin } from '#/lib/types/db'
 import { fal } from '#/lib/server/fal-client.server'
 import { withNetworkRetry } from '#/lib/server/fal-retry.server'
@@ -48,6 +49,13 @@ export interface GenerateImageInput {
   sourceImageId?: string
   isRefine?: boolean
   referenceImageIds?: Array<string>
+  /**
+   * What the read-role references said (#635), already folded into `prompt`
+   * by the caller. Recorded, never re-read: Retry replays `sent_prompt`, so a
+   * row carries the text and the picture it came from, and no second vision
+   * call is ever made for the same submit.
+   */
+  readings?: Array<ReferenceReading>
   parentImageId?: string
   idempotencyKey?: string
   /** The canvas this generation was submitted from, if any: its row joins that
@@ -264,6 +272,18 @@ export async function generateImageInternal(
       ...(data.referenceImageIds?.length
         ? { reference_image_ids: data.referenceImageIds }
         : {}),
+      // Which picture each block came from, so a reading can be judged
+      // against its source later. The text itself is already in
+      // `sent_prompt`; this is the provenance (#635).
+      ...(data.readings?.length
+        ? {
+            reference_readings: data.readings.map((r) => ({
+              image_id: r.imageId,
+              role: r.role,
+              text: r.text,
+            })),
+          }
+        : {}),
       ...(data.parentImageId
         ? {
             source_image_id: data.parentImageId, // Immutable: actual generation source
@@ -331,7 +351,11 @@ export async function generateImageInternal(
     } else if (sourceBuffer) {
       const buffer = sourceBuffer
 
-      // If no user prompt, ask Haiku for a plain factual description of the image
+      // If no user prompt, ask Haiku for a plain factual description of the
+      // image. A submit carrying read-role blocks never lands here: the blocks
+      // are the prompt, and a description of the sent picture stacked above
+      // them would turn "in this style, lit like this" back into "copy this
+      // picture" (#635).
       if (!effectivePrompt) {
         promptDerivedFromSource = true
         // **No fallback** (#365). This used to catch and set the prompt to the

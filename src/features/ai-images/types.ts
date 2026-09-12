@@ -63,6 +63,14 @@ export interface SavedAiImage {
     root_image_id?: string
     aspect_ratio?: string
     reference_image_ids?: Array<string>
+    /** References that were read rather than sent (#635): the picture, what
+     *  it was read for, and the block that went into `sent_prompt` in its
+     *  place. Not in `reference_image_ids`, because the model never saw them. */
+    reference_readings?: Array<{
+      image_id: string
+      role: 'lighting' | 'style' | 'subject'
+      text: string
+    }>
     /** Written only when the endpoint held fewer images than it was given
      *  (#341). Absent on a generation that used everything it was offered,
      *  which is what makes their presence the whole condition for the note. */

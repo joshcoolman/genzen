@@ -10,12 +10,14 @@ import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { UserImage } from '#/features/user-images/types'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { pricedForImages } from '#/features/ai-images/model-selector/unified-models'
+import { REF_ROLES, isReadRole } from '#/features/ai-images/ref-roles'
 import { formatCents } from '#/lib/format'
 import {
   ActionButton,
   AspectRatioSelect,
   ConfirmDialog,
   CostNote,
+  ExpandableText,
   NumberStepper,
   RefImageStrip,
   useConfirm,
@@ -78,6 +80,7 @@ export function GeneratorPanel({
   onLighting,
 }: GeneratorPanelProps) {
   const activePrompts = generator.prompts.filter((p) => p.trim())
+  const readImages = generator.refImages.filter((img) => isReadRole(img.role))
   const storyboardOnly =
     activePrompts.length > 0 &&
     activePrompts.every((p) => /^\s*\/storyboard(?:\s|$)/i.test(p))
@@ -222,7 +225,35 @@ export function GeneratorPanel({
             }}
             onRemove={generator.removeRefImage}
             disabled={generator.loading || generator.maxRefImages === 0}
+            /* What each picture is for (#635). The first option is the one
+               that is sent; the rest are read once and travel as text, and
+               their readings are listed under the strip so what the model
+               will be told is on screen before the press. */
+            roles={{
+              options: REF_ROLES.map((r) => ({ value: r.id, label: r.label })),
+              onChange: generator.setRefRole,
+            }}
           />
+          {readImages.length > 0 && (
+            <ul className={styles.readings} aria-label="Readings">
+              {readImages.map((img) => (
+                <li key={img.id} className={styles.reading}>
+                  <span className={styles.readingLabel}>
+                    {REF_ROLES.find((r) => r.id === img.role)?.label}
+                  </span>
+                  {img.reading?.status === 'done' ? (
+                    <ExpandableText text={img.reading.text} lines={2} />
+                  ) : img.reading?.status === 'error' ? (
+                    <p className={styles.readingError} role="alert">
+                      {img.reading.message}
+                    </p>
+                  ) : (
+                    <p className={styles.readingPending}>Reading...</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
       <ExistingImagePicker

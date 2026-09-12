@@ -1,8 +1,10 @@
 import { imageLabelPrefix } from './ref-images'
+import { promptWithReadings, readingBlocks } from './ref-roles'
 import { endpointFor, modelTitleFor } from './models'
 import { parsePromptInvocation } from './skills/registry'
 import { prepareImageSkill } from './server/prepare-image-skill.action'
 import { submitGeneratorImage } from './server/submit-generator-image.action'
+import type { ReferenceReading } from './ref-roles'
 import type { GenerationOrigin } from '#/lib/types/db'
 import { optimisticId } from '#/lib/optimistic-id'
 
@@ -57,7 +59,12 @@ export interface GenerationCallbacks {
 
 interface GenerationBatch extends GenerationCallbacks {
   prompts: Array<string>
+  /** The pictures the model receives, in strip order. Read roles are not
+   *  here -- they arrive as `readings` (#635). */
   referenceIds: Array<string>
+  /** What the read roles said, in strip order. Appended to every prompt as
+   *  labelled blocks; recorded on the row; never re-read at submit. */
+  readings?: Array<ReferenceReading>
   selectedModels: Array<string>
   gensPerModel: number
   aspectRatio: string
@@ -72,6 +79,8 @@ interface GenerationBatch extends GenerationCallbacks {
  * later edits and submissions cannot change or block it. */
 export async function submitGenerationBatch(batch: GenerationBatch) {
   const [sourceImageId, ...referenceImageIds] = batch.referenceIds
+  const readings = batch.readings ?? []
+  const blocks = readingBlocks(readings)
   const active = batch.prompts.filter((p) => p.trim())
   const prompts = active.length ? active : ['']
   // Invalid commands never create a job or make a provider call.
@@ -102,7 +111,7 @@ export async function submitGenerationBatch(batch: GenerationBatch) {
       model: c.model,
       title: modelTitleFor(c.resolved),
       ...(c.shotNumber ? { storyboardShot: c.shotNumber } : {}),
-      prompt: c.typedPrompt,
+      prompt: c.typedPrompt.trim() ? c.typedPrompt : blocks,
       ...(sourceImageId ? { sourceImageId } : {}),
       ...(referenceImageIds.length ? { referenceImageIds } : {}),
     })),
@@ -125,6 +134,10 @@ export async function submitGenerationBatch(batch: GenerationBatch) {
           if (!preparation) {
             preparation = prepareImageSkill({
               skillId: invocation.skillId,
+              // Readings do not reach a storyboard (#635): the server checks
+              // this brief against the typed command byte for byte, and the
+              // plan takes its look from the references it is handed. Feeding
+              // a read role into the plan is its own change.
               brief: invocation.brief,
               originalInput: invocation.originalInput,
               referenceIds: batch.referenceIds,
@@ -143,13 +156,21 @@ export async function submitGenerationBatch(batch: GenerationBatch) {
               'Storyboard preparation is missing for a selected model. Try again.',
             )
         }
+        // The blocks go under the typed words, after the image labels, which
+        // count only the pictures actually sent (#635). Nothing typed and
+        // something read is a prompt made of the blocks alone.
         const prompt =
           variant?.prompt ??
-          `${batch.systemInstructions}${imageLabelPrefix(batch.referenceIds.length)}${c.typedPrompt}`
+          `${batch.systemInstructions}${imageLabelPrefix(batch.referenceIds.length)}${promptWithReadings(c.typedPrompt, readings)}`
+        // What the card calls the prompt. The blocks stand in when nothing was
+        // typed: a caption of nothing on a picture made from two readings would
+        // say the generation had no prompt, and it had one.
+        const shownPrompt = c.typedPrompt.trim() ? c.typedPrompt : blocks
         const result = await submitGeneratorImage({
           origin: batch.origin,
           prompt,
-          ...(c.typedPrompt !== prompt ? { typedPrompt: c.typedPrompt } : {}),
+          ...(shownPrompt !== prompt ? { typedPrompt: shownPrompt } : {}),
+          ...(readings.length ? { readings } : {}),
           model: c.resolved,
           aspectRatio:
             variant?.skill.layout.sheetAspectRatio ?? batch.aspectRatio,

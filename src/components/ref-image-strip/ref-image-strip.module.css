@@ -15,6 +15,47 @@
   --tile: 3.5rem;
 }
 
+/* With a role under each thumb the items are taller than the add tile, so
+   they line up on their tops rather than their middles; and the tile widens
+   to fit "Reference" in the select without the word being cut. */
+.rootRoles {
+  --tile: 4rem;
+  align-items: flex-start;
+}
+
+.rootRoles .count,
+.rootRoles .clear {
+  align-self: center;
+}
+
+/* What the picture is for (#635). Native select, as Video's strip does: a
+   four-way choice on a 64px tile has no room for a custom menu to improve
+   on. Muted until it is anything but the default, so a strip of plain
+   references reads as it always did. */
+.role {
+  margin-top: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  line-height: 1;
+}
+
+.role:hover,
+.role:focus-visible {
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.roleRead {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
 .item {
   position: relative;
   flex-shrink: 0;
