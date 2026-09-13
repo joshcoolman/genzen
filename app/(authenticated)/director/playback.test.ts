@@ -92,7 +92,7 @@ describe('growing silent playback', () => {
     expect(a.src).toBe('')
     expect(b.src).toBe('')
   })
-  it('jumps to a section paused, then toggles that section without restarting it', () => {
+  it('jumps to a section playing from its first frame, then toggles it without restarting', () => {
     const { a, b, engine, changed } = setup()
     engine.setClips(['1', '2', '3'].map(clip))
     b.play.mockClear()
@@ -100,13 +100,13 @@ describe('growing silent playback', () => {
     expect(a.src).toBe('blob:3')
     expect(a.currentTime).toBe(0)
     a.dispatchEvent(new Event('canplay'))
-    expect(changed).toHaveBeenLastCalledWith(0, 2, true)
-    expect(a.play).not.toHaveBeenCalled()
+    expect(changed).toHaveBeenLastCalledWith(0, 2, false)
+    expect(a.play).toHaveBeenCalled()
     a.currentTime = 2.5
     engine.toggle()
     expect(a.currentTime).toBe(2.5)
-    expect(a.play).toHaveBeenCalled()
-    expect(changed).toHaveBeenLastCalledWith(0, 2, false)
+    expect(a.pause).toHaveBeenCalled()
+    expect(changed).toHaveBeenLastCalledWith(0, 2, true)
   })
   it('loops the held section until it is released, then runs on', () => {
     const { a, b, engine, changed } = setup()
