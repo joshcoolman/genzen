@@ -32,13 +32,37 @@ const TILE_WIDTH = 320
 const SHEET_QUALITY = 80
 
 /**
+ * The tallest sheet WebP will encode, less a margin.
+ *
+ * WebP's hard limit is 16383px in either direction, and the stack is one
+ * column, so tile height times tile count runs into it -- a 9:16 clip at 320
+ * wide is a 569px tile, and 29 of them clear the limit. Sharp fails the encode
+ * and the whole sheet comes back null, which reads as "no frames could be read
+ * out of that clip". Latent while a full 48 tiles needed a four-minute clip;
+ * reachable at under a minute once sampling went dense, and portrait clips are
+ * exactly what short form is.
+ *
+ * The tiles are narrowed to fit rather than the count being cut: the grid is
+ * for choosing between frames, so coverage is the thing to keep and a softer
+ * thumbnail is the thing to spend.
+ */
+const MAX_SHEET_HEIGHT = 16_000
+
+/**
  * Roughly one frame per this many seconds, then clamped.
  *
- * A 139s clip lands on 28 tiles and a 6s clip on the floor of 12. The point is
- * coverage rather than precision: the grid answers "what is in this clip",
- * and the scrubbing tool for an exact position is `lab/frames`.
+ * **Tuned for short form, because that is what this app makes.** At one per
+ * five seconds every clip under a minute landed on the floor of 12 and the
+ * scaling never fired at all -- a 60s sequence got tiles five seconds apart,
+ * which is a summary rather than coverage. At one per two the cap binds at 96s,
+ * just past the ~1.5 minutes a sequence runs to, so a sheet never gets coarser
+ * than about two seconds between tiles.
+ *
+ * A 30s clip lands on 15 tiles, a 90s one on 45, and anything under 24s on the
+ * floor of 12. The point is coverage rather than precision: the grid answers
+ * "what is in this clip", and the tool for an exact position is `lab/frames`.
  */
-const SECONDS_PER_FRAME = 5
+const SECONDS_PER_FRAME = 2
 const MIN_FRAMES = 12
 const MAX_FRAMES = 48
 
@@ -52,6 +76,17 @@ const MAX_FRAMES = 48
  * decode.
  */
 const CANDIDATES = 3
+
+/**
+ * Which sampling policy a stored sheet was built under.
+ *
+ * The sheet is cached in the clip's row forever, so a change to the sampling
+ * would otherwise only ever reach clips nobody had opened yet -- the ones
+ * already looked at, which are the ones being worked on, would keep the old
+ * coverage with nothing on screen to say why. Bumping this rebuilds a stale
+ * sheet once, on next open.
+ */
+export const GRID_VERSION = 2
 
 /** What a built grid records, and what the sheet is sliced by. */
 export interface ClipFrameGrid {
@@ -241,8 +276,24 @@ export async function buildClipFrameGrid({
       picked.map((i) => readFile(join(out, files[i]))),
     )
 
-    const { width, height } = await sharp(tiles[0]).metadata()
-    if (!width || !height) return null
+    const decoded = await sharp(tiles[0]).metadata()
+    if (!decoded.width || !decoded.height) return null
+
+    // Narrowed only when the stack would not encode -- the common case leaves
+    // the tiles exactly as ffmpeg scaled them.
+    const overflow = (decoded.height * tiles.length) / MAX_SHEET_HEIGHT
+    const width =
+      overflow > 1 ? Math.floor(decoded.width / overflow) : decoded.width
+    const height =
+      overflow > 1 ? Math.floor(decoded.height / overflow) : decoded.height
+    const sized =
+      overflow > 1
+        ? await Promise.all(
+            tiles.map((tile) =>
+              sharp(tile).resize(width, height, { fit: 'fill' }).toBuffer(),
+            ),
+          )
+        : tiles
 
     // Stacked, not tiled into a grid: one column means slicing is a single
     // percentage on one axis, and the sheet's width stays a tile's width
@@ -250,12 +301,12 @@ export async function buildClipFrameGrid({
     const sheet = await sharp({
       create: {
         width,
-        height: height * tiles.length,
+        height: height * sized.length,
         channels: 3,
         background: { r: 0, g: 0, b: 0 },
       },
     })
-      .composite(tiles.map((input, i) => ({ input, left: 0, top: i * height })))
+      .composite(sized.map((input, i) => ({ input, left: 0, top: i * height })))
       .webp({ quality: SHEET_QUALITY })
       .toBuffer()
 

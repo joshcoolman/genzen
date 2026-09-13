@@ -3,14 +3,23 @@ import { frameCountFor, sharpestIndexes } from './clip-frames.server'
 
 describe('frameCountFor', () => {
   it('scales with duration between the clamps', () => {
-    expect(frameCountFor(139)).toBe(28)
+    expect(frameCountFor(30)).toBe(15)
+    expect(frameCountFor(90)).toBe(45)
   })
 
   it('fills the grid for a short clip and caps a long one', () => {
-    // A 6s clip would sample once at the even interval; the floor is what
-    // makes it a contact sheet rather than a thumbnail.
+    // A 6s clip would sample three times at the even interval; the floor is
+    // what makes it a contact sheet rather than a thumbnail.
     expect(frameCountFor(6)).toBe(12)
     expect(frameCountFor(60 * 30)).toBe(48)
+  })
+
+  it('stays under ~2s a tile across everything short form runs to', () => {
+    // The reason the interval moved off five seconds: at that rate every clip
+    // this app makes landed on the floor and the scaling never fired.
+    for (const duration of [24, 45, 60, 90]) {
+      expect(duration / frameCountFor(duration)).toBeLessThanOrEqual(2)
+    }
   })
 })
 

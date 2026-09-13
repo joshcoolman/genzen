@@ -98,12 +98,29 @@ source images; `use-view.ts` owns everything after the first paint.
   link.
 
   **The sheet is built once per clip, ever.** First open decodes the clip in
-  one ffmpeg pass, keeps ~one tile per five seconds (clamped 12-48), stacks
-  them into a single WebP in the bucket and writes the timestamps into
+  one ffmpeg pass, keeps ~one tile per two seconds (clamped 12-48), stacks them
+  into a single WebP in the bucket and writes the timestamps into
   `generation_metadata.frame_grid`. Every reopen is one cached request for
   `/img/[id]?v=frames` and a `background-position` per cell -- not N `<img>`
   elements, because the tiles only ever exist together. About half a second for
-  a ten-second clip locally.
+  a ten-second clip locally, a second for ninety.
+
+  **The sampling is set for short form, and it shipped wrong.** At one tile per
+  five seconds every clip under a minute landed on the floor of 12 and the
+  scaling never fired at all -- a 60s sequence got tiles five seconds apart,
+  which is a summary rather than coverage. At one per two the cap binds at 96s,
+  just past the ~1.5 minutes a sequence runs to. `GRID_VERSION` is why a clip
+  whose sheet already existed picks the new sampling up: a stored sheet from an
+  older policy is rebuilt on next open rather than kept forever, which is the
+  only way a change here reaches the clips being worked on.
+
+  **A tall stack is narrowed to fit, not shortened.** WebP will not encode past
+  16383px, and one column of 9:16 tiles at 320 wide clears that at 29 of them --
+  the encode fails and the whole sheet reads as "no frames could be read out of
+  that clip". So the tiles are scaled down until the stack fits: coverage is
+  what the grid is for, and a softer thumbnail is the cheaper thing to spend.
+  Latent until sampling went dense; portrait clips are exactly what short form
+  is.
 
   **Sharpness is what decides whether it is worth having.** Even sampling hands
   back motion-blurred stills, and a blurred reference is not a reference, so

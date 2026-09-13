@@ -4,6 +4,7 @@ import type { ClipFrame } from '#/lib/server/clip-frames.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import {
+  GRID_VERSION,
   buildClipFrameGrid,
   extractClipFrame,
 } from '#/lib/server/clip-frames.server'
@@ -46,11 +47,16 @@ function storedGrid(row: ClipRow): ClipFrameGridView | null {
         times?: unknown
         tile_width?: unknown
         tile_height?: unknown
+        version?: unknown
       }
     | undefined
 
+  // A sheet from an older sampling policy is not reused -- it is rebuilt on
+  // this open, which costs a second once and never again. Sheets written
+  // before the field existed carry no version and are the oldest of all.
   if (
     !grid ||
+    grid.version !== GRID_VERSION ||
     !Array.isArray(grid.times) ||
     grid.times.length === 0 ||
     typeof grid.tile_width !== 'number' ||
@@ -116,6 +122,7 @@ export async function clipFrameGrid({
           sheet_path: grid.sheetPath,
           tile_width: grid.tileWidth,
           tile_height: grid.tileHeight,
+          version: GRID_VERSION,
         },
       })}::jsonb
     where id = ${clipId} and user_id = ${userId}
