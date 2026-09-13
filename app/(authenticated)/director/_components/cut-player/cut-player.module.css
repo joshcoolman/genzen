@@ -29,6 +29,12 @@
   bottom: var(--space-12);
   display: flex;
   gap: var(--space-8);
+
+  /* Solid, not translucent: these sit on footage that is different every
+     frame, and a wash reads differently on each one. */
+  button:not([data-variant='primary']) {
+    background: var(--image-backing);
+  }
 }
 .controls {
   display: flex;
