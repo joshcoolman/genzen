@@ -30,6 +30,11 @@ import { sql } from '#/lib/server/db.server'
  * `findClipEndFrame` matches on `clip_id` equality and `kind = 'end'`, so a
  * YouTube stamp -- no clip, always `scrub` -- can never be handed back as a
  * clip's ending frame.
+ *
+ * `grid` is Grab Frames (#647), and it is a third kind rather than a `scrub`
+ * because the sheet reads its own stamps back: a tile already imported is
+ * marked as such, and a scrub at a coincidentally equal second must not mark
+ * it.
  */
 export async function stampFrameSource({
   imageId,
@@ -44,8 +49,9 @@ export async function stampFrameSource({
   /** The YouTube video it was grabbed from, when it was not. */
   youtubeId?: string | null
   timeSeconds: number
-  /** `end` is the clip's final frame; `scrub` is wherever the user stopped. */
-  kind: 'end' | 'scrub'
+  /** `end` is the clip's final frame, `scrub` is wherever the user stopped,
+   *  and `grid` is a tile picked off Grab Frames' contact sheet (#647). */
+  kind: 'end' | 'scrub' | 'grid'
 }): Promise<void> {
   const { userId } = await resolveAuth()
 

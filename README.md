@@ -277,6 +277,8 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 Recent highlights:
 
+- Video: a clip's `...` menu grabs frames -- a contact sheet of stills sampled
+  start to finish, pick any number and Import to Images (#647).
 - Meta prompt: with references staged, describe roughly what you want and
   Claude writes one or several prompts from the pictures straight into the
   prompt list. One call per set, so siblings agree (#645).

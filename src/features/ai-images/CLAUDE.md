@@ -207,6 +207,7 @@ transport concern, and the library row keeps its full-resolution original.
   `app/(authenticated)/lab/enhance` since #424 — the panel's button and the
   `prompt-origins` map that recorded its before/after both went with it. The
   action is unchanged; only the surface that calls it moved.
+
 - **`meta-prompt.action.ts` is the third writer: pictures in, several prompts
   out (#645).** It is not another flavour of the other two -- it is the only one
   that looks at the staged reference set, and the only one that returns a list.

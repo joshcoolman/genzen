@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Download,
   EyeOff,
+  Grid3x3,
   Loader2,
   MoreHorizontal,
   Play,
@@ -59,6 +60,7 @@ export function VideoThumb({
   onDelete,
   onHide,
   onContinue,
+  onGrabFrames,
   isContinuing,
   selected,
   selectionActive,
@@ -72,6 +74,9 @@ export function VideoThumb({
   onHide: (id: string) => void
   /** Absent while there is nothing to continue from -- see `isDone`. */
   onContinue: (video: VideoRecord) => void
+  /** Open the contact sheet of stills for this clip (#647). Finished clips
+   *  only -- there are no frames of a clip that does not exist yet. */
+  onGrabFrames: (video: VideoRecord) => void
   isContinuing: boolean
   /** Picked for a bulk action (#517). */
   selected: boolean
@@ -124,6 +129,16 @@ export function VideoThumb({
               </a>
             }
           />
+        )}
+        {/* Pulling reference stills out of a clip we already own. Here rather
+            than on the card, because it opens a surface to work in -- the
+            card's own buttons are the acts that change this row or start the
+            next generation. */}
+        {isDone && (
+          <DropdownMenuItem onClick={() => onGrabFrames(video)}>
+            <Grid3x3 />
+            Grab frames
+          </DropdownMenuItem>
         )}
         {/* On every clip, not just finished ones: clearing a failure is the
             commonest reason to want it, and on a generating clip it is the

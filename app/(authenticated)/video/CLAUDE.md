@@ -90,6 +90,41 @@ source images; `use-view.ts` owns everything after the first paint.
   Hide/Trash corner action, and selection tick operate independently of playback.
   `video-list/` supplies the grid; the route owns the playback dialog.
 
+- **Grab frames is a contact sheet of a clip you already own** (#647). The
+  card's `...` menu opens a grid of stills sampled start to finish; pick any
+  number, Import to Images, done. No route, no timeline, no scrubbing -- the
+  question it answers is "which of these is the shot", and `lab/frames` is
+  still the tool for an exact position and the only one that takes a YouTube
+  link.
+
+  **The sheet is built once per clip, ever.** First open decodes the clip in
+  one ffmpeg pass, keeps ~one tile per five seconds (clamped 12-48), stacks
+  them into a single WebP in the bucket and writes the timestamps into
+  `generation_metadata.frame_grid`. Every reopen is one cached request for
+  `/img/[id]?v=frames` and a `background-position` per cell -- not N `<img>`
+  elements, because the tiles only ever exist together. About half a second for
+  a ten-second clip locally.
+
+  **Sharpness is what decides whether it is worth having.** Even sampling hands
+  back motion-blurred stills, and a blurred reference is not a reference, so
+  three candidates are decoded per tile and the largest JPEG at fixed quality
+  wins -- detail costs bytes, blur does not. Two guards on top of that, both
+  found on a real clip: a challenger must beat the interval's own frame by 15%,
+  and a pick may never land next to the previous tile. Without them the sheet
+  returned 0.558s and 0.837s as separate tiles -- a duplicate pair, and a tile
+  of coverage lost.
+
+  **Full-resolution frames are only ever made on import.** The selected
+  timestamps are re-extracted one at a time and each goes through
+  `saveFileToLibrary` like any upload, stamped `kind: 'grid'`. That stamp is
+  read back on open, so an already-imported tile is marked and cannot be picked
+  twice. Storing every frame up front would be paying for the twenty-five
+  nobody wanted.
+
+  The decode is `src/lib/server/clip-frames.server.ts`, beside the poster's --
+  `ffmpeg-static`, an npm dependency, so unlike `lab/frames` this needs no
+  system binary and works on the deploy.
+
 - **Continue carries on from a clip's last frame** (#494). One press reads the
   frame at the end of a finished clip, saves it as an ordinary upload, and sets
   it as the first frame -- replacing five manual steps that all worked
