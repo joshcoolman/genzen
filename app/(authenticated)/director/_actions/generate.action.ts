@@ -12,7 +12,8 @@ export async function startClip(
   revision: number,
   requestId: string,
   prompt: string,
-  redo: boolean,
+  replace: number | null,
+  duration?: number,
 ) {
   return beginGeneration(
     (await resolveAuth()).userId,
@@ -20,7 +21,8 @@ export async function startClip(
     revision,
     requestId,
     prompt,
-    redo,
+    replace,
+    duration,
   )
 }
 export async function pollClip(id: string) {

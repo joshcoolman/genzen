@@ -1,9 +1,11 @@
-import { useRef, useState } from 'react'
-import { Clapperboard } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Clapperboard, Pencil } from 'lucide-react'
 import { download } from '../../recording'
 import { DURATIONS, PROMPT_LIMIT } from '../../clips'
 import { CutPlayer } from '../cut-player/cut-player'
+import { SectionEditor } from '../section-editor/section-editor'
 import { ExportPreview } from '../export-preview/export-preview'
+import { mediaUrl } from '../../_lib/types'
 import styles from './workspace.module.css'
 import type { CutPlayerHandle } from '../cut-player/cut-player'
 import type { useView } from '../../[id]/use-view'
@@ -31,9 +33,30 @@ export function Workspace({
   const [exportSource, setExportSource] = useState<Array<StoredClip>>([])
   const player = useRef<CutPlayerHandle>(null)
   const [position, setPosition] = useState({ index: -1, paused: false })
+  const [editing, setEditing] = useState<number | null>(null)
+  const { review } = state
+  // The replacement under review loops on its own until it is approved.
+  useEffect(() => {
+    if (review === null) player.current?.release()
+    else player.current?.hold(review)
+  }, [review])
+  const stored = state.session.cut.clips
+  const frames = (index: number) => ({
+    start:
+      index > 0
+        ? (stored[index - 1] && mediaUrl(stored[index - 1].endFrameId)) || null
+        : state.session.cut.initialImage
+          ? mediaUrl(state.session.cut.initialImage)
+          : null,
+    // The next section opened on this clip's ending frame, so that is the
+    // frame a replacement has to arrive at. A final section has no such seam.
+    end:
+      index < stored.length - 1 && stored[index]
+        ? mediaUrl(stored[index].endFrameId)
+        : null,
+  })
   const locked = !state.ready || state.busy || !!cut.pending
   const canSend = !locked && !!state.prompt.trim()
-  const latest = cut.clips.at(-1)
   return (
     <div className={styles.workspace} data-opening={opening || undefined}>
       {!opening && (
@@ -42,6 +65,30 @@ export function Workspace({
             clips={cut.clips}
             controls={player}
             onPosition={(index, paused) => setPosition({ index, paused })}
+            overlay={
+              review !== null ? (
+                <>
+                  <Button
+                    disabled={state.busy || !!cut.pending}
+                    onClick={() => setEditing(review)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="primary"
+                    disabled={state.busy || !!cut.pending}
+                    onClick={state.approve}
+                  >
+                    Approve
+                  </Button>
+                </>
+              ) : position.paused && position.index >= 0 && !cut.pending ? (
+                <Button onClick={() => setEditing(position.index)}>
+                  <Pencil size={16} />
+                  Edit
+                </Button>
+              ) : undefined
+            }
           />
           <p role="status" className={styles.hint}>
             {state.status}
@@ -206,7 +253,7 @@ export function Workspace({
             className={styles.composer}
             onSubmit={(event) => {
               event.preventDefault()
-              if (canSend) void state.submit(false)
+              if (canSend) void state.submit()
             }}
           >
             {opening && <label htmlFor="director-prompt">Set the scene</label>}
@@ -232,26 +279,11 @@ export function Workspace({
                   !event.nativeEvent.isComposing
                 ) {
                   event.preventDefault()
-                  if (canSend) void state.submit(false)
+                  if (canSend) void state.submit()
                 }
               }}
             />
             <div className={styles.actions}>
-              {!!latest && (
-                <Button
-                  disabled={!canSend || !!latest.imported}
-                  onClick={() => {
-                    void state.submit(true)
-                  }}
-                  title={
-                    latest.imported
-                      ? 'A saved live recording can be continued, but not regenerated as a single clip.'
-                      : 'Replace the latest section using its original starting frame'
-                  }
-                >
-                  Redo latest
-                </Button>
-              )}
               <Button
                 type="submit"
                 variant="primary"
@@ -303,6 +335,23 @@ export function Workspace({
             ))}
           </ul>
         </details>
+      )}
+      {editing !== null && (
+        <SectionEditor
+          open
+          number={editing + 1}
+          prompt={cut.clips[editing]?.prompt ?? ''}
+          duration={cut.settings.duration}
+          startFrame={frames(editing).start}
+          endFrame={frames(editing).end}
+          busy={state.busy}
+          onCancel={() => setEditing(null)}
+          onGenerate={(text, duration) => {
+            const index = editing
+            setEditing(null)
+            void state.regenerate(index, text, duration)
+          }}
+        />
       )}
       <ConfirmDialog {...dialogProps} />
       {exportClips && (

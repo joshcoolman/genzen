@@ -29,6 +29,7 @@ export function useView(initial: Session) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState('Loading session...')
+  const [review, setReview] = useState<number | null>(null)
   const alive = useRef(false)
   const isAlive = () => alive.current
   const pendingRequest = () => current.current.cut.pending
@@ -119,29 +120,34 @@ export function useView(initial: Session) {
       if (isAlive()) setBusy(false)
     }
   }
-  async function submit(redo: boolean) {
+  async function run(
+    text: string,
+    replace: number | null,
+    duration?: Settings['duration'],
+  ) {
     if (
       !ready ||
       working.current ||
       current.current.cut.pending ||
-      !promptRef.current.trim()
+      !text.trim()
     )
       return
     working.current = true
     setBusy(true)
     setError(null)
     try {
-      await flushDraft()
+      if (replace === null) await flushDraft()
       setStatus('Submitting one clip...')
       const next = await startClip(
         initial.id,
         current.current.revision,
         crypto.randomUUID(),
-        promptRef.current.trim(),
-        redo,
+        text.trim(),
+        replace,
+        duration,
       )
       await apply(next)
-      if (isAlive()) changePrompt('')
+      if (isAlive() && replace === null) changePrompt('')
     } catch (cause) {
       report(cause)
       const next = await loadSession(initial.id).catch(() => null)
@@ -153,6 +159,15 @@ export function useView(initial: Session) {
         if (pendingRequest()) void recover()
       }
     }
+  }
+  /** The section held under review: its replacement loops until approved. */
+  async function regenerate(
+    index: number,
+    text: string,
+    duration: Settings['duration'],
+  ) {
+    setReview(index)
+    await run(text, index, duration)
   }
   async function mutate(action: () => Promise<Session>, message = 'Saved') {
     if (!ready || working.current) return
@@ -231,7 +246,10 @@ export function useView(initial: Session) {
       : ready && prompt !== savedDraft.current
         ? 'Draft not saved'
         : status,
-    submit,
+    submit: () => run(promptRef.current, null),
+    review,
+    regenerate,
+    approve: () => setReview(null),
     changeSettings: (settings: Settings) =>
       mutate(() =>
         updateSettings(initial.id, current.current.revision, settings),
@@ -247,11 +265,13 @@ export function useView(initial: Session) {
           media?.mediaId ?? null,
         )
       }),
-    forgetPending: () =>
-      mutate(
+    forgetPending: async () => {
+      setReview(null)
+      await mutate(
         () => dismissClip(initial.id, current.current.revision),
         'Request dismissed',
-      ),
+      )
+    },
     checkRequest: () => {
       if (pollTimer.current) clearTimeout(pollTimer.current)
       void recover()

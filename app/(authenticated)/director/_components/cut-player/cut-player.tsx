@@ -3,23 +3,28 @@
 import { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { CutPlayback } from '../../playback'
 import styles from './cut-player.module.css'
-import type { RefObject } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import type { Clip } from '../../clips'
 import { Button } from '#/components'
 
 export interface CutPlayerHandle {
   jump: (index: number) => void
   toggle: () => void
+  hold: (index: number) => void
+  release: () => void
 }
 
 export function CutPlayer({
   clips,
   controls,
   onPosition,
+  overlay,
 }: {
   clips: Array<Clip>
   controls?: RefObject<CutPlayerHandle | null>
   onPosition?: (index: number, paused: boolean) => void
+  /** Buttons floated over the footage, bottom right. */
+  overlay?: ReactNode
 }) {
   const a = useRef<HTMLVideoElement>(null)
   const b = useRef<HTMLVideoElement>(null)
@@ -43,6 +48,11 @@ export function CutPlayer({
       setError(null)
       engine.current?.toggle()
     },
+    hold: (index: number) => {
+      setError(null)
+      engine.current?.hold(index)
+    },
+    release: () => engine.current?.release(),
   }))
   useEffect(() => {
     if (!a.current || !b.current) return
@@ -103,37 +113,16 @@ export function CutPlayer({
             Send an idea to create the first section.
           </p>
         )}
+        {!empty && overlay && <div className={styles.overlay}>{overlay}</div>}
       </div>
       <div className={styles.controls}>
-        <Button
-          disabled={empty}
-          onClick={() => {
-            setError(null)
-            engine.current?.toggle()
-          }}
-        >
-          {position.paused ? 'Play' : 'Pause'}
-        </Button>
-        <Button
-          disabled={empty || position.index <= 0}
-          onClick={() => engine.current?.previous()}
-        >
-          Previous clip
-        </Button>
-        <Button disabled={empty} onClick={() => engine.current?.next()}>
-          Next clip
-        </Button>
-        <Button
-          disabled={empty}
-          onClick={() => engine.current?.latest()}
-          title="Play the last two seconds before the newest section"
-        >
+        <Button disabled={empty} onClick={() => engine.current?.latest()}>
           Jump to latest
         </Button>
         <span>
           {empty
             ? 'Silent playback'
-            : `Clip ${position.index + 1} of ${clips.length} · silent loop`}
+            : `Clip ${position.index + 1} of ${clips.length}`}
         </span>
       </div>
       {error && (

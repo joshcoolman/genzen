@@ -80,7 +80,7 @@ describe('Director durable state', () => {
       0,
       requestId,
       'A sailboat at sea',
-      false,
+      null,
     )
     expect(submitted.cut.pending?.token).toBe('signed-receipt')
     await beginGeneration(
@@ -89,7 +89,7 @@ describe('Director durable state', () => {
       0,
       requestId,
       'A sailboat at sea',
-      false,
+      null,
     )
     await dismissGeneration(owner, session.id, submitted.revision)
     await beginGeneration(
@@ -98,7 +98,7 @@ describe('Director durable state', () => {
       0,
       requestId,
       'A sailboat at sea',
-      false,
+      null,
     )
     expect(mocks.submit).toHaveBeenCalledOnce()
   })
@@ -107,7 +107,7 @@ describe('Director durable state', () => {
     const session = await createSession(owner, 'Uncertain')
     const requestId = randomUUID()
     await expect(
-      beginGeneration(owner, session.id, 0, requestId, 'Opening scene', false),
+      beginGeneration(owner, session.id, 0, requestId, 'Opening scene', null),
     ).rejects.toThrow('Connection lost')
     const restored = await getSession(owner, session.id)
     expect(restored?.cut.pending?.id).toBe(requestId)
@@ -118,7 +118,7 @@ describe('Director durable state', () => {
       0,
       requestId,
       'Opening scene',
-      false,
+      null,
     )
     expect(mocks.submit).toHaveBeenCalledOnce()
     await expect(deleteSession(owner, session.id)).rejects.toThrow('pending')

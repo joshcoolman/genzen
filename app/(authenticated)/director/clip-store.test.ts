@@ -43,7 +43,7 @@ describe('persistent resumable cut', () => {
     await saveCut(owner, cut)
     const restored = await readCut(owner)
     expect(await restored!.clips[0].blob.text()).toBe('video')
-    expect(await generationBase(restored!, false).image!.text()).toBe('ending')
+    expect(await generationBase(restored!, null).image!.text()).toBe('ending')
     expect(await readCut('another-account')).toBeNull()
   })
   it('preserves a pending receipt without replacing the accepted clip', async () => {

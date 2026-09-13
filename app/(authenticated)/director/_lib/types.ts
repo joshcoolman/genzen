@@ -20,6 +20,7 @@ export const pendingSchema = z.object({
   context: z.array(z.string().max(2000)).max(50),
   settings: settingsSchema,
   redo: z.boolean(),
+  replace: z.number().int().min(0).max(49).nullable().optional(),
   startedAt: z.number(),
   token: z.string().max(2048).optional(),
 })

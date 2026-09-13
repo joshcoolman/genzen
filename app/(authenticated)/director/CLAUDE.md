@@ -10,8 +10,19 @@
 - Save required media before publishing a cut. Revisions reject stale edits.
   Keep pending submission intent before spending and its receipt before returning.
   An uncertain submission must never automatically submit again.
-- Redo replaces only the latest section, using its original starting point.
-  No take history or earlier-section editing. Exports are immutable snapshots.
+- Any section can be regenerated (#643), not just the latest: pause on it and
+  Edit. A replacement rolls back to that section's original starting frame and
+  its preceding directions, and a **middle** section is also pinned at its far
+  seam -- `end_image_url` is the replaced clip's own ending frame, which is the
+  frame the next section opened from, so the join survives. The last section
+  has no such frame and is free to end anywhere. Both H3 Max endpoints accept
+  `end_image_url` (checked against fal's schema, 2026-09-13).
+- There is no take history and no undo: the old clip is gone the moment a
+  replacement lands. The new one loops on its own until Approve, which lets
+  playback run on into the next section; Edit reopens the dialog and spends
+  again. `pending.replace` is the section index; `pending.redo` is its old
+  boolean spelling, kept only so a request saved before #643 still lands in
+  the right place. Exports are immutable snapshots.
 - Session deletion owns all its media. Keep the session record until bucket
   cleanup succeeds so deletion can be retried.
 - Import preserves browser-local source data. Server-saved sessions in local

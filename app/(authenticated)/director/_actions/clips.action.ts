@@ -14,21 +14,28 @@ export async function submitClip(data: FormData) {
   const request = clipRequestSchema.parse(
     JSON.parse(String(data.get('request'))),
   )
-  const frame = data.get('frame')
-  if (
-    frame !== null &&
-    (!(frame instanceof File) ||
-      !frame.size ||
-      frame.size > 15 * 1024 * 1024 ||
-      !['image/png', 'image/jpeg', 'image/webp'].includes(frame.type))
-  )
-    throw new Error(
-      'The starting frame must be a JPEG, PNG or WebP under 15 MB.',
+  const check = (value: FormDataEntryValue | null, what: string) => {
+    if (value === null) return null
+    if (
+      !(value instanceof File) ||
+      !value.size ||
+      value.size > 15 * 1024 * 1024 ||
+      !['image/png', 'image/jpeg', 'image/webp'].includes(value.type)
     )
-  const imageUrl =
-    frame instanceof File
-      ? await uploadBufferToFal(await frame.arrayBuffer())
-      : undefined
+      throw new Error(`The ${what} must be a JPEG, PNG or WebP under 15 MB.`)
+    return value
+  }
+  const frame = check(data.get('frame'), 'starting frame')
+  const tail = check(data.get('tail'), 'ending frame')
+  const imageUrl = frame
+    ? await uploadBufferToFal(await frame.arrayBuffer())
+    : undefined
+  // Both H3 Max endpoints take `end_image_url` beside the first frame
+  // (verified against fal's schema, 2026-09-13). It is what pins a replaced
+  // middle section to the frame the next section opens on.
+  const endImageUrl = tail
+    ? await uploadBufferToFal(await tail.arrayBuffer())
+    : undefined
   const prompt = [
     rules,
     'Prior directions:',
@@ -46,6 +53,7 @@ export async function submitClip(data: FormData) {
       prompt_expansion_mode: 'balanced',
       enable_safety_checker: true,
       ...(imageUrl ? { image_url: imageUrl } : {}),
+      ...(endImageUrl ? { end_image_url: endImageUrl } : {}),
     },
   })
   return signReceipt({

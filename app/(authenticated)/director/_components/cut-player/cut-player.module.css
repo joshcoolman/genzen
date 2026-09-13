@@ -23,6 +23,13 @@
   place-items: center;
   color: var(--text-muted);
 }
+.overlay {
+  position: absolute;
+  right: var(--space-12);
+  bottom: var(--space-12);
+  display: flex;
+  gap: var(--space-8);
+}
 .controls {
   display: flex;
   flex-wrap: wrap;
