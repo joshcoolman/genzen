@@ -17,6 +17,18 @@
   frame the next section opened from, so the join survives. The last section
   has no such frame and is free to end anywhere. Both H3 Max endpoints accept
   `end_image_url` (checked against fal's schema, 2026-09-13).
+- Enhance (#643) rewrites one section's direction in the dialog, and only
+  there: `_lib/enhance.server.ts` sends Claude the same two boundary frames,
+  the duration and the prior directions, and returns `{ direction, fit }` --
+  `fit` is one sentence when the events need more seconds than the section
+  has, and empty otherwise. It writes into the box, never into a generation:
+  nothing is spent and Cancel throws it away. It needs ANTHROPIC_API_KEY and
+  fails loudly without one, which is the usual local state. Instructions live
+  in `prompts/director-enhance.md` and must not contradict
+  `director-clips.md`, which is what the generation itself is told.
+- Regenerate re-rolls a section as it stands -- same direction, its own length
+  snapped to an offered value -- with no dialog. It is the same paid request
+  as an edit, and lands in the same review.
 - There is no take history and no undo: the old clip is gone the moment a
   replacement lands. The new one loops on its own until Approve, which lets
   playback run on into the next section; Edit reopens the dialog and spends

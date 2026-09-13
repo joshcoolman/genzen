@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Clapperboard, Pencil } from 'lucide-react'
+import { Clapperboard, Pencil, RefreshCw } from 'lucide-react'
 import { download } from '../../recording'
 import { DURATIONS, PROMPT_LIMIT } from '../../clips'
 import { CutPlayer } from '../cut-player/cut-player'
@@ -41,6 +41,18 @@ export function Workspace({
     else player.current?.hold(review)
   }, [review])
   const stored = state.session.cut.clips
+  // Re-rolling a section as it stands. Its stored length is what it was
+  // generated at; snap to the nearest offered value rather than inventing one.
+  const again = (index: number) => {
+    if (index >= cut.clips.length) return
+    const clip = cut.clips[index]
+    const duration = DURATIONS.reduce((best, value) =>
+      Math.abs(value - clip.duration) < Math.abs(best - clip.duration)
+        ? value
+        : best,
+    )
+    void state.regenerate(index, clip.prompt, duration)
+  }
   const frames = (index: number) => ({
     start:
       index > 0
@@ -79,6 +91,9 @@ export function Workspace({
                   <Button disabled={working} onClick={() => setEditing(review)}>
                     Edit
                   </Button>
+                  <Button disabled={working} onClick={() => again(review)}>
+                    Regenerate
+                  </Button>
                   <Button
                     variant="primary"
                     disabled={working}
@@ -87,11 +102,17 @@ export function Workspace({
                     Approve
                   </Button>
                 </>
-              ) : position.paused && position.index >= 0 && !cut.pending ? (
-                <Button onClick={() => setEditing(position.index)}>
-                  <Pencil size={16} />
-                  Edit
-                </Button>
+              ) : position.paused && position.index >= 0 && !working ? (
+                <>
+                  <Button onClick={() => setEditing(position.index)}>
+                    <Pencil size={16} />
+                    Edit
+                  </Button>
+                  <Button onClick={() => again(position.index)}>
+                    <RefreshCw size={16} />
+                    Regenerate
+                  </Button>
+                </>
               ) : undefined
             }
           />
@@ -344,6 +365,8 @@ export function Workspace({
       {editing !== null && (
         <SectionEditor
           open
+          sessionId={state.session.id}
+          index={editing}
           number={editing + 1}
           prompt={cut.clips[editing]?.prompt ?? ''}
           duration={cut.settings.duration}

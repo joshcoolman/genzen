@@ -46,3 +46,18 @@
   border-radius: var(--radius);
   font-size: var(--text-sm);
 }
+
+/* What the rewrite could not fit in the seconds available. */
+.fit {
+  color: var(--warning);
+  font-size: var(--text-sm);
+  margin-top: var(--space-8);
+}
+.failure {
+  color: var(--danger);
+  font-size: var(--text-sm);
+  margin-top: var(--space-8);
+}
+.footer {
+  flex-wrap: wrap;
+}
