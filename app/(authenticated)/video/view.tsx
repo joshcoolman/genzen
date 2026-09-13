@@ -9,6 +9,7 @@ import { ImageInputs } from './_components/image-inputs/image-inputs'
 import { ModelPicker } from './_components/model-picker/model-picker'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { VideoForm } from './_components/video-form/video-form'
+import { FrameGridDialog } from './_components/frame-grid-dialog/frame-grid-dialog'
 import { VideoPlayerDialog } from './_components/video-player-dialog/video-player-dialog'
 import { VideoList } from './_components/video-list/video-list'
 import { useView } from './use-view'
@@ -70,6 +71,8 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     deleteSelected,
     playingVideo,
     setPlayingId,
+    framesClip,
+    setFramesClip,
     deleteVideo,
     continueFrom,
     isContinuing,
@@ -117,6 +120,8 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
 
   return (
     <Stack gap={24}>
+      <FrameGridDialog clip={framesClip} onClose={() => setFramesClip(null)} />
+
       <VideoPlayerDialog
         video={playingVideo}
         onClose={() => setPlayingId(null)}
@@ -178,6 +183,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             onDelete={(id) => void deleteVideo(id)}
             onHide={(id) => void visibility.hide([id])}
             onContinue={(video) => void continueFrom(video)}
+            onGrabFrames={setFramesClip}
             onPlay={setPlayingId}
             continuingId={isContinuing}
             selectedIds={selectedIds}

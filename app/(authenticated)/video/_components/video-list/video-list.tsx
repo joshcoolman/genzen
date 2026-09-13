@@ -29,6 +29,7 @@ export function VideoList({
   onDelete,
   onHide,
   onContinue,
+  onGrabFrames,
   onPlay,
   continuingId,
   selectedIds,
@@ -52,6 +53,8 @@ export function VideoList({
    *  to the card's corner icon. */
   onHide: (id: string) => void
   onContinue: (video: VideoRecord) => void
+  /** Straight through to the card's menu (#647). */
+  onGrabFrames: (video: VideoRecord) => void
   onPlay: (id: string) => void
   /** The clip whose last frame is being read, if any -- one at a time. */
   continuingId: string | null
@@ -114,6 +117,7 @@ export function VideoList({
             onDelete={onDelete}
             onHide={onHide}
             onContinue={onContinue}
+            onGrabFrames={onGrabFrames}
             isContinuing={continuingId === cell.video.id}
             selected={selectedIds.has(cell.video.id)}
             selectionActive={selectedIds.size > 0}

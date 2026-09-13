@@ -755,6 +755,12 @@ export function useView(initialVideos: Array<VideoRecord>) {
     if (selectMode) setPlayingId(null)
   }, [selectMode])
 
+  /* The contact sheet of stills (#647). The clip itself rather than its id,
+     because the dialog wants its title and prompt for the rows it writes, and
+     a clip that leaves the wall mid-sheet should not empty the surface being
+     worked in. */
+  const [framesClip, setFramesClip] = useState<VideoRecord | null>(null)
+
   const [isContinuing, setIsContinuing] = useState<string | null>(null)
 
   /** Pull the clip's final frame into the library and return the new row. */
@@ -961,6 +967,8 @@ export function useView(initialVideos: Array<VideoRecord>) {
     deleteSelected,
     playingVideo,
     setPlayingId,
+    framesClip,
+    setFramesClip,
     deleteVideo,
     continueFrom,
     isContinuing,

@@ -33,8 +33,9 @@ about the form, the picker and the card; this folder holds only the catalog.
   here may import from `app/`
 - `server/stamp-frame.action.ts` -- writes `frame_source` into the frame's
   `generation_metadata`, so a still knows where it was cut from, and
-  whether it is a clip's end (`kind: 'end'`) or a position someone scrubbed
-  to (`kind: 'scrub'`). The origin is a `clip_id` or a `youtube_id` and never
+  whether it is a clip's end (`kind: 'end'`), a position someone scrubbed
+  to (`kind: 'scrub'`), or a tile off Video's Grab Frames sheet
+  (`kind: 'grid'`, #647 -- read back so an imported tile is marked). The origin is a `clip_id` or a `youtube_id` and never
   both: Frames can grab a still off a pasted YouTube link (#613), and since that
   link is thrown away with the session, this stamp is the only record of it
 - `server/find-clip-end-frame.action.ts` -- reads it back: the library row

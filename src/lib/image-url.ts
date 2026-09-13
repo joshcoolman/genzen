@@ -12,8 +12,10 @@
  * path, and it is stable, which is the point. A presigned URL would expire and
  * defeat the browser cache; `<img src>` stays boring.
  */
-/** `end` is a clip's final frame (#512) and 404s when there is not one. */
-export type ImageVariant = 'full' | 'thumb' | 'end'
+/** `end` is a clip's final frame (#512) and 404s when there is not one.
+ *  `frames` is a clip's sprite sheet of sampled stills (#647), which exists
+ *  only after Grab Frames has been opened on it once. */
+export type ImageVariant = 'full' | 'thumb' | 'end' | 'frames'
 
 export function imageUrl(imageId: string, variant: ImageVariant = 'full') {
   return variant === 'full' ? `/img/${imageId}` : `/img/${imageId}?v=${variant}`

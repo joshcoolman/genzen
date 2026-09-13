@@ -15,6 +15,10 @@ import { parseRange } from '#/lib/http-range'
  * `?v=thumb` serves `thumbnail_path`, falling back to the original when one was
  * never generated. The grid must not pull full-size objects (#215).
  *
+ * `?v=frames` serves a clip's sprite sheet of sampled stills (#647), built on
+ * first ask by `clipFrameGrid`. Like `?v=end` it does not fall back: a clip
+ * with no sheet 404s, and the grid that asked for it shows its own error.
+ *
  * `?v=end` serves a clip's final frame (#512). It does **not** fall back: the
  * caller asked for the ending specifically, and answering with the mp4 -- or
  * with the first frame -- would draw a wrong frame rather than nothing. A clip
@@ -43,9 +47,11 @@ export async function GET(
         thumbnail_path: string | null
         end_frame_path: string | null
         mime_type: string | null
+        generation_metadata: Record<string, unknown> | null
       }>
     >`
-      select storage_path, thumbnail_path, end_frame_path, mime_type
+      select storage_path, thumbnail_path, end_frame_path, mime_type,
+             generation_metadata
       from user_images
       where id = ${id} and user_id = ${userId}
     `,
@@ -56,14 +62,28 @@ export async function GET(
   if (variant === 'end' && !row.end_frame_path) {
     return new Response('Not found', { status: 404 })
   }
+
+  const grid = (row.generation_metadata ?? {}).frame_grid as
+    | { sheet_path?: unknown }
+    | undefined
+  const sheetPath =
+    typeof grid?.sheet_path === 'string' ? grid.sheet_path : null
+  if (variant === 'frames' && !sheetPath) {
+    return new Response('Not found', { status: 404 })
+  }
+
   const wantsThumb =
-    (variant === 'thumb' && !!row.thumbnail_path) || variant === 'end'
+    (variant === 'thumb' && !!row.thumbnail_path) ||
+    variant === 'end' ||
+    variant === 'frames'
   const key =
-    variant === 'end'
-      ? row.end_frame_path!
-      : wantsThumb
-        ? row.thumbnail_path!
-        : row.storage_path
+    variant === 'frames'
+      ? sheetPath!
+      : variant === 'end'
+        ? row.end_frame_path!
+        : wantsThumb
+          ? row.thumbnail_path!
+          : row.storage_path
 
   let blob
   try {
@@ -75,7 +95,8 @@ export async function GET(
     return new Response('Not found', { status: 404 })
   }
 
-  // Both stored frames are WebP whatever the original was.
+  // Every stored frame -- poster, ending, sheet -- is WebP whatever the
+  // original was.
   const contentType = wantsThumb
     ? 'image/webp'
     : blob.type || row.mime_type || 'application/octet-stream'
