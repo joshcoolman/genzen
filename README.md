@@ -277,6 +277,9 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 Recent highlights:
 
+- Meta prompt: with references staged, describe roughly what you want and
+  Claude writes one or several prompts from the pictures straight into the
+  prompt list. One call per set, so siblings agree (#645).
 - Director: clicking a section in the chat column plays it from its first
   frame; clicking the current one toggles play/pause (#643).
 - Lab/Frames takes a clip from the app or a YouTube link at any time -- both
@@ -291,8 +294,6 @@ Recent highlights:
   chained from the last frame and stitched with sound (#634, #640).
 - A staged reference can be read for its Lighting, Style or Subject instead
   of sent: Claude writes the block, the picture never reaches the model (#635).
-- Seedance 2.5 joins Video with reference images, first/last frames, and up to
-  30-second clips. Audio-capable models offer a Generate audio toggle (#631).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.
