@@ -277,6 +277,10 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 Recent highlights:
 
+- Director: clicking a section in the chat column plays it from its first
+  frame; clicking the current one toggles play/pause (#643).
+- Lab/Frames takes a clip from the app or a YouTube link at any time -- both
+  tiles stay on the source strip and say what they open (#644).
 - Director: any section can be reworked, not just the latest. Edit or
   Regenerate from the section list, Enhance rewrites the direction against the
   section's own boundary frames and duration, and Cancel restores the clip the
@@ -289,9 +293,6 @@ Recent highlights:
   of sent: Claude writes the block, the picture never reaches the model (#635).
 - Seedance 2.5 joins Video with reference images, first/last frames, and up to
   30-second clips. Audio-capable models offer a Generate audio toggle (#631).
-- `/storyboard` produces separate full-size shots with shared planning, original
-  references, immediate numbered thumbnails, and accurate batch counts (#626).
-- Video thumbnails open a large player for reviewing the complete frame (#629).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.
