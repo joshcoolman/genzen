@@ -82,9 +82,14 @@ Trash for removal. Generating inside a video group keeps the new clips there.
 ## Director: build a sequence over time
 
 Director provides named sessions for developing a sequence section by section.
-Start by setting the scene, continue the action, and redo the latest section
-when needed. Sessions, working clips, and pending requests are saved so you can
-return to the work.
+Start by setting the scene and continue the action. Any section can be reworked
+afterwards, not only the latest: pause on it and edit its direction, or
+regenerate it as it stands. **Enhance** rewrites a direction using the frames
+that section starts and ends on, and the time it has. A section in the middle
+is pinned to the frame the next one opens on, so the join survives the change.
+The replacement loops until you approve it, and cancelling puts back the clip
+you started with. Sessions, working clips, and pending requests are saved so
+you can return to the work.
 
 Save a rough export as a snapshot of the sequence. Saved rough exports also
 appear in Video as independent copies for playback and organization. **Final
@@ -272,6 +277,11 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 Recent highlights:
 
+- Director: any section can be reworked, not just the latest. Edit or
+  Regenerate from the section list, Enhance rewrites the direction against the
+  section's own boundary frames and duration, and Cancel restores the clip the
+  rework started from. A middle section is pinned to the frame the next one
+  opens on, so the join survives (#642).
 - Director: a saved rough export becomes a Script of copyable multi-shot
   sections, and Generate Final Cut video renders it end to end, each section
   chained from the last frame and stitched with sound (#634, #640).
@@ -282,8 +292,6 @@ Recent highlights:
 - `/storyboard` produces separate full-size shots with shared planning, original
   references, immediate numbered thumbnails, and accurate batch counts (#626).
 - Video thumbnails open a large player for reviewing the complete frame (#629).
-- Video inputs have explicit First frame, Reference, and Last frame roles, with
-  compatible model choices; Continue preserves reference images (#516).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.
