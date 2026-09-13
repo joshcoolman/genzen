@@ -5,9 +5,18 @@ import { ArrowLeft, Pencil } from 'lucide-react'
 import { useState } from 'react'
 import { changeSessionName } from '../../_actions/sessions.action'
 import styles from './session-heading.module.css'
+import type { ReactNode } from 'react'
 import { Button, NameDialog } from '#/components'
 
-export function SessionHeading({ id, name }: { id: string; name: string }) {
+export function SessionHeading({
+  id,
+  name,
+  children,
+}: {
+  id: string
+  name: string
+  children?: ReactNode
+}) {
   const [title, setTitle] = useState(name)
   const [renaming, setRenaming] = useState(false)
   const [error, setError] = useState('')
@@ -28,23 +37,21 @@ export function SessionHeading({ id, name }: { id: string; name: string }) {
   }
   return (
     <header className={styles.heading}>
-      <Link href="/director">
-        <ArrowLeft size={16} />
-        Director
+      <Link href="/director" aria-label="All sessions" title="All sessions">
+        <ArrowLeft size={18} />
       </Link>
-      <div>
-        <h1>{title}</h1>
-        <Button
-          size="sm"
-          disabled={busy}
-          onClick={() => setRenaming(true)}
-          aria-label="Rename session"
-          title="Rename session"
-        >
-          <Pencil size={16} />
-        </Button>
-      </div>
+      <h1>{title}</h1>
+      <Button
+        size="sm"
+        disabled={busy}
+        onClick={() => setRenaming(true)}
+        aria-label="Rename session"
+        title="Rename session"
+      >
+        <Pencil size={16} />
+      </Button>
       {error && <p role="alert">{error}</p>}
+      <div className={styles.end}>{children}</div>
       <NameDialog
         open={renaming}
         title="Rename session"
