@@ -36,11 +36,12 @@ const TILE = 56
  * wants an empty stage for: once something is chosen there is always something,
  * and the choice outlives the visit.
  *
- * **The YouTube button is always there, beside the tile** (#613). It is the
- * only way to reach the other kind of source, so hiding it behind a filled slot
- * would mean emptying the slot to change your mind — which is the state this
- * component was written to avoid. Picking either kind clears the other; the
- * slot holds one thing.
+ * **Both ways in are always there, side by side** (#613). A YouTube video used
+ * to replace the clip tile outright, so once a link was pasted the page offered
+ * no route back to your own clips -- the row read as if YouTube were the only
+ * source it had. The add tiles are labelled for the same reason: two dashed
+ * squares say nothing about what they open. Picking either kind clears the
+ * other; the slot holds one thing.
  *
  * `max` defaults to 1 and nothing here assumes it for clips: several clips
  * picked at once — to stitch, to compare — is a bigger number. That is the case
@@ -75,7 +76,7 @@ export function SourceInput({
 
   return (
     <div className={styles.root}>
-      {youtube ? (
+      {youtube && (
         <div className={styles.item}>
           <button
             type="button"
@@ -96,57 +97,55 @@ export function SourceInput({
           </button>
           <p className={styles.label}>{youtube.title}</p>
         </div>
-      ) : (
-        <>
-          {picked.map((clip) => (
-            <div key={clip.id} className={styles.item}>
-              <button
-                type="button"
-                className={styles.frame}
-                onClick={() =>
-                  removable ? onRemove(clip.id) : setPickerOpen(true)
-                }
-                disabled={disabled}
-                aria-label={removable ? `Remove ${clip.title}` : 'Change clip'}
-              >
-                {/* `contain` here for the same reason the picker uses it: the
-                    tile should look like the clip you chose, not a crop of it. */}
-                <MediaBox
-                  kind="video"
-                  src={`/img/${clip.id}`}
-                  alt={clip.title}
-                  size={TILE}
-                  fit="contain"
-                  pad={0}
-                />
-                {/* The marker, not the target -- the tile takes the click and
-                    this says what it does. Only where removing is a thing to
-                    do. */}
-                {removable && (
-                  <span className={styles.remove} aria-hidden="true">
-                    <X className={styles.removeIcon} />
-                  </span>
-                )}
-              </button>
-              <p className={styles.label}>{clipFacts(clip)}</p>
-            </div>
-          ))}
+      )}
 
-          {picked.length < max && (
-            <div className={styles.item}>
-              <button
-                type="button"
-                className={styles.add}
-                onClick={() => setPickerOpen(true)}
-                disabled={disabled}
-                aria-label="Pick a clip"
-              >
-                <Plus className={styles.addIcon} />
-              </button>
-              <p className={styles.addSpacer}>&nbsp;</p>
-            </div>
-          )}
-        </>
+      {picked.map((clip) => (
+        <div key={clip.id} className={styles.item}>
+          <button
+            type="button"
+            className={styles.frame}
+            onClick={() =>
+              removable ? onRemove(clip.id) : setPickerOpen(true)
+            }
+            disabled={disabled}
+            aria-label={removable ? `Remove ${clip.title}` : 'Change clip'}
+          >
+            {/* `contain` here for the same reason the picker uses it: the
+                tile should look like the clip you chose, not a crop of it. */}
+            <MediaBox
+              kind="video"
+              src={`/img/${clip.id}`}
+              alt={clip.title}
+              size={TILE}
+              fit="contain"
+              pad={0}
+            />
+            {/* The marker, not the target -- the tile takes the click and
+                this says what it does. Only where removing is a thing to
+                do. */}
+            {removable && (
+              <span className={styles.remove} aria-hidden="true">
+                <X className={styles.removeIcon} />
+              </span>
+            )}
+          </button>
+          <p className={styles.label}>{clipFacts(clip)}</p>
+        </div>
+      ))}
+
+      {picked.length < max && (
+        <div className={styles.item}>
+          <button
+            type="button"
+            className={styles.add}
+            onClick={() => setPickerOpen(true)}
+            disabled={disabled}
+            aria-label="Pick a clip from this app"
+          >
+            <Plus className={styles.addIcon} />
+          </button>
+          <p className={styles.addLabel}>Your clips</p>
+        </div>
       )}
 
       <div className={styles.item}>
@@ -156,11 +155,10 @@ export function SourceInput({
           onClick={() => setYoutubeOpen(true)}
           disabled={disabled}
           aria-label="Pull frames from a YouTube video"
-          title="YouTube"
         >
           <Youtube className={styles.addIcon} />
         </button>
-        <p className={styles.addSpacer}>&nbsp;</p>
+        <p className={styles.addLabel}>YouTube</p>
       </div>
 
       {!youtube && (

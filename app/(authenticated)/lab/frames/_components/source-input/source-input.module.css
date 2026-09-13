@@ -105,10 +105,16 @@
   height: 1rem;
 }
 
-/* Holds the add tile level with a labelled clip beside it. */
-.addSpacer {
+/* Says what the tile opens, and holds it level with a labelled clip beside
+   it. Two dashed squares with icons in them are not self-explanatory. */
+.addLabel {
   margin: var(--space-2) 0 0;
+  overflow: hidden;
+  color: var(--text-muted);
   font-size: var(--text-3xs);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .count {
