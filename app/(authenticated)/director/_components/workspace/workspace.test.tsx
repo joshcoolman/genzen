@@ -37,11 +37,11 @@ const render = (value: ReturnType<typeof useView>) =>
   renderToStaticMarkup(<SessionContent state={value} initialExports={[]} />)
 
 describe('Director opening workspace', () => {
-  it('shows only the opening composer and collapsed settings before the first clip', () => {
+  it('shows only the opening composer and the bare settings before the first clip', () => {
     const html = render(state())
     expect(html).toContain('Set the scene')
     expect(html).toContain('Start story')
-    expect(html).toContain('Generation settings')
+    expect(html).toContain('aria-label="Clip duration"')
     expect(html).not.toContain('<video')
     expect(html).not.toContain('Sections ·')
     expect(html).not.toContain('Export Final Video')

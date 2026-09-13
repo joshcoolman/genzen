@@ -127,6 +127,13 @@ export class CutPlayback {
   latest() {
     this.go(latestJoin(this.clips.length), this.clips.length > 1)
   }
+  /** Move to a section and hold there: clicking a section is a seek, not a play. */
+  jump(index: number) {
+    if (index < 0 || index >= this.clips.length) return
+    this.paused = true
+    this.go(index)
+    this.changed(this.active, this.index, true)
+  }
   toggle() {
     this.paused = !this.paused
     const video = this.videos[this.active]

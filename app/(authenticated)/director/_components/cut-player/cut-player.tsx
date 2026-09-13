@@ -1,16 +1,32 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { CutPlayback } from '../../playback'
 import styles from './cut-player.module.css'
+import type { RefObject } from 'react'
 import type { Clip } from '../../clips'
 import { Button } from '#/components'
 
-export function CutPlayer({ clips }: { clips: Array<Clip> }) {
+export interface CutPlayerHandle {
+  jump: (index: number) => void
+  toggle: () => void
+}
+
+export function CutPlayer({
+  clips,
+  controls,
+  onPosition,
+}: {
+  clips: Array<Clip>
+  controls?: RefObject<CutPlayerHandle | null>
+  onPosition?: (index: number, paused: boolean) => void
+}) {
   const a = useRef<HTMLVideoElement>(null)
   const b = useRef<HTMLVideoElement>(null)
   const engine = useRef<CutPlayback | null>(null)
   const urls = useRef(new Map<string, string>())
+  const report = useRef(onPosition)
+  report.current = onPosition
   const [position, setPosition] = useState({
     active: 0,
     index: -1,
@@ -18,11 +34,24 @@ export function CutPlayer({ clips }: { clips: Array<Clip> }) {
   })
   const [error, setError] = useState<string | null>(null)
 
+  useImperativeHandle(controls, () => ({
+    jump: (index: number) => {
+      setError(null)
+      engine.current?.jump(index)
+    },
+    toggle: () => {
+      setError(null)
+      engine.current?.toggle()
+    },
+  }))
   useEffect(() => {
     if (!a.current || !b.current) return
     engine.current = new CutPlayback(
       [a.current, b.current],
-      (active, index, paused) => setPosition({ active, index, paused }),
+      (active, index, paused) => {
+        setPosition({ active, index, paused })
+        report.current?.(index, paused)
+      },
       setError,
     )
     return () => {

@@ -22,6 +22,12 @@
   Reveal the full workspace after the first saved clip. Use persisted clip count
   for this decision so existing sessions do not flash the opening view while
   media hydrates. First-request errors and recovery remain visible.
+- The workspace is two columns: the player left, the chat column right, which
+  is the wider of the two because creating and navigating is the work. That
+  column fills the viewport -- sections scroll, the bare setting dropdowns and
+  the direction box sit at its bottom. Clicking a section jumps there and
+  pauses; clicking the current one toggles play/pause without restarting it,
+  and the current section is highlighted without scrolling the list.
 - Keep the two-player boundary behavior. Appending or replacing a clip must
   not reload the currently playing element. Playback remains muted.
 - Drafts debounce to the server with a browser backup; cut revisions and draft

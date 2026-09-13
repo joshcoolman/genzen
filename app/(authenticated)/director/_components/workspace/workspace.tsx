@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Clapperboard } from 'lucide-react'
 import { download } from '../../recording'
-import { DURATIONS, ENDPOINTS, PROMPT_LIMIT } from '../../clips'
+import { DURATIONS, PROMPT_LIMIT } from '../../clips'
 import { CutPlayer } from '../cut-player/cut-player'
 import { ExportPreview } from '../export-preview/export-preview'
 import styles from './workspace.module.css'
+import type { CutPlayerHandle } from '../cut-player/cut-player'
 import type { useView } from '../../[id]/use-view'
 import type { Clip, Settings } from '../../clips'
 import type { StoredClip } from '../../_lib/types'
@@ -28,6 +29,8 @@ export function Workspace({
   const opening = state.session.cut.clips.length === 0
   const [exportClips, setExportClips] = useState<Array<Clip> | null>(null)
   const [exportSource, setExportSource] = useState<Array<StoredClip>>([])
+  const player = useRef<CutPlayerHandle>(null)
+  const [position, setPosition] = useState({ index: -1, paused: false })
   const locked = !state.ready || state.busy || !!cut.pending
   const canSend = !locked && !!state.prompt.trim()
   const latest = cut.clips.at(-1)
@@ -35,13 +38,13 @@ export function Workspace({
     <div className={styles.workspace} data-opening={opening || undefined}>
       {!opening && (
         <div className={styles.stage}>
-          <CutPlayer clips={cut.clips} />
+          <CutPlayer
+            clips={cut.clips}
+            controls={player}
+            onPosition={(index, paused) => setPosition({ index, paused })}
+          />
           <p role="status" className={styles.hint}>
             {state.status}
-          </p>
-          <p className={styles.hint}>
-            New sections append without restarting playback. The
-            ending-to-opening loop may have a visible cut.
           </p>
           {cut.clips.some((clip) => clip.imported) && (
             <p className={styles.notice}>
@@ -67,159 +70,71 @@ export function Workspace({
           </div>
         </div>
       )}
-      {(!opening || cut.pending) && (
-        <aside className={styles.history}>
-          {!opening && <h2>Sections · {cut.clips.length}</h2>}
-          <ol>
-            {cut.clips.map((clip, index) => (
-              <li key={clip.id}>
-                <p>{clip.prompt}</p>
-                <span>
-                  {clip.duration.toFixed(1)}s · {clip.model}
-                  {clip.elapsedMs !== undefined
-                    ? ` · ${(clip.elapsedMs / 1000).toFixed(1)}s request-to-ready`
-                    : ''}
-                </span>
+      <aside className={styles.side}>
+        {(!opening || cut.pending) && (
+          <div className={styles.history}>
+            {!opening && <h2>Sections · {cut.clips.length}</h2>}
+            <ol>
+              {cut.clips.map((clip, index) => (
+                <li key={clip.id}>
+                  <button
+                    type="button"
+                    className={styles.section}
+                    data-current={index === position.index || undefined}
+                    aria-current={index === position.index ? 'true' : undefined}
+                    onClick={() => {
+                      if (index === position.index) player.current?.toggle()
+                      else player.current?.jump(index)
+                    }}
+                  >
+                    <p>{clip.prompt}</p>
+                    <span>{clip.duration.toFixed(1)}s</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+            {cut.pending && (
+              <div className={styles.pending}>
+                <p>
+                  {cut.pending.redo
+                    ? 'Replacing latest section'
+                    : opening
+                      ? 'Opening scene'
+                      : 'Next section'}
+                  : {cut.pending.prompt}
+                </p>
+                <p className={styles.hint}>
+                  {state.busy ? 'Working…' : 'Request needs attention'}
+                </p>
+                {!!cut.pending.token && (
+                  <Button disabled={state.busy} onClick={state.checkRequest}>
+                    Check request
+                  </Button>
+                )}
                 <Button
-                  size="sm"
-                  onClick={() =>
-                    download(
-                      clip.blob,
-                      `section-${index + 1}.${clip.blob.type.includes('webm') ? 'webm' : 'mp4'}`,
+                  disabled={state.busy}
+                  onClick={async () => {
+                    if (
+                      await confirm({
+                        title: 'Dismiss this request?',
+                        message:
+                          'A submitted job may still finish and be billed. Check FAL first if its submission was interrupted. Your existing sections will stay unchanged.',
+                        confirmLabel: 'Dismiss request',
+                      })
                     )
-                  }
+                      await state.forgetPending()
+                  }}
                 >
-                  Download
+                  Dismiss request
                 </Button>
-              </li>
-            ))}
-          </ol>
-          {cut.pending && (
-            <div>
-              <p>
-                {cut.pending.redo
-                  ? 'Replacing latest section'
-                  : opening
-                    ? 'Opening scene'
-                    : 'Next section'}
-                : {cut.pending.prompt}
-              </p>
-              <p className={styles.hint}>
-                {state.busy ? 'Working…' : 'Request needs attention'}
-              </p>
-              {!!cut.pending.token && (
-                <Button disabled={state.busy} onClick={state.checkRequest}>
-                  Check request
-                </Button>
-              )}
-              <Button
-                disabled={state.busy}
-                onClick={async () => {
-                  if (
-                    await confirm({
-                      title: 'Dismiss this request?',
-                      message:
-                        'A submitted job may still finish and be billed. Check FAL first if its submission was interrupted. Your existing sections will stay unchanged.',
-                      confirmLabel: 'Dismiss request',
-                    })
-                  )
-                    await state.forgetPending()
-                }}
-              >
-                Dismiss request
-              </Button>
-            </div>
-          )}
-        </aside>
-      )}
-      <form
-        className={styles.composer}
-        onSubmit={(event) => {
-          event.preventDefault()
-          if (canSend) void state.submit(false)
-        }}
-      >
-        <label htmlFor="director-prompt">
-          {opening ? 'Set the scene' : 'Next direction'}
-        </label>
-        <Textarea
-          id="director-prompt"
-          value={state.prompt}
-          rows={opening ? 5 : 3}
-          maxLength={PROMPT_LIMIT}
-          disabled={!state.ready}
-          placeholder={
-            opening ? 'Describe the opening scene...' : 'What happens next?'
-          }
-          aria-keyshortcuts="Shift+Enter"
-          onChange={(event) => state.setPrompt(event.target.value)}
-          onKeyDown={(event) => {
-            if (
-              event.key === 'Enter' &&
-              event.shiftKey &&
-              !event.ctrlKey &&
-              !event.metaKey &&
-              !event.altKey &&
-              !event.nativeEvent.isComposing
-            ) {
-              event.preventDefault()
-              if (canSend) void state.submit(false)
-            }
-          }}
-        />
-        <div className={styles.actions}>
-          {opening && <span>One paid {cut.settings.duration}-second clip</span>}
-          {!!latest && (
-            <Button
-              disabled={!canSend || !!latest.imported}
-              onClick={() => {
-                void state.submit(true)
-              }}
-              title={
-                latest.imported
-                  ? 'A saved live recording can be continued, but not regenerated as a single clip.'
-                  : 'Replace the latest section using its original starting frame'
-              }
-            >
-              Redo latest
-            </Button>
-          )}
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={!canSend}
-            loading={opening && state.busy}
-          >
-            {opening && <Clapperboard size={16} />}
-            {opening ? 'Start story' : 'Send'}
-          </Button>
-        </div>
-        {opening ? (
-          <>
-            {state.status !== 'Saved' && (
-              <p role="status" className={styles.hint}>
-                {state.status}
-              </p>
+              </div>
             )}
-            {state.error && (
-              <p role="alert" className={styles.failure}>
-                {state.error}
-              </p>
-            )}
-          </>
-        ) : (
-          <p className={styles.hint}>
-            Each Send or Redo generates one paid {cut.settings.duration}-second
-            clip. Playback and waiting do not generate anything.
-          </p>
+          </div>
         )}
-      </form>
-      <details className={styles.settings}>
-        <summary>Generation settings</summary>
-        <fieldset disabled={locked}>
-          <label>
-            Duration
+        <div className={styles.panel}>
+          <fieldset className={styles.settings} disabled={locked}>
             <select
+              aria-label="Clip duration"
               value={cut.settings.duration}
               onChange={(event) => {
                 void state.changeSettings({
@@ -230,14 +145,12 @@ export function Workspace({
             >
               {DURATIONS.map((duration) => (
                 <option key={duration} value={duration}>
-                  {duration} seconds
+                  {duration}s
                 </option>
               ))}
             </select>
-          </label>
-          <label>
-            Model
             <select
+              aria-label="Model"
               value={cut.settings.model}
               onChange={(event) => {
                 void state.changeSettings({
@@ -249,10 +162,8 @@ export function Workspace({
               <option value="turbo">MiniMax H3 Max Turbo</option>
               <option value="max">MiniMax H3 Max</option>
             </select>
-          </label>
-          <label>
-            Resolution
             <select
+              aria-label="Resolution"
               value={cut.settings.resolution}
               onChange={(event) => {
                 void state.changeSettings({
@@ -264,56 +175,113 @@ export function Workspace({
               <option value="480P">480p</option>
               <option value="768P">768p</option>
             </select>
-          </label>
+          </fieldset>
           {!cut.clips.length && (
-            <label>
-              Optional opening image
+            <div className={styles.opener}>
+              <label htmlFor="director-opening-image">
+                Optional opening image
+              </label>
               <Input
+                id="director-opening-image"
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
+                disabled={locked}
                 onChange={(event) => {
                   void state.changeImage(event.target.files?.[0] ?? null)
                 }}
               />
-            </label>
+              {cut.initialImage && (
+                <Button
+                  disabled={locked}
+                  onClick={() => {
+                    void state.changeImage(null)
+                  }}
+                >
+                  Remove image
+                </Button>
+              )}
+            </div>
           )}
-        </fieldset>
-        {!cut.clips.length && cut.initialImage && (
-          <p>
-            Opening image saved.{' '}
-            <Button
-              disabled={locked}
-              onClick={() => {
-                void state.changeImage(null)
-              }}
-            >
-              Remove image
-            </Button>
-          </p>
-        )}
-        <p className={styles.hint}>
-          Balanced prompt expansion · {cut.settings.duration} seconds · silent
-          playback. These endpoints expose no audio-off switch; generated files
-          may contain audio. Continuations inherit the previous ending frame’s
-          shape. Text-only openings default to 16:9.
-        </p>
-        <p className={styles.hint}>
-          <a
-            href={`https://fal.ai/models/${ENDPOINTS[cut.settings.model]}`}
-            target="_blank"
-            rel="noreferrer"
+          <form
+            className={styles.composer}
+            onSubmit={(event) => {
+              event.preventDefault()
+              if (canSend) void state.submit(false)
+            }}
           >
-            Provider pricing and model details
-          </a>
-        </p>
-      </details>
+            {opening && <label htmlFor="director-prompt">Set the scene</label>}
+            <Textarea
+              id="director-prompt"
+              value={state.prompt}
+              rows={opening ? 5 : 3}
+              maxLength={PROMPT_LIMIT}
+              disabled={!state.ready}
+              placeholder={
+                opening ? 'Describe the opening scene...' : 'What happens next?'
+              }
+              aria-label={opening ? undefined : 'Next direction'}
+              aria-keyshortcuts="Shift+Enter"
+              onChange={(event) => state.setPrompt(event.target.value)}
+              onKeyDown={(event) => {
+                if (
+                  event.key === 'Enter' &&
+                  event.shiftKey &&
+                  !event.ctrlKey &&
+                  !event.metaKey &&
+                  !event.altKey &&
+                  !event.nativeEvent.isComposing
+                ) {
+                  event.preventDefault()
+                  if (canSend) void state.submit(false)
+                }
+              }}
+            />
+            <div className={styles.actions}>
+              {!!latest && (
+                <Button
+                  disabled={!canSend || !!latest.imported}
+                  onClick={() => {
+                    void state.submit(true)
+                  }}
+                  title={
+                    latest.imported
+                      ? 'A saved live recording can be continued, but not regenerated as a single clip.'
+                      : 'Replace the latest section using its original starting frame'
+                  }
+                >
+                  Redo latest
+                </Button>
+              )}
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={!canSend}
+                loading={opening && state.busy}
+              >
+                {opening && <Clapperboard size={16} />}
+                {opening ? 'Start story' : 'Send'}
+              </Button>
+            </div>
+            {opening && (
+              <>
+                {state.status !== 'Saved' && (
+                  <p role="status" className={styles.hint}>
+                    {state.status}
+                  </p>
+                )}
+                {state.error && (
+                  <p role="alert" className={styles.failure}>
+                    {state.error}
+                  </p>
+                )}
+              </>
+            )}
+          </form>
+        </div>
+      </aside>
       {!!state.archives.length && (
         <details className={styles.recordings}>
           <summary>Saved Director recordings ({state.archives.length})</summary>
-          <p className={styles.hint}>
-            Original recordings from the live-stream experiment are preserved
-            unchanged.
-          </p>
           <ul>
             {state.archives.map((take) => (
               <li key={take.id}>
