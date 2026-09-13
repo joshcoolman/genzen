@@ -14,6 +14,7 @@ export class CutPlayback {
   private revision = 0
   private waiting: (() => void) | undefined
   private transitioning = false
+  private held: number | null = null
 
   constructor(
     private videos: [HTMLVideoElement, HTMLVideoElement],
@@ -54,7 +55,9 @@ export class CutPlayback {
     }
   }
   private preload() {
-    const clip = this.clips.at(nextIndex(this.index, this.clips.length))
+    const clip = this.clips.at(
+      this.held ?? nextIndex(this.index, this.clips.length),
+    )
     if (!clip) return
     const idle = this.videos[1 - this.active]
     idle.pause()
@@ -119,6 +122,10 @@ export class CutPlayback {
     })
   }
   next() {
+    if (this.held !== null) {
+      this.go(this.held)
+      return
+    }
     this.go(nextIndex(this.index, this.clips.length))
   }
   previous() {
@@ -126,6 +133,29 @@ export class CutPlayback {
   }
   latest() {
     this.go(latestJoin(this.clips.length), this.clips.length > 1)
+  }
+  /** Loop one section and go no further: a replacement under review. */
+  hold(index: number) {
+    if (index < 0 || index >= this.clips.length) return
+    this.held = index
+    this.paused = false
+    if (this.index === index) {
+      this.play(this.videos[this.active])
+      this.changed(this.active, this.index, false)
+    } else this.go(index)
+  }
+  /** Let the sequence run on from where it is. */
+  release() {
+    this.held = null
+    if (this.paused) this.toggle()
+    this.preload()
+  }
+  /** Move to a section and hold there: clicking a section is a seek, not a play. */
+  jump(index: number) {
+    if (index < 0 || index >= this.clips.length) return
+    this.paused = true
+    this.go(index)
+    this.changed(this.active, this.index, true)
   }
   toggle() {
     this.paused = !this.paused

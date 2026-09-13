@@ -1,6 +1,8 @@
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 20rem;
+  /* The chat column leads: creating, settings and navigation are the work.
+     The player takes what is left. */
+  grid-template-columns: minmax(0, 1fr) clamp(24rem, 38vw, 40rem);
   gap: var(--space-20);
   align-items: start;
 }
@@ -9,62 +11,31 @@
   min-width: 0;
 }
 
-.player {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  background: var(--image-backing);
-
-  > video {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-}
-
-.empty {
-  position: absolute;
-  inset: 0;
+/* The chat column fills the viewport: history scrolls, the composer sits at
+ * its bottom edge. */
+.side {
+  grid-column: 2;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-8);
-  pointer-events: none;
-
-  > p {
-    font-size: var(--text-lg);
-  }
-  > span {
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-  }
+  gap: var(--space-16);
+  height: calc(100dvh - 11rem);
+  min-height: 28rem;
+  border-left: var(--border-width) solid var(--border);
+  padding-left: var(--space-20);
 }
 
-.transport,
 .actions {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
-  padding-block: var(--space-12);
-
-  > span {
-    margin-right: auto;
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-  }
-}
-
-.actions {
   justify-content: flex-end;
   flex-wrap: wrap;
+  gap: var(--space-8);
+  padding-block: var(--space-12);
 }
 
 .history {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  border-left: 1px solid var(--border);
-  padding-left: var(--space-20);
-  max-height: 65vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-wrap: anywhere;
 
@@ -77,25 +48,95 @@
     padding-left: var(--space-24);
   }
   li {
-    padding-bottom: var(--space-16);
+    padding-bottom: var(--space-8);
   }
-  li > p {
+}
+
+.section {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--radius);
+  color: inherit;
+  cursor: pointer;
+  padding: var(--space-8);
+  font: inherit;
+
+  > p {
     white-space: pre-wrap;
   }
-  li > span {
+  > span {
     display: block;
     color: var(--text-muted);
     font-size: var(--text-xs);
     margin-top: var(--space-6);
   }
-  [data-status='rejected'],
-  [data-status='failed'] {
-    color: var(--danger);
+}
+.section:hover {
+  background: var(--row-hover);
+}
+.section[data-current] {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.section:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Shown over the footage while the old clip keeps looping. */
+.working {
+  display: flex;
+  align-items: center;
+  padding-inline: var(--space-12);
+  border-radius: var(--radius);
+  background: var(--image-backing);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.pending {
+  padding-top: var(--space-12);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-8);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  border: none;
+  padding: 0;
+  margin: 0;
+
+  select {
+    background: var(--field);
+    color: var(--text);
+    padding: var(--space-8);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius);
+    font-size: var(--text-sm);
   }
 }
 
+.opener {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  font-size: var(--text-sm);
+}
+
 .composer {
-  grid-column: 1;
   > label {
     display: block;
     font-size: var(--text-sm);
@@ -122,44 +163,15 @@
   font-size: var(--text-sm);
 }
 
-.settings,
 .recordings {
   grid-column: 1 / -1;
-  border-top: 1px solid var(--border);
+  border-top: var(--border-width) solid var(--border);
   padding-top: var(--space-16);
 
   > summary {
     cursor: pointer;
     font-size: var(--text-sm);
     margin-bottom: var(--space-12);
-  }
-  > p {
-    margin-block: var(--space-12);
-  }
-  a {
-    text-decoration: underline;
-  }
-}
-
-.settings fieldset {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-16);
-  border: none;
-  padding: 0;
-
-  > label {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-8);
-    font-size: var(--text-sm);
-  }
-  select {
-    background: var(--field);
-    color: var(--text);
-    padding: var(--space-8);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
   }
 }
 
@@ -177,20 +189,23 @@
   margin-inline: auto;
   padding-block: var(--space-32);
 
-  .composer {
-    grid-row: 1;
+  .side {
+    grid-column: 1;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    height: auto;
+    min-height: 0;
+    border: none;
+    padding-left: 0;
+  }
+  .history {
+    flex: none;
+    overflow: visible;
   }
   .composer > label {
     font-size: var(--text-2xl);
     font-weight: 600;
     margin-bottom: var(--space-16);
-  }
-  .history {
-    grid-column: 1;
-    grid-row: 2;
-    border: none;
-    padding: 0;
-    max-height: none;
   }
 }
 
@@ -198,12 +213,15 @@
   .workspace {
     grid-template-columns: minmax(0, 1fr);
   }
-  .history {
+  .side {
     grid-column: 1;
-    grid-row: 3;
-    max-height: 18rem;
+    height: auto;
+    min-height: 0;
     border-left: none;
-    border-top: 1px solid var(--border);
+    border-top: var(--border-width) solid var(--border);
     padding: var(--space-16) 0 0;
+  }
+  .history {
+    max-height: 18rem;
   }
 }

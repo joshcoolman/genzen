@@ -36,6 +36,7 @@ export async function hydrateCut(
       initialImage: stored.initialImage
         ? await blob(stored.initialImage)
         : null,
+      review: stored.review?.index ?? null,
     },
     archives,
   }

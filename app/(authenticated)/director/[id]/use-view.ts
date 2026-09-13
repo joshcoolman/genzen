@@ -1,7 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { dismissClip, pollClip, startClip } from '../_actions/generate.action'
+import {
+  dismissClip,
+  endReview,
+  pollClip,
+  startClip,
+} from '../_actions/generate.action'
 import {
   loadSession,
   updateOpening,
@@ -119,29 +124,34 @@ export function useView(initial: Session) {
       if (isAlive()) setBusy(false)
     }
   }
-  async function submit(redo: boolean) {
+  async function run(
+    text: string,
+    replace: number | null,
+    duration?: Settings['duration'],
+  ) {
     if (
       !ready ||
       working.current ||
       current.current.cut.pending ||
-      !promptRef.current.trim()
+      !text.trim()
     )
       return
     working.current = true
     setBusy(true)
     setError(null)
     try {
-      await flushDraft()
+      if (replace === null) await flushDraft()
       setStatus('Submitting one clip...')
       const next = await startClip(
         initial.id,
         current.current.revision,
         crypto.randomUUID(),
-        promptRef.current.trim(),
-        redo,
+        text.trim(),
+        replace,
+        duration,
       )
       await apply(next)
-      if (isAlive()) changePrompt('')
+      if (isAlive() && replace === null) changePrompt('')
     } catch (cause) {
       report(cause)
       const next = await loadSession(initial.id).catch(() => null)
@@ -153,6 +163,14 @@ export function useView(initial: Session) {
         if (pendingRequest()) void recover()
       }
     }
+  }
+  /** The section under review: its replacement loops until it is resolved. */
+  function regenerate(
+    index: number,
+    text: string,
+    duration: Settings['duration'],
+  ) {
+    return run(text, index, duration)
   }
   async function mutate(action: () => Promise<Session>, message = 'Saved') {
     if (!ready || working.current) return
@@ -231,7 +249,19 @@ export function useView(initial: Session) {
       : ready && prompt !== savedDraft.current
         ? 'Draft not saved'
         : status,
-    submit,
+    submit: () => run(promptRef.current, null),
+    review: cut.review,
+    regenerate,
+    approve: () =>
+      mutate(
+        () => endReview(initial.id, current.current.revision, true),
+        'Saved',
+      ),
+    revert: () =>
+      mutate(
+        () => endReview(initial.id, current.current.revision, false),
+        'Section restored',
+      ),
     changeSettings: (settings: Settings) =>
       mutate(() =>
         updateSettings(initial.id, current.current.revision, settings),

@@ -8,16 +8,27 @@ import {
   saveDraft,
   saveState,
 } from './sessions.server'
-import { beginGeneration, dismissGeneration } from './generation.server'
+import {
+  beginGeneration,
+  dismissGeneration,
+  finishReview,
+} from './generation.server'
 import { sql } from '#/lib/server/db.server'
 
-const mocks = vi.hoisted(() => ({ submit: vi.fn(), remove: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  submit: vi.fn(),
+  remove: vi.fn(),
+  download: vi.fn(() => Promise.resolve(new Blob(['frame']))),
+}))
 vi.mock('../_actions/clips.action', () => ({
   submitClip: mocks.submit,
   checkClip: vi.fn(),
 }))
 vi.mock('#/lib/image-storage', () => ({
-  createImageStorage: () => ({ remove: mocks.remove }),
+  createImageStorage: () => ({
+    remove: mocks.remove,
+    download: mocks.download,
+  }),
 }))
 let owner: string
 let stranger: string
@@ -80,7 +91,7 @@ describe('Director durable state', () => {
       0,
       requestId,
       'A sailboat at sea',
-      false,
+      null,
     )
     expect(submitted.cut.pending?.token).toBe('signed-receipt')
     await beginGeneration(
@@ -89,7 +100,7 @@ describe('Director durable state', () => {
       0,
       requestId,
       'A sailboat at sea',
-      false,
+      null,
     )
     await dismissGeneration(owner, session.id, submitted.revision)
     await beginGeneration(
@@ -98,16 +109,98 @@ describe('Director durable state', () => {
       0,
       requestId,
       'A sailboat at sea',
-      false,
+      null,
     )
     expect(mocks.submit).toHaveBeenCalledOnce()
+  })
+  it('holds the clip a rework started from, through every re-roll, until it is resolved', async () => {
+    mocks.submit.mockReset().mockResolvedValue('signed-receipt')
+    const session = await createSession(owner, 'Review')
+    const media = async () => {
+      const id = randomUUID()
+      await sql`insert into director_media (id, session_id, user_id, storage_path, mime_type, size)
+        values (${id}, ${session.id}, ${owner}, ${`test/${id}`}, 'video/mp4', 1)`
+      return id
+    }
+    const clip = async (name: string) => ({
+      id: randomUUID(),
+      prompt: name,
+      mediaId: await media(),
+      endFrameId: await media(),
+      thumbnailId: await media(),
+      duration: 5,
+      model: 'turbo',
+    })
+    const [one, two, three] = [
+      await clip('one'),
+      await clip('two'),
+      await clip('three'),
+    ]
+    let state = await saveState(owner, session, {
+      ...session.cut,
+      clips: [one, two, three],
+    })
+
+    // Two reworks of the same section: the hold stays on the clip it started
+    // from, not on the replacement the first one produced.
+    state = await beginGeneration(
+      owner,
+      session.id,
+      state.revision,
+      randomUUID(),
+      'a different middle',
+      1,
+    )
+    expect(state.cut.review?.original.id).toBe(two.id)
+    const landed = await clip('landed')
+    state = await saveState(owner, state, {
+      ...state.cut,
+      clips: [one, landed, three],
+      pending: null,
+    })
+    state = await beginGeneration(
+      owner,
+      session.id,
+      state.revision,
+      randomUUID(),
+      'another go',
+      1,
+    )
+    expect(state.cut.review?.original.id).toBe(two.id)
+    state = await saveState(owner, state, { ...state.cut, pending: null })
+
+    const reverted = await finishReview(
+      owner,
+      session.id,
+      state.revision,
+      false,
+    )
+    expect(reverted.cut.clips.map((item) => item.id)).toEqual([
+      one.id,
+      two.id,
+      three.id,
+    ])
+    expect(reverted.cut.review).toBeNull()
+    // Approving simply drops the hold.
+    state = await beginGeneration(
+      owner,
+      session.id,
+      reverted.revision,
+      randomUUID(),
+      'keep this one',
+      1,
+    )
+    state = await saveState(owner, state, { ...state.cut, pending: null })
+    const kept = await finishReview(owner, session.id, state.revision, true)
+    expect(kept.cut.review).toBeNull()
+    expect(kept.cut.clips[1].id).toBe(two.id)
   })
   it('keeps an uncertain submission durable after a provider failure', async () => {
     mocks.submit.mockReset().mockRejectedValue(new Error('Connection lost'))
     const session = await createSession(owner, 'Uncertain')
     const requestId = randomUUID()
     await expect(
-      beginGeneration(owner, session.id, 0, requestId, 'Opening scene', false),
+      beginGeneration(owner, session.id, 0, requestId, 'Opening scene', null),
     ).rejects.toThrow('Connection lost')
     const restored = await getSession(owner, session.id)
     expect(restored?.cut.pending?.id).toBe(requestId)
@@ -118,7 +211,7 @@ describe('Director durable state', () => {
       0,
       requestId,
       'Opening scene',
-      false,
+      null,
     )
     expect(mocks.submit).toHaveBeenCalledOnce()
     await expect(deleteSession(owner, session.id)).rejects.toThrow('pending')

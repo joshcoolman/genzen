@@ -34,6 +34,10 @@ export interface PendingClip {
   context: Array<string>
   settings: Settings
   redo: boolean
+  /** The section this request replaces, or null when it appends. `redo` is the
+   * old spelling of "replace the last one" and is kept only so a request saved
+   * before #642 still lands in the right place. */
+  replace?: number | null
   startedAt: number
   token?: string
 }
@@ -43,6 +47,9 @@ export interface Cut {
   settings: Settings
   initialImage: Blob | null
   pending: PendingClip | null
+  /** The section under review, if any. The clip it is holding stays on the
+   * server; the client only needs to know which section is open. */
+  review: number | null
 }
 export function emptyCut(): Cut {
   return {
@@ -51,30 +58,53 @@ export function emptyCut(): Cut {
     settings: { model: 'turbo', resolution: '768P', duration: 5 },
     initialImage: null,
     pending: null,
+    review: null,
   }
 }
 
-/** Redo rolls back the *inputs*, never continues from the rejected ending. */
-export function generationBase(cut: Cut, redo: boolean) {
-  if (redo && (!cut.clips.length || cut.clips.at(-1)?.imported))
-    throw new Error('Imported recordings can be continued, but not redone.')
-  const preceding = redo ? cut.clips.slice(0, -1) : cut.clips
+/** A replacement rolls back the *inputs*, never continues from the rejected
+ * ending. It is also pinned at both seams when a later section exists: the
+ * replaced clip's own ending frame is the frame the next section opened on,
+ * so ending there is what keeps that join. */
+export function generationBase(cut: Cut, replace: number | null) {
+  if (replace !== null) {
+    if (replace >= cut.clips.length)
+      throw new Error('That section no longer exists.')
+    if (cut.clips[replace].imported)
+      throw new Error('Imported recordings can be continued, but not redone.')
+  }
+  const preceding =
+    replace === null ? cut.clips : cut.clips.slice(0, Math.max(0, replace))
   if (preceding.length >= 50)
     throw new Error('This experiment supports up to 50 sections per cut.')
+  const tail =
+    replace !== null && replace < cut.clips.length - 1
+      ? cut.clips[replace].endFrame
+      : null
   return {
     image: preceding.at(-1)?.endFrame ?? cut.initialImage,
+    tail,
     context: preceding.map((clip) => clip.prompt),
   }
 }
 
+/** Where a finished request lands. */
+export function replacedIndex(pending: PendingClip, clips: number) {
+  if (pending.replace !== undefined && pending.replace !== null)
+    return pending.replace
+  return pending.redo ? clips - 1 : null
+}
+
 export function completeClip(cut: Cut, pending: PendingClip, clip: Clip): Cut {
   if (cut.pending?.id !== pending.id) return cut
+  const at = replacedIndex(pending, cut.clips.length)
   return {
     ...cut,
     pending: null,
-    clips: pending.redo
-      ? [...cut.clips.slice(0, -1), clip]
-      : [...cut.clips, clip],
+    clips:
+      at === null
+        ? [...cut.clips, clip]
+        : cut.clips.map((existing, index) => (index === at ? clip : existing)),
   }
 }
 
