@@ -49,10 +49,20 @@ source images; `use-view.ts` owns everything after the first paint.
   renders no Aspect row and the submit sends no `aspect_ratio`. A control with
   no options would say the choice exists and had been taken away.
 - **Images carry roles (#516).** One thumbnail strip under the prompts, with
-  First frame / Reference / Last frame on every image. The first added image
-  defaults to First frame; subsequent additions default to Reference. The
+  First frame / Reference / Last frame on every image. The
   library picker also supports uploading. Clearing or changing roles never
   silently reassigns another image.
+
+  **An added image defaults to Reference wherever the model takes one.** The
+  first one defaulted to First frame until 2026-09-13, which is the wrong guess
+  on a reference-capable model: adding a picture then meant changing its role
+  before adding the next, every time. A first frame is a specific intent --
+  start the clip on exactly this -- and it is one click on the chip; a
+  reference is what a picture usually is. A model with no reference endpoint
+  keeps the old default, because there the first image has one place to go.
+  The `?image=` handoff still lands as First frame: that route is "animate this
+  still", and it says so.
+
 - **Capabilities select the model, never the input.** `imageCompatibility` in
   `src/features/video/inputs.ts` drives unavailable model explanations and the
   server validation. A compatible selection stays selected; otherwise the

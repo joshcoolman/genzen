@@ -674,17 +674,31 @@ export function useView(initialVideos: Array<VideoRecord>) {
         toast.error(`Add up to ${MAX_VIDEO_IMAGES} images`)
         return
       }
+      /* Reference, wherever the model has somewhere to put one. The first
+         image used to default to First frame, which is the wrong guess on a
+         model that takes references: adding one picture then meant changing
+         its role before adding the next, every time. A first frame is a
+         specific intent -- start the clip on exactly this -- and it is one
+         click on the chip; a reference is what a picture usually is.
+
+         A model with no reference endpoint keeps the old default, because
+         there the first image genuinely has one place to go. */
+      const acceptsReferences = !!model.endpoints.withReferences?.references
+
       setSources([
         ...sources,
         ...added.map(
           (image, index): SourceImage => ({
             ...image,
-            role: sources.length === 0 && index === 0 ? 'first' : 'reference',
+            role:
+              !acceptsReferences && sources.length === 0 && index === 0
+                ? 'first'
+                : 'reference',
           }),
         ),
       ])
     },
-    [sources],
+    [sources, model],
   )
 
   const removeSource = useCallback(
