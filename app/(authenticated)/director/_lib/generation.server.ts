@@ -52,9 +52,18 @@ export async function beginGeneration(
     replace,
     startedAt: Date.now(),
   }
+  // The clip this section had when the rework began, held so Cancel can put it
+  // back after any number of edits and re-rolls. Reworking a *different*
+  // section drops the previous hold: one section is under review at a time.
+  const review =
+    replace === null
+      ? session.cut.review
+      : session.cut.review?.index === replace
+        ? session.cut.review
+        : { index: replace, original: session.cut.clips[replace] }
   await sql.begin(async (tx) => {
     const changed = await tx`update director_sessions
-      set cut = ${jsonb({ ...session.cut, pending })}, revision = revision + 1, updated_at = now()
+      set cut = ${jsonb({ ...session.cut, pending, review })}, revision = revision + 1, updated_at = now()
       where id = ${id} and user_id = ${owner} and revision = ${revision} returning id`
     if (!changed.length)
       throw new Error(
@@ -152,6 +161,37 @@ export async function recoverGeneration(owner: string, id: string) {
     processing.delete(id)
   }
 }
+/**
+ * Leaving a review: `keep` approves the section as it stands and drops the
+ * held clip, otherwise the held clip goes back.
+ *
+ * The dropped clip's media is not deleted, in step with every other
+ * replacement here -- a saved export may have snapshotted it.
+ */
+export async function finishReview(
+  owner: string,
+  id: string,
+  revision: number,
+  keep: boolean,
+) {
+  const session = await requireSession(owner, id)
+  if (session.cut.pending)
+    throw new Error('Wait for the current request to finish.')
+  const review = session.cut.review
+  if (!review) return session
+  const clips =
+    keep || review.index >= session.cut.clips.length
+      ? session.cut.clips
+      : session.cut.clips.map((clip, index) =>
+          index === review.index ? review.original : clip,
+        )
+  return saveState(
+    owner,
+    { ...session, revision },
+    { ...session.cut, clips, review: null },
+  )
+}
+
 export async function dismissGeneration(
   owner: string,
   id: string,

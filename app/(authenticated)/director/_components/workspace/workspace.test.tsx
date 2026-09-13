@@ -30,6 +30,7 @@ function state(): ReturnType<typeof useView> {
     review: null,
     regenerate: vi.fn(),
     approve: vi.fn(),
+    revert: vi.fn(),
     changeSettings: vi.fn(),
     changeImage: vi.fn(),
     forgetPending: vi.fn(),

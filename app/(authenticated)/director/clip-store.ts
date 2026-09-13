@@ -19,6 +19,7 @@ const cutSchema = z.object({
   ),
   settings: settingsSchema,
   initialImage: blobSchema.nullable(),
+  review: z.number().nullable().default(null),
   pending: z
     .object({
       id: z.string(),
@@ -26,6 +27,7 @@ const cutSchema = z.object({
       context: z.array(z.string()),
       settings: settingsSchema,
       redo: z.boolean(),
+      replace: z.number().nullable().optional(),
       startedAt: z.number(),
       token: z.string().optional(),
     })

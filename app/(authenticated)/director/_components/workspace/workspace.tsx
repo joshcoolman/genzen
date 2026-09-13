@@ -95,6 +95,13 @@ export function Workspace({
                     Regenerate
                   </Button>
                   <Button
+                    disabled={working}
+                    onClick={state.revert}
+                    title="Put back the clip this section had before you started"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
                     variant="primary"
                     disabled={working}
                     onClick={state.approve}

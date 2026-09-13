@@ -1,7 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { dismissClip, pollClip, startClip } from '../_actions/generate.action'
+import {
+  dismissClip,
+  endReview,
+  pollClip,
+  startClip,
+} from '../_actions/generate.action'
 import {
   loadSession,
   updateOpening,
@@ -29,7 +34,6 @@ export function useView(initial: Session) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState('Loading session...')
-  const [review, setReview] = useState<number | null>(null)
   const alive = useRef(false)
   const isAlive = () => alive.current
   const pendingRequest = () => current.current.cut.pending
@@ -160,14 +164,13 @@ export function useView(initial: Session) {
       }
     }
   }
-  /** The section held under review: its replacement loops until approved. */
-  async function regenerate(
+  /** The section under review: its replacement loops until it is resolved. */
+  function regenerate(
     index: number,
     text: string,
     duration: Settings['duration'],
   ) {
-    setReview(index)
-    await run(text, index, duration)
+    return run(text, index, duration)
   }
   async function mutate(action: () => Promise<Session>, message = 'Saved') {
     if (!ready || working.current) return
@@ -247,9 +250,18 @@ export function useView(initial: Session) {
         ? 'Draft not saved'
         : status,
     submit: () => run(promptRef.current, null),
-    review,
+    review: cut.review,
     regenerate,
-    approve: () => setReview(null),
+    approve: () =>
+      mutate(
+        () => endReview(initial.id, current.current.revision, true),
+        'Saved',
+      ),
+    revert: () =>
+      mutate(
+        () => endReview(initial.id, current.current.revision, false),
+        'Section restored',
+      ),
     changeSettings: (settings: Settings) =>
       mutate(() =>
         updateSettings(initial.id, current.current.revision, settings),
@@ -265,13 +277,11 @@ export function useView(initial: Session) {
           media?.mediaId ?? null,
         )
       }),
-    forgetPending: async () => {
-      setReview(null)
-      await mutate(
+    forgetPending: () =>
+      mutate(
         () => dismissClip(initial.id, current.current.revision),
         'Request dismissed',
-      )
-    },
+      ),
     checkRequest: () => {
       if (pollTimer.current) clearTimeout(pollTimer.current)
       void recover()

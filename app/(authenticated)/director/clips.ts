@@ -47,6 +47,9 @@ export interface Cut {
   settings: Settings
   initialImage: Blob | null
   pending: PendingClip | null
+  /** The section under review, if any. The clip it is holding stays on the
+   * server; the client only needs to know which section is open. */
+  review: number | null
 }
 export function emptyCut(): Cut {
   return {
@@ -55,6 +58,7 @@ export function emptyCut(): Cut {
     settings: { model: 'turbo', resolution: '768P', duration: 5 },
     initialImage: null,
     pending: null,
+    review: null,
   }
 }
 

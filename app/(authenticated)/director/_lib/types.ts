@@ -24,12 +24,19 @@ export const pendingSchema = z.object({
   startedAt: z.number(),
   token: z.string().max(2048).optional(),
 })
+/** The section being reworked, and the clip it had when the rework started.
+ * Held so Cancel can put it back after any number of edits and re-rolls. */
+export const reviewSchema = z.object({
+  index: z.number().int().min(0).max(49),
+  original: storedClipSchema,
+})
 export const storedCutSchema = z.object({
   version: z.literal(1),
   clips: z.array(storedClipSchema).max(50),
   settings: settingsSchema,
   initialImage: idSchema.nullable(),
   pending: pendingSchema.nullable(),
+  review: reviewSchema.nullable().default(null),
   archives: z
     .array(
       z.object({
@@ -86,6 +93,7 @@ export function emptyStoredCut(): StoredCut {
     settings: { model: 'turbo', resolution: '768P', duration: 5 },
     initialImage: null,
     pending: null,
+    review: null,
     archives: [],
   }
 }
@@ -101,6 +109,15 @@ export function cutMediaIds(cut: StoredCut) {
         clip.endFrameId,
         clip.thumbnailId,
       ]),
+      // The held original counts as in use: an export deletion reads this list
+      // to decide what it may remove, and Cancel still needs those bytes.
+      ...(cut.review
+        ? [
+            cut.review.original.mediaId,
+            cut.review.original.endFrameId,
+            cut.review.original.thumbnailId,
+          ]
+        : []),
       ...cut.archives.map((archive) => archive.mediaId),
     ]),
   ]

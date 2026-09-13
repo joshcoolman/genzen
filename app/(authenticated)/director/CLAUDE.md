@@ -29,12 +29,19 @@
 - Regenerate re-rolls a section as it stands -- same direction, its own length
   snapped to an offered value -- with no dialog. It is the same paid request
   as an edit, and lands in the same review.
-- There is no take history and no undo: the old clip is gone the moment a
-  replacement lands. The new one loops on its own until Approve, which lets
-  playback run on into the next section; Edit reopens the dialog and spends
-  again. `pending.replace` is the section index; `pending.redo` is its old
-  boolean spelling, kept only so a request saved before #643 still lands in
-  the right place. Exports are immutable snapshots.
+- One section is under review at a time, and it is server state
+  (`cut.review = { index, original }`), so it survives a reload. The
+  replacement loops on that section until it is resolved: Approve keeps it and
+  drops the hold, Cancel puts `original` back. **`original` is the clip the
+  rework started from, not the previous one** -- it survives any number of
+  edits and re-rolls, and only a rework of a *different* section drops it.
+  Its media counts as in use (`cutMediaIds`), or an export deletion could take
+  the bytes Cancel needs. There is no history beyond that one clip.
+  `pending.replace` is the section index; `pending.redo` is its old boolean
+  spelling, kept only so a request saved before #643 still lands in the right
+  place. Exports are immutable snapshots.
+- A clip dropped by an approved rework is not deleted from the bucket, in step
+  with every other replacement here: a saved export may have snapshotted it.
 - Session deletion owns all its media. Keep the session record until bucket
   cleanup succeeds so deletion can be retried.
 - Import preserves browser-local source data. Server-saved sessions in local
