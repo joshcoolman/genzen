@@ -36,7 +36,7 @@ export interface PendingClip {
   redo: boolean
   /** The section this request replaces, or null when it appends. `redo` is the
    * old spelling of "replace the last one" and is kept only so a request saved
-   * before #643 still lands in the right place. */
+   * before #642 still lands in the right place. */
   replace?: number | null
   startedAt: number
   token?: string

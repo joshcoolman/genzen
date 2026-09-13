@@ -10,14 +10,14 @@
 - Save required media before publishing a cut. Revisions reject stale edits.
   Keep pending submission intent before spending and its receipt before returning.
   An uncertain submission must never automatically submit again.
-- Any section can be regenerated (#643), not just the latest: pause on it and
+- Any section can be regenerated (#642), not just the latest: pause on it and
   Edit. A replacement rolls back to that section's original starting frame and
   its preceding directions, and a **middle** section is also pinned at its far
   seam -- `end_image_url` is the replaced clip's own ending frame, which is the
   frame the next section opened from, so the join survives. The last section
   has no such frame and is free to end anywhere. Both H3 Max endpoints accept
   `end_image_url` (checked against fal's schema, 2026-09-13).
-- Enhance (#643) rewrites one section's direction in the dialog, and only
+- Enhance (#642) rewrites one section's direction in the dialog, and only
   there: `_lib/enhance.server.ts` sends Claude the same two boundary frames,
   the duration and the prior directions, and returns `{ direction, fit }` --
   `fit` is one sentence when the events need more seconds than the section
@@ -34,11 +34,11 @@
   replacement loops on that section until it is resolved: Approve keeps it and
   drops the hold, Cancel puts `original` back. **`original` is the clip the
   rework started from, not the previous one** -- it survives any number of
-  edits and re-rolls, and only a rework of a *different* section drops it.
+  edits and re-rolls, and only a rework of a _different_ section drops it.
   Its media counts as in use (`cutMediaIds`), or an export deletion could take
   the bytes Cancel needs. There is no history beyond that one clip.
   `pending.replace` is the section index; `pending.redo` is its old boolean
-  spelling, kept only so a request saved before #643 still lands in the right
+  spelling, kept only so a request saved before #642 still lands in the right
   place. Exports are immutable snapshots.
 - A clip dropped by an approved rework is not deleted from the bucket, in step
   with every other replacement here: a saved export may have snapshotted it.
