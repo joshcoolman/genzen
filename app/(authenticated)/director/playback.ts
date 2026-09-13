@@ -150,12 +150,11 @@ export class CutPlayback {
     if (this.paused) this.toggle()
     this.preload()
   }
-  /** Move to a section and hold there: clicking a section is a seek, not a play. */
+  /** Move to a section and play it from its first frame. */
   jump(index: number) {
     if (index < 0 || index >= this.clips.length) return
-    this.paused = true
+    this.paused = false
     this.go(index)
-    this.changed(this.active, this.index, true)
   }
   toggle() {
     this.paused = !this.paused
