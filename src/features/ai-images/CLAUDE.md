@@ -207,6 +207,15 @@ transport concern, and the library row keeps its full-resolution original.
   `app/(authenticated)/lab/enhance` since #424 — the panel's button and the
   `prompt-origins` map that recorded its before/after both went with it. The
   action is unchanged; only the surface that calls it moved.
+- **`meta-prompt.action.ts` is the third writer: pictures in, several prompts
+  out (#645).** It is not another flavour of the other two -- it is the only one
+  that looks at the staged reference set, and the only one that returns a list.
+  **One call writes the whole set on purpose.** Sheets prompted one at a time
+  drift apart in layout and level of detail; siblings written by one completion
+  agree, because the model can see they were asked for together. That is the
+  entire mechanism, and it is why there is no roles field, no schema tying a
+  prompt back to a reference and no review step -- what comes back is an ordered
+  `string[]` that lands in the prompt list as ordinary rows.
 
 ## Decisions worth not relitigating
 

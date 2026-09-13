@@ -1,0 +1,22 @@
+.content {
+  max-width: 30rem;
+}
+
+/* Wraps rather than scrolls: a reference off the right edge is one you forget
+   is in the set, and the strip is rarely more than a handful. */
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.thumb {
+  width: 3.5rem;
+  height: 3.5rem;
+  flex: none;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--slot-empty);
+  background-size: cover;
+  background-position: center;
+}

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { PromptList } from '../prompt-list/prompt-list'
 import { GeneratePromptButton } from '../generate-prompt-dialog/generate-prompt-dialog'
+import { MetaPromptButton } from '../meta-prompt-dialog/meta-prompt-dialog'
 import { ExistingImagePicker } from '../existing-image-picker/existing-image-picker'
 import { ModelSelector } from '../model-selector/model-selector'
 import styles from './generator-panel.module.css'
@@ -97,12 +98,20 @@ export function GeneratorPanel({
    * open to add several, and overwriting on the second Apply would silently
    * eat the first.
    */
-  function addGeneratedPrompt(text: string) {
+  function addGeneratedPrompts(texts: Array<string>) {
+    if (texts.length === 0) return
     const untouched =
       generator.prompts.length === 1 && generator.prompts[0].trim() === ''
-    if (untouched) generator.setPromptAtIndex(0, text)
-    else generator.appendPrompts([text])
+    if (untouched) {
+      const [first, ...rest] = texts
+      generator.setPromptAtIndex(0, first)
+      if (rest.length > 0) generator.appendPrompts(rest)
+    } else {
+      generator.appendPrompts(texts)
+    }
   }
+
+  const addGeneratedPrompt = (text: string) => addGeneratedPrompts([text])
 
   /**
    * A big run says how big before it starts. Cancel returns without submitting
@@ -152,10 +161,22 @@ export function GeneratorPanel({
            System instructions are not here at all any more -- they are the
            header's, on all three surfaces that render this panel. */
         actionSlot={
-          <GeneratePromptButton
-            onAdd={addGeneratedPrompt}
-            disabled={generator.loading}
-          />
+          <>
+            <GeneratePromptButton
+              onAdd={addGeneratedPrompt}
+              disabled={generator.loading}
+            />
+            {/* Only with something to work from (#645). Without references it
+                would be Generate prompt with an extra field, and the whole
+                mechanism is that the model is looking at the staged set. */}
+            {generator.refImages.length > 0 && (
+              <MetaPromptButton
+                images={generator.refImages}
+                onAdd={addGeneratedPrompts}
+                disabled={generator.loading}
+              />
+            )}
+          </>
         }
       />
 
