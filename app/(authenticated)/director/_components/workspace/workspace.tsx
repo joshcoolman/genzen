@@ -57,6 +57,9 @@ export function Workspace({
   })
   const locked = !state.ready || state.busy || !!cut.pending
   const canSend = !locked && !!state.prompt.trim()
+  // Submitting, then polling: `pending` spans the wait, `busy` covers the
+  // moment before the request has been accepted.
+  const working = state.busy || !!cut.pending
   return (
     <div className={styles.workspace} data-opening={opening || undefined}>
       {!opening && (
@@ -68,15 +71,17 @@ export function Workspace({
             overlay={
               review !== null ? (
                 <>
-                  <Button
-                    disabled={state.busy || !!cut.pending}
-                    onClick={() => setEditing(review)}
-                  >
+                  {working && (
+                    <span role="status" className={styles.working}>
+                      Generating edit…
+                    </span>
+                  )}
+                  <Button disabled={working} onClick={() => setEditing(review)}>
                     Edit
                   </Button>
                   <Button
                     variant="primary"
-                    disabled={state.busy || !!cut.pending}
+                    disabled={working}
                     onClick={state.approve}
                   >
                     Approve

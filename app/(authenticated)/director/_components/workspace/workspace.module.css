@@ -86,6 +86,17 @@
   outline-offset: 2px;
 }
 
+/* Shown over the footage while the old clip keeps looping. */
+.working {
+  display: flex;
+  align-items: center;
+  padding-inline: var(--space-12);
+  border-radius: var(--radius);
+  background: var(--image-backing);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
 .pending {
   padding-top: var(--space-12);
   display: flex;
