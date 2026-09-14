@@ -9,6 +9,16 @@ source images; `use-view.ts` owns everything after the first paint.
 
 ## Quirks
 
+- **A clip's `title` is its name; the model it was made with reads from
+  `generation_metadata.model_label`** (#657). Until then `title` was the label
+  and nothing else ever wrote there, so a clip could not be called "scene two".
+  `clipModel`/`clipName` in `src/features/video/clip-facts.ts` decide which is
+  which, and no migration was needed because `clipModel` falls back to `title`
+  -- every row written before naming existed still reads exactly as it did.
+  **A clip has a name only once someone gives it one**: a title equal to the
+  model label is no name, so the card prints nothing rather than the same words
+  twice. Naming is done from Lab/Sequence, through `updateImageMeta` -- the
+  action Images renames stills with.
 - Saved Director rough exports appear here and in every Lab video picker (#607).
   They are ordinary completed `ai_video` rows with `origin = director`, separate
   files and stored session/export provenance. Video's deletion does not affect

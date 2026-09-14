@@ -1,11 +1,11 @@
 'use client'
 
 import { Fragment, useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Pencil, Plus, X } from 'lucide-react'
 import { ClipFrames } from '../../../_components/clip-frames/clip-frames'
 import styles from './clip-row.module.css'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
-import { clipFacts } from '#/features/video/clip-facts'
+import { clipFacts, clipName } from '#/features/video/clip-facts'
 import { cx } from '#/lib/utils'
 
 /** The edge of one frame. Paired with `--tile` in the stylesheet, which is what
@@ -58,6 +58,10 @@ const TILE = 108
  * Native HTML drag and drop, not pointer maths: tiles that only ever reorder
  * are exactly what it is for, and the browser draws the drag image itself.
  *
+ * **A pencil names the clip** (#657) -- the run is where an order becomes
+ * "intro", "scene two", and the name it gets here is the name it has on the
+ * Video wall, because it is the clip's own `title`.
+ *
  * **A tap on a tile plays the run from that clip** (#655) -- the row is the
  * transport, which is why there is no longer a bar of buttons under the player.
  * Click and drag need no disambiguating: a browser does not fire `click` after
@@ -70,6 +74,7 @@ export function ClipRow({
   onRemove,
   onMove,
   onPlayFrom,
+  onRename,
 }: {
   clips: Array<VideoRecord>
   /** Where the player is in the run, so the row can say so (#512). */
@@ -79,6 +84,8 @@ export function ClipRow({
   onMove: (from: number, to: number) => void
   /** Play the run from this clip's first frame (#655). */
   onPlayFrom: (index: number) => void
+  /** Open the naming dialog for this clip (#657). */
+  onRename: (clip: VideoRecord) => void
 }) {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
   /** The slot the clip would land in: 0 is before the first tile, `length` is
@@ -156,12 +163,25 @@ export function ClipRow({
                 rearranging is where in the run this sits. */}
             <span className={styles.ordinal}>{index + 1}</span>
             <ClipFrames clip={clip} size={TILE} alt={clipFacts(clip)} />
+            {/* Both corner buttons stop the click: the tile behind them plays
+                the run, and neither naming a clip nor dropping one is also a
+                request to watch it. */}
+            <button
+              type="button"
+              className={styles.rename}
+              onClick={(e) => {
+                e.stopPropagation()
+                onRename(clip)
+              }}
+              aria-label="Name this clip"
+              title="Name this clip"
+            >
+              <Pencil size={12} />
+            </button>
             <button
               type="button"
               className={styles.remove}
               onClick={(e) => {
-                // The tile behind it plays the run; removing a clip is not
-                // also a request to watch from it.
                 e.stopPropagation()
                 onRemove(clip.id)
               }}
@@ -169,6 +189,13 @@ export function ClipRow({
             >
               <X size={12} />
             </button>
+            {/* In the corner opposite the ordinal, and out of the flow: a name
+                that took its own line would make named tiles taller than
+                unnamed ones and the row ragged. Absent until there is one, so
+                nothing is printed on a clip still called after its model. */}
+            {clipName(clip) ? (
+              <span className={styles.name}>{clipName(clip)}</span>
+            ) : null}
           </div>
         </Fragment>
       ))}

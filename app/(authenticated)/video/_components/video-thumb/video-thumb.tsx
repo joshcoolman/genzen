@@ -18,6 +18,8 @@ import type { VideoRecord } from '../../_actions/generate-video.action'
 import {
   aspectLabel,
   aspectRatio,
+  clipModel,
+  clipName,
   namedRatio,
 } from '#/features/video/clip-facts'
 import {
@@ -86,6 +88,7 @@ export function VideoThumb({
   onSelect: (id: string, shiftKey: boolean) => void
 }) {
   const duration = durationOf(video)
+  const name = clipName(video)
   /* Snapped to the shape it reads as, not the exact rectangle FAL returned.
      One 21:9 request comes back as both 1504x672 and 1568x672; sized from the
      raw ratio, two cards captioned `21:9` sat at different heights beside each
@@ -291,6 +294,11 @@ export function VideoThumb({
             it is not in the menu -- and icon-only, because at three cards
             across the word was the only text competing with the prompt for
             its line. */}
+        {/* The name, above the prompt and only once there is one (#657). A
+            clip is born called after the model that made it, and printing that
+            here would put the same words on two lines of every card. */}
+        {name ? <p className={styles.name}>{name}</p> : null}
+
         <div className={styles.promptRow}>
           <p className={styles.prompt}>{video.description}</p>
           {isDone ? (
@@ -316,7 +324,7 @@ export function VideoThumb({
         <div className={styles.facts}>
           {shape ? <span className={styles.fact}>{shape}</span> : null}
           {duration ? <span className={styles.fact}>{duration}</span> : null}
-          <span className={styles.model}>{video.title}</span>
+          <span className={styles.model}>{clipModel(video)}</span>
         </div>
       </div>
     </article>

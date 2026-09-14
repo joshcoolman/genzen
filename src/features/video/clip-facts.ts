@@ -97,12 +97,43 @@ export function aspectLabel(ratio: number | null): string | null {
 }
 
 /**
- * What a clip says about itself in one line: the model, how long it runs, and
- * its shape.
+ * The model that made a clip.
+ *
+ * **`title` held this and no longer does.** A clip's row was titled with the
+ * model label at submit and again at completion, and nothing else ever wrote
+ * there -- so the label and the clip's name were one field, and a clip could
+ * not be called "scene two". Naming takes `title` over; the label reads from
+ * the copy that has sat beside it in `generation_metadata` since #367, pinned
+ * at submit so cutting a model from the lineup does not rename its clips.
+ *
+ * `title` is the fallback, which is what makes this need no migration: every
+ * row written before a clip could be named still holds the label there, and
+ * one without the metadata copy reads exactly as it did.
+ */
+export function clipModel(clip: ClipShape): string {
+  const label = (clip.generation_metadata ?? {}).model_label
+  return typeof label === 'string' && label ? label : clip.title
+}
+
+/**
+ * The name a person gave this clip, or null while it is still called after the
+ * model that made it.
+ *
+ * Derived rather than stored, so there is no "has been renamed" flag to keep
+ * true: a clip named back to its model's label is a clip with no name, which
+ * is the same thing it looks like.
+ */
+export function clipName(clip: ClipShape): string | null {
+  const model = clipModel(clip)
+  return clip.title && clip.title !== model ? clip.title : null
+}
+
+/**
+ * What a clip says about itself in one line: its name if it has one, the model,
+ * how long it runs, and its shape.
  *
  * The duration is on `generation_metadata`, the same field the Video route's
- * card reads it from. `title` is the model name -- that is what the video
- * pipeline puts there, and it is why a picker full of clips is readable at all.
+ * card reads it from.
  *
  * The shape is here because clips of different shapes cannot cut together
  * (#512), so it is a fact about whether two of these belong in one run, not
@@ -111,7 +142,12 @@ export function aspectLabel(ratio: number | null): string | null {
 export function clipFacts(clip: ClipShape): string {
   const seconds = (clip.generation_metadata ?? {}).duration_seconds
   const ratio = aspectLabel(aspectRatio(clip))
-  return [clip.title, typeof seconds === 'number' ? `${seconds}s` : null, ratio]
+  return [
+    clipName(clip),
+    clipModel(clip),
+    typeof seconds === 'number' ? `${seconds}s` : null,
+    ratio,
+  ]
     .filter(Boolean)
     .join(' · ')
 }

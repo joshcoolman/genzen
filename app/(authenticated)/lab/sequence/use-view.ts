@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { aspectRatio } from '#/features/video/clip-facts'
+import { updateImageMeta } from '#/features/user-images/server/images.action'
 
 /**
  * A run of clips, in the order they should be watched.
@@ -50,6 +51,38 @@ export function useView(clips: Array<VideoRecord>) {
   }, [])
 
   const clear = useCallback(() => setPicked([]), [])
+  /** The clip whose name is being edited, or null (#657). */
+  const [renaming, setRenaming] = useState<VideoRecord | null>(null)
+
+  /**
+   * Name a clip, on the clip's own row.
+   *
+   * **This is the one thing on the page that outlives the page.** A run is not
+   * stored -- that bargain holds -- but a name is a fact about a clip, so it
+   * goes where every other surface will read it: `user_images.title`, through
+   * the action Images already renames stills with. Nothing lab-shaped is being
+   * persisted, which is what keeps this on the right side of the rule.
+   *
+   * Written through optimistically and rolled back on failure. The run is a
+   * local copy of rows, so the server's answer is not what the row is read
+   * from -- and a name that appears, then vanishes, is a clearer failure than
+   * one that takes a round trip to show up while you are typing the next one.
+   */
+  const renameClip = useCallback(async (clip: VideoRecord, title: string) => {
+    const apply = (value: string) =>
+      setPicked((current) =>
+        current.map((c) => (c.id === clip.id ? { ...c, title: value } : c)),
+      )
+    apply(title)
+    setRenaming(null)
+    try {
+      // `description` is passed back as it stands: the action writes both
+      // columns, so omitting it would clear the clip's prompt.
+      await updateImageMeta(clip.id, title, clip.description)
+    } catch {
+      apply(clip.title)
+    }
+  }, [])
 
   /** Lift one clip out and drop it in at `to`, everything else closing up. */
   const move = useCallback((from: number, to: number) => {
@@ -86,5 +119,8 @@ export function useView(clips: Array<VideoRecord>) {
     removeClip,
     clear,
     move,
+    renaming,
+    setRenaming,
+    renameClip,
   }
 }

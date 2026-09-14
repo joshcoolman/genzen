@@ -118,6 +118,20 @@
   padding: var(--space-8) var(--space-12) var(--space-12);
 }
 
+/* The clip's name, when a person has given it one (#657). Full strength and a
+   step up from the prompt under it: the prompt says what was asked for, the
+   name says what this clip *is* in a sequence, and that is the line being
+   scanned for on a wall of them. One line -- a name long enough to wrap is a
+   description, and there is already a field for that. */
+.name {
+  overflow: hidden;
+  margin: 0;
+  color: var(--text);
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 /* The prompt, at the size a still's caption uses (#367): `--text-3xs` at 1.5,
    clamped to three lines. It read at `--text-sm` here, which made the same
    sentence look like a different kind of text depending on which route you

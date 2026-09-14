@@ -24,6 +24,12 @@ into order, click one to watch from there.
   click on tile 1; adding the first clip starts the run. Only Mute is left,
   because it is the one control no thumbnail click can reach. Click and drag
   need no disambiguating — a browser fires no `click` after a completed drag.
+- **A pencil on a tile names the clip** (#657), and the name is the clip's own
+  `title` -- so a run arranged here shows up on the Video wall as "intro",
+  "scene two". The run itself is still not stored; a name is a fact about a
+  clip, not about the arrangement, which is what keeps this inside the
+  no-lab-state rule. It writes through `updateImageMeta`, optimistically, and
+  the run keeps playing behind the dialog.
 - **No scrubber, still.** A `<video>`'s native bar knows only its own clip, so
   it would read 0:00-0:06 of whichever one is showing and reset at every join. A
   scrubber of our own is worse: one that spans clips needs a global timeline,

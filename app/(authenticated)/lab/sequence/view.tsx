@@ -9,6 +9,8 @@ import { useView } from './use-view'
 import styles from './view.module.css'
 import type { SequencePlayerHandle } from './_components/sequence-player/sequence-player'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
+import { clipName } from '#/features/video/clip-facts'
+import { NameDialog } from '#/components'
 
 /**
  * The player on top, the run underneath it -- the shape of an editor without
@@ -42,6 +44,7 @@ export function View({ clips }: { clips: Array<VideoRecord> }) {
           onRemove={view.removeClip}
           onMove={view.move}
           onPlayFrom={(index) => player.current?.playFrom(index)}
+          onRename={view.setRenaming}
         />
 
         {view.picked.length > 0 && (
@@ -52,6 +55,20 @@ export function View({ clips }: { clips: Array<VideoRecord> }) {
           </div>
         )}
       </div>
+
+      {/* A name, and nothing else -- the run keeps playing behind it (#657).
+          The clip is born called after the model that made it, so the field
+          opens empty rather than seeded with a label nobody typed. */}
+      <NameDialog
+        open={view.renaming !== null}
+        title="Name this clip"
+        initialName={view.renaming ? (clipName(view.renaming) ?? '') : ''}
+        confirmLabel="Save"
+        onSubmit={(name) => {
+          if (view.renaming) void view.renameClip(view.renaming, name)
+        }}
+        onCancel={() => view.setRenaming(null)}
+      />
 
       {/* Every clip you have is pickable -- a run has no length of its own, so
           the only honest cap is the library. The picker was written for more
