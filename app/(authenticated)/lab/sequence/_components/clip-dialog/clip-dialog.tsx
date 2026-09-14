@@ -20,6 +20,9 @@ export interface GenFormState {
   frameLoading: boolean
   frameError: string | null
   onDropFrame: () => void
+  endFrame: GenFrame | null
+  endFrameLoading: boolean
+  onDropEndFrame: () => void
   prompt: string
   onPromptChange: (value: string) => void
   duration: number

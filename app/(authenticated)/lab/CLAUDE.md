@@ -33,6 +33,14 @@ order, click one to watch from there.
     `generation_metadata` -- so nothing new is stored to make it possible. The
     clip that drops out of the run is still in Video, untouched. Re-rolls you
     did not keep accumulate there and are cleaned up by hand.
+  - **A clip in the middle is pinned at both ends**, so the joins either side
+    survive and the prompt is only about what happens in between. The far seam
+    is **the clip's own ending frame, not the next clip's beginning** -- the
+    same picture whenever the next clip was continued from this one, and the
+    only one of the two already in the library, so pinning costs a query rather
+    than decoding a second clip. Director answered this identically (#642). The
+    last clip of a run gets no ending frame: nothing joins after it. Either
+    frame can be dropped, which is how a deliberate change of ending is made.
   - **A clip being made holds its place in the row and cannot be played or
     dragged.** There is nothing behind `/img/[id]` until FAL answers, and a run
     rearranged around a picture nobody has seen is an arrangement judged blind.

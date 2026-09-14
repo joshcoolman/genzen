@@ -40,6 +40,9 @@ export function GenForm({
   frameLoading,
   frameError,
   onDropFrame,
+  endFrame,
+  endFrameLoading,
+  onDropEndFrame,
   prompt,
   onPromptChange,
   duration,
@@ -56,6 +59,11 @@ export function GenForm({
   /** Reading it failed. The form still works -- without the frame. */
   frameError: string | null
   onDropFrame: () => void
+  /** The frame the clip has to end on, pinning the join to whatever follows it
+   *  in the run. Null when nothing follows, which is most of the time. */
+  endFrame: GenFrame | null
+  endFrameLoading: boolean
+  onDropEndFrame: () => void
   prompt: string
   onPromptChange: (value: string) => void
   duration: number
@@ -68,39 +76,48 @@ export function GenForm({
   onSubmit: () => void
 }) {
   const model = genModel()
-  const images = frame ? [{ id: frame.id, role: 'first' as const }] : []
+  const images = [
+    ...(frame ? [{ id: frame.id, role: 'first' as const }] : []),
+    ...(endFrame ? [{ id: endFrame.id, role: 'last' as const }] : []),
+  ]
   const cost = estimateVideoCost(model, duration, undefined, images)
 
   return (
     <div className={styles.form}>
       <div className={styles.frame}>
-        {frameLoading ? (
-          <div className={cx(styles.slot, styles.slotBusy)}>
-            Reading the last frame
-          </div>
-        ) : frame ? (
-          <div className={styles.thumb}>
-            <Thumbnail url={frame.url} alt={frame.title} />
-            <button
-              type="button"
-              className={styles.drop}
-              onClick={onDropFrame}
-              aria-label="Generate without a starting frame"
-              title="Generate without a starting frame"
-            >
-              <X size={12} />
-            </button>
-          </div>
-        ) : (
-          <div className={styles.slot}>No starting frame</div>
+        <FrameSlot
+          frame={frame}
+          loading={frameLoading}
+          empty="No starting frame"
+          dropLabel="Generate without a starting frame"
+          onDrop={onDropFrame}
+        />
+
+        {/* Only where the run continues past this clip. Appending has no far
+            seam -- the last clip of a run is free to end anywhere. */}
+        {(endFrame || endFrameLoading) && (
+          <>
+            <span className={styles.arrow} aria-hidden>
+              &rarr;
+            </span>
+            <FrameSlot
+              frame={endFrame}
+              loading={endFrameLoading}
+              empty="No ending frame"
+              dropLabel="Let this clip end anywhere"
+              onDrop={onDropEndFrame}
+            />
+          </>
         )}
 
         <p className={styles.frameNote}>
           {frameError
             ? frameError
-            : frame
-              ? 'Starts on the frame the clip before it ended on.'
-              : 'Starts from nothing. A hard cut into the run.'}
+            : endFrame
+              ? 'Pinned at both ends, so the joins either side survive. Say what happens in between.'
+              : frame
+                ? 'Starts on the frame the clip before it ended on.'
+                : 'Starts from nothing. A hard cut into the run.'}
         </p>
       </div>
 
@@ -130,7 +147,7 @@ export function GenForm({
         {/* Only without a frame. With one the endpoint has no ratio parameter
             and the output follows the picture, so a control here would offer a
             choice that is not taken. */}
-        {!frame && (
+        {!frame && !endFrame && (
           <div className={styles.pills} role="group" aria-label="Aspect ratio">
             {genRatios().map((value) => (
               <button
@@ -158,6 +175,40 @@ export function GenForm({
             before the press. */}
         <CostNote cents={cost} />
       </div>
+    </div>
+  )
+}
+
+/** One end of the clip: a frame, a spinner, or the space where one would be. */
+function FrameSlot({
+  frame,
+  loading,
+  empty,
+  dropLabel,
+  onDrop,
+}: {
+  frame: GenFrame | null
+  loading: boolean
+  empty: string
+  dropLabel: string
+  onDrop: () => void
+}) {
+  if (loading) {
+    return <div className={cx(styles.slot, styles.slotBusy)}>Reading it</div>
+  }
+  if (!frame) return <div className={styles.slot}>{empty}</div>
+  return (
+    <div className={styles.thumb}>
+      <Thumbnail url={frame.url} alt={frame.title} />
+      <button
+        type="button"
+        className={styles.drop}
+        onClick={onDrop}
+        aria-label={dropLabel}
+        title={dropLabel}
+      >
+        <X size={12} />
+      </button>
     </div>
   )
 }

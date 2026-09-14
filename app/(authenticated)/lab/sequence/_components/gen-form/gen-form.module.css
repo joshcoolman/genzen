@@ -108,3 +108,11 @@
   gap: var(--space-6);
   align-items: flex-start;
 }
+
+/* Between the two ends, when both are pinned: the clip is what happens from
+   the frame on the left to the frame on the right. */
+.arrow {
+  flex: none;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}

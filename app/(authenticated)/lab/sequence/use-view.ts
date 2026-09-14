@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { generateVideo } from '../../video/_actions/generate-video.action'
 import { readRunIds, writeRunIds } from './last-run'
 import { GEN_MODEL_SLUG, genModel, nearestGenRatio } from './gen'
-import { playableClips, toPlayableIndex, toRowIndex } from './run'
+import { isPending, playableClips, toPlayableIndex, toRowIndex } from './run'
 import type { GenFrame } from './_components/gen-form/gen-form'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { aspectRatio } from '#/features/video/clip-facts'
@@ -244,6 +244,9 @@ export function useView(clips: Array<VideoRecord>) {
   const [frame, setFrame] = useState<GenFrame | null>(null)
   const [frameLoading, setFrameLoading] = useState(false)
   const [frameError, setFrameError] = useState<string | null>(null)
+  /** The frame a replacement has to end on, when the run continues past it. */
+  const [endFrame, setEndFrame] = useState<GenFrame | null>(null)
+  const [endFrameLoading, setEndFrameLoading] = useState(false)
   const [busy, setBusy] = useState(false)
 
   /**
@@ -337,6 +340,9 @@ export function useView(clips: Array<VideoRecord>) {
     setRatio(nearestGenRatio(runRatio))
     setFrame(null)
     setFrameError(null)
+    // Appending has no join after it, so there is never an ending to pin.
+    setEndFrame(null)
+    setEndFrameLoading(false)
     setGenOpen(true)
     // A clip still being made has no last frame to read, so appending after one
     // starts from nothing rather than waiting on it.
@@ -369,6 +375,13 @@ export function useView(clips: Array<VideoRecord>) {
       )
       setRatio(nearestGenRatio(aspectRatio(clip)))
       setFrameError(null)
+
+      /* The frame it was made from, as a starting point the dialog can show
+         before anything is read. It is replaced below by the frame the run
+         says it should open on, which is the same picture whenever this clip
+         was continued from the one before it -- and the right one when it was
+         not, because a reordered or re-rolled neighbour makes the stored
+         `source_image_id` a record of history rather than of the arrangement. */
       setFrame(
         typeof sourceId === 'string'
           ? {
@@ -378,14 +391,49 @@ export function useView(clips: Array<VideoRecord>) {
             }
           : null,
       )
+      setEndFrame(null)
+
+      const previous = index > 0 ? picked[index - 1] : undefined
+      if (previous && !isPending(previous)) void loadFrameFrom(previous)
+
+      /**
+       * And the far seam, when anything follows.
+       *
+       * **The clip's own ending, not the next clip's beginning.** They are the
+       * same picture whenever the next clip was continued from this one, which
+       * is the case this exists for -- and only this one is already a library
+       * row, so pinning it costs a query where the other costs decoding a
+       * second clip. Director settled the same question the same way (#642).
+       *
+       * The last clip in a run gets none: there is no join after it, so it is
+       * free to end anywhere.
+       */
+      const next = index + 1 < picked.length ? picked[index + 1] : undefined
+      if (next && !isPending(clip)) {
+        setEndFrameLoading(true)
+        void resolveEndFrame(clip)
+          .then(setEndFrame)
+          // Silent, and the form stays usable: a replacement that is pinned at
+          // one end is worse than one pinned at both and far better than none.
+          .catch(() => setEndFrame(null))
+          .finally(() => setEndFrameLoading(false))
+      }
     },
-    [picked, model.durations, model.defaultDuration],
+    [
+      picked,
+      model.durations,
+      model.defaultDuration,
+      loadFrameFrom,
+      resolveEndFrame,
+    ],
   )
 
   const dropFrame = useCallback(() => {
     setFrame(null)
     setFrameError(null)
   }, [])
+
+  const dropEndFrame = useCallback(() => setEndFrame(null), [])
 
   /**
    * Submit, and put the clip in the run before it exists.
@@ -404,12 +452,15 @@ export function useView(clips: Array<VideoRecord>) {
     setBusy(true)
     try {
       const { recordId } = await generateVideo({
-        images: frame ? [{ id: frame.id, role: 'first' }] : [],
+        images: [
+          ...(frame ? [{ id: frame.id, role: 'first' as const }] : []),
+          ...(endFrame ? [{ id: endFrame.id, role: 'last' as const }] : []),
+        ],
         prompt: text,
         duration,
         // Ignored by the image endpoint, which has no such parameter and
         // follows the frame; the real choice only when there is no frame.
-        aspectRatio: frame ? nearestGenRatio(runRatio) : ratio,
+        aspectRatio: frame || endFrame ? nearestGenRatio(runRatio) : ratio,
         modelSlug: GEN_MODEL_SLUG,
       })
 
@@ -424,6 +475,7 @@ export function useView(clips: Array<VideoRecord>) {
         generation_metadata: {
           duration_seconds: duration,
           ...(frame ? { source_image_id: frame.id } : {}),
+          ...(endFrame ? { end_image_id: endFrame.id } : {}),
         },
         width: null,
         height: null,
@@ -455,6 +507,7 @@ export function useView(clips: Array<VideoRecord>) {
     busy,
     prompt,
     frame,
+    endFrame,
     duration,
     ratio,
     runRatio,
@@ -490,6 +543,9 @@ export function useView(clips: Array<VideoRecord>) {
       frameLoading,
       frameError,
       onDropFrame: dropFrame,
+      endFrame,
+      endFrameLoading,
+      onDropEndFrame: dropEndFrame,
       prompt,
       onPromptChange: setPrompt,
       duration,
