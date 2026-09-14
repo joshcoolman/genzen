@@ -57,6 +57,11 @@ const TILE = 108
  *
  * Native HTML drag and drop, not pointer maths: tiles that only ever reorder
  * are exactly what it is for, and the browser draws the drag image itself.
+ *
+ * **A tap on a tile plays the run from that clip** (#655) -- the row is the
+ * transport, which is why there is no longer a bar of buttons under the player.
+ * Click and drag need no disambiguating: a browser does not fire `click` after
+ * a completed drag, so there is no movement threshold and no timer here.
  */
 export function ClipRow({
   clips,
@@ -64,6 +69,7 @@ export function ClipRow({
   onAdd,
   onRemove,
   onMove,
+  onPlayFrom,
 }: {
   clips: Array<VideoRecord>
   /** Where the player is in the run, so the row can say so (#512). */
@@ -71,6 +77,8 @@ export function ClipRow({
   onAdd: () => void
   onRemove: (id: string) => void
   onMove: (from: number, to: number) => void
+  /** Play the run from this clip's first frame (#655). */
+  onPlayFrom: (index: number) => void
 }) {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
   /** The slot the clip would land in: 0 is before the first tile, `length` is
@@ -121,6 +129,7 @@ export function ClipRow({
               playingIndex === index && styles.tilePlaying,
             )}
             draggable
+            onClick={() => onPlayFrom(index)}
             onDragStart={() => {
               /* Deferred a frame, and that is the whole reason the tile can be
                  taken out of the flow at all. The browser's drag image is a
@@ -150,7 +159,12 @@ export function ClipRow({
             <button
               type="button"
               className={styles.remove}
-              onClick={() => onRemove(clip.id)}
+              onClick={(e) => {
+                // The tile behind it plays the run; removing a clip is not
+                // also a request to watch from it.
+                e.stopPropagation()
+                onRemove(clip.id)
+              }}
               aria-label="Remove from the run"
             >
               <X size={12} />

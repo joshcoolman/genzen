@@ -7,14 +7,25 @@
 /* Both elements occupy the same cell, so the swap at a join is a change of
    opacity and nothing moves. `grid` rather than absolute positioning: the stage
    then takes its height from the videos themselves at whatever aspect they
-   are. */
+   are.
+
+   It is a `<button>` (#655) -- the stage is play/pause -- so it resets the
+   padding and border a button brings and keeps the same box it always had. */
 .stage {
   display: grid;
   place-items: center;
+  width: 100%;
+  padding: 0;
   aspect-ratio: 16 / 9;
+  border: none;
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
   overflow: hidden;
+  cursor: pointer;
+}
+
+.stage:disabled {
+  cursor: default;
 }
 
 .video,
@@ -70,18 +81,4 @@
 .transport:disabled {
   color: var(--text-muted);
   cursor: default;
-}
-
-/* No label. Skip is pressed repeatedly while hunting a join, so it wants to be
-   a small target that does not push the rest of the bar around -- and a pair of
-   arrows either side of Play is the one transport convention that needs no
-   word. The name is on `aria-label` and `title`, not dropped. */
-.transportIcon {
-  composes: transport;
-  padding: var(--space-8);
-}
-
-.position {
-  color: var(--text-muted);
-  font-size: var(--text-3xs);
 }
