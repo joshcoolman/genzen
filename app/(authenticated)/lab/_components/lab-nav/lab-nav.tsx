@@ -6,22 +6,7 @@ import { usePathname } from 'next/navigation'
 import styles from './lab-nav.module.css'
 import { cx } from '#/lib/utils'
 
-/* Module-local rather than an entry in `src/lib/nav-items.ts`, for the same
- * reason the account nav is: that file is the app's own navigation, and putting
- * these there would light two rails at once and put experiments in the mobile
- * bar. Only `/lab` appears in the icon rail. */
-const SECTIONS = [
-  { href: '/lab/enhance', label: 'Enhance' },
-  { href: '/lab/describe', label: 'Describe' },
-  { href: '/lab/variations', label: 'Variations' },
-  { href: '/lab/lighting', label: 'Lighting' },
-  { href: '/lab/people', label: 'People' },
-  { href: '/lab/frames', label: 'Frames' },
-  { href: '/lab/sequence', label: 'Sequence' },
-  { href: '/lab/editor', label: 'Editor' },
-  { href: '/lab/video-from-ref', label: 'Ref Video' },
-  { href: '/lab/endpoint-explorer', label: 'Endpoints' },
-]
+import { labNavItems } from '#/lib/section-nav-items'
 
 export function LabNav({
   collapsed,
@@ -55,7 +40,7 @@ export function LabNav({
           )}
         </button>
       </div>
-      {SECTIONS.map(({ href, label }) => {
+      {labNavItems.map(({ href, label }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`)
         return (
           <Link

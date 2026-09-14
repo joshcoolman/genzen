@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { ScreenshotProbe } from '../screenshot-probe/screenshot-probe'
+import { SuperMenu } from '../super-menu/super-menu'
 import styles from './sidebar.module.css'
 import { logout } from '#/features/auth/logout.action'
 import {
@@ -44,6 +45,7 @@ export function Sidebar({ className }: { className?: string }) {
 
   return (
     <aside className={cx(styles.root, className)}>
+      <SuperMenu />
       {/* Navigation */}
       <TooltipProvider delay={0}>
         <nav className={styles.nav}>

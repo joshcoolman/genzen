@@ -273,7 +273,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Nothing in progress. Next: rank #632, #633, #638, #639 on the board.
+**Focus** — Evaluate the desktop all-app menu on `feat/app-super-menu` (#651).
 
 Recent highlights:
 
