@@ -24,6 +24,16 @@ into order, click one to watch from there.
   click on tile 1; adding the first clip starts the run. Only Mute is left,
   because it is the one control no thumbnail click can reach. Click and drag
   need no disambiguating — a browser fires no `click` after a completed drag.
+- **The run survives navigation; nothing else about the page does** (#659).
+  Its clip ids live in `sequence/last-run.ts`, and everything about a clip is
+  read off the library row as it is now -- so a clip renamed elsewhere shows
+  its new name, and one trashed from Video drops out of the run rather than
+  sitting in it pointing at nothing. Clear is a real button for this reason: it
+  was a text link when a run was gone by the next visit anyway, and it is now
+  the only way to empty one that will still be here tomorrow.
+  A restored run tries to autoplay and a browser may refuse -- nobody clicked
+  and the sound is on -- so `NotAllowedError` leaves the stage stopped instead
+  of showing Pause over a still picture.
 - **A pencil on a tile names the clip** (#657), and the name is the clip's own
   `title` -- so a run arranged here shows up on the Video wall as "intro",
   "scene two". The run itself is still not stored; a name is a fact about a

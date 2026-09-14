@@ -61,8 +61,10 @@ function blank(el: HTMLVideoElement) {
  * **Nothing is drawn over the footage.** No play glyph, no overlay: clips play,
  * a click stops them, and the behaviour is legible from the behaviour.
  *
- * **It always plays.** Adding the first clip starts the run, and the end of the
- * run rejoins clip 1. A one-clip run therefore loops on its own, which is odd
+ * **It always plays.** Adding the first clip starts the run, and so does a run
+ * restored from the last visit -- though a browser may refuse that one, since
+ * nobody clicked and the sound is on; the stage then sits stopped and one
+ * click starts it. The end of the run rejoins clip 1. A one-clip run therefore loops on its own, which is odd
  * and accepted: suppressing it means a rule about set size in the one place
  * that should have no rules at all.
  *
@@ -217,9 +219,18 @@ export function SequencePlayer({
       setActive(0)
       setIndex(next)
       setIsPlaying(true)
-      // Swallowed: reassigning `src` can abort an in-flight play with an
-      // AbortError that means nothing here.
-      void first.play().catch(() => {})
+      void first.play().catch((err: unknown) => {
+        /* An `AbortError` means a new source replaced this one mid-play and a
+           fresh `play()` is already coming -- nothing to report.
+
+           `NotAllowedError` is the real case (#659): a run restored on load
+           starts itself without anyone having clicked, and sound is on, so the
+           browser refuses. Saying so leaves the stage in a stopped state a
+           click starts, instead of a Pause label over a still picture. */
+        if (err instanceof Error && err.name === 'NotAllowedError') {
+          setIsPlaying(false)
+        }
+      })
     },
     [clips],
   )

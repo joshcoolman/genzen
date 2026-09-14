@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
+import { X } from 'lucide-react'
 import { ClipPicker } from '../_components/clip-picker/clip-picker'
 import { LabPage } from '../_components/lab-page/lab-page'
 import { ClipRow } from './_components/clip-row/clip-row'
@@ -10,7 +11,7 @@ import styles from './view.module.css'
 import type { SequencePlayerHandle } from './_components/sequence-player/sequence-player'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { clipName } from '#/features/video/clip-facts'
-import { NameDialog } from '#/components'
+import { Button, NameDialog } from '#/components'
 
 /**
  * The player on top, the run underneath it -- the shape of an editor without
@@ -47,11 +48,17 @@ export function View({ clips }: { clips: Array<VideoRecord> }) {
           onRename={view.setRenaming}
         />
 
+        {/* **A real button, because the run now outlives the visit** (#659).
+            As a quiet text link it was the undo for something that would be
+            gone anyway by the next visit; it is now the only way to empty a
+            run that will otherwise still be here tomorrow. It forgets the
+            stored run as well -- Clear means clear. */}
         {view.picked.length > 0 && (
           <div className={styles.footer}>
-            <button type="button" className={styles.clear} onClick={view.clear}>
-              Clear
-            </button>
+            <Button variant="secondary" size="sm" onClick={view.clear}>
+              <X size={14} />
+              Clear the run
+            </Button>
           </div>
         )}
       </div>
