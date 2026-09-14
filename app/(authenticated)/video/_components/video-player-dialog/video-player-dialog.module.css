@@ -20,3 +20,54 @@
   justify-content: flex-end;
   padding-block-start: var(--space-12);
 }
+
+/* The heading and its edit controls on one line. The close button sits in the
+   popup's own corner, so the row stops short of it. */
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: 2rem;
+  padding-inline-end: var(--space-32);
+}
+
+.titleInput {
+  max-width: 24rem;
+}
+
+/* The accessible name while the visible one is an input. */
+.hiddenTitle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.edit {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.edit:hover:not(:disabled) {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+.edit:disabled {
+  cursor: default;
+  opacity: 0.4;
+}

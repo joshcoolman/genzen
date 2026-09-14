@@ -130,6 +130,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
         video={playingVideo}
         onClose={() => setPlayingId(null)}
         onDelete={(id) => void deleteVideo(id)}
+        onRename={(clip, title) => void renameClip(clip, title)}
       />
       {/* The group's name **replaces** the route's header rather than sitting
           under it (#517), which is what Images does and for the same reason:
