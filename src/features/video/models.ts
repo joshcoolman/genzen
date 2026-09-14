@@ -83,7 +83,14 @@ export interface VideoModel {
   resolutions?: Array<VideoResolution>
   durations: Array<number>
   defaultDuration: number
-  /** Sends `generate_audio`. H3 has no such param. */
+  /**
+   * Whether this endpoint takes a `generate_audio` parameter -- **not whether
+   * its clips have sound**. H3 and H3 Max have no such param and their output
+   * carries native audio regardless, which is why Director strips it. Read as
+   * a capability, this field says the opposite of the truth for two of six
+   * models; it has misled once (#660) and the name is kept only because it is
+   * what the param is called.
+   */
   supportsAudio: boolean
   /** Optional lower rate when native audio is disabled. */
   silentPricePerSecondCents?: number

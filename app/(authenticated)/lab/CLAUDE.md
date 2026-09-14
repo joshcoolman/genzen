@@ -7,9 +7,42 @@ they earn a place in the main workflow.
 ## Sequence
 
 Clips made by Continue (#494) are meant to be watched as one thing and there was
-no way to watch them as one thing. Its question: **does the order actually cut
-together?** Nothing is generated and nothing is stored — pick clips, drag them
-into order, click one to watch from there.
+no way to watch them as one thing. Its question: **does the order cut together,
+and does the next one follow?** Pick clips or generate them, drag them into
+order, click one to watch from there.
+
+- **The run generates its own clips, and that is why the question grew** (#660).
+  Judging an order meant leaving for Video, pressing Continue on the last clip,
+  waiting, coming back and re-picking -- enough friction that the run being
+  judged stopped being the thing being worked on. Add gen makes the next clip
+  here: the previous clip's last frame in the first slot, removable, a prompt,
+  a duration, one button.
+  - **One model, MiniMax H3, and no picker** -- see `sequence/gen.ts` for why.
+    A continuation needs no aspect ratio either: `h3/image-to-video` has no such
+    parameter and follows the frame, so a generated clip always matches the run.
+    The pills appear only with no frame, which is the one case nothing else can
+    answer.
+  - **Nothing is rewritten before FAL.** No enhance step, no Claude call. The
+    words submitted are the words typed, which is what keeps a press cheap
+    enough to make casually -- and why this page still names no instruction
+    file.
+  - **Regenerate replaces; it never deletes.** The pencil is two tabs, Name and
+    Regenerate, and the second refills its form from the clip's own
+    `generation_metadata` -- so nothing new is stored to make it possible. The
+    clip that drops out of the run is still in Video, untouched. Re-rolls you
+    did not keep accumulate there and are cleaned up by hand.
+  - **A clip being made holds its place in the row and cannot be played or
+    dragged.** There is nothing behind `/img/[id]` until FAL answers, and a run
+    rearranged around a picture nobody has seen is an arrangement judged blind.
+    The player is given the finished clips and the row every clip, which is why
+    the two are indexed separately (`toPlayableIndex`).
+  - **The no-lab-state rule is untouched, and it is worth saying why.** A
+    generated clip is an ordinary `user_images` row written by the app's own
+    pipeline -- the same reasoning that lets the pencil write `title`. Delete
+    this folder and the clip, its row and its poll all still make sense. What
+    stays out of the database is the _arrangement_, which is still ids in
+    `last-run.ts` and nothing else. Lighting is the precedent for the money:
+    a lab page that spends prints the estimate before the press.
 
 - **Two `<video>` elements ping-ponging, not one swapping its `src`.** The
   visible one plays while the next loads hidden; at `ended` they swap which is on

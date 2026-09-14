@@ -166,3 +166,35 @@
 .addLabel {
   padding-inline: var(--space-4);
 }
+
+/* Beside Add clips, and quieter than it. The two are adjacent and both say
+   "add", so the icon carries the difference -- a sparkle against a plus -- and
+   nothing here is styled as the primary of the pair. */
+.addGen {
+  border-style: dashed;
+}
+
+.addGen:hover {
+  border-color: var(--accent);
+}
+
+/* A clip the run has a place for and FAL has not finished. It holds the
+   footprint of a real tile -- two frames wide -- so the run does not resize
+   under the pointer when the picture lands. */
+.tilePending {
+  width: calc(var(--tile) * 2 + 3px);
+  min-height: calc(var(--tile) + 2px);
+  cursor: default;
+}
+
+.making {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: calc(var(--tile) + 2px);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+}

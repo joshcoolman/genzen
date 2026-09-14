@@ -1,0 +1,38 @@
+.content {
+  max-width: 30rem;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  padding: var(--space-8) var(--space-12);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tabOn {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+}
+
+.name {
+  display: flex;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.name > :first-child {
+  flex: 1;
+}
