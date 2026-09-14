@@ -17,11 +17,13 @@ order, click one to watch from there.
   judged stopped being the thing being worked on. Add gen makes the next clip
   here: the previous clip's last frame in the first slot, removable, a prompt,
   a duration, one button.
-  - **One model, MiniMax H3, and no picker** -- see `sequence/gen.ts` for why.
-    A continuation needs no aspect ratio either: `h3/image-to-video` has no such
-    parameter and follows the frame, so a generated clip always matches the run.
-    The pills appear only with no frame, which is the one case nothing else can
-    answer.
+  - **One model, H3 Max Turbo, and no picker** -- see `sequence/gen.ts` for why,
+    including why it is not plain H3: Director's speed came from an endpoint
+    hardcoded in `director/clips.ts` that was not in the lineup at all until
+    #660. A continuation needs no aspect ratio either: the image endpoint has no
+    such parameter and follows the frame, so a generated clip always matches the
+    run. The pills appear only with no frame, which is the one case nothing else
+    can answer.
   - **Nothing is rewritten before FAL.** No enhance step, no Claude call. The
     words submitted are the words typed, which is what keeps a press cheap
     enough to make casually -- and why this page still names no instruction

@@ -4,18 +4,27 @@ import { videoModelBySlug } from '#/features/video/models'
 /**
  * What a clip generated inside a run is made with.
  *
- * **One model, and no picker** (#660). Three of the lineup take a first frame
+ * **One model, and no picker** (#660). Several of the lineup take a first frame
  * and would work here -- but their durations do not intersect (min 3, 4 and 5),
- * so the pills would have to follow the model, and the price spread is 6c to
- * 47c a second. A control that changes the other controls is the opposite of
- * the one-click feel this page is for.
+ * so the pills would have to follow the model, and the price spread runs to 47c
+ * a second. A control that changes the other controls is the opposite of the
+ * one-click feel this page is for.
  *
- * H3 is the pick because it is the cheapest in the lineup, it is the family
- * Director proved out, and it carries native audio. It has no `generate_audio`
- * param, which is not the same as being silent -- `supportsAudio` says whether
- * the parameter exists, and H3's clips have sound whether or not anyone asks.
+ * **H3 Max Turbo, on the strength of a side-by-side.** This began on plain H3,
+ * on the reasoning that it was the cheapest thing Director had proved out --
+ * and Director turned out not to be running it. Its default is
+ * `minimax/h3-max-turbo/image-to-video`, hardcoded in `director/clips.ts` and
+ * absent from the lineup entirely until #660, which is why the clips there felt
+ * faster than the ones here. It is a post-trained variant on fal's own
+ * inference stack rather than MiniMax's hosted API: quicker, better at
+ * following a prompt, and by fal's stated rate a great deal cheaper. See its
+ * entry in `models.ts` for why that last number is not yet to be trusted.
+ *
+ * It has no `generate_audio` param, which is not the same as being silent --
+ * `supportsAudio` says whether the parameter exists, and this family's clips
+ * have sound whether or not anyone asks.
  */
-export const GEN_MODEL_SLUG = 'minimax-h3'
+export const GEN_MODEL_SLUG = 'h3-max-turbo'
 
 export function genModel(): VideoModel {
   const model = videoModelBySlug(GEN_MODEL_SLUG)
