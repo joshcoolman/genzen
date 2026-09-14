@@ -4,7 +4,7 @@
  * A one-shot delivery to the Images generator panel (#433).
  *
  * **The door between a page that composes a request and the page that runs
- * it.** The lab writes prompts and picks images; Images owns the panel that
+ * it.** Activity loads past generations; Images owns the panel that
  * fires them. Neither should know the other exists, and neither does: this
  * module is the whole of what they share.
  *
@@ -21,9 +21,8 @@
  *   local flag on a button, not a fact anyone stores or reconciles. If the
  *   panel changes underneath it, the button is stale, and that is fine.
  *
- * **Two senders now** (#458): the lab's Variations page, and Activity's Load
- * generation. Neither knows the other exists and neither knows what Images does
- * with the delivery -- which is what keeps this a door rather than a protocol.
+ * **Activity sends its Load generation request here** (#458), without knowing
+ * how Images applies the delivery.
  * A sender that needs to say something about its own read (Activity warns about
  * inputs that no longer resolve) says it before navigating, rather than growing
  * a field here.

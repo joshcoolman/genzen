@@ -29,7 +29,7 @@ it follows is `~/repos/project-standard`.
 
 ## The surface
 
-A short list of screens and nothing else — Explore, Images, Video, Activity,
+A short list of screens and nothing else — Images, Video, Director, Activity,
 Trash, Lab, Account, plus Canvas, which is deliberately not in the rail while it
 is in development. There is no Settings route; Account is the settings area. If
 something does not serve generating and keeping images, it was cut on purpose.

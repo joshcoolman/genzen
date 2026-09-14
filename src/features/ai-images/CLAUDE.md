@@ -75,7 +75,7 @@ transport concern, and the library row keeps its full-resolution original.
   #486.
 - **`fal-params.server.ts` is the one param resolver, and the only enforcer of a
   model's image limit (#341).** `buildFalInput()` resolves size, safety and image
-  params per model schema for every path — generate, variations, retry. Some
+  params per model schema for every path — generate and retry. Some
   models take resolution enum strings and others width/height objects; that
   difference lives here and nowhere else. It truncates the image list to
   `imageCapacityFor` and **returns what it sent** (`imagesRequested` /
@@ -261,18 +261,6 @@ transport concern, and the library row keeps its full-resolution original.
 - **There is no edit route** (#205). An edit is a generation with images
   attached, not a place you go. Since #297 the images are set from the panel's
   Reference images widget, never from the grid and never by uploading.
-- Variations rewrite the prompt with Claude Sonnet against the source image
-  ("creative tension") to stop quality drift.
-- **A variation can be about up to four images** (#436, `MAX_VARIATION_IMAGES`
-  in `constants.ts` -- there rather than beside the action, since a
-  `'use server'` module exports only async functions). One image and several
-  are different questions and take different instruction files:
-  `image-variation.md` says "describe only what changes", which is wrong for a
-  combine, so `image-variation-multi.md` handles those and names the pictures by
-  number. Two mechanisms switch **off** for a set rather than generalising --
-  root-image resolution (four pictures the user chose have no root) and the
-  anti-repeat query (the schema cannot ask about past variations of a
-  particular set).
 - **Vision gets a downscaled copy, never the original**
   (`src/lib/server/vision-image.server.ts`). Not an optimisation: originals held
   for one image and failed outright the first time two went in one message --
@@ -323,5 +311,5 @@ transport concern, and the library row keeps its full-resolution original.
   both go through it, and it preserves caller order because models read the
   image list positionally.
 - **FAL is the only image provider, Anthropic the only other one.** Prompt work
-  (enhancement, variation prompts) and vision (describe, caption)
+  (enhancement, Meta prompt) and vision (describe, caption)
   are all Claude; there is no second text/vision vendor (#254).

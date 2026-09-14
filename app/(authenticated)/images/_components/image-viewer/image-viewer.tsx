@@ -38,11 +38,9 @@ interface ImageViewerProps {
  * reading the prompt is most of what the viewer is now for -- it used to mean
  * closing the viewer to read the card's clamped three lines.
  *
- * Explore's `image-detail/` is a different thing that happens to also be an
- * overlay, and the two are still deliberately not shared. /images rendered
- * that one once and it was pulled out because it *imposed* a prompt column
- * and a filmstrip; what makes this right where that was wrong is that it is
- * opt-out. Switched off, this is the plain lightbox it has always been.
+ * The former Explore overlay imposed a prompt column and filmstrip when
+ * Images shared it. Here the prompt is opt-out; switching it off restores
+ * the plain lightbox.
  *
  * Every control is visible. An earlier preview here hid its paging in
  * invisible quarters of the screen that revealed a chevron once the pointer

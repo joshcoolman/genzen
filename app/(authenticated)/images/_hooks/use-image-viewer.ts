@@ -39,11 +39,8 @@ export interface ImageViewerState {
  * picture on screen; a viewer scoped differently from the grid sends you
  * somewhere you were not looking.
  *
- * Deliberately a separate hook from Explore's `useJobView` rather than a shared
- * one. They are ~40 similar lines today, and the last time these two surfaces
- * shared code the sharing is what made /images inherit a prompt column and a
- * filmstrip nobody wanted there. Two small copies that can diverge beats one
- * that quietly imposes.
+ * Kept local to Images. Sharing with the former Explore surface imposed a
+ * prompt column and filmstrip here; the viewer should follow this grid alone.
  */
 export function useImageViewer(
   images: Array<SavedAiImage>,

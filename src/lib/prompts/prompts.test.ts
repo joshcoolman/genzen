@@ -14,8 +14,8 @@ const PROMPTS = join(ROOT, 'src/lib/prompts')
  * the split was not by anything meaningful — it was by what era the feature was
  * written in. These two tests are what stop that drifting back.
  *
- * The point is not tidiness. Someone who wants to see what happens if image
- * variations get weirder should be able to open `image-variation.md`, rewrite a
+ * The point is not tidiness. Someone who wants to change how an idea
+ * is expanded should be able to open `enhance-prompt.md`, rewrite a
  * paragraph and run it — no TypeScript, no hunting. That is only true if every
  * instruction is a file whose name says what it steers.
  */

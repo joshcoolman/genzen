@@ -57,9 +57,7 @@ the actual subject and turn the chosen direction into rendering instructions.
 **Outpaint** reframes a finished image into other aspect ratios.
 
 These tools create new images, keeping the source available for another attempt.
-Download individual results, a group, or a selection as a ZIP. **Explore** offers
-a quieter browsing view of finished images, with their prompts available when
-you open one.
+Download individual results, a group, or a selection as a ZIP.
 
 ## Video: direct the motion and review the result
 
@@ -273,29 +271,17 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Nothing in progress. Next: rank #632, #633, #638, #639 on the board.
+**Focus** — Nothing in progress; #653 shipped. See the work board below.
 
 Recent highlights:
 
-- Video: a clip's `...` menu grabs frames -- a contact sheet of stills sampled
-  start to finish, pick any number and Import to Images (#647).
-- Meta prompt: with references staged, describe roughly what you want and
-  Claude writes one or several prompts from the pictures straight into the
-  prompt list. One call per set, so siblings agree (#645).
-- Director: clicking a section in the chat column plays it from its first
-  frame; clicking the current one toggles play/pause (#643).
-- Lab/Frames takes a clip from the app or a YouTube link at any time -- both
-  tiles stay on the source strip and say what they open (#644).
-- Director: any section can be reworked, not just the latest. Edit or
-  Regenerate from the section list, Enhance rewrites the direction against the
-  section's own boundary frames and duration, and Cancel restores the clip the
-  rework started from. A middle section is pinned to the frame the next one
-  opens on, so the join survives (#642).
-- Director: a saved rough export becomes a Script of copyable multi-shot
-  sections, and Generate Final Cut video renders it end to end, each section
-  chained from the last frame and stitched with sound (#634, #640).
-- A staged reference can be read for its Lighting, Style or Subject instead
-  of sent: Claude writes the block, the picture never reaches the model (#635).
+- Removed six unused Lab tools and Explore; Enhance and saved media/history
+  are preserved (#653).
+- Video: sample a clip into a contact sheet and import chosen frames to Images (#647).
+- Meta prompt: write several prompts from staged references in one call (#645).
+- Director: click a section to play it; click again to pause (#643).
+- Lab/Frames keeps both library clips and YouTube on the source strip (#644).
+- Director: rework any section while preserving its joins (#642).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.

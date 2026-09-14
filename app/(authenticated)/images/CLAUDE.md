@@ -28,8 +28,8 @@ list once when the seed comes back full, so the grid is never short.
   situation and is right to, for the opposite reason. A trashed input counts as
   missing: restoring an image is a deliberate act. **It replaces the whole prompt
   list, not row 0** (#458): it was `setPrompt` until the panel routinely held
-  several, and after a Variations run loads four (#436) a Load left you with
-  five prompts and Generate ran all of them. **Activity carries the same verb as
+  several; loading one row left the old prompts behind and Generate ran all
+  of them. **Activity carries the same verb as
   a button** (#458), reaching the panel through the handoff rather than directly;
   the two behave identically on purpose, since two things called Load that
   differ is worse than either one alone.
@@ -450,8 +450,7 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   detail to tune. The hidden zones failed the same way: a target that reveals
   its chevron only once you are inside it confirms rather than affords.
   `_components/experiment/` is deleted; do not rebuild it without a new reason
-- **The viewer is `_components/image-viewer/`, and it is nothing to do with
-  Explore's overlay.** A plain lightbox: scrim over the app, the picture
+- **The viewer is `_components/image-viewer/`.** A plain lightbox: scrim over the app, the picture
   centred, chevrons either side, an X, a counter, click outside the image to
   dismiss, arrows and Escape. **No filmstrip and no metadata** -- and nothing
   else proposed for it gets in without answering why it is not a card action or
@@ -467,8 +466,7 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   already. The panel's text is a `CopyText` carrying the card's exact contract
   (click copies, Cmd-click loads the generator), it renders for an upload too
   saying there is no prompt, and its width is `clamp(18rem, 25%, 34rem)` rather
-  than a bare quarter -- a literal 25% is a 90-character line on an ultrawide. Delete and Backspace send to Trash, which is the one thing this has
-  that Explore's does not. **`H` hides and moves on** (#545) -- the card's own
+  than a bare quarter -- a literal 25% is a 90-character line on an ultrawide. Delete and Backspace send to Trash. **`H` hides and moves on** (#545) -- the card's own
   pairing (#504) reaching the surface where the judging actually happens, since
   until then the only verb in here was the destructive one. Both are also
   buttons on the picture's lower-left: key-only would have left the destructive
@@ -478,18 +476,9 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   is safe because the viewer holds no text field. Listed at
   `/account/shortcuts`, in the same commit as the binding.
 
-  Explore's `image-detail/` is the three-column one (image, prompt, filmstrip)
-  and is **not shared, not imported, and not to be renamed toward "lightbox"**.
-  The single name cost two rounds of the same mistake: it lived here as
-  `_components/lightbox/`, so a request for a plain viewer on /images found one
-  already in the tree and got a prompt column and a filmstrip with it. Two
-  components, two routes, no dependency in either direction. `#/components` is
-  the wrong destination for both -- they only look like one thing.
-
-  Same for the cursor. `_hooks/use-image-viewer.ts` is a near-copy of Explore's
-  `use-image-detail.ts`, on purpose: ~40 similar lines is cheaper than a shared
-  hook that decides for both surfaces, which is exactly how the layout got
-  imposed the first time.
+  The retired Explore overlay imposed a prompt column and filmstrip when it
+  was shared here. Keep the viewer owned by Images; that history is why the
+  prompt is optional and the filmstrip is absent.
 
   **It cycles what the grid is showing** -- filtered, sorted, and scoped to the
   open group if there is one (#270). "Next" has to mean the next picture on
@@ -501,7 +490,7 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   correct, not a gap. Making the sequence descend into groups would mean the
   overlay browses a list the grid is not showing, which is the one rule above,
   and it turns "click a thumbnail, see it bigger" into a way of digging through
-  the whole library. That is a different feature and it belongs to Explore.
+  the whole library. That is a different feature.
   Leave this alone until the friction is real
 
   Gutters are one custom property, `--viewer-gutter`, equal on all four sides.
@@ -800,11 +789,9 @@ each picking their own is how it drifted to 12/8/4.
 
 ## Not here
 
-**Enhance, Describe and Variations are in the lab** (`app/(authenticated)/lab/`,
-#424). They were dialogs on this route and could not be improved there — a
-dialog holds "type, get one result, close" and nothing more. They come back when
-they work the way they are supposed to, and until then this route behaves as
-though they never existed.
+**Enhance lives in the lab** (`app/(authenticated)/lab/enhance/`, #424).
+Description and reference reading live in Images; Meta prompt writes from staged
+references. The former Lab Describe and Variations pages were removed in #653.
 
 ## Storyboard outputs (#626)
 

@@ -1,10 +1,8 @@
 # Editing and reference-image prompting
 
 The craft of the _non_-text-to-image paths — edit, variation, outpaint, and
-multi-reference composition. genzen ships all of these (every model with a
-`withImages` endpoint, `ref-images.ts`, `maxRefs`, `outpaint.ts`, the
-`image-variation*.md` prompts) but the prose that drives them is written mostly
-with a blank canvas in mind. Editing is a different discipline, and the failure
+multi-reference composition. Reference-capable models and Outpaint support
+these operations; the prompt needs to describe what changes and what stays. Editing is a different discipline, and the failure
 modes are different. This is the reference for that discipline; the pure
 text-to-image craft lives in `prompt-enhancement-strategies.md` and the per-model
 `guide-*.md` files, and is not repeated here.
@@ -120,13 +118,10 @@ wrong instruction for this path.
 
 ## How this maps to genzen / opportunities
 
-- **The edit prompts could carry the preservation rule.**
-  [`image-variation.md`](../../src/lib/prompts/image-variation.md) and
-  [`image-variation-multi.md`](../../src/lib/prompts/image-variation-multi.md)
-  are the model-addressed prose for the edit path. If they don't already
-  instruct the model to name what stays, that is the single most valuable line
-  to add — it is the difference between "vary this" and "vary this without
-  wrecking the parts I liked."
+- **Meta prompt writes complete prompts from references and intent.**
+  [`meta-prompt.md`](../../src/lib/prompts/meta-prompt.md) steers that writer.
+  It replaces the retired Lab Variations surface, whose prompts were short
+  change directives rather than complete standalone prompts (#653).
 - **`enhance-prompt.md` is text-to-image only.**
   [`enhance-prompt.md`](../../src/lib/prompts/enhance-prompt.md) opens with
   "You turn a rough idea into a finished text-to-image prompt." When the user is

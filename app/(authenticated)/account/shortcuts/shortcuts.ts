@@ -149,17 +149,6 @@ export const shortcutGroups: Array<ShortcutGroup> = [
     ],
   },
   {
-    where: 'On Explore',
-    blurb:
-      'The overlay there is a different one: the image, its prompt, and a filmstrip of the whole wall.',
-    items: [
-      { keys: '← →', what: 'Step through the images' },
-      { keys: 'Click a filmstrip thumbnail', what: 'Jump to that image' },
-      { keys: 'Click anywhere that is not a control', what: 'Close it' },
-      { keys: 'Escape', what: 'Close it' },
-    ],
-  },
-  {
     where: 'In Activity',
     items: [{ keys: '← →', what: 'Move between entries' }],
   },

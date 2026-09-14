@@ -32,11 +32,9 @@ source for reference images and canvas placements.
 image. Three models, each with its own endpoints and costs.
 
 **Lab** — where a single step of the work is put on its own page and judged
-before it earns a place in the panel: Enhance, Describe, Variations, Frames.
-Each states the question it is asking and shows the instruction file
-it sends, so what the model was told is on screen with what it returned.
-
-**Explore** — browsing what is already there, not working on it.
+before it earns a place in the panel: Enhance, Frames, Sequence, Lighting.
+Prompt tools show the instruction file they send, so what the model was told
+is on screen with what it returned.
 
 **Activity** — a chronological log of every generation including failures, each
 with its cost and duration.

@@ -89,7 +89,6 @@ live with the one route that renders them:
 | Surface    | Where                                                                                                                       |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------- |
 | Canvas     | `app/(authenticated)/canvas/` — index; a board is `canvas/[id]/`. One CLAUDE.md at `canvas/` covers both                    |
-| Explore    | `app/(authenticated)/explore/` (has its CLAUDE.md) — browsing, not working                                                  |
 | Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                                                           |
 | Lab        | `app/(authenticated)/lab/` (has its CLAUDE.md) — one step of the work per page, judged before it earns a place in the panel |
 | Activity   | `app/(authenticated)/activity/` — the route; the log itself is a feature                                                    |

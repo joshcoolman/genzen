@@ -1,49 +1,10 @@
 # Lab
 
-Where a feature is worked on before it is part of the app (#424). Nine pages
-today. Three of them — Enhance, Describe, Variations — existed in `/images` and
-none could be improved there. **Frames, Sequence, Lighting and Editor are the
-other kind: things the app has never been able to do at all**, built here first
-so they can be used for real before anyone decides where they belong (#317,
-#497, #562, #515).
+Where a feature is worked on before it is part of the app (#424). Enhance
+compares prompt rewrites; Frames, Sequence and Lighting test mechanisms before
+they earn a place in the main workflow.
 
-## Why these three are here
-
-Each was a button that opened a dialog that closed. A dialog holds "type, get
-one result, close" and nothing more, so that is exactly as far as each got —
-then it went stale, got rediscovered, felt cumbersome, and was kept anyway
-because the idea was good. The idea was never the problem.
-
-**They are not a workflow.** They look composable and are not: each answers a
-different question about a different input, which is why they are three pages
-and not one surface with three buttons.
-
-| page          | input      | the question                                        |
-| ------------- | ---------- | --------------------------------------------------- |
-| `enhance/`    | one idea   | Does a model's own instruction beat the shared one? |
-| `describe/`   | an image   | Accurate without being padded or over-specific?     |
-| `variations/` | 1-4 images | Does it understand my intent? Are the prompts good? |
-
-**Variations takes up to four images** (#436), which is not a fourth question —
-it is the same one asked of a combine: "make the result match the illustration
-style of the image with the clouds" is intent like any other. Two things follow,
-both worth knowing before editing the page:
-
-- **The instruction file forks on how many images are in the run**, so the page
-  prints whichever fork is live rather than a fixed path. `image-variation.md`
-  tells the model it may describe only what changes; that is right for one
-  picture and wrong for a combine, where naming what each one contributes is the
-  whole directive.
-- **The numbers in a prompt are a contract with `useGenerator`, not
-  decoration.** A prompt saying "image 2" only means anything because the submit
-  prepends `[Image 1, Image 2, ...]` — see `src/features/ai-images/CLAUDE.md`.
-  That half lives in the app, deliberately: Variations hands its run over
-  rather than sending it, so a numbering contract it kept to itself would be one
-  Images never honours. It is
-  not lab code leaking outward, and moving it under `lab/` would break the
-  feature silently.
-
-## Sequence is not one of them either
+## Sequence
 
 Clips made by Continue (#494) are meant to be watched as one thing and there was
 no way to watch them as one thing. Its question: **does the order actually cut
@@ -91,54 +52,7 @@ into order, press play.
   what the run drew. The bar is two pages, and a copy under one page's
   `_components/` is the same thing drifting into two.
 
-## Editor is not one of them either
-
-Sequence answers "does this order cut together". It cannot answer "is this shot
-holding too long", because nothing there can trim and nothing there produces a
-file. Editor is that page: in and out points per clip, one crossfade, and an
-Export that writes a real mp4 into the library (#515).
-
-- **Export encodes on the server, and the issue says ffmpeg.wasm.** #515 was
-  filed on 2026-08-28 and #499 put real ffmpeg in the app on the 29th, so the
-  client-side plan is the expensive way to do the same thing: the clips are in
-  a private bucket the server already reads, so nothing has to be pulled into a
-  tab to be cut. `src/lib/server/stitch-timeline.server.ts` is the encoder;
-  the route owns only the action that feeds it.
-- **Two ffmpeg passes, not one.** Every segment is normalised alone — trimmed,
-  fitted onto the first clip's canvas, given an audio track whether or not it
-  had one — and only then joined. `xfade` and `concat` both require inputs that
-  already agree on size, frame rate, pixel format and stream layout, so a
-  single graph doing all of it fails on the first clip whose shape differs,
-  which is most timelines worth making.
-- **A silent clip gets a silent track rather than no track.** Half the lineup
-  emits no audio and Veo emits some; a graph mapping `0:a` dies on the first
-  silent one. `hasAudio` reads ffmpeg's stream list off stderr — and reads the
-  _output_, not the exit code, because `-f null -` succeeds on a video-only
-  file and the first version therefore called every silent clip audible.
-- **The output pixel format is pinned to yuv420p.** Inherited, the filter chain
-  settled on yuv444p and libx264 chose High 4:4:4 Predictive — an export that
-  plays in Chrome and not in QuickTime or Safari. A test asserts it.
-- **The track is proportional; Sequence's row is not.** `clip-row/`'s own note
-  says equal tiles are right for arrangement and that proportional widths
-  "would be a different page's answer". This is that page — pacing is the
-  question, and it cannot be read off tiles of equal size.
-- **Every clip on the track has its length read, not just the selected one.**
-  The trim panel reads `duration` off the player it already has, which was
-  enough for the selected clip and wrong for the rest: their widths, the total,
-  and the out point sent to the export were all computed from a length nobody
-  had read, so a clip you had not clicked exported as a zero-length segment.
-  `clip-duration.ts` loads a detached `<video>` per track entry instead.
-- **A crossfade longer than the shortest clip is refused, not clamped.** Said in
-  the page before the encode and again on the server, because finding it out at
-  the end of a two-minute export is finding it out too late. Silently
-  shortening the user's choice would produce something the timeline did not
-  depict.
-- **Reordering is two arrows, not drag.** Sequence solved drag properly and it
-  took a slot-opening, width-conserving implementation to stop the row
-  oscillating under the pointer. Inheriting that is the obvious move if this
-  page earns its place; a second, worse attempt at it is not.
-
-## Frames is not one of them
+## Frames
 
 It answers a question about a mechanism rather than about prose, which is why it
 is one of the two pages with no instruction file to name (Sequence is the other) — `LabPage`'s `instructionFile`
@@ -281,144 +195,6 @@ way to know a piece of it is any good is to render it.
   Freezing the pair into the repo is the graduation step, once it has stopped
   changing.
 
-## People is a button you press over and over
-
-Scrolling Pinterest for an hour to end up with a set of different-looking
-people shot the same way is the work this replaces (#578). Press Generate
-Person, look, press again; when a face is worth chasing, press `+` on it.
-
-Its question: **how many of these are worth developing?** Everything here
-follows from the answer being two or three out of thirty, and from the session
-being a fast loop rather than one considered request.
-
-- **A press writes the person first, and the writer is not optional.** One
-  prompt carrying "any gender, any ethnicity, chosen freely and differently
-  each time", pressed ten times, returns ten East Asian men in their late
-  twenties, and pressing again returns the same face -- sixty images settled
-  it. An independent call cannot know what the other nine produced, so nothing
-  inside a single prompt can spread a set.
-- **Pressing one at a time is the same failure unless the board is sent
-  along.** Each press hands the writer the people already on screen and asks
-  for someone unlike all of them. The board is the history; without it, jamming
-  the button is exactly the case above.
-- **Sonnet for a cast, Haiku for a handful.** Ten people who have to spread
-  without being told how is a real reasoning job; one more person, with the
-  board attached, is not -- and it sits behind a button pressed four times in a
-  row, where ten seconds of Sonnet _is_ the experience.
-- **Squares appear before anyone is written into them.** The writer takes a
-  second or two and the submit a moment more, and a press that waited for both
-  showed nothing at all in the meantime -- three `+` presses looked like three
-  clicks into a void. Nothing is disabled while a press is in flight, either.
-- **Every tile is an ordinary generation.** Reserved row, queue, the app's own
-  polling: they are in Images from the moment they are asked for, the spend is
-  in Activity, a refresh keeps them, and the X is `deleteGalleryImage`. The
-  page held FAL urls in the browser and had a Keep button for one day; that was
-  a parallel implementation of four things the app already does, and it lost
-  the board on reload while the urls expired underneath it.
-- **`board.ts` keeps only what the library cannot know**: the order, which
-  press each face came from, and which face a riff came from. A tile whose row
-  is gone is not drawn, which is the whole of what discard has to do.
-- **A set is a press, drawn between rules -- but a lone press joins the set
-  above it.** Ten at once is a block to judge whole; jamming Generate Person
-  should grow one block, not draw a rule between every face.
-- **`+` is one more like this on the cheapest model, no dialog.** It was Grok
-  for a day on the logic that a face worth riffing on is worth spending on,
-  which is backwards: `+` is only useful if the answer arrives while you are
-  still looking at the face. The dialog is where spending happens.
-- **More like this is written from the spec, never from the picture.** Handing
-  the tile back as a reference returns cousins -- a model given a face reads a
-  person, not a category. Reusing the parent's spec with "now someone else from
-  this bucket" appended is faster still and was tried: too alike, because a
-  paragraph naming a mole and a jawline is a description of a person however it
-  is framed.
-- **Three models, and six were culled on the room rather than the face.** Both
-  Seedreams draw the lamp into a background the clause calls flat; GPT Image 2
-  plasticises skin at four times the price of the model that does it better;
-  FLUX.2 Flash loses at its own price point. Z-Image Turbo is the default at
-  half a cent because the loop only works if a press is nearly free.
-- **The studio clause is prepended in code and the writer may not mention
-  lighting, background, framing, camera or wardrobe.** That split is what makes
-  thirty tiles read as one afternoon; a spec describing its own lighting is
-  describing a photograph instead of a person.
-
-## Endpoint Explorer is the one that does not send anything anywhere
-
-Paste a FAL model URL; it fetches that endpoint's published OpenAPI document and
-says whether we could build controls for it (#523). No key, no queue, no spend --
-which is the point, because the question only gets answered by pointing it at
-dozens of endpoints.
-
-Its question: **does one parser hold across real FAL schemas?** MiniMax's are
-pristine and publish their own UI hints -- `x-fal-order-properties` for field
-order, `_fal_ui_field` marking a media slot, both evidently what FAL's own form
-is drawn from. Mirelo's publish neither and wrap every optional in
-`anyOf [T, null]`. Whether that is a spectrum five control kinds cover or a long
-tail with no end decides whether the real thing is worth building.
-
-- **Checking and keeping are separate acts.** Checking is free and most checks
-  are a glance, so a page that saved every one would be a wall of reports nobody
-  asked to keep. Save puts an endpoint in the rail; the rail is the short list
-  worth coming back to, and a refusal can be saved too -- re-checking one after
-  the parser learns something is most of why the list exists.
-- **The rail is single-select, and that is not a placeholder.** One endpoint's
-  controls at a time is the shape the real thing wants -- the same call Video
-  made in #417, for the same reason: these models disagree about almost
-  everything, so anything showing two at once has to intersect them and the
-  differences are what you came for. Today the content area holds the report;
-  later it holds the controls and what they generated.
-- **Required is muted text after the field's description, not a mark on its
-  name.** A red asterisk beside a green tick reads as two verdicts about one
-  field when only one of them is a verdict at all.
-- **The report is the compatibility check.** It is not a throwaway view of one:
-  whatever gets built on top, a pasted URL has to be accepted or refused, and
-  this is that decision rendered as a page instead of hidden behind a green dot.
-- **An unsupported field fails the endpoint even when it is optional.** Ignoring
-  it and sending the default reads as generous and is how a form silently stops
-  offering half of what a model does.
-- **Failures are saved like successes.** The list is the record of what has been
-  looked at; dropping the refusals makes the same URL worth pasting twice.
-- **Six control kinds, and the sixth is not a control.** text, textarea, enum,
-  number, boolean, media -- and `group`, a set of fields that may repeat. Kling
-  v3 Pro needs it twice: `multi_prompt` is a shot list (prompt + duration per
-  shot) and `elements` is a character (frontal image, reference angles, a clip,
-  a voice) referred to from the prompt as `@Element1`. Both are _optional_, so
-  the generous parser would have passed that endpoint and silently never offered
-  either -- and they are the entire reason to reach for it. Drawing a group
-  means a repeater, which arrives with the controls.
-- **A group is only as supported as its members**, for the same reason an
-  unsupported optional fails the endpoint: a form with a hole in it.
-- **Except when the schema declares a default.** An optional field we cannot
-  draw is skipped if FAL says what the model does without it -- omitting it then
-  accepts a stated value rather than silently switching something off. That is
-  the whole rule, and it draws the line where the shapes actually differ:
-  `image_size` is optional and defaults to `landscape_4_3` on FLUX and
-  `{2048, 2048}` on Seedream, a size nobody was going to type; Kling's
-  `multi_prompt` and `elements` and Recraft's `image_weights` declare nothing,
-  and leaving those out is a silent no to the capability that was the reason to
-  pick the model. So it still blocks the endpoints the strict rule was for, and
-  stops blocking three it should never have caught.
-  **A skipped field is still printed, with the default it will get** -- a dash
-  rather than a cross, since the endpoint works without it. Hiding it would
-  recreate the silence the strict rule existed to avoid.
-- **Findings from real schemas, kept because none was guessable:** the output
-  media hides behind a `$ref` that is _not_ always called `File` (`Image` for
-  FLUX, `Video-Output` for mirelo, and matching the name reported both as
-  returning nothing displayable); `image_urls` -- an array of strings -- is how
-  every multi-image editor on FAL spells its reference slot, so refusing arrays
-  outright failed the commonest shape there is; a media param may be a `$ref` to
-  a `{ url, ... }` object rather than a string (cassetteai's `video_url`) --
-  same control, different thing to send, which `asObject` records; the media
-  hint has **two spellings**, `_fal_ui_field` at the top level and
-  `ui: { field }` inside a nested schema, and a reader that knew one classified
-  Kling's element fields by name alone; and FLUX's `image_size` is genuinely
-  `anyOf [object, enum]`, which stays refused because a control that is both
-  does not exist.
-- **`x-fal` on a media param carries real limits** -- max file size, min
-  dimensions, duration and FPS ranges. Read by nobody yet; it is the validation
-  layer, not something needed to draw a control.
-- **It parses and reports; it does not generate and does not draw the
-  controls.** Those wait on what this says.
-
 ## Quirks
 
 - **Every page names the file that steers it.** `LabPage` takes an
@@ -457,15 +233,6 @@ tail with no end decides whether the real thing is worth building.
   and the same page reads it. `panel-handoff` sits in `src/lib/` for the
   opposite reason — two routes hold opposite ends of it.
 
-- **Describe's prompt list comes from `src/lib/prompts/describe/`.** Every mode
-  is a `.md` in that folder plus an entry in its `index.ts`; the menu, the
-  instruction-file link, the mode type and the run labels all derive from that
-  array, so adding a prompt is a file drop and one entry — nothing in this page
-  changes. `reconstruct` writes a prompt to regenerate the picture, `anchor`
-  writes a short factual description to steer an image-to-image run; the dialog
-  this page replaced hard-coded `reconstruct`, so half the feature was
-  unreachable. **The picker is a menu, not `SingleSelect`** — the list is meant
-  to grow and a row of segmented pills stops fitting at three or four.
 - **Enhance has a target, and one of them is not an image model.** The picker
   above the idea box chooses between the image lineup -- the original page, one
   card per model -- and a multi-shot writer from `src/lib/prompts/multi-shot/`,
@@ -483,23 +250,6 @@ tail with no end decides whether the real thing is worth building.
   The model selector is hidden rather than disabled for a multi-shot run: the
   instruction names the video model it writes for, so an image selection is not
   a choice taken away, it is not part of the question.
-- **Variations does not generate. It hands the run over** (#433). The dialog it
-  replaced fired the prompts immediately; here the prompts are the output and
-  nothing is spent. "Load in Images" fills the generator panel — the whole set
-  of prompts, plus the images they were written against, in order — and stops. You navigate to
-  Images and press Generate yourself. **No load-and-run**: following the results
-  would mean the lab holding cross-route state, which is not what it is for.
-  The confirmation is a local flag on the button, not a fact anyone stores; if
-  the panel changes underneath it, the button is stale and that is fine.
-- **The handoff lives in `src/lib/panel-handoff.ts`, not in this folder.** It is
-  the door between a page that composes a request and the page that runs it, and
-  it has to be somewhere both may import — a module under `lab/` that Images
-  read would be the app reaching into the lab, which is the one direction that
-  is barred. One record, overwritten by each write, read once and cleared on
-  arrival: the panel is a single working surface, so a second handoff replacing
-  the first is the honest behaviour, and a reload of Images must not refill a
-  panel that has since been edited. Enhance and any later page wanting the same
-  door use this one.
 - **The lab may import from the app. The app may never import from the lab.**
   Reuse `RefImageStrip`, `ExistingImagePicker`, `useUserImages` freely — an
   experiment that hand-rolls its own is not testing its own idea. But the moment
@@ -521,15 +271,6 @@ tail with no end decides whether the real thing is worth building.
   state, not about a lab page being the first thing to want something the app
   can give every clip. If the answer to "who writes this, and does it survive
   deleting `lab/`?" is the app and yes, it is not a lab migration.
-
-  **`fal_endpoints` (#523) is the second exception, and it passes the same test
-  for a different reason.** Endpoint Explorer keeps the FAL endpoints you have
-  pasted in; re-pasting a URL you already checked is what makes a validator
-  useless on its second day, so collecting them is the feature rather than one
-  page's scratch state. It is also the table the real Endpoint Explorer needs
-  whatever surface ends up owning it — this page is merely first to want it.
-  `generation_metadata` was not an option: an endpoint is not an image and has
-  no row to hang off.
 
 - **The rail collapses, and `layout.tsx` is a shell around a client
   component.** The collapsed state lives above both columns — the aside narrows
