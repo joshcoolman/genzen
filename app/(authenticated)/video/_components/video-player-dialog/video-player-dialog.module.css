@@ -11,3 +11,12 @@
   object-fit: contain;
   background: var(--image-backing);
 }
+
+/* Under the clip, right-aligned -- away from the native player's own controls,
+   which own the bottom-left. The one decision this dialog offers, so it does
+   not share the row with anything. */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-block-start: var(--space-12);
+}

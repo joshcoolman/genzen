@@ -19,6 +19,13 @@ source images; `use-view.ts` owns everything after the first paint.
   model label is no name, so the card prints nothing rather than the same words
   twice. Naming is done from Lab/Sequence, through `updateImageMeta` -- the
   action Images renames stills with.
+- **The playback dialog is where a clip is judged, so Delete is in it** (#658).
+  Clips out of one prompt separate the moment they run, not on the wall. It
+  moves to Trash -- `deleteGalleryImage`, the card menu's own call -- and closes
+  the dialog; the card leaving the wall is the feedback. **It does not ask
+  first**, matching the card's menu: a prompt before a recoverable act would be
+  the only one in the app, and the cull loop is all clicks. The dialog is titled
+  with the clip's name when it has one.
 - Saved Director rough exports appear here and in every Lab video picker (#607).
   They are ordinary completed `ai_video` rows with `origin = director`, separate
   files and stored session/export provenance. Video's deletion does not affect
