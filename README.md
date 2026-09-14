@@ -271,17 +271,22 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Nothing in progress; #653 shipped. See the work board below.
+**Focus** — Nothing in progress. The next one worth opening is the model-name
+migration: `user_images.title` is now a clip's name, and the model it was made
+with still reads from `generation_metadata` under three different keys with
+three separate resolvers. No issue for it yet — write one, then work it.
 
 Recent highlights:
 
+- Lab/Sequence: click a thumbnail to play from it; the run loops and survives
+  navigation, and the transport bar is gone (#655, #659).
+- Name a clip — from the Video card's menu, the playback dialog header, or a
+  Sequence tile; the name shows on the wall (#657).
+- Delete a clip from the playback dialog, straight to Trash (#658).
 - Removed six unused Lab tools and Explore; Enhance and saved media/history
   are preserved (#653).
 - Video: sample a clip into a contact sheet and import chosen frames to Images (#647).
 - Meta prompt: write several prompts from staged references in one call (#645).
-- Director: click a section to play it; click again to pause (#643).
-- Lab/Frames keeps both library clips and YouTube on the source strip (#644).
-- Director: rework any section while preserving its joins (#642).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.
