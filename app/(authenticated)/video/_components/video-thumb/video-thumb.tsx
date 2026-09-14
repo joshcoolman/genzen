@@ -10,6 +10,7 @@ import {
   Grid3x3,
   Loader2,
   MoreHorizontal,
+  Pencil,
   Play,
   Trash2,
 } from 'lucide-react'
@@ -63,6 +64,7 @@ export function VideoThumb({
   onHide,
   onContinue,
   onGrabFrames,
+  onRename,
   isContinuing,
   selected,
   selectionActive,
@@ -79,6 +81,8 @@ export function VideoThumb({
   /** Open the contact sheet of stills for this clip (#647). Finished clips
    *  only -- there are no frames of a clip that does not exist yet. */
   onGrabFrames: (video: VideoRecord) => void
+  /** Open the naming dialog for this clip (#657). */
+  onRename: (video: VideoRecord) => void
   isContinuing: boolean
   /** Picked for a bulk action (#517). */
   selected: boolean
@@ -143,6 +147,13 @@ export function VideoThumb({
             Grab frames
           </DropdownMenuItem>
         )}
+        {/* On every clip: a clip generating is exactly when you know what it
+            is meant to be, and a name is the one thing here that does not
+            depend on the file existing. */}
+        <DropdownMenuItem onClick={() => onRename(video)}>
+          <Pencil />
+          {name ? 'Rename' : 'Name this clip'}
+        </DropdownMenuItem>
         {/* On every clip, not just finished ones: clearing a failure is the
             commonest reason to want it, and on a generating clip it is the
             only way to say stop. Last, and warming to danger on hover -- it

@@ -16,6 +16,7 @@ import { useView } from './use-view'
 import styles from './video.module.css'
 import type { VideoRecord } from './_actions/generate-video.action'
 import { MAX_VIDEO_IMAGES } from '#/features/video/inputs'
+import { clipName } from '#/features/video/clip-facts'
 import { ConfirmDialog, NameDialog, PageHeader, Stack } from '#/components'
 
 export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
@@ -74,6 +75,9 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     framesClip,
     setFramesClip,
     deleteVideo,
+    renamingClip,
+    setRenamingClip,
+    renameClip,
     continueFrom,
     isContinuing,
     prompts,
@@ -184,6 +188,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             onHide={(id) => void visibility.hide([id])}
             onContinue={(video) => void continueFrom(video)}
             onGrabFrames={setFramesClip}
+            onRename={setRenamingClip}
             onPlay={setPlayingId}
             continuingId={isContinuing}
             selectedIds={selectedIds}
@@ -298,6 +303,24 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
           void createGroup(name, groupFlow.targets)
         }}
         onCancel={closeGroupFlow}
+      />
+
+      {/* A clip's own name, not a group's (#657). Opens empty on a clip still
+          called after the model that made it -- that is a label nobody typed,
+          and seeding the field with it would make Save a way to freeze it. */}
+      <NameDialog
+        open={renamingClip !== null}
+        title={
+          renamingClip && clipName(renamingClip)
+            ? 'Rename clip'
+            : 'Name this clip'
+        }
+        initialName={renamingClip ? (clipName(renamingClip) ?? '') : ''}
+        confirmLabel="Save"
+        onSubmit={(name) => {
+          if (renamingClip) void renameClip(renamingClip, name)
+        }}
+        onCancel={() => setRenamingClip(null)}
       />
 
       <NameDialog
