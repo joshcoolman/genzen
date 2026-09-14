@@ -9,7 +9,7 @@ they earn a place in the main workflow.
 Clips made by Continue (#494) are meant to be watched as one thing and there was
 no way to watch them as one thing. Its question: **does the order actually cut
 together?** Nothing is generated and nothing is stored — pick clips, drag them
-into order, press play.
+into order, click one to watch from there.
 
 - **Two `<video>` elements ping-ponging, not one swapping its `src`.** The
   visible one plays while the next loads hidden; at `ended` they swap which is on
@@ -17,10 +17,33 @@ into order, press play.
   judged — one element reloading blanks for a beat at every boundary and the page
   would lie about the answer. The idle one is hidden with `opacity`, never
   `display` or `visibility`, either of which lets a browser stop decoding.
-- **Its own Play/Pause, and no scrubber.** A `<video>`'s native bar knows only
-  its own clip, so it would read 0:00-0:06 of whichever one is showing and reset
-  at every join. A scrubber of our own is worse: one that spans clips needs a
-  global timeline, and a global timeline is what turns this into an editor.
+- **The row is the transport, and there is no bar under the player** (#655).
+  Clicking a thumbnail plays the run from that clip's first frame — absolute
+  where Previous/Next were relative, and aimed at the tile you are already
+  looking at. The stage toggles play/pause; the run loops, so Start over is a
+  click on tile 1; adding the first clip starts the run. Only Mute is left,
+  because it is the one control no thumbnail click can reach. Click and drag
+  need no disambiguating — a browser fires no `click` after a completed drag.
+- **The run survives navigation; nothing else about the page does** (#659).
+  Its clip ids live in `sequence/last-run.ts`, and everything about a clip is
+  read off the library row as it is now -- so a clip renamed elsewhere shows
+  its new name, and one trashed from Video drops out of the run rather than
+  sitting in it pointing at nothing. Clear is a real button for this reason: it
+  was a text link when a run was gone by the next visit anyway, and it is now
+  the only way to empty one that will still be here tomorrow.
+  A restored run tries to autoplay and a browser may refuse -- nobody clicked
+  and the sound is on -- so `NotAllowedError` leaves the stage stopped instead
+  of showing Pause over a still picture.
+- **A pencil on a tile names the clip** (#657), and the name is the clip's own
+  `title` -- so a run arranged here shows up on the Video wall as "intro",
+  "scene two". The run itself is still not stored; a name is a fact about a
+  clip, not about the arrangement, which is what keeps this inside the
+  no-lab-state rule. It writes through `updateImageMeta`, optimistically, and
+  the run keeps playing behind the dialog.
+- **No scrubber, still.** A `<video>`'s native bar knows only its own clip, so
+  it would read 0:00-0:06 of whichever one is showing and reset at every join. A
+  scrubber of our own is worse: one that spans clips needs a global timeline,
+  and a global timeline is what turns this into an editor.
 - **It looks like a timeline and is not one.** Equal-width tiles whatever the
   clip's length; no ruler, no playhead, no trims. The question is arrangement,
   not pacing. Proportional widths are one multiplication away —
@@ -41,11 +64,13 @@ into order, press play.
   and the way back on screen, because a run whose shape you are still choosing is
   a real state. `matchRatio` is a prop the caller passes; Frames picks one clip
   out of the library and has no run to match.
-- **Skip lands on a clip and plays it.** Judging the third join by watching from
-  the top is most of a minute spent on two joins already settled. It costs the
-  gapless swap — the idle element is holding `index + 1`, so a jump anywhere else
-  loads a fresh source and blanks for a beat. That is the right trade: a skip is
-  a move _between_ cuts, never one of the cuts being judged.
+- **A jump lands on a clip and plays it.** Judging the third join by watching
+  from the top is most of a minute spent on two joins already settled. It costs
+  the gapless swap — the idle element is holding the clip that follows, so a jump
+  anywhere else loads a fresh source and blanks for a beat. That is the right
+  trade: a jump is a move _between_ cuts, never one of the cuts being judged. On
+  the last clip the idle element holds clip 0, so the loop point — the join you
+  see most while arranging — is gapless like the rest.
 - **`lab/_components/` is what a second page wanted whole.** The clip picker
   went there when Sequence wanted the dialog Frames had; `clip-frames/` — a
   clip's first and last frame side by side — went there when the picker wanted

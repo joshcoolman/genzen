@@ -1,19 +1,23 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Pause,
-  Play,
-  RotateCcw,
-  SkipBack,
-  SkipForward,
-  Volume2,
-  VolumeX,
-} from 'lucide-react'
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react'
+import { Volume2, VolumeX } from 'lucide-react'
 import styles from './sequence-player.module.css'
+import type { RefObject } from 'react'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 
 const srcFor = (clip: VideoRecord) => `/img/${clip.id}`
+
+export interface SequencePlayerHandle {
+  /** Land on a clip and play it from its first frame. */
+  playFrom: (index: number) => void
+}
 
 /**
  * Empty an element so the stage is actually blank.
@@ -46,40 +50,41 @@ function blank(el: HTMLVideoElement) {
  * Not `MediaSource`: appending buffers gaplessly needs fragmented MP4 and one
  * codec across every clip, and FAL's output is guaranteed to be neither.
  *
- * **Its own Play/Pause, because native `controls` cannot work here.** A
- * `<video>`'s bar knows only its own clip, so the scrubber would read 0:00-0:06
- * of whichever clip happens to be showing and reset itself at every join. There
- * is deliberately no scrubber of our own either: one that spans clips needs a
- * global timeline, which is the line this page does not cross (#497).
+ * **There is no transport bar, because the run itself is the transport**
+ * (#655). Clicking a thumbnail plays from that clip, which is absolute where
+ * Previous/Next were relative and is aimed at the tile you are already looking
+ * at; the stage toggles play/pause; and the run loops, so Start over is a click
+ * on tile 1 that you rarely need. Working out an order is watch, move a tile,
+ * watch again -- every control under the player was a detour around a tile
+ * already on screen.
+ *
+ * **Nothing is drawn over the footage.** No play glyph, no overlay: clips play,
+ * a click stops them, and the behaviour is legible from the behaviour.
+ *
+ * **It always plays.** Adding the first clip starts the run, and so does a run
+ * restored from the last visit -- though a browser may refuse that one, since
+ * nobody clicked and the sound is on; the stage then sits stopped and one
+ * click starts it. The end of the run rejoins clip 1. A one-clip run therefore loops on its own, which is odd
+ * and accepted: suppressing it means a rule about set size in the one place
+ * that should have no rules at all.
  *
  * **Sound is on by default and mutes both elements at once.** A run is one
  * thing to watch, so a mute that applied to whichever element happened to be on
- * top would come back at the next join. Autoplay policy is not in the way here:
- * every play starts from a button, so a browser allows the audio.
+ * top would come back at the next join. Mute is also the only control no
+ * thumbnail click can reach, which is why it is the one button left.
  *
- * **Start over is its own button, available whenever there is a run** -- not a
- * state the Play button falls into at the end. Rearranging and re-watching from
- * the top is the loop this page exists for, and having to reach the end (or
- * pause, then find a different control) to get back to clip 1 put a wait in the
- * middle of it.
- *
- * **Skip lands on a clip and plays it, rather than nudging a position** (#512).
- * Working out an order means seeing one join, moving a tile, seeing it again --
- * and watching the run from the top to reach the third cut is most of a minute
- * spent on the two cuts already judged. A skip is a jump plus a play because
- * there is no reason to press two buttons for one intention.
- *
- * Skipping costs the gapless join: the idle element is holding `index + 1`, so
- * a jump anywhere else takes a fresh source and blanks for a beat while it
- * loads. That is the right trade -- a skip is a deliberate move *between* cuts,
- * not one of the cuts being judged, and the alternative is preloading clips
- * nobody asked for.
+ * Jumping costs the gapless join: the idle element is holding the clip after
+ * this one, so a jump anywhere else takes a fresh source and blanks for a beat
+ * while it loads. Only that one join -- from there on the preload is back in
+ * step, so "click tile 1 and watch the run" is judged at full quality.
  */
 export function SequencePlayer({
   clips,
+  controls,
   onIndexChange,
 }: {
   clips: Array<VideoRecord>
+  controls?: RefObject<SequencePlayerHandle | null>
   /** Which clip the stage is on, so the row can mark it (#512). Reported
    *  whether or not it is playing: the tile the highlight is on is the clip
    *  that is loaded, and pausing does not move it. */
@@ -93,7 +98,6 @@ export function SequencePlayer({
   /** Which of the two elements is on top and playing. */
   const [active, setActive] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [atEnd, setAtEnd] = useState(false)
   const [muted, setMuted] = useState(false)
 
   /* Set on the elements rather than through the `muted` attribute, which React
@@ -116,11 +120,20 @@ export function SequencePlayer({
 
   /**
    * Keep each element pointed at the right clip: the active one at `index`, the
-   * idle one at `index + 1`, ready to take over.
+   * idle one at the clip that follows, ready to take over.
    *
    * Assignment is guarded on the value, which is what makes the swap free --
    * the element taking over was already loaded as the idle one, so nothing is
    * re-fetched and nothing re-decodes.
+   *
+   * **On the last clip the idle one holds clip 0**, not nothing: the run loops,
+   * so the join back to the top is a join like any other, and it is the one you
+   * see most while arranging.
+   *
+   * **A src that is already right is still rewound.** An element that has
+   * played to its end and is handed the same clip again sits at its duration,
+   * and playing it fires `ended` immediately -- a two-clip run would spin
+   * through the loop point as fast as the events dispatch.
    */
   useEffect(() => {
     const current = els[active].current
@@ -139,31 +152,32 @@ export function SequencePlayer({
       }
     }
 
-    const nextClip = clips.at(index + 1)
+    const nextClip = clips.at(index + 1) ?? clips.at(0)
     if (idle) {
       if (nextClip) {
         const nextSrc = srcFor(nextClip)
         if (!idle.src.endsWith(nextSrc)) idle.src = nextSrc
+        else if (idle.currentTime !== 0) idle.currentTime = 0
       } else {
         blank(idle)
       }
     }
   }, [index, active, clips])
 
-  /** A clip finished. Hand over to the idle element, or stop on the last frame. */
+  /** A clip finished. Hand over to the idle element, wrapping at the end. */
   const handleEnded = useCallback(
     (from: number) => {
       if (from !== active) return
-      const next = index + 1
-      if (next >= clipsRef.current.length) {
+      const run = clipsRef.current
+      if (run.length === 0) {
         setIsPlaying(false)
-        setAtEnd(true)
         return
       }
+      const next = index + 1 >= run.length ? 0 : index + 1
       const takingOver = 1 - active
       setActive(takingOver)
       setIndex(next)
-      void els[takingOver].current?.play()
+      void els[takingOver].current?.play().catch(() => {})
     },
     [active, index],
   )
@@ -177,7 +191,8 @@ export function SequencePlayer({
    * then, React bails out of the render, the effect never re-runs -- and the
    * pause it had already done was the only thing that happened. Pressing Start
    * over stopped the video. Every jump goes through here for that reason, since
-   * a skip that lands where you already are is the same trap.
+   * a click on the tile that is already playing is the same trap -- and that
+   * click has to mean "play this from its first frame" like every other.
    *
    * So the element is driven directly and the state follows. Element `a` always
    * takes the target, whichever of the two happened to be playing. When it
@@ -201,45 +216,60 @@ export function SequencePlayer({
       if (first.src.endsWith(src)) first.currentTime = 0
       else first.src = src
 
-      setAtEnd(false)
       setActive(0)
       setIndex(next)
       setIsPlaying(true)
-      // Swallowed: reassigning `src` can abort an in-flight play with an
-      // AbortError that means nothing here.
-      void first.play().catch(() => {})
+      void first.play().catch((err: unknown) => {
+        /* An `AbortError` means a new source replaced this one mid-play and a
+           fresh `play()` is already coming -- nothing to report.
+
+           `NotAllowedError` is the real case (#659): a run restored on load
+           starts itself without anyone having clicked, and sound is on, so the
+           browser refuses. Saying so leaves the stage in a stopped state a
+           click starts, instead of a Pause label over a still picture. */
+        if (err instanceof Error && err.name === 'NotAllowedError') {
+          setIsPlaying(false)
+        }
+      })
     },
     [clips],
   )
 
-  const restart = useCallback(() => jumpTo(0), [jumpTo])
+  useImperativeHandle(controls, () => ({ playFrom: jumpTo }), [jumpTo])
 
   const toggle = useCallback(() => {
     if (clips.length === 0) return
-    if (atEnd) {
-      restart()
-      return
-    }
     const el = els[active].current
     if (!el) return
     if (isPlaying) {
       el.pause()
       setIsPlaying(false)
     } else {
-      void el.play()
+      void el.play().catch(() => {})
       setIsPlaying(true)
     }
-  }, [active, atEnd, clips.length, isPlaying, restart])
+  }, [active, clips.length, isPlaying])
 
   /* A run that empties, or loses the clip that was playing, goes back to the
      start rather than to a stopped element pointing at nothing. */
   useEffect(() => {
     if (index < clips.length) return
     setIsPlaying(false)
-    setAtEnd(false)
     setActive(0)
     setIndex(0)
   }, [clips.length, index])
+
+  /* The first clip in an empty run starts the run. There is no stopped state
+     to press Play from any more, so a run that sat still after something was
+     put in it would be the old model half-removed. Guarded on the transition
+     rather than on `length`, so later additions do not interrupt what is
+     already playing. */
+  const wasEmpty = useRef(true)
+  useEffect(() => {
+    const empty = clips.length === 0
+    if (wasEmpty.current && !empty) jumpTo(0)
+    wasEmpty.current = empty
+  }, [clips.length, jumpTo])
 
   /* An effect rather than a call inside each handler: `index` moves from the
      `ended` handler, from a jump and from a run that shrinks underneath it, and
@@ -252,7 +282,16 @@ export function SequencePlayer({
 
   return (
     <div className={styles.player}>
-      <div className={styles.stage}>
+      {/* A button, so the one thing the stage does is reachable from the
+          keyboard too. Nothing is drawn on it: the label lives on `aria-label`
+          and the footage stays uncovered. */}
+      <button
+        type="button"
+        className={styles.stage}
+        onClick={toggle}
+        disabled={empty}
+        aria-label={isPlaying ? 'Pause' : 'Play'}
+      >
         {[a, b].map((ref, i) => (
           <video
             key={i}
@@ -264,58 +303,13 @@ export function SequencePlayer({
           />
         ))}
         {empty && (
-          <p className={styles.placeholder}>
-            Add clips below, then play the run.
-          </p>
+          <span className={styles.placeholder}>
+            Add clips below to start the run.
+          </span>
         )}
-      </div>
+      </button>
 
       <div className={styles.controls}>
-        <button
-          type="button"
-          className={styles.transport}
-          onClick={toggle}
-          disabled={empty}
-          aria-label={isPlaying ? 'Pause' : 'Play'}
-        >
-          {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-          {isPlaying ? 'Pause' : 'Play'}
-        </button>
-        {/* Clamped rather than wrapping, and disabled at each end. A skip is
-            aimed at a specific join; wrapping from the last clip to the first
-            would answer a different question than the one being asked. */}
-        <button
-          type="button"
-          className={styles.transportIcon}
-          onClick={() => jumpTo(index - 1)}
-          disabled={empty || index === 0}
-          aria-label="Previous clip"
-          title="Previous clip"
-        >
-          <SkipBack size={14} />
-        </button>
-        <button
-          type="button"
-          className={styles.transportIcon}
-          onClick={() => jumpTo(index + 1)}
-          disabled={empty || index >= clips.length - 1}
-          aria-label="Next clip"
-          title="Next clip"
-        >
-          <SkipForward size={14} />
-        </button>
-        {/* Always live, playing or not: the point is getting back to clip 1
-            without first arriving somewhere it is offered. */}
-        <button
-          type="button"
-          className={styles.transport}
-          onClick={restart}
-          disabled={empty}
-          aria-label="Start over"
-        >
-          <RotateCcw size={14} />
-          Start over
-        </button>
         <button
           type="button"
           className={styles.transport}
@@ -327,13 +321,6 @@ export function SequencePlayer({
           {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
           {muted ? 'Muted' : 'Sound'}
         </button>
-        {/* Which clip of how many, and nothing about time. The count is the one
-            fact a run has that a single clip does not. */}
-        {!empty && (
-          <span className={styles.position}>
-            Clip {Math.min(index + 1, clips.length)} of {clips.length}
-          </span>
-        )}
       </div>
     </div>
   )

@@ -80,6 +80,25 @@
   font-size: var(--text-3xs);
 }
 
+/* The name, bottom-left -- the corner the ordinal does not hold. Full strength
+   against the ordinal's muted grey: the number is a position you already know,
+   the name is the thing being read. */
+.name {
+  position: absolute;
+  bottom: var(--space-4);
+  left: var(--space-4);
+  z-index: 1;
+  max-width: calc(100% - var(--space-8) * 2);
+  overflow: hidden;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface-sunken) 70%, transparent);
+  color: var(--text);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .remove {
   position: absolute;
   top: var(--space-4);
@@ -105,6 +124,19 @@
 
 .remove:hover {
   color: var(--danger);
+}
+
+/* Beside Remove, one button's width in -- after it in the file, so the `right`
+   here wins over the one it composes. Hover-revealed like it, because a tile is
+   a picture first and two icons sitting on every clip is the noise the run
+   exists to avoid. */
+.rename {
+  composes: remove;
+  right: calc(var(--space-4) + 1.5rem);
+}
+
+.rename:hover {
+  color: var(--accent);
 }
 
 /* The same footprint as a tile, so the run keeps one rhythm whether it holds

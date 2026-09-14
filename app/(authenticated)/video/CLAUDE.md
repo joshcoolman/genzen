@@ -9,6 +9,28 @@ source images; `use-view.ts` owns everything after the first paint.
 
 ## Quirks
 
+- **A clip's `title` is its name; the model it was made with reads from
+  `generation_metadata.model_label`** (#657). Until then `title` was the label
+  and nothing else ever wrote there, so a clip could not be called "scene two".
+  `clipModel`/`clipName` in `src/features/video/clip-facts.ts` decide which is
+  which, and no migration was needed because `clipModel` falls back to `title`
+  -- every row written before naming existed still reads exactly as it did.
+  **A clip has a name only once someone gives it one**: a title equal to the
+  model label is no name, so the card prints nothing rather than the same words
+  twice. Naming is done from Lab/Sequence, through `updateImageMeta` -- the
+  action Images renames stills with.
+- **The playback dialog is where a clip is judged, so Delete is in it** (#658).
+  Clips out of one prompt separate the moment they run, not on the wall. It
+  moves to Trash -- `deleteGalleryImage`, the card menu's own call -- and closes
+  the dialog; the card leaving the wall is the feedback. **It does not ask
+  first**, matching the card's menu: a prompt before a recoverable act would be
+  the only one in the app, and the cull loop is all clicks.
+  **The title is edited in place there too** (#657): the heading is the clip's
+  name when it has one, a pencil turns it into an input with a tick and a
+  cross, and Escape cancels the edit without closing the dialog -- the keydown
+  is stopped, or Base UI's document-level Escape listener takes the clip off
+  screen along with the half-typed name. A hidden `DialogTitle` stays mounted
+  while the visible one is an input, so the dialog is never nameless.
 - Saved Director rough exports appear here and in every Lab video picker (#607).
   They are ordinary completed `ai_video` rows with `origin = director`, separate
   files and stored session/export provenance. Video's deletion does not affect

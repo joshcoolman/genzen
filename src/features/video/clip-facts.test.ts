@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { aspectLabel, namedRatio, sameAspect } from './clip-facts'
+import {
+  aspectLabel,
+  clipModel,
+  clipName,
+  namedRatio,
+  sameAspect,
+} from './clip-facts'
 
 /**
  * The tolerance is the whole feature: it decides which clips the Sequence
@@ -55,5 +61,34 @@ describe('namedRatio', () => {
 
   it('has nothing to say about an unknown shape', () => {
     expect(namedRatio(null)).toBeNull()
+  })
+})
+
+/**
+ * A clip's name and the model that made it share one column, and which is
+ * which is decided here rather than stored (#657). The case that matters is
+ * the old row: every clip made before naming existed has the model label in
+ * `title` and must not read as though someone typed it.
+ */
+describe('clipModel / clipName', () => {
+  const clip = (title: string, label?: string) => ({
+    title,
+    generation_metadata: label ? { model_label: label } : null,
+    width: 1280,
+    height: 720,
+  })
+
+  it('reads the model off the metadata copy, not off the title', () => {
+    expect(clipModel(clip('Scene two', 'Kling 2.5 Pro'))).toBe('Kling 2.5 Pro')
+    expect(clipName(clip('Scene two', 'Kling 2.5 Pro'))).toBe('Scene two')
+  })
+
+  it('has no name while the title is still the label', () => {
+    expect(clipName(clip('Kling 2.5 Pro', 'Kling 2.5 Pro'))).toBeNull()
+  })
+
+  it('falls back to the title on a row written before naming existed', () => {
+    expect(clipModel(clip('Kling 2.5 Pro'))).toBe('Kling 2.5 Pro')
+    expect(clipName(clip('Kling 2.5 Pro'))).toBeNull()
   })
 })

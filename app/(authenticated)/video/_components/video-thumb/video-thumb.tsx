@@ -10,6 +10,7 @@ import {
   Grid3x3,
   Loader2,
   MoreHorizontal,
+  Pencil,
   Play,
   Trash2,
 } from 'lucide-react'
@@ -18,6 +19,8 @@ import type { VideoRecord } from '../../_actions/generate-video.action'
 import {
   aspectLabel,
   aspectRatio,
+  clipModel,
+  clipName,
   namedRatio,
 } from '#/features/video/clip-facts'
 import {
@@ -61,6 +64,7 @@ export function VideoThumb({
   onHide,
   onContinue,
   onGrabFrames,
+  onRename,
   isContinuing,
   selected,
   selectionActive,
@@ -77,6 +81,8 @@ export function VideoThumb({
   /** Open the contact sheet of stills for this clip (#647). Finished clips
    *  only -- there are no frames of a clip that does not exist yet. */
   onGrabFrames: (video: VideoRecord) => void
+  /** Open the naming dialog for this clip (#657). */
+  onRename: (video: VideoRecord) => void
   isContinuing: boolean
   /** Picked for a bulk action (#517). */
   selected: boolean
@@ -86,6 +92,7 @@ export function VideoThumb({
   onSelect: (id: string, shiftKey: boolean) => void
 }) {
   const duration = durationOf(video)
+  const name = clipName(video)
   /* Snapped to the shape it reads as, not the exact rectangle FAL returned.
      One 21:9 request comes back as both 1504x672 and 1568x672; sized from the
      raw ratio, two cards captioned `21:9` sat at different heights beside each
@@ -140,6 +147,13 @@ export function VideoThumb({
             Grab frames
           </DropdownMenuItem>
         )}
+        {/* On every clip: a clip generating is exactly when you know what it
+            is meant to be, and a name is the one thing here that does not
+            depend on the file existing. */}
+        <DropdownMenuItem onClick={() => onRename(video)}>
+          <Pencil />
+          {name ? 'Rename' : 'Name this clip'}
+        </DropdownMenuItem>
         {/* On every clip, not just finished ones: clearing a failure is the
             commonest reason to want it, and on a generating clip it is the
             only way to say stop. Last, and warming to danger on hover -- it
@@ -291,6 +305,11 @@ export function VideoThumb({
             it is not in the menu -- and icon-only, because at three cards
             across the word was the only text competing with the prompt for
             its line. */}
+        {/* The name, above the prompt and only once there is one (#657). A
+            clip is born called after the model that made it, and printing that
+            here would put the same words on two lines of every card. */}
+        {name ? <p className={styles.name}>{name}</p> : null}
+
         <div className={styles.promptRow}>
           <p className={styles.prompt}>{video.description}</p>
           {isDone ? (
@@ -316,7 +335,7 @@ export function VideoThumb({
         <div className={styles.facts}>
           {shape ? <span className={styles.fact}>{shape}</span> : null}
           {duration ? <span className={styles.fact}>{duration}</span> : null}
-          <span className={styles.model}>{video.title}</span>
+          <span className={styles.model}>{clipModel(video)}</span>
         </div>
       </div>
     </article>

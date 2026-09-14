@@ -30,6 +30,7 @@ import {
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
+import { updateImageMeta } from '#/features/user-images/server/images.action'
 import { captureLastFrame } from '#/features/video/frame-capture'
 import { findClipEndFrame } from '#/features/video/server/find-clip-end-frame.action'
 import { stampFrameSource } from '#/features/video/server/stamp-frame.action'
@@ -273,6 +274,32 @@ export function useView(initialVideos: Array<VideoRecord>) {
     },
     [refresh],
   )
+
+  /** The clip whose name is being edited, or null (#657). */
+  const [renamingClip, setRenamingClip] = useState<VideoRecord | null>(null)
+
+  /**
+   * Name a clip.
+   *
+   * Optimistic, and a failure puts the old name back rather than re-reading:
+   * one row changed one field, so the wall does not need refetching to be
+   * right again. `description` is passed back as it stands -- the action
+   * writes both columns, and omitting it would clear the prompt.
+   */
+  const renameClip = useCallback(async (clip: VideoRecord, title: string) => {
+    const apply = (value: string) =>
+      setVideos((current) =>
+        current.map((v) => (v.id === clip.id ? { ...v, title: value } : v)),
+      )
+    apply(title)
+    setRenamingClip(null)
+    try {
+      await updateImageMeta(clip.id, title, clip.description)
+    } catch {
+      apply(clip.title)
+      toast.error('Could not rename that clip')
+    }
+  }, [])
 
   /**
    * Hide, and its twin focus (#537).
@@ -984,6 +1011,9 @@ export function useView(initialVideos: Array<VideoRecord>) {
     framesClip,
     setFramesClip,
     deleteVideo,
+    renamingClip,
+    setRenamingClip,
+    renameClip,
     continueFrom,
     isContinuing,
     prompts,
