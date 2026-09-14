@@ -29,8 +29,8 @@ describe('pushRef', () => {
 
 describe('imageLabelPrefix', () => {
   it('numbers every image in the set, in order', () => {
-    // The numbers are positions in the array the submit sends, and the prompts
-    // Variations writes name them (#436). Off by one here is a prompt about a
+    // The numbers are positions in the array the submit sends, and the
+    // prompt names them (#436). Off by one here is a prompt about a
     // different picture, with nothing on screen to say so.
     expect(imageLabelPrefix(3)).toBe('[Image 1, Image 2, Image 3]\n\n')
   })

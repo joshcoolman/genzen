@@ -186,7 +186,7 @@ export async function checkConnections(): Promise<{
               status: 'unset' as const,
               detail: 'Optional',
               remedy:
-                'Prompt enhancement, variations and Describe need ANTHROPIC_API_KEY. Everything else works without it.',
+                'AI prompt writing and reference reading need ANTHROPIC_API_KEY. Image and video generation work without it.',
             }),
       },
     ],

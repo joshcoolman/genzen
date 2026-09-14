@@ -278,8 +278,7 @@ export function useView(initial: Array<SavedAiImage>) {
   /**
    * A handoff waiting from another page, applied once (#433).
    *
-   * The lab's Variations page composes a set of prompts about one image and
-   * has nowhere to run them; this is where they land. Read and cleared in the
+   * Activity sends past generations to the panel through this handoff. Read and cleared in the
    * same call, so a reload of Images does not refill a panel that has since
    * been edited, and the sender is told nothing -- its "Loaded" is a local
    * flag, not a fact anyone reconciles.
@@ -983,8 +982,7 @@ export function useView(initial: Array<SavedAiImage>) {
 
         // The whole list, not row 0. `setPrompt` writes prompts[0] and leaves
         // the rest, which was invisible until the panel routinely held several
-        // -- a Variations run loads four (#436), so Load used to leave you with
-        // five prompts and Generate ran all of them. The panel is a single
+        // -- Load used to leave old prompts behind and Generate ran all of them. The panel is a single
         // working surface; a past generation merged into a half-written list is
         // a run nobody can read (#458).
         generator.replacePrompts([loaded.prompt])

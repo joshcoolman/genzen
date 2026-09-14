@@ -1,6 +1,5 @@
 /* A lightbox: scrim, picture, chevrons, X, counter, and a prompt column that
-   switches off (#580). Explore's image-detail is the three-column one; this
-   shares nothing with it on purpose. */
+   switches off (#580). */
 
 .root {
   /* One knob for the breathing room, used on all four sides. Tune here rather
