@@ -198,3 +198,9 @@
   color: var(--text-muted);
   font-size: var(--text-3xs);
 }
+
+/* Same footprint as the two adds; a plain border rather than the sparkle's,
+   because it spends nothing and adds nothing. */
+.script {
+  color: var(--text-muted);
+}

@@ -118,6 +118,15 @@ clips or generate them, drag them into order, click one to watch from there.
   is the column's width unless that makes it taller than 70vh, then the widest
   box that height allows, centred -- so a 9:16 run stays on screen in the
   sticky column and the clip fills the box with no bars either way.
+- **Script is the run's prompts, verbatim, with a blank line between.** No
+  numbering, no model, no assumptions about which part of a prompt is the
+  line: `script.ts` joins the descriptions and the dialog shows them in one
+  read-only box with a copy button. The first cut pulled the quoted spans out
+  as dialogue and was wrong about what mattered -- the prompts that make a run
+  cut together are massaged by hand, and the music and the general setup are
+  in there on purpose. The words exactly as they generated the clips are the
+  baseline; dropping the repeated setup or keeping only the quotes verbatim is
+  a later pass over this text.
 - **Two `<video>` elements ping-ponging, not one swapping its `src`.** The
   visible one plays while the next loads hidden; at `ended` they swap which is on
   top. The join has to be free of a stutter, because the join is the thing being

@@ -1,0 +1,13 @@
+.content {
+  max-width: 34rem;
+}
+
+.text {
+  min-height: 16rem;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}

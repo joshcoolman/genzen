@@ -16,6 +16,7 @@ import {
   nearestRatio,
 } from './gen'
 import { isPending, playableClips, toPlayableIndex, toRowIndex } from './run'
+import { scriptOf } from './script'
 import type { GenFrame } from './_components/gen-form/gen-form'
 import type { Session } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
@@ -157,6 +158,10 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
 
   useGenerationPoll(pendingSince, () => router.refresh())
   const [pickerOpen, setPickerOpen] = useState(false)
+  /* The run's prompts, verbatim, as they stand. Nothing is stored and nothing
+     is sent to a model -- see `script.ts`. */
+  const [scriptOpen, setScriptOpen] = useState(false)
+  const script = useMemo(() => scriptOf(picked), [picked])
   /**
    * Which clip the player is on, so the row can mark it (#512).
    *
@@ -625,6 +630,9 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     setPlayingIndex,
     pickerOpen,
     setPickerOpen,
+    scriptOpen,
+    setScriptOpen,
+    script,
     addClips,
     removeClip,
     move,
