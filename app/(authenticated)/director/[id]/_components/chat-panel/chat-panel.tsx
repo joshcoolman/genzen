@@ -1,10 +1,39 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader, ScrollText, Send } from 'lucide-react'
 import styles from './chat-panel.module.css'
 import type { ChatTurn } from '../../../_lib/types'
 import { Button, Textarea } from '#/components'
+
+/**
+ * What the character is doing while you wait: a word that changes every
+ * couple of seconds. None of them says anything about the answer -- they are
+ * the shape of thinking, not its content -- and cycling is what makes a long
+ * wait read as work rather than a hang. The loader glyph alone said nothing.
+ */
+const MUSING = [
+  'musing',
+  'mulling it over',
+  'forming an opinion',
+  'concocting an explanation',
+  'distilling',
+  'choosing the words',
+  'getting into character',
+]
+
+function Musing() {
+  const [step, setStep] = useState(0)
+  useEffect(() => {
+    const timer = setInterval(() => setStep((n) => n + 1), 2200)
+    return () => clearInterval(timer)
+  }, [])
+  return (
+    <span className={styles.making} aria-live="polite">
+      <Loader size={12} /> {MUSING[step % MUSING.length]}...
+    </span>
+  )
+}
 
 /**
  * The question box, under the player (#670), and the intro before the first
@@ -56,13 +85,7 @@ export function ChatPanel({
         </p>
       ) : (
         <div className={styles.status}>
-          {answering.size > 0 ? (
-            <span className={styles.making}>
-              <Loader size={12} /> making the answer
-            </span>
-          ) : (
-            <span />
-          )}
+          {busy || answering.size > 0 ? <Musing /> : <span />}
           <Button size="sm" onClick={onTranscript}>
             <ScrollText size={14} />
             Transcript

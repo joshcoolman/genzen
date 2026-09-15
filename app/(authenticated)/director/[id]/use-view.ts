@@ -260,6 +260,9 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
   /** The conversation as text, for the dialog: a question, its answer, a
    *  blank line. The character is left out on purpose -- see `ChatPanel`. */
   const [transcriptOpen, setTranscriptOpen] = useState(false)
+  /** Whether a chat's run rejoins clip 1 after the last. Off: an answer is
+   *  said once, like a person says it. */
+  const [loop, setLoop] = useState(false)
   const transcript = useMemo(
     () =>
       (chat?.turns ?? [])
@@ -758,6 +761,8 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     answering,
     answerReady,
     ask,
+    loop,
+    setLoop,
     transcript,
     transcriptOpen,
     setTranscriptOpen,

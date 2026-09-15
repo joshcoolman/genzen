@@ -40,10 +40,16 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   H3 Max Turbo, so a three-clip answer waits one clip's time. Seams are hard
   cuts. Continuity between turns is by description, not by frame, so a
   question can be asked while the last answer is still rendering.
-- **The stage waits for the whole answer**: `run.ts` takes a `ready`
-  predicate, and a chat's holds back every clip of a turn until all of them
-  have settled, then plays from the first. The row still shows each clip as it
-  lands, which is how you watch the answer being built.
+- **The stage waits for the whole answer, says it once, and stops**: `run.ts`
+  takes a `ready` predicate, and a chat's holds back every clip of a turn
+  until all of them have settled, then plays from the first. The player's
+  `loop` prop is off for a chat, so the stage stops on the answer's last
+  frame like a person stops talking; a Loop button beside Mute (shown only
+  when the caller passes `onLoopChange`) turns the run's behaviour back on.
+  The row still shows each clip as it lands, which is how you watch the
+  answer being built. While you wait, the panel cycles a word -- musing,
+  distilling -- that says the character is working and nothing about what it
+  will say.
 - **Locked down, on purpose**: all you can do in a chat is chat. No Add
   clips, Add gen, drag, pencil or Remove, no model or duration controls --
   the model, the ratio and the lengths are fixed server-side. Script stays
