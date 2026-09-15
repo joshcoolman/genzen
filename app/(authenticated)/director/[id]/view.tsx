@@ -73,6 +73,10 @@ export function View({
                Half the viewport leaves room for both, and the clip is still
                large enough to be a face. */
             stageMax={view.chat ? '45vh' : undefined}
+            /* A conversation: an answer plays once and stops, unless Loop is
+               pressed. A run always loops and gets no button. */
+            loop={view.chat ? view.loop : true}
+            onLoopChange={view.chat ? view.setLoop : undefined}
             controls={player}
             onIndexChange={view.setPlayingIndex}
             placeholder={

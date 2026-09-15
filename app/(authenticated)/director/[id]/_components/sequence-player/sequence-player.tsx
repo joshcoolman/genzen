@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Volume2, VolumeX } from 'lucide-react'
+import { Repeat, Volume2, VolumeX } from 'lucide-react'
 import styles from './sequence-player.module.css'
 import type { CSSProperties, RefObject } from 'react'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
@@ -68,6 +68,12 @@ function blank(el: HTMLVideoElement) {
  * and accepted: suppressing it means a rule about set size in the one place
  * that should have no rules at all.
  *
+ * **Unless told not to loop** (#670). A chat is a conversation: an answer
+ * plays once and the stage stops on its last frame, the way a person stops
+ * talking, and a Loop button beside Mute turns the run's behaviour back on.
+ * The button appears only when the caller owns the choice; a run has no
+ * choice and no button.
+ *
  * **Sound is on by default and mutes both elements at once.** A run is one
  * thing to watch, so a mute that applied to whichever element happened to be on
  * top would come back at the next join. Mute is also the only control no
@@ -85,6 +91,8 @@ export function SequencePlayer({
   onIndexChange,
   placeholder = 'Add clips below to start the run.',
   stageMax,
+  loop = true,
+  onLoopChange,
 }: {
   clips: Array<VideoRecord>
   /** The run's shape as width over height, so the stage is drawn at it rather
@@ -100,6 +108,10 @@ export function SequencePlayer({
   placeholder?: string
   /** The tallest the stage may be, as a CSS length; 70vh when unset. */
   stageMax?: string
+  /** Rejoin clip 1 after the last clip. On unless the caller says otherwise. */
+  loop?: boolean
+  /** Given, the stage shows a Loop toggle and reports presses here. */
+  onLoopChange?: (loop: boolean) => void
 }) {
   const a = useRef<HTMLVideoElement>(null)
   const b = useRef<HTMLVideoElement>(null)
@@ -128,6 +140,8 @@ export function SequencePlayer({
      says by then. */
   const clipsRef = useRef(clips)
   clipsRef.current = clips
+  const loopRef = useRef(loop)
+  loopRef.current = loop
 
   /**
    * Keep each element pointed at the right clip: the active one at `index`, the
@@ -181,6 +195,12 @@ export function SequencePlayer({
       if (from !== active) return
       const run = clipsRef.current
       if (run.length === 0) {
+        setIsPlaying(false)
+        return
+      }
+      if (index + 1 >= run.length && !loopRef.current) {
+        // The end, and nothing rejoins: stop on the last frame. The element
+        // keeps its source, so the picture stays and a tile click restarts.
         setIsPlaying(false)
         return
       }
@@ -334,6 +354,19 @@ export function SequencePlayer({
           {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
           {muted ? 'Muted' : 'Sound'}
         </button>
+        {onLoopChange && (
+          <button
+            type="button"
+            className={styles.transport}
+            onClick={() => onLoopChange(!loop)}
+            disabled={empty}
+            aria-pressed={loop}
+            aria-label={loop ? 'Stop looping' : 'Loop'}
+          >
+            <Repeat size={14} />
+            {loop ? 'Looping' : 'Loop'}
+          </button>
+        )}
       </div>
     </div>
   )
