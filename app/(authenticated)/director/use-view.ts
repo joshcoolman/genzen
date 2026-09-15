@@ -8,22 +8,19 @@ import {
   newSession,
   removeSession,
 } from './_actions/sessions.action'
-import { importLocal, localCutAvailable } from './_lib/import-local'
 import type { SessionSummary } from './_lib/types'
 
 type Flow =
   | { kind: 'create' }
   | { kind: 'rename' | 'delete'; session: SessionSummary }
   | null
-export function useView(initial: Array<SessionSummary>, owner: string) {
+export function useView(initial: Array<SessionSummary>) {
   const router = useRouter()
   const [sessions, setSessions] = useState(initial)
   const [flow, setFlow] = useState<Flow>(null)
   const [busy, setBusy] = useState(false)
   const working = useRef(false)
   const [error, setError] = useState('')
-  const [status, setStatus] = useState('')
-  const [hasLocal, setHasLocal] = useState(false)
   const createId = useRef<string | null>(null)
   useEffect(() => {
     let cancelled = false
@@ -35,13 +32,10 @@ export function useView(initial: Array<SessionSummary>, owner: string) {
         if (!cancelled)
           setError('Sessions could not be refreshed. Reload to try again.')
       })
-    void localCutAvailable(owner)
-      .then(setHasLocal)
-      .catch(() => {})
     return () => {
       cancelled = true
     }
-  }, [owner])
+  }, [])
   async function run(action: () => Promise<void>) {
     if (working.current) return
     working.current = true
@@ -58,7 +52,6 @@ export function useView(initial: Array<SessionSummary>, owner: string) {
     } finally {
       working.current = false
       setBusy(false)
-      setStatus('')
     }
   }
   return {
@@ -67,8 +60,6 @@ export function useView(initial: Array<SessionSummary>, owner: string) {
     setFlow,
     busy,
     error,
-    status,
-    hasLocal,
     open: (session: SessionSummary) => router.push(`/director/${session.id}`),
     create: (name: string) =>
       run(async () => {
@@ -89,11 +80,6 @@ export function useView(initial: Array<SessionSummary>, owner: string) {
         await removeSession(id)
         setSessions(await loadSessions())
         setFlow(null)
-      }),
-    importLocal: () =>
-      run(async () => {
-        const id = await importLocal(owner, setStatus)
-        router.push(`/director/${id}`)
       }),
   }
 }

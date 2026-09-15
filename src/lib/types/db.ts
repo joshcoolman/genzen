@@ -12,7 +12,8 @@
 
 /**
  * Which surface an image was made on (#207) -- `user_images.origin`, and the
- * check constraint is extended by 0018 for Director's published exports.
+ * check constraint was extended by 0018 for Director's published exports;
+ * those are gone (#662) and the value is simply still accepted.
  *
  * Not provenance (what it descends from) and not membership (where it sits):
  * a canvas generation from an uploaded photo descends from an upload, may sit

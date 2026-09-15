@@ -124,13 +124,17 @@ export async function listActivity(
   // and they are the expensive half: a 20s Flux 3 clip is $3.40 against $0.08
   // for the dearest still, so the ledger was blind to most of the money.
   //
+  // Director's own rows were excluded here until #662: its clips were private
+  // to it, so a ledger entry pointed at something no surface could open. A
+  // session's clips are ordinary library rows now and belong in the log with
+  // everything else.
+  //
   // One predicate, three queries. It was a chain of builder calls applied to
   // two query objects through a structurally-typed `applyFilters` helper --
   // the shape that helper existed to satisfy went with supabase-js.
   const where = sql`
     where user_id = ${userId}
       and source in ('ai_generated', 'ai_video')
-      and origin <> 'director'
       ${
         data.models?.length
           ? sql`and generation_metadata->>'model' in ${sql(

@@ -4,12 +4,11 @@ import { useState } from 'react'
 import { Plus, X, Youtube } from 'lucide-react'
 import { YouTubeDialog } from '../youtube-dialog/youtube-dialog'
 import { youTubeThumbnail } from '../../youtube'
-import { ClipPicker } from '../../../_components/clip-picker/clip-picker'
 import styles from './source-input.module.css'
 import type { YouTubeSource } from '../../source'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 import { clipFacts } from '#/features/video/clip-facts'
-import { MediaBox } from '#/components'
+import { ClipPicker, MediaBox } from '#/components'
 
 /** The strip's tile. Paired with `--tile` in the stylesheet: MediaBox takes a
  *  number, the row's geometry takes a length, and they have to agree. */

@@ -66,8 +66,13 @@ const COST_CENTS = sql`
   )
 `
 
-/** Rows that represent a generation. An upload cost nothing and ran nothing. */
-const GENERATED = sql`source in ('ai_generated', 'ai_video') and origin <> 'director'`
+/** Rows that represent a generation. An upload cost nothing and ran nothing.
+ *
+ *  It excluded `origin = 'director'` until #662, because Director's clips were
+ *  private to it and charging the ledger for something Activity could not show
+ *  was worse than leaving the money out. A session's clips are ordinary library
+ *  rows now, so there is nothing to exclude and no row left carrying it. */
+const GENERATED = sql`source in ('ai_generated', 'ai_video')`
 
 interface TotalsRow {
   image_count: number

@@ -1,129 +1,18 @@
 # Lab
 
 Where a feature is worked on before it is part of the app (#424). Enhance
-compares prompt rewrites; Frames, Sequence and Lighting test mechanisms before
-they earn a place in the main workflow.
+compares prompt rewrites; Frames and Lighting test mechanisms before they earn
+a place in the main workflow.
 
-## Sequence
-
-Clips made by Continue (#494) are meant to be watched as one thing and there was
-no way to watch them as one thing. Its question: **does the order cut together,
-and does the next one follow?** Pick clips or generate them, drag them into
-order, click one to watch from there.
-
-- **The run generates its own clips, and that is why the question grew** (#660).
-  Judging an order meant leaving for Video, pressing Continue on the last clip,
-  waiting, coming back and re-picking -- enough friction that the run being
-  judged stopped being the thing being worked on. Add gen makes the next clip
-  here: the previous clip's last frame in the first slot, removable, a prompt,
-  a duration, one button.
-  - **One model, H3 Max Turbo, and no picker** -- see `sequence/gen.ts` for why,
-    including why it is not plain H3: Director's speed came from an endpoint
-    hardcoded in `director/clips.ts` that was not in the lineup at all until
-    #660. A continuation needs no aspect ratio either: the image endpoint has no
-    such parameter and follows the frame, so a generated clip always matches the
-    run. The pills appear only with no frame, which is the one case nothing else
-    can answer.
-  - **Nothing is rewritten before FAL.** No enhance step, no Claude call. The
-    words submitted are the words typed, which is what keeps a press cheap
-    enough to make casually -- and why this page still names no instruction
-    file.
-  - **Regenerate replaces; it never deletes.** The pencil is two tabs, Name and
-    Regenerate, and the second refills its form from the clip's own
-    `generation_metadata` -- so nothing new is stored to make it possible. The
-    clip that drops out of the run is still in Video, untouched. Re-rolls you
-    did not keep accumulate there and are cleaned up by hand.
-  - **A clip in the middle is pinned at both ends**, so the joins either side
-    survive and the prompt is only about what happens in between. The far seam
-    is **the clip's own ending frame, not the next clip's beginning** -- the
-    same picture whenever the next clip was continued from this one, and the
-    only one of the two already in the library, so pinning costs a query rather
-    than decoding a second clip. Director answered this identically (#642). The
-    last clip of a run gets no ending frame: nothing joins after it. Either
-    frame can be dropped, which is how a deliberate change of ending is made.
-  - **A clip being made holds its place in the row and cannot be played or
-    dragged.** There is nothing behind `/img/[id]` until FAL answers, and a run
-    rearranged around a picture nobody has seen is an arrangement judged blind.
-    The player is given the finished clips and the row every clip, which is why
-    the two are indexed separately (`toPlayableIndex`).
-  - **The no-lab-state rule is untouched, and it is worth saying why.** A
-    generated clip is an ordinary `user_images` row written by the app's own
-    pipeline -- the same reasoning that lets the pencil write `title`. Delete
-    this folder and the clip, its row and its poll all still make sense. What
-    stays out of the database is the _arrangement_, which is still ids in
-    `last-run.ts` and nothing else. Lighting is the precedent for the money:
-    a lab page that spends prints the estimate before the press.
-
-- **Two `<video>` elements ping-ponging, not one swapping its `src`.** The
-  visible one plays while the next loads hidden; at `ended` they swap which is on
-  top. The join has to be free of a stutter, because the join is the thing being
-  judged — one element reloading blanks for a beat at every boundary and the page
-  would lie about the answer. The idle one is hidden with `opacity`, never
-  `display` or `visibility`, either of which lets a browser stop decoding.
-- **The row is the transport, and there is no bar under the player** (#655).
-  Clicking a thumbnail plays the run from that clip's first frame — absolute
-  where Previous/Next were relative, and aimed at the tile you are already
-  looking at. The stage toggles play/pause; the run loops, so Start over is a
-  click on tile 1; adding the first clip starts the run. Only Mute is left,
-  because it is the one control no thumbnail click can reach. Click and drag
-  need no disambiguating — a browser fires no `click` after a completed drag.
-- **The run survives navigation; nothing else about the page does** (#659).
-  Its clip ids live in `sequence/last-run.ts`, and everything about a clip is
-  read off the library row as it is now -- so a clip renamed elsewhere shows
-  its new name, and one trashed from Video drops out of the run rather than
-  sitting in it pointing at nothing. Clear is a real button for this reason: it
-  was a text link when a run was gone by the next visit anyway, and it is now
-  the only way to empty one that will still be here tomorrow.
-  A restored run tries to autoplay and a browser may refuse -- nobody clicked
-  and the sound is on -- so `NotAllowedError` leaves the stage stopped instead
-  of showing Pause over a still picture.
-- **A pencil on a tile names the clip** (#657), and the name is the clip's own
-  `title` -- so a run arranged here shows up on the Video wall as "intro",
-  "scene two". The run itself is still not stored; a name is a fact about a
-  clip, not about the arrangement, which is what keeps this inside the
-  no-lab-state rule. It writes through `updateImageMeta`, optimistically, and
-  the run keeps playing behind the dialog.
-- **No scrubber, still.** A `<video>`'s native bar knows only its own clip, so
-  it would read 0:00-0:06 of whichever one is showing and reset at every join. A
-  scrubber of our own is worse: one that spans clips needs a global timeline,
-  and a global timeline is what turns this into an editor.
-- **It looks like a timeline and is not one.** Equal-width tiles whatever the
-  clip's length; no ruler, no playhead, no trims. The question is arrangement,
-  not pacing. Proportional widths are one multiplication away —
-  `duration_seconds` is already on the row — and deliberately not taken.
-- **A correct order is visible before you press play.** In a Continue chain each
-  clip opens on the frame the one before it ended on, so the tiles rhyme; a tile
-  that does not resemble its left neighbour's ending is misplaced.
-- **Each tile is two frames: what the clip opens on and what it ends on**
-  (#512). One frame per clip asked you to hold the previous ending in your head,
-  which is the one picture that was never on screen. With both, clip N's ending
-  sits directly beside clip N+1's beginning and the cut is a thing you look at
-  rather than remember. The gap between tiles is wider than the seam inside one
-  on purpose — one is a cut, the other is a clip's own middle skipped, and a row
-  where those read the same is a strip of frames with no joins in it.
-- **The picker narrows to the run's shape, and only Sequence asks it to.** Clips
-  of different aspect ratios cannot cut together at all, so the first clip picked
-  sets the shape and the dialog then offers what matches — with the count it hid
-  and the way back on screen, because a run whose shape you are still choosing is
-  a real state. `matchRatio` is a prop the caller passes; Frames picks one clip
-  out of the library and has no run to match.
-- **A jump lands on a clip and plays it.** Judging the third join by watching
-  from the top is most of a minute spent on two joins already settled. It costs
-  the gapless swap — the idle element is holding the clip that follows, so a jump
-  anywhere else loads a fresh source and blanks for a beat. That is the right
-  trade: a jump is a move _between_ cuts, never one of the cuts being judged. On
-  the last clip the idle element holds clip 0, so the loop point — the join you
-  see most while arranging — is gapless like the rest.
-- **`lab/_components/` is what a second page wanted whole.** The clip picker
-  went there when Sequence wanted the dialog Frames had; `clip-frames/` — a
-  clip's first and last frame side by side — went there when the picker wanted
-  what the run drew. The bar is two pages, and a copy under one page's
-  `_components/` is the same thing drifting into two.
+**Sequence graduated** (#662): it became Director's workspace and its page here
+is gone. That is the point of this folder working -- and the reason the two
+components it shared with Frames now live in `src/components/` rather than in
+`lab/_components/`, since the app may never import from the lab.
 
 ## Frames
 
 It answers a question about a mechanism rather than about prose, which is why it
-is one of the two pages with no instruction file to name (Sequence is the other) — `LabPage`'s `instructionFile`
+is the one page with no instruction file to name — `LabPage`'s `instructionFile`
 is optional for it, and printing an empty one would say there is a file to go
 and edit.
 

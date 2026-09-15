@@ -12,6 +12,21 @@ export interface ClipShape {
 }
 
 /**
+ * A clip as the shared tiles draw it: `ClipShape` plus what a picture needs.
+ *
+ * `ClipPicker` and `ClipFrames` live in `src/components/` (#662), which cannot
+ * name the route's `VideoRecord` any more than a feature can -- so they take
+ * this and are generic over it, and a caller gets its own rows back out of the
+ * picker rather than a narrowed copy.
+ */
+export interface ClipTile extends ClipShape {
+  id: string
+  description: string | null
+  /** Whether the row points at a stored final frame (#512). */
+  has_end_frame: boolean
+}
+
+/**
  * A clip's shape as a number, or null when nothing recorded it.
  *
  * Null is a real state and not a bug to route around: `width`/`height` come off

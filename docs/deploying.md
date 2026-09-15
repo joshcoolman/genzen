@@ -42,37 +42,6 @@ be set on a deployment.
   ignores an injected `PORT`. A platform that assigns a random port will route
   to the wrong one and serve 502s over a green deployment — the failure looks
   like a crash and isn't one.
-- **One web replica for Director exports.** Upload ownership and temporary
-  files belong to that process. A restart interrupts an export; retry from
-  the saved session. Sessions, clips, pending provider receipts and completed
-  exports are durable in Postgres and the private bucket; temporary uploads
-  and in-progress stitching are not. Encoding stops after four minutes, leaving response
-  headroom below Railway's five-minute idle request timeout.
-- **Director Final Cut needs both AI keys.** Claude plans from the saved export;
-  FAL renders picture, effects and score. Jobs run after the HTTP response using
-  Next `after()`, so the browser need not stay open. A 90-second Postgres lease
-  prevents duplicate workers. After a container restart, opening that session's
-  Exports tab resumes queued/expired jobs using saved provider receipts. Uncertain
-  submissions stop for review, never automatically spend again. Completed and
-  intermediate assets live in the private bucket, not ephemeral disk. A worker
-  pauses after 45 minutes and can be resumed; rough exports can be up to 180 seconds,
-  with generated output capped at 120 seconds and one active Final Cut per user.
-  Planning condenses the story and normalizes timing before video generation.
-  Stopping cannot undo charges
-  for requests already accepted by the provider.
-
-## First user
-
-A fresh database has no users, and there is no signup flow (#168). Nothing
-propagates from local — schema travels with the repo, rows do not.
-
-`pnpm users add '<email>' '<password>'` creates one. It reaches a deployed
-database over Railway's public TCP proxy, so the Postgres service needs one
-(Railway leaves `DATABASE_PUBLIC_URL` hostless until it does). Without a proxy,
-run the same command inside the container instead.
-
-## Known snags
-
 - `prepare` runs `git config core.hooksPath` on every install and exits 128
   where there is no `.git`, which is every build container. It is guarded now;
   do not un-guard it.
