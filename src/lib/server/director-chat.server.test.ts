@@ -14,13 +14,21 @@ describe('director chat answers (#670)', () => {
   it('keeps at most three clips and refuses none', () => {
     const clip = { prompt: 'p', spoken: 's', duration: 9 }
     const four = clampAnswer(
-      { character: 'c', line: 'l', clips: [clip, clip, clip, clip] },
+      {
+        character: 'c',
+        title: 't',
+        line: 'l',
+        clips: [clip, clip, clip, clip],
+      },
       durations,
     )
     expect(four.clips).toHaveLength(3)
     expect(four.clips[0].duration).toBe(8)
     expect(() =>
-      clampAnswer({ character: 'c', line: 'l', clips: [] }, durations),
+      clampAnswer(
+        { character: 'c', title: 't', line: 'l', clips: [] },
+        durations,
+      ),
     ).toThrow('nothing to say')
   })
 })

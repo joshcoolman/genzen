@@ -49,7 +49,10 @@ export function ChatPanel({
       <ol className={styles.transcript}>
         {turns.length === 0 && (
           <li className={styles.empty}>
-            Ask anything. Someone will answer, on camera.
+            A quick experiment. Ask anything and someone, invented on the spot
+            to suit the question, answers on camera in a clip or three.
+            Follow-ups go to the same character, and the chat names itself from
+            your first question. What do you want to know?
           </li>
         )}
         {turns.map((turn) => (
@@ -71,7 +74,9 @@ export function ChatPanel({
         <Textarea
           className={styles.input}
           value={draft}
-          placeholder={turns.length === 0 ? 'Ask a question' : 'Ask another'}
+          placeholder={
+            turns.length === 0 ? 'What do you want to know?' : 'Ask another'
+          }
           rows={2}
           maxLength={2000}
           disabled={busy}

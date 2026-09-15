@@ -279,9 +279,10 @@ says outright is not trusted.
 
 Recent highlights:
 
-- Director chat sessions: New chat on the index, type a question, and a
+- Director chat sessions: New chat opens unnamed on an intro, you ask, and a
   character the model invents answers in one to three 9:16 clips, submitted
-  in parallel and played once the whole answer has landed (#670).
+  in parallel and played once the whole answer has landed. The first question
+  names the chat, and all you can do in one is chat (#670).
 - A Script button on a Director session shows the run's prompts verbatim, one
   after another, in a box with a copy button (#669).
 - Director's stage is drawn at the run's shape, so a portrait run fills the

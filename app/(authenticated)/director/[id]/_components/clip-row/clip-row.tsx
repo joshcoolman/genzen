@@ -70,10 +70,11 @@ const pending = (clip: VideoRecord) => clip.status !== 'completed'
  * Click and drag need no disambiguating: a browser does not fire `click` after
  * a completed drag, so there is no movement threshold and no timer here.
  *
- * **A chat's row is the same row, read-only** (#670). The clips are the
- * answers, in the order they were asked, so nothing is added, dragged or
- * regenerated here; what survives is watching the answer be built, tapping a
- * clip to play from it, dropping one, and Script.
+ * **A chat's row is the same row, locked** (#670). The clips are the answers,
+ * in the order they were asked, and the run is the conversation: nothing is
+ * added, dragged, removed or regenerated here, and the model and the lengths
+ * are fixed out of reach. What survives is watching the answer be built,
+ * tapping a clip to play from it, and Script, which only reads.
  */
 export function ClipRow({
   clips,
@@ -88,7 +89,8 @@ export function ClipRow({
   onRename,
 }: {
   clips: Array<VideoRecord>
-  /** A chat's row loses Add clips, Add gen, drag and the pencil (#670). */
+  /** A chat's row loses Add clips, Add gen, drag, the pencil and Remove
+   *  (#670): all you can do in a chat is chat. */
   mode?: 'run' | 'chat'
   /** Where the player is in the run, so the row can say so (#512). */
   playingIndex: number | null
@@ -213,17 +215,19 @@ export function ClipRow({
                 <Pencil size={12} />
               </button>
             )}
-            <button
-              type="button"
-              className={styles.remove}
-              onClick={(e) => {
-                e.stopPropagation()
-                onRemove(clip.id)
-              }}
-              aria-label="Remove from the run"
-            >
-              <X size={12} />
-            </button>
+            {editable && (
+              <button
+                type="button"
+                className={styles.remove}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRemove(clip.id)
+                }}
+                aria-label="Remove from the run"
+              >
+                <X size={12} />
+              </button>
+            )}
             {/* In the corner opposite the ordinal, and out of the flow: a name
                 that took its own line would make named tiles taller than
                 unnamed ones and the row ragged. Absent until there is one, so
