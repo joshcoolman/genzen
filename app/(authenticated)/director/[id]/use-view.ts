@@ -289,26 +289,35 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
   }, [chat, picked])
 
   /**
-   * What the player may hold. A run: every finished clip. A chat: only clips
-   * of answers finished *entirely*, so the stage never starts an answer it
-   * cannot end -- the first clip of a three-clip answer playing on a loop while
-   * the other two render is an answer heard wrong.
+   * What the player may hold. A run: every finished clip. A chat: a clip once
+   * it *and every clip before it in its answer* have finished -- the prefix
+   * rule. The bursts are submitted together and land in any order, and the
+   * stage plays them in order as they arrive: clip 3 landing before clip 2
+   * waits for it, so an answer is never heard out of sequence. The player
+   * itself handles running out of ready clips mid-answer (see `starved`
+   * there).
    */
   const ready = useMemo<Ready>(() => {
     if (!chat) return isReady
-    const held = new Set(
-      chat.turns
-        .filter((turn) => answering.has(turn.id))
-        .flatMap((turn) => turn.clipIds),
+    const done = new Set(
+      picked.filter((c) => c.status === 'completed').map((c) => c.id),
     )
+    const held = new Set<string>()
+    for (const turn of chat.turns) {
+      let blocked = false
+      for (const id of turn.clipIds) {
+        if (!done.has(id)) blocked = true
+        if (blocked) held.add(id)
+      }
+    }
     return (clip) => isReady(clip) && !held.has(clip.id)
-  }, [chat, answering])
+  }, [chat, picked])
 
   /**
-   * The answer that just finished, as the row index of its first clip, so the
-   * view can play it from the top. Fires once per turn: the ids already
-   * answered when the page opened are seeded, so a restored chat does not
-   * replay its last answer on load.
+   * The answer that just started arriving, as the row index of its first
+   * clip, so the view can play it from the top. Fires once per turn, when
+   * the first clip is ready: the ids already answered when the page opened
+   * are seeded, so a restored chat does not replay its last answer on load.
    */
   const played = useRef<Set<string> | null>(null)
   const [answerReady, setAnswerReady] = useState<{
@@ -324,12 +333,14 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
       return
     }
     for (const turn of chat.turns) {
-      if (answering.has(turn.id) || played.current.has(turn.id)) continue
+      if (played.current.has(turn.id)) continue
+      const first = picked.find((c) => c.id === turn.clipIds[0])
+      if (!first || !ready(first)) continue
       played.current.add(turn.id)
-      const rowIndex = picked.findIndex((c) => c.id === turn.clipIds[0])
-      if (rowIndex >= 0) setAnswerReady({ turnId: turn.id, rowIndex })
+      const rowIndex = picked.indexOf(first)
+      setAnswerReady({ turnId: turn.id, rowIndex })
     }
-  }, [chat, answering, picked])
+  }, [chat, answering, picked, ready])
 
   /**
    * Ask, and put the answer's clips in the run before they exist -- the same

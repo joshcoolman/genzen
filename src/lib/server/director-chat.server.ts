@@ -5,8 +5,8 @@ import { z } from 'zod'
 import system from '#/lib/prompts/director-chat.md'
 import { ai, requireAiRole } from '#/lib/server/ai.server'
 
-/** The most clips one answer may take (#670). */
-export const MAX_ANSWER_CLIPS = 3
+/** The most clips one answer may take: six five-second bursts (#670). */
+export const MAX_ANSWER_CLIPS = 6
 
 const clipSchema = z.object({
   prompt: z.string().min(1),

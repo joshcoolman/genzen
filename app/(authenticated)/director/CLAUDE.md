@@ -40,9 +40,16 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   H3 Max Turbo, so a three-clip answer waits one clip's time. Seams are hard
   cuts. Continuity between turns is by description, not by frame, so a
   question can be asked while the last answer is still rendering.
-- **The stage waits for the whole answer, says it once, and stops**: `run.ts`
-  takes a `ready` predicate, and a chat's holds back every clip of a turn
-  until all of them have settled, then plays from the first. The player's
+- **Five-second bursts, played in order as they land.** The prompt asks for
+  one idea per clip at five seconds, up to six; within one answer the
+  setting, clothes and framing hold still so it plays as one response, and
+  between answers the scene may change as long as it is the same person.
+  `run.ts` takes a `ready` predicate, and a chat's is the prefix rule: a clip
+  is playable once it and every clip before it in its answer have settled,
+  so bursts landing out of order are heard in order. The stage starts on the
+  first clip and, when it runs out of ready clips mid-answer, waits on the
+  last frame and continues when the next one lands (`starved` in the
+  player). It never rejoins clip 1 on its own: the player's
   `loop` prop is off for a chat, so the stage stops on the answer's last
   frame like a person stops talking; a Loop button beside Mute (shown only
   when the caller passes `onLoopChange`) turns the run's behaviour back on.
