@@ -183,9 +183,14 @@ function Frames({
 
     void Promise.all([
       clipFrameGrid({ clipId: clip.id }),
-      importedClipFrames({ clipId: clip.id }).catch(
-        () => [] as Array<ImportedClipFrame>,
-      ),
+      /* Every kind, not just Grab frames' tiles: the closing tile is the frame
+         Add gen already cut as a continuity frame on any run that has appended
+         to this clip, and cutting an identical PNG beside it is the thing
+         provenance exists to stop. */
+      importedClipFrames({
+        clipId: clip.id,
+        kinds: ['grid', 'end', 'scrub'],
+      }).catch(() => [] as Array<ImportedClipFrame>),
     ])
       .then(([view, frames]) => {
         if (!live) return

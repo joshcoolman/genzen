@@ -102,7 +102,15 @@ clips or generate them, drag them into order, click one to watch from there.
       twice is one row -- provenance before bytes, the rule `findClipEndFrame`
       follows for a clip's ending. The tiles are `ClipFrameGrid`, shared with
       Video's Grab frames, which locks an imported tile where this one reuses
-      it.
+      it -- and the reuse counts **every** kind of stamp, not just Grab frames'
+      own, because the closing tile is the frame Add gen already cut as a
+      continuity frame on any run that appended to this clip.
+    - **The sheet had neither end of the clip on it until this** (#665). Each
+      candidate group hands back its centre frame, so it opened a third of an
+      interval in and closed an interval short -- and the opening and closing
+      frames are exactly the two a reference wants. `clip-frames.server.ts`
+      forces the first tile to t=0 and seeks a closing one at `duration -
+      0.05`; Video's Grab frames gets both for free.
     - **Not the end-frame slot.** Pinning an appended clip to an earlier frame
       makes the model interpolate _toward_ it -- a dissolve or a slow push,
       not a cut back. A different mechanism answering a different question.

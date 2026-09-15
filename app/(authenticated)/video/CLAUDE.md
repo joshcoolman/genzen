@@ -145,6 +145,16 @@ source images; `use-view.ts` owns everything after the first paint.
   older policy is rebuilt on next open rather than kept forever, which is the
   only way a change here reaches the clips being worked on.
 
+  **Both ends of the clip are tiles** (#665). Every candidate group hands back
+  its *centre* frame, so the sheet used to open a third of an interval in and
+  close up to a whole interval short -- the clip's actual first and last frames
+  were the two it never offered. The opening tile is now forced to the
+  candidate at t=0, which `fps=` had already decoded, and the closing one is a
+  second seek at `duration - 0.05` (the same 0.05 `captureLastFrame` settled
+  on, because seeking to exactly `duration` decodes nothing). A rounding error
+  as coverage; the two pictures most worth having once a tile can become a
+  reference image. `GRID_VERSION` is 3 for it.
+
   **A tall stack is narrowed to fit, not shortened.** WebP will not encode past
   16383px, and one column of 9:16 tiles at 320 wide clears that at 29 of them --
   the encode fails and the whole sheet reads as "no frames could be read out of

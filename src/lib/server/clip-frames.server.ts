@@ -78,7 +78,19 @@ const MAX_FRAMES = 48
 const CANDIDATES = 3
 
 /**
+ * How far short of the end the closing tile is cut.
+ *
+ * **Seeking to exactly `duration` decodes nothing**, which is the same thing
+ * `captureLastFrame` found in the browser and the same 0.05 it settled on. To
+ * the eye this is the clip's last frame; anything needing the provably final
+ * sample needs a different tool.
+ */
+const END_EPSILON = 0.05
+
+/**
  * Which sampling policy a stored sheet was built under.
+ *
+ * 3: the clip's own first and last frames are tiles (#665).
  *
  * The sheet is cached in the clip's row forever, so a change to the sampling
  * would otherwise only ever reach clips nobody had opened yet -- the ones
@@ -86,7 +98,7 @@ const CANDIDATES = 3
  * coverage with nothing on screen to say why. Bumping this rebuilds a stale
  * sheet once, on next open.
  */
-export const GRID_VERSION = 2
+export const GRID_VERSION = 3
 
 /** What a built grid records, and what the sheet is sliced by. */
 export interface ClipFrameGrid {
@@ -200,6 +212,57 @@ async function pickSharpest(
 }
 
 /**
+ * The clip's closing frame, as a tile the sheet can stack (#665).
+ *
+ * A seek rather than a pass -- `-ss` before `-i` -- and resized to the tile
+ * size the walk produced, so the stack stays one column of identical cells
+ * whatever rounding the two scale filters disagree about.
+ *
+ * Null rather than throwing: the caller treats it as an extra tile it would
+ * like, never one it needs.
+ */
+async function endFrameTile(
+  file: string,
+  dir: string,
+  timeSeconds: number,
+  width: number,
+  height: number,
+): Promise<Buffer | null> {
+  try {
+    const { stdout } = await execFileAsync(
+      ffmpegPath!,
+      [
+        '-loglevel',
+        'error',
+        '-ss',
+        timeSeconds.toFixed(3),
+        '-i',
+        file,
+        '-frames:v',
+        '1',
+        '-f',
+        'image2pipe',
+        '-c:v',
+        'mjpeg',
+        '-q:v',
+        '4',
+        '-',
+      ],
+      {
+        cwd: dir,
+        timeout: GRAB_TIMEOUT_MS,
+        maxBuffer: 64 * 1024 * 1024,
+        encoding: 'buffer',
+      },
+    )
+    if (!stdout.length) return null
+    return await sharp(stdout).resize(width, height, { fit: 'fill' }).toBuffer()
+  } catch {
+    return null
+  }
+}
+
+/**
  * Sample a clip start to finish and store the tiles as one sprite sheet (#647).
  *
  * **One ffmpeg pass, not N seeks.** `fps=` walks the file once and emits a
@@ -272,12 +335,62 @@ export async function buildClipFrameGrid({
     if (files.length === 0) return null
 
     const picked = await pickSharpest(out, files)
+
+    /**
+     * The clip's own first frame is tile one, whatever the sharpness pick said.
+     *
+     * **Both ends of a clip are the frames most worth having** (#665) and
+     * neither was on the sheet: every group hands back its *centre* candidate,
+     * so the opening tile landed a third of an interval in and the closing one
+     * up to an interval short. As a contact sheet that is a rounding error; as
+     * the place a reference image is chosen it is the two pictures you most
+     * want missing -- the shot a clip opens on, and the one it leaves you with.
+     *
+     * Free, because `fps=` emits its first frame at t=0: this is a candidate
+     * that was already decoded. No adjacency to check either -- the next tile
+     * is a whole group away.
+     */
+    picked[0] = 0
+
     const tiles = await Promise.all(
       picked.map((i) => readFile(join(out, files[i]))),
     )
+    const times = picked.map((i) => Number((i / fps).toFixed(3)))
 
     const decoded = await sharp(tiles[0]).metadata()
     if (!decoded.width || !decoded.height) return null
+
+    /**
+     * And the closing frame, which costs one seek the `fps` pass cannot make.
+     *
+     * The walk emits frames at a fixed rate from zero, so its last candidate
+     * sits up to `1/fps` before the end and no choice among them lands on the
+     * ending. This is a second decode at `duration - END_EPSILON`, once per
+     * clip ever, normalised to the sheet's tile size.
+     *
+     * **Best effort: a sheet without it is still a sheet.** A container that
+     * over-reports its duration decodes nothing here, and losing every tile
+     * over the last one would be the wrong trade.
+     */
+    const endTime = Number(Math.max(0, duration - END_EPSILON).toFixed(3))
+    const endTile = await endFrameTile(
+      file,
+      dir,
+      endTime,
+      decoded.width,
+      decoded.height,
+    )
+    if (endTile && endTime > (times.at(-1) ?? 0)) {
+      // A closing tile beside a sampled one that is nearly the same picture is
+      // the duplicate pair `sharpestIndexes` already refuses: half an interval
+      // is the same spacing rule, applied to the tile the pass cannot see.
+      if (endTime - (times.at(-1) ?? 0) < interval / 2) {
+        tiles.pop()
+        times.pop()
+      }
+      tiles.push(Buffer.from(endTile))
+      times.push(endTime)
+    }
 
     // Narrowed only when the stack would not encode -- the common case leaves
     // the tiles exactly as ffmpeg scaled them.
@@ -322,9 +435,7 @@ export async function buildClipFrameGrid({
     })
 
     return {
-      // `fps` emits its first frame at t=0 and one every 1/fps after it, so a
-      // candidate's index is its timestamp.
-      times: picked.map((i) => Number((i / fps).toFixed(3))),
+      times,
       sheetPath,
       tileWidth: width,
       tileHeight: height,
