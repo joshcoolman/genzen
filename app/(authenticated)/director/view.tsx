@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus } from 'lucide-react'
+import { MessageSquare, Plus } from 'lucide-react'
 import { SessionCard } from './_components/session-card/session-card'
 import { SessionList } from './_components/session-list/session-list'
 import { useView } from './use-view'
@@ -22,13 +22,30 @@ export function View({ initial }: { initial: Array<SessionSummary> }) {
         title="Director"
         description={`${state.sessions.length} sessions`}
         aside={
-          <Button
-            disabled={state.busy}
-            onClick={() => state.setFlow({ kind: 'create' })}
-          >
-            <Plus size={16} />
-            New session
-          </Button>
+          <Stack direction="row" gap={8}>
+            {/* A chat is a kind of session, chosen at birth (#670): a
+                question box instead of Add clips, a character instead of a
+                prompt. Two buttons rather than a kind picker in the dialog,
+                because the dialog asks for a name and nothing else. */}
+            <Button
+              disabled={state.busy}
+              onClick={() =>
+                state.setFlow({ kind: 'create', sessionKind: 'chat' })
+              }
+            >
+              <MessageSquare size={16} />
+              New chat
+            </Button>
+            <Button
+              disabled={state.busy}
+              onClick={() =>
+                state.setFlow({ kind: 'create', sessionKind: 'run' })
+              }
+            >
+              <Plus size={16} />
+              New session
+            </Button>
+          </Stack>
         }
       />
       {state.error && <p role="alert">{state.error}</p>}
@@ -49,9 +66,16 @@ export function View({ initial }: { initial: Array<SessionSummary> }) {
       )}
       <NameDialog
         open={state.flow?.kind === 'create'}
-        title="New session"
+        title={
+          state.flow?.kind === 'create' && state.flow.sessionKind === 'chat'
+            ? 'New chat'
+            : 'New session'
+        }
         confirmLabel="Create"
-        onSubmit={(name) => void state.create(name)}
+        onSubmit={(name) => {
+          if (state.flow?.kind === 'create')
+            void state.create(name, state.flow.sessionKind)
+        }}
         onCancel={() => state.setFlow(null)}
       />
       <NameDialog

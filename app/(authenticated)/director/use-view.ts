@@ -8,10 +8,10 @@ import {
   newSession,
   removeSession,
 } from './_actions/sessions.action'
-import type { SessionSummary } from './_lib/types'
+import type { SessionKind, SessionSummary } from './_lib/types'
 
 type Flow =
-  | { kind: 'create' }
+  | { kind: 'create'; sessionKind: SessionKind }
   | { kind: 'rename' | 'delete'; session: SessionSummary }
   | null
 export function useView(initial: Array<SessionSummary>) {
@@ -61,10 +61,10 @@ export function useView(initial: Array<SessionSummary>) {
     busy,
     error,
     open: (session: SessionSummary) => router.push(`/director/${session.id}`),
-    create: (name: string) =>
+    create: (name: string, kind: SessionKind) =>
       run(async () => {
         createId.current ??= crypto.randomUUID()
-        const created = await newSession(name, createId.current)
+        const created = await newSession(name, createId.current, kind)
         createId.current = null
         setFlow(null)
         router.push(`/director/${created.id}`)

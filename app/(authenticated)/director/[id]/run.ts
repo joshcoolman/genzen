@@ -10,9 +10,20 @@ import type { VideoRecord } from '../../video/_actions/generate-video.action'
 export const isPending = (clip: Pick<VideoRecord, 'status'>) =>
   clip.status !== 'completed'
 
-/** The run as the player can play it: the finished clips, in run order. */
-export function playableClips(picked: Array<VideoRecord>): Array<VideoRecord> {
-  return picked.filter((clip) => !isPending(clip))
+/**
+ * Whether the player may have a clip. Finished is the default and the whole
+ * rule for a run; a chat narrows it to clips whose answer has finished
+ * entirely (#670), so the stage never starts an answer it cannot end.
+ */
+export type Ready = (clip: VideoRecord) => boolean
+export const isReady: Ready = (clip) => !isPending(clip)
+
+/** The run as the player can play it: the ready clips, in run order. */
+export function playableClips(
+  picked: Array<VideoRecord>,
+  ready: Ready = isReady,
+): Array<VideoRecord> {
+  return picked.filter(ready)
 }
 
 /**
@@ -24,21 +35,23 @@ export function playableClips(picked: Array<VideoRecord>): Array<VideoRecord> {
 export function toPlayableIndex(
   picked: Array<VideoRecord>,
   rowIndex: number,
+  ready: Ready = isReady,
 ): number {
   const clip = picked.at(rowIndex)
   // `at` takes a negative index from the end, which is never what a row
   // position means.
-  if (!clip || rowIndex < 0 || isPending(clip)) return -1
-  return playableClips(picked).findIndex((c) => c.id === clip.id)
+  if (!clip || rowIndex < 0 || !ready(clip)) return -1
+  return playableClips(picked, ready).findIndex((c) => c.id === clip.id)
 }
 
 /** And back, so the row can light the tile the player is on. */
 export function toRowIndex(
   picked: Array<VideoRecord>,
   playableIndex: number | null,
+  ready: Ready = isReady,
 ): number | null {
   if (playableIndex === null || playableIndex < 0) return null
-  const clip = playableClips(picked).at(playableIndex)
+  const clip = playableClips(picked, ready).at(playableIndex)
   if (!clip) return null
   const index = picked.findIndex((c) => c.id === clip.id)
   return index < 0 ? null : index

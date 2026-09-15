@@ -1,7 +1,8 @@
 'use client'
 
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { SessionHeading } from '../_components/session-heading/session-heading'
+import { ChatPanel } from './_components/chat-panel/chat-panel'
 import { ClipRow } from './_components/clip-row/clip-row'
 import {
   AddGenDialog,
@@ -24,6 +25,10 @@ import { ClipPicker } from '#/components'
  * move is where the run lives -- `director_sessions.cut`, against a revision,
  * rather than one `localStorage` record -- and that the page has a name at the
  * top of it. Nothing here is sent to a model: the prompt goes to FAL as typed.
+ *
+ * Unless the session is a chat (#670), in which case the words typed go to a
+ * character and what reaches FAL is the character's answer. The chat box sits
+ * under the player and the row turns read-only.
  */
 export function View({
   session,
@@ -39,6 +44,17 @@ export function View({
      makes clicking the clip already playing do nothing (see the player). */
   const player = useRef<SequencePlayerHandle>(null)
 
+  /* An answer finished: play it from its first clip (#670). Imperative for the
+     same reason a tile click is -- it has to reach the elements. */
+  const { answerReady, toPlayableIndex: playableIndexOf } = view
+  const playedTurn = useRef<string | null>(null)
+  useEffect(() => {
+    if (!answerReady || playedTurn.current === answerReady.turnId) return
+    playedTurn.current = answerReady.turnId
+    const target = playableIndexOf(answerReady.rowIndex)
+    if (target >= 0) player.current?.playFrom(target)
+  }, [answerReady, playableIndexOf])
+
   return (
     <>
       <SessionHeading id={session.id} name={session.name} />
@@ -49,15 +65,36 @@ export function View({
         <div className={styles.player}>
           <SequencePlayer
             clips={view.playable}
-            ratio={view.runRatio}
+            /* A chat is vertical before its first clip exists (#670), so the
+               empty stage is already the shape the answer will be. */
+            ratio={view.runRatio ?? (view.chat ? 9 / 16 : null)}
+            /* The transcript and the question box share the sticky column
+               with the stage, so a 9:16 stage at 70vh put the box off screen.
+               Half the viewport leaves room for both, and the clip is still
+               large enough to be a face. */
+            stageMax={view.chat ? '45vh' : undefined}
             controls={player}
             onIndexChange={view.setPlayingIndex}
+            placeholder={
+              view.chat
+                ? 'The answer plays here.'
+                : 'Add clips below to start the run.'
+            }
           />
+          {view.chat && (
+            <ChatPanel
+              turns={view.chat.turns}
+              busy={view.asking}
+              answering={view.answering}
+              onAsk={(question) => void view.ask(question)}
+            />
+          )}
         </div>
 
         <div>
           <ClipRow
             clips={view.picked}
+            mode={view.chat ? 'chat' : 'run'}
             playingIndex={view.toRowIndex(view.playingIndex)}
             onAdd={() => view.setPickerOpen(true)}
             onAddGen={view.openAdd}

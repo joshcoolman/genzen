@@ -279,6 +279,9 @@ says outright is not trusted.
 
 Recent highlights:
 
+- Director chat sessions: New chat on the index, type a question, and a
+  character the model invents answers in one to three 9:16 clips, submitted
+  in parallel and played once the whole answer has landed (#670).
 - A Script button on a Director session shows the run's prompts verbatim, one
   after another, in a box with a copy button (#669).
 - Director's stage is drawn at the run's shape, so a portrait run fills the
@@ -291,8 +294,6 @@ Recent highlights:
 - Director is a named session holding a run of library clips, and Sequence
   graduated out of the lab into it. Final Cut, exports, stitching, the private
   media path and Enhance are deleted, along with the content they made (#662).
-- Sequence: generate the next clip from inside the run, and re-roll one in
-  place — a middle clip pinned at both ends so its joins survive (#660).
 - H3 Max Turbo is in the video lineup: fastest of the six, and what Director
   had been using through a hardcoded endpoint the lineup never knew (#660).
 

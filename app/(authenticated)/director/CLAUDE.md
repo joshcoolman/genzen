@@ -17,6 +17,39 @@ A session is a **name and an ordered list of clip ids** (#662). Nothing else.
   drops out when the session is next opened.
 - Deleting a session deletes a row. The clips stay in the library.
 
+## Chat sessions (#670)
+
+A session started as a chat instead of a run: type a question, a character
+the model invents answers it in one to three 9:16 clips. A toy, on purpose.
+
+- **The kind is a column.** `director_sessions.chat` is null for a run and
+  `{ version: 1, character, turns }` for a chat; nothing turns one into the
+  other. `cut.clipIds` still holds every clip in order, so the player, the row
+  and Script read a chat exactly as they read a run -- the turns only say
+  which clips answer which question.
+- **One Claude call per turn** (`src/lib/server/director-chat.server.ts`,
+  prompt in `src/lib/prompts/director-chat.md`): Opus at low effort, adaptive
+  thinking, structured output, web search capped at two uses. The character
+  is invented on the first turn from the question's cue -- a sports question
+  summons someone from that world -- and pinned from then on; every clip
+  prompt restates the whole description, because each clip is generated on
+  its own and nothing else carries the character across them. **Not fast
+  mode**: the org's fast-mode limit is zero and a request carrying
+  `speed: 'fast'` is refused outright, not slowed down (2026-09-15).
+- **Every clip of an answer is submitted at once**, text-to-video at 9:16 on
+  H3 Max Turbo, so a three-clip answer waits one clip's time. Seams are hard
+  cuts. Continuity between turns is by description, not by frame, so a
+  question can be asked while the last answer is still rendering.
+- **The stage waits for the whole answer**: `run.ts` takes a `ready`
+  predicate, and a chat's holds back every clip of a turn until all of them
+  have settled, then plays from the first. The row still shows each clip as it
+  lands, which is how you watch the answer being built.
+- **The row is read-only**: no Add clips, Add gen, drag or pencil. Remove and
+  Script stay. The chat box sits under the player, so the stage is capped at
+  45vh there (`stageMax`) to keep the box on screen.
+- Missing Anthropic key: the ask fails through `useReportError`, which opens
+  the key dialog.
+
 ## The workspace
 
 This is Sequence's workspace (#660), moved out of the lab whole -- the two-video
