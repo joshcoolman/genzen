@@ -1,7 +1,7 @@
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
-import { mediaUrl } from '../../_lib/types'
 import styles from './session-card.module.css'
 import type { SessionSummary } from '../../_lib/types'
+import { imageUrl } from '#/lib/image-url'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +29,7 @@ export function SessionCard({
         onClick={() => onOpen(session)}
         aria-label={`Open ${session.name}`}
       >
-        {cover && <img src={mediaUrl(cover)} alt="" loading="lazy" />}
+        {cover && <img src={imageUrl(cover, 'thumb')} alt="" loading="lazy" />}
       </button>
       <div className={styles.menu}>
         <DropdownMenu>
@@ -57,15 +57,16 @@ export function SessionCard({
         <button onClick={() => onOpen(session)}>{session.name}</button>
         <p>
           {session.count} {session.count === 1 ? 'clip' : 'clips'}
-          {' · '}
-          {session.exports} {session.exports === 1 ? 'export' : 'exports'}
-          {session.pending ? ' · generating' : ''}
         </p>
         <div className={styles.strip} aria-hidden="true">
           {Array.from({ length: 5 }, (_, i) => (
             <span key={i}>
               {thumbnails[i] && (
-                <img src={mediaUrl(thumbnails[i])} alt="" loading="lazy" />
+                <img
+                  src={imageUrl(thumbnails[i], 'thumb')}
+                  alt=""
+                  loading="lazy"
+                />
               )}
             </span>
           ))}

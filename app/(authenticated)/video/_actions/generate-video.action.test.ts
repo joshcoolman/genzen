@@ -21,9 +21,6 @@ vi.mock('#/lib/server/fal-client.server', () => ({
 vi.mock('#/lib/server/fal-retry.server', () => ({
   withNetworkRetry: (_name: string, run: () => unknown) => run(),
 }))
-vi.mock('#/features/video/server/director-exports.server', () => ({
-  publishDirectorExports: vi.fn(),
-}))
 vi.mock('#/lib/server/create-pending-generation.server', () => ({
   createPendingGeneration: mocks.reserve,
   markGenerationSubmitted: mocks.submitted,

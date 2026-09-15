@@ -4,5 +4,5 @@ import { resolveAuth } from '#/lib/server/auth.server'
 
 export default async function DirectorPage() {
   const { userId } = await resolveAuth()
-  return <View initial={await listSessions(userId)} owner={userId} />
+  return <View initial={await listSessions(userId)} />
 }

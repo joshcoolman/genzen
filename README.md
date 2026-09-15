@@ -79,20 +79,15 @@ Trash for removal. Generating inside a video group keeps the new clips there.
 
 ## Director: build a sequence over time
 
-Director provides named sessions for developing a sequence section by section.
-Start by setting the scene and continue the action. Any section can be reworked
-afterwards, not only the latest: pause on it and edit its direction, or
-regenerate it as it stands. **Enhance** rewrites a direction using the frames
-that section starts and ends on, and the time it has. A section in the middle
-is pinned to the frame the next one opens on, so the join survives the change.
-The replacement loops until you approve it, and cancelling puts back the clip
-you started with. Sessions, working clips, and pending requests are saved so
-you can return to the work.
+A session is a name and a run of clips. Pick clips you already have, drag them
+into order, and watch them back to back — the question the whole page is for is
+whether the order cuts together and whether the next clip follows.
 
-Save a rough export as a snapshot of the sequence. Saved rough exports also
-appear in Video as independent copies for playback and organization. **Final
-Cut** can create a separate, AI-assisted finished version from a saved rough
-export. New rough exports and Final Cuts are silent.
+**Add gen** makes the next clip from inside the run: the last clip's final frame
+in the first slot, a prompt, a duration, one button. The pencil on a tile names
+a clip, or re-rolls it in place — a clip in the middle is pinned at both ends,
+so the joins either side survive. Clips are ordinary library rows, so they are
+on the Video wall, in Activity, and trashed from there like anything else.
 
 ## Keep the context and the cost
 
@@ -271,28 +266,28 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Nothing in progress. Two candidates, neither with an issue yet.
-First: confirm H3 Max Turbo's real price. `models.ts` records fal's stated
-$0.00625/s and says outright it is not trusted — an eighth of h3-max at the
-same resolution, and this family has billed on 1.2x duration before. Check
-Activity against fal's bill and correct the number. Second: the model-name
-migration — `user_images.title` is now a clip's name, and the model it was made
-with still reads from `generation_metadata` under three different keys with
-three separate resolvers.
+**Focus** — #662 is on a branch and open for review: Director is now named
+Sequence sessions and the other 9,600 lines are deleted. Look at
+`/director/[id]` and say whether the split between the player and the run is
+right. After that, confirm H3 Max Turbo's real price — `models.ts` records fal's
+stated $0.00625/s and says outright it is not trusted, an eighth of h3-max at
+the same resolution, and this family has billed on 1.2x duration before. Check
+Activity against fal's bill and correct the number.
 
 Recent highlights:
 
-- Lab/Sequence: generate the next clip from inside the run, and re-roll one in
+- Director is a named session holding a run of library clips, and Sequence
+  graduated out of the lab into it. Final Cut, exports, stitching, the private
+  media path and Enhance are deleted, along with the content they made (#662).
+- Sequence: generate the next clip from inside the run, and re-roll one in
   place — a middle clip pinned at both ends so its joins survive (#660).
 - H3 Max Turbo is in the video lineup: fastest of the six, and what Director
   had been using through a hardcoded endpoint the lineup never knew (#660).
-- Lab/Sequence: click a thumbnail to play from it; the run loops and survives
+- Sequence: click a thumbnail to play from it; the run loops and survives
   navigation, and the transport bar is gone (#655, #659).
 - Name a clip — from the Video card's menu, the playback dialog header, or a
-  Sequence tile; the name shows on the wall (#657).
+  session tile; the name shows on the wall (#657).
 - Delete a clip from the playback dialog, straight to Trash (#658).
-- Removed six unused Lab tools and Explore; Enhance and saved media/history
-  are preserved (#653).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.

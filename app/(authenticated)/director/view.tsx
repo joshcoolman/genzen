@@ -1,6 +1,6 @@
 'use client'
 
-import { Import, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { SessionCard } from './_components/session-card/session-card'
 import { SessionList } from './_components/session-list/session-list'
 import { useView } from './use-view'
@@ -14,14 +14,8 @@ import {
   Stack,
 } from '#/components'
 
-export function View({
-  initial,
-  owner,
-}: {
-  initial: Array<SessionSummary>
-  owner: string
-}) {
-  const state = useView(initial, owner)
+export function View({ initial }: { initial: Array<SessionSummary> }) {
+  const state = useView(initial)
   return (
     <Stack gap={24}>
       <PageHeader
@@ -37,13 +31,6 @@ export function View({
           </Button>
         }
       />
-      {state.hasLocal && (
-        <Button disabled={state.busy} onClick={() => void state.importLocal()}>
-          <Import size={16} />
-          Import Lab session
-        </Button>
-      )}
-      {state.status && <p role="status">{state.status}</p>}
       {state.error && <p role="alert">{state.error}</p>}
       {state.sessions.length ? (
         <SessionList>
@@ -83,7 +70,9 @@ export function View({
       <ConfirmDialog
         open={state.flow?.kind === 'delete'}
         title="Delete this session?"
-        message={`Permanently delete "${state.flow?.kind === 'delete' ? state.flow.session.name : ''}" and all its clips and saved exports. This cannot be undone.`}
+        /* The clips are library rows and stay there (#662): what goes is the
+           name and the order, which is all a session is now. */
+        message={`Delete "${state.flow?.kind === 'delete' ? state.flow.session.name : ''}"? The clips stay in your library.`}
         confirmLabel="Delete session"
         onConfirm={() => {
           if (state.flow?.kind === 'delete')

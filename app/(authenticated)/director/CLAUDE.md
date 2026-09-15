@@ -1,117 +1,147 @@
 # Director
 
-- Working clips and Final Cut assets are Director-owned and private. Saved rough
-  exports also publish an independent Video copy through video/server/director-exports.server.
-  Video copies use normal Trash, and survive deletion of the Director original;
-  deleting a Video copy neither deletes nor republishes its source. No groups
-  are created. Images and Activity must not see these export copies.
-- Use the existing private bucket and database. Every operation resolves auth
-  on the server and filters by user_id. A media ID is not authorization.
-- Save required media before publishing a cut. Revisions reject stale edits.
-  Keep pending submission intent before spending and its receipt before returning.
-  An uncertain submission must never automatically submit again.
-- Any section can be regenerated (#642), not just the latest: pause on it and
-  Edit. A replacement rolls back to that section's original starting frame and
-  its preceding directions, and a **middle** section is also pinned at its far
-  seam -- `end_image_url` is the replaced clip's own ending frame, which is the
-  frame the next section opened from, so the join survives. The last section
-  has no such frame and is free to end anywhere. Both H3 Max endpoints accept
-  `end_image_url` (checked against fal's schema, 2026-09-13).
-- Enhance (#642) rewrites one section's direction in the dialog, and only
-  there: `_lib/enhance.server.ts` sends Claude the same two boundary frames,
-  the duration and the prior directions, and returns `{ direction, fit }` --
-  `fit` is one sentence when the events need more seconds than the section
-  has, and empty otherwise. It writes into the box, never into a generation:
-  nothing is spent and Cancel throws it away. It needs ANTHROPIC_API_KEY and
-  fails loudly without one, which is the usual local state. Instructions live
-  in `prompts/director-enhance.md` and must not contradict
-  `director-clips.md`, which is what the generation itself is told.
-- Regenerate re-rolls a section as it stands -- same direction, its own length
-  snapped to an offered value -- with no dialog. It is the same paid request
-  as an edit, and lands in the same review.
-- One section is under review at a time, and it is server state
-  (`cut.review = { index, original }`), so it survives a reload. The
-  replacement loops on that section until it is resolved: Approve keeps it and
-  drops the hold, Cancel puts `original` back. **`original` is the clip the
-  rework started from, not the previous one** -- it survives any number of
-  edits and re-rolls, and only a rework of a _different_ section drops it.
-  Its media counts as in use (`cutMediaIds`), or an export deletion could take
-  the bytes Cancel needs. There is no history beyond that one clip.
-  `pending.replace` is the section index; `pending.redo` is its old boolean
-  spelling, kept only so a request saved before #642 still lands in the right
-  place. Exports are immutable snapshots.
-- A clip dropped by an approved rework is not deleted from the bucket, in step
-  with every other replacement here: a saved export may have snapshotted it.
-- Session deletion owns all its media. Keep the session record until bucket
-  cleanup succeeds so deletion can be retried.
-- Import preserves browser-local source data. Server-saved sessions in local
-  development and Railway belong to their respective database/bucket.
+A session is a **name and an ordered list of clip ids** (#662). Nothing else.
+
 - `/director` is the session list; `/director/[id]` is the workspace. The old
-  Lab URL redirects here. Cards borrow Video's visual pattern, not grouping.
-- Empty sessions start with Set the scene, not an empty player or section list.
-  Reveal the full workspace after the first saved clip. Use persisted clip count
-  for this decision so existing sessions do not flash the opening view while
-  media hydrates. First-request errors and recovery remain visible.
-- The workspace is two columns: the player left, the chat column right, which
-  is the wider of the two because creating and navigating is the work. That
-  column fills the viewport -- sections scroll, the bare setting dropdowns and
-  the direction box sit at its bottom. Clicking a section plays it from its
-  first frame; clicking the current one toggles play/pause without restarting it,
-  and the current section is highlighted without scrolling the list.
-- Keep the two-player boundary behavior. Appending or replacing a clip must
-  not reload the currently playing element. Playback remains muted.
-- Drafts debounce to the server with a browser backup; cut revisions and draft
-  comparisons reject stale writes. Never report a failed save as successful.
-- Session/Exports tabs are route-owned, not Video groups. Saving stores the
-  finished silent MP4, thumbnail and selected source metadata; only its name
-  can change. A save ID is idempotent, including after a lost response.
-- Export saves reuse the rendered browser Blob after storage failure. Uploads
-  are chunked, temporary and single-replica; completed exports survive restarts.
-  Delete output files before their metadata so failed cleanup remains retryable.
-- Final Cut belongs to one immutable export, never to the current session cut.
-  Analyze only that export's sampled frames and accepted source directions.
-  Each click creates an independent version; never replace the rough export.
-- The finishing pipeline is Claude vision planning and H3 Max reference-to-video,
-  assembled silently with native FFmpeg. Do not submit effects or music requests;
-  strip native H3 audio too. Completed outputs remain unchanged. Legacy audio
-  receipts remain recorded but do not block or participate in silent finishing.
-  Keep instructions in prompts/\*.md. Anthropic uses jsonTool structured output;
-  native output_format rejects our array bounds. Validate the plan before video
-  spending: at most 12 shots and the source duration rounded up to 5s, capped at
-  120s. Rough exports over 180s or 50 sections are rejected before any AI request.
-  The planner selects strong scenes and preserves the core story and ending;
-  it need not reproduce every section. Timing is enforced internally: shorten
-  overlong shots in five-second steps, retaining selected coverage. One bounded
-  planning correction may repair structural mistakes before any video spending.
-- Final Cut runs in Next after(), with a 90s database lease renewed every 20s.
-  Leaving the page does not stop it. Returning to Exports recovers queued or
-  expired running jobs after a process restart; there is no separate worker.
-  A run pauses after 45 minutes; Resume reuses saved receipts and assets.
-- Save paid intent before submitting, use submitFalOnce (the SDK retries POST),
-  then save the receipt. Uncertain planning or provider submission never retries
-  automatically. A definite planning HTTP rejection can be resumed. Stop prevents
-  later steps, but accepted provider work may still bill. No automatic rerolls.
-- Script (#634) is a Final Cut job that stops at text: the same row, runner,
-  lease and one-at-a-time rule, with `work.scriptOnly`. After the plan it
-  writes one H3 multi-shot prompt per shot (`final-script.server.ts`,
-  `prompts/director-script.md`), each given the previous section's text and
-  the next section's direction, checkpointed per section so Resume carries
-  on. `final-script.ts` holds the timing check: a section whose shot
-  timestamps do not sum to its duration is repaired once, then fails loudly.
-  It never uploads references or submits to FAL, needs no FAL key, and
-  finishes with no output. The Exports tab lists sections with per-section
-  and whole-script copy; running one is a paste into Video.
-- Generate Final Cut video (#640) renders a finished Script: a new job with
-  `work.fromScript`, plan and script copied in, no planning. Section 1 is
-  H3 Max Turbo text-to-video at 480P; every later section is image-to-video
-  from the previous clip's end frame (`FinalStep.endFrameId`), which is what
-  makes the joins seamless and why it is sequential. Each clip is ingested
-  as it lands and checkpointed; the request input is saved before the first
-  submit so Resume replays it. Clips are stitched with their native sound
-  through the lab editor's stitcher (`assembleScriptCut`), unlike the
-  reference render. The dialog quotes cost and minutes before creating the
-  job; a toast says when it is ready. Rate and per-section time are in
-  `final-script.ts`.
-- All finishing assets carry director_media.final_cut_id. Never use those IDs
-  as rough-cut or source-export assets. Session/export deletion is guarded while
-  a job or worker lease is active; delete bytes before cascading metadata.
+  Lab URL redirects here.
+- The clips are ordinary `user_images` rows made by `generateVideo` and settled
+  by the standard poll -- the same path Video uses. **They are not private to
+  Director**: they appear on the Video wall, in Activity, and are trashed from
+  there. That trade is what collapsed 10,000 lines into 700.
+- Storage is `director_sessions.cut` -- `{ version: 2, clipIds: [...] }` --
+  written against `revision`, which rejects a second tab's stale order. The run
+  is saved on every change, one write at a time (`use-view`), and a failed save
+  is said out loud rather than rolled back.
+- Ids are stored unchecked. A clip generated inside the session is in the run
+  before its row is visible to the request, and an id that resolves to nothing
+  drops out when the session is next opened.
+- Deleting a session deletes a row. The clips stay in the library.
+
+## The workspace
+
+This is Sequence's workspace (#660), moved out of the lab whole -- the two-video
+player, Sound, the tile row, Add clips / Add gen, and the pencil (Name +
+Regenerate, a middle clip pinned at both ends). `ClipPicker` and `ClipFrames`
+moved to `src/components/` with it, because the app may never import from the
+lab.
+
+The player is the small column and the run the wide one: rearranging is the
+work, watching is how you judge it.
+
+## How the run works
+
+Everything below came from Sequence (#497, #512, #655, #657, #659, #660) and is
+stated here because this is where it binds now. The question the workspace
+answers: **does the order cut together, and does the next one follow?** Pick
+clips or generate them, drag them into order, click one to watch from there.
+
+- **The run generates its own clips, and that is why the question grew** (#660).
+  Judging an order meant leaving for Video, pressing Continue on the last clip,
+  waiting, coming back and re-picking -- enough friction that the run being
+  judged stopped being the thing being worked on. Add gen makes the next clip
+  here: the previous clip's last frame in the first slot, removable, a prompt,
+  a duration, one button.
+  - **One model, H3 Max Turbo, and no picker** -- see `[id]/gen.ts` for why,
+    including why it is not plain H3: Director's speed came from an endpoint
+    hardcoded in its old clip code, which was not in the lineup at all until
+    #660. A continuation needs no aspect ratio either: the image endpoint has no
+    such parameter and follows the frame, so a generated clip always matches the
+    run. The pills appear only with no frame, which is the one case nothing else
+    can answer.
+  - **Nothing is rewritten before FAL.** No enhance step, no Claude call. The
+    words submitted are the words typed, which is what keeps a press cheap
+    enough to make casually. Director had an Enhance step and it went with the
+    rest (#662).
+  - **Regenerate replaces; it never deletes.** The pencil is two tabs, Name and
+    Regenerate, and the second refills its form from the clip's own
+    `generation_metadata` -- so nothing new is stored to make it possible. The
+    clip that drops out of the run is still in Video, untouched. Re-rolls you
+    did not keep accumulate there and are cleaned up by hand.
+  - **A clip in the middle is pinned at both ends**, so the joins either side
+    survive and the prompt is only about what happens in between. The far seam
+    is **the clip's own ending frame, not the next clip's beginning** -- the
+    same picture whenever the next clip was continued from this one, and the
+    only one of the two already in the library, so pinning costs a query rather
+    than decoding a second clip. Director answered this identically (#642). The
+    last clip of a run gets no ending frame: nothing joins after it. Either
+    frame can be dropped, which is how a deliberate change of ending is made.
+  - **A clip being made holds its place in the row and cannot be played or
+    dragged.** There is nothing behind `/img/[id]` until FAL answers, and a run
+    rearranged around a picture nobody has seen is an arrangement judged blind.
+    The player is given the finished clips and the row every clip, which is why
+    the two are indexed separately (`toPlayableIndex`).
+  - **The estimate is printed before the press**, as everywhere else that
+    spends.
+
+- **Two `<video>` elements ping-ponging, not one swapping its `src`.** The
+  visible one plays while the next loads hidden; at `ended` they swap which is on
+  top. The join has to be free of a stutter, because the join is the thing being
+  judged — one element reloading blanks for a beat at every boundary and the page
+  would lie about the answer. The idle one is hidden with `opacity`, never
+  `display` or `visibility`, either of which lets a browser stop decoding.
+- **The row is the transport, and there is no bar under the player** (#655).
+  Clicking a thumbnail plays the run from that clip's first frame — absolute
+  where Previous/Next were relative, and aimed at the tile you are already
+  looking at. The stage toggles play/pause; the run loops, so Start over is a
+  click on tile 1; adding the first clip starts the run. Only Mute is left,
+  because it is the one control no thumbnail click can reach. Click and drag
+  need no disambiguating — a browser fires no `click` after a completed drag.
+- **The run is ids, and everything else is read off the library row as it is
+  now** (#659, #662) -- so a clip renamed elsewhere shows its new name, and one
+  trashed from Video drops out of the run rather than sitting in it pointing at
+  nothing. A restored run tries to autoplay and a browser may refuse -- nobody clicked
+  and the sound is on -- so `NotAllowedError` leaves the stage stopped instead
+  of showing Pause over a still picture.
+- **A pencil on a tile names the clip** (#657), and the name is the clip's own
+  `title` -- so a run arranged here shows up on the Video wall as "intro",
+  "scene two". A name is a fact about a clip rather than about the arrangement,
+  which is why it goes to `updateImageMeta` and not into the session. Written
+  optimistically, and the run keeps playing behind the dialog.
+- **No scrubber, still.** A `<video>`'s native bar knows only its own clip, so
+  it would read 0:00-0:06 of whichever one is showing and reset at every join. A
+  scrubber of our own is worse: one that spans clips needs a global timeline,
+  and a global timeline is what turns this into an editor.
+- **It looks like a timeline and is not one.** Equal-width tiles whatever the
+  clip's length; no ruler, no playhead, no trims. The question is arrangement,
+  not pacing. Proportional widths are one multiplication away —
+  `duration_seconds` is already on the row — and deliberately not taken.
+- **A correct order is visible before you press play.** In a Continue chain each
+  clip opens on the frame the one before it ended on, so the tiles rhyme; a tile
+  that does not resemble its left neighbour's ending is misplaced.
+- **Each tile is two frames: what the clip opens on and what it ends on**
+  (#512). One frame per clip asked you to hold the previous ending in your head,
+  which is the one picture that was never on screen. With both, clip N's ending
+  sits directly beside clip N+1's beginning and the cut is a thing you look at
+  rather than remember. The gap between tiles is wider than the seam inside one
+  on purpose — one is a cut, the other is a clip's own middle skipped, and a row
+  where those read the same is a strip of frames with no joins in it.
+- **The picker narrows to the run's shape, and only this asks it to.** Clips
+  of different aspect ratios cannot cut together at all, so the first clip picked
+  sets the shape and the dialog then offers what matches — with the count it hid
+  and the way back on screen, because a run whose shape you are still choosing is
+  a real state. `matchRatio` is a prop the caller passes; Frames picks one clip
+  out of the library and has no run to match.
+- **A jump lands on a clip and plays it.** Judging the third join by watching
+  from the top is most of a minute spent on two joins already settled. It costs
+  the gapless swap — the idle element is holding the clip that follows, so a jump
+  anywhere else loads a fresh source and blanks for a beat. That is the right
+  trade: a jump is a move _between_ cuts, never one of the cuts being judged. On
+  the last clip the idle element holds clip 0, so the loop point — the join you
+  see most while arranging — is gapless like the rest.
+- **`lab/_components/` is what a second page wanted whole.** The clip picker
+  went there when Sequence wanted the dialog Frames had; `clip-frames/` — a
+  clip's first and last frame side by side — went there when the picker wanted
+  what the run drew. The bar is two pages, and a copy under one page's
+  `_components/` is the same thing drifting into two.
+
+## What is gone, and why it is not coming back the same way (#662)
+
+Final Cut, Script, exports, stitching, the private media path
+(`director_media` and its routes), the pending/review protocol, Enhance, and the
+Lab import. All of it was built for a way of working nobody arrived at, and
+Sequence reached the same goal without any of it. Migration `0019` dropped the
+tables and `scripts/purge-director.mjs` deleted the content, including the
+export copies the old version of this file promised would survive.
+
+If stitching is wanted again it starts from a run of library rows, which is a
+better starting point than the one that was deleted.

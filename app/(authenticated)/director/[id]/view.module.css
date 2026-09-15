@@ -1,0 +1,33 @@
+/* The player small and to one side, the run taking the rest (#662).
+ *
+ * The stage was full width with the run beneath it, which is the shape a lab
+ * page wants -- one clip, judged large. A session is an arrangement, so most of
+ * the space belongs to the clips. The tiles are a fixed size and wrap, so a
+ * narrower run column is more rows rather than smaller pictures.
+ *
+ * A quarter was the first split and the picture was too small to judge, so the
+ * player takes a quarter plus 150px: written as the `calc` rather than
+ * re-tuning the ratio, because the 150px is the number that was asked for and a
+ * fraction would only be it at one window width.
+ *
+ * One column below 60rem. Side by side, the player would be a thumbnail and the
+ * run one tile wide.
+ */
+.stack {
+  display: grid;
+  gap: var(--space-24);
+  align-items: start;
+}
+
+@media (min-width: 60rem) {
+  .stack {
+    grid-template-columns: calc(25% + 150px) 1fr;
+  }
+
+  /* The run scrolls past it, and the thing you are watching should still be on
+     screen while you rearrange what comes after it. */
+  .player {
+    position: sticky;
+    top: var(--space-16);
+  }
+}

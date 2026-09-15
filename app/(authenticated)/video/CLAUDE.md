@@ -31,12 +31,11 @@ source images; `use-view.ts` owns everything after the first paint.
   is stopped, or Base UI's document-level Escape listener takes the clip off
   screen along with the half-typed name. A hidden `DialogTitle` stays mounted
   while the visible one is an input, so the dialog is never nameless.
-- Saved Director rough exports appear here and in every Lab video picker (#607).
-  They are ordinary completed `ai_video` rows with `origin = director`, separate
-  files and stored session/export provenance. Video's deletion does not affect
-  Director and Director's deletion does not affect Video. Final Cut experiments
-  and working clips remain private. `listVideos` backfills missing publications;
-  deleted copies never come back automatically.
+- **Director's clips are on this wall** (#662). A session generates through
+  `generateVideo` like anything else, so its clips are ordinary `ai_video` rows
+  with `origin = images`, trashed from here, and nothing about them is private
+  to Director. The export copies that used to arrive here with
+  `origin = director` are gone with the machinery that made them.
 - **The wall is `minmax(12rem, 1fr)`, down from 20rem** (#535). 20rem was set
   when a card was a player and a caption; a card is now a player, two end
   frames and a caption, so the same column bought a much taller card -- at a
