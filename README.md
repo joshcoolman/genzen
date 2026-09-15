@@ -279,6 +279,8 @@ says outright is not trusted.
 
 Recent highlights:
 
+- A Script button on a Director session shows the run's prompts verbatim, one
+  after another, in a box with a copy button (#669).
 - Director's stage is drawn at the run's shape, so a portrait run fills the
   player column instead of sitting in a 16:9 letterbox; Add gen opens on the
   previous clip's duration as well as its prompt (#668).
@@ -293,8 +295,6 @@ Recent highlights:
   place — a middle clip pinned at both ends so its joins survive (#660).
 - H3 Max Turbo is in the video lineup: fastest of the six, and what Director
   had been using through a hardcoded endpoint the lineup never knew (#660).
-- Sequence: click a thumbnail to play from it; the run loops and survives
-  navigation, and the transport bar is gone (#655, #659).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.
