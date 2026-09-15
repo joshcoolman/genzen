@@ -266,17 +266,19 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — #662 is merged. One thing is outstanding and nothing else depends
-on it: the **deployed** database still holds the old Director's rows and bucket
-objects. Run `node scripts/purge-director.mjs --yes` and `pnpm db:migrate`
-against it, then delete that script — it has nothing left to read.
+**Focus** — open **#665** and build it: Add refs in the Add gen dialog, so a
+prompt can name something that has left the shot. Pick a clip from the run
+first, then a frame from its grab-frames grid; the frames become reference
+images while frame one stays the previous clip's ending. That switches the clip
+to Kling O3 Pro, which is the only model taking both — say so in the dialog and
+quote the cost, because it is 14c/s against H3 Max Turbo's 0.625c/s. The issue
+is the spec.
 
-Then open #664 (Set the scene, and an enhance button for the clips after it) —
-but test the prefill first: write a pacing-and-music clause into a session's
-first prompt, add four more clips editing only the action each time, and see
-whether the clause is still there at clip five. If it survives, #664 shrinks to
-Set the scene alone. Also still open: confirm H3 Max Turbo's real price, which
-`models.ts` records as fal's stated $0.00625/s and says outright is not trusted.
+Also outstanding, and independent: the **deployed** database still holds the old
+Director's rows and bucket objects. Run `node scripts/purge-director.mjs --yes`
+and `pnpm db:migrate` against it, then delete that script. And confirm H3 Max
+Turbo's real price, which `models.ts` records as fal's stated $0.00625/s and
+says outright is not trusted.
 
 Recent highlights:
 
