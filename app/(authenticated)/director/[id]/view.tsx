@@ -87,6 +87,7 @@ export function View({
               busy={view.asking}
               answering={view.answering}
               onAsk={(question) => void view.ask(question)}
+              onTranscript={() => view.setTranscriptOpen(true)}
             />
           )}
         </div>
@@ -134,6 +135,14 @@ export function View({
         open={view.scriptOpen}
         onOpenChange={view.setScriptOpen}
         script={view.script}
+      />
+
+      {/* Transcript: the conversation so far, opened on purpose (#670). */}
+      <ScriptDialog
+        open={view.transcriptOpen}
+        onOpenChange={view.setTranscriptOpen}
+        script={view.transcript}
+        title="Transcript"
       />
 
       {/* Add gen: the clip that comes after the run (#660). */}
