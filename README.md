@@ -271,13 +271,21 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — Nothing in progress. The next one worth opening is the model-name
-migration: `user_images.title` is now a clip's name, and the model it was made
+**Focus** — Nothing in progress. Two candidates, neither with an issue yet.
+First: confirm H3 Max Turbo's real price. `models.ts` records fal's stated
+$0.00625/s and says outright it is not trusted — an eighth of h3-max at the
+same resolution, and this family has billed on 1.2x duration before. Check
+Activity against fal's bill and correct the number. Second: the model-name
+migration — `user_images.title` is now a clip's name, and the model it was made
 with still reads from `generation_metadata` under three different keys with
-three separate resolvers. No issue for it yet — write one, then work it.
+three separate resolvers.
 
 Recent highlights:
 
+- Lab/Sequence: generate the next clip from inside the run, and re-roll one in
+  place — a middle clip pinned at both ends so its joins survive (#660).
+- H3 Max Turbo is in the video lineup: fastest of the six, and what Director
+  had been using through a hardcoded endpoint the lineup never knew (#660).
 - Lab/Sequence: click a thumbnail to play from it; the run loops and survives
   navigation, and the transport bar is gone (#655, #659).
 - Name a clip — from the Video card's menu, the playback dialog header, or a
@@ -285,8 +293,6 @@ Recent highlights:
 - Delete a clip from the playback dialog, straight to Trash (#658).
 - Removed six unused Lab tools and Explore; Enhance and saved media/history
   are preserved (#653).
-- Video: sample a clip into a contact sheet and import chosen frames to Images (#647).
-- Meta prompt: write several prompts from staged references in one call (#645).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.
