@@ -357,11 +357,23 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
    * where it ended -- and it holds without knowing anything else about the clip
    * before it. An empty run has nothing to carry on from, which is the one case
    * that starts as text-to-video and shows the ratio pills.
+   *
+   * **And so does the prompt** (#664). It opens on the previous clip's text, to
+   * be edited down to the new action rather than retyped -- which is the method
+   * that was already being used by hand, with a copy and a paste in the middle
+   * of it. Regenerate has always refilled its form from the clip; this was the
+   * one door that opened blank.
+   *
+   * The frame carries the look, so what the text is really carrying is
+   * everything a picture cannot hold: motion, pace, camera, and whatever was
+   * said about sound -- a clause about music written into the first clip
+   * propagates through a run for free, as long as editing the action does not
+   * quietly trim it.
    */
   const openAdd = useCallback(() => {
     const last = picked.at(-1)
     setTarget({ kind: 'append' })
-    setPrompt('')
+    setPrompt(last?.description ?? '')
     setDuration(model.defaultDuration)
     setRatio(nearestGenRatio(runRatio))
     setFrame(null)
