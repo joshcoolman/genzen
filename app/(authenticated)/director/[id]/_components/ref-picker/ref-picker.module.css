@@ -1,0 +1,81 @@
+.dialog {
+  --dialog-max-width: 64rem;
+  --dialog-max-height: 88dvh;
+  --dialog-padding: var(--space-16);
+}
+
+/* The tiles are `ClipFrameGrid`; this is only how much room it gets here. */
+.grid {
+  overflow-y: auto;
+  max-height: calc(88dvh - 12rem);
+}
+
+/* Step one: the run, wrapping. A clip tile is two frames side by side, so the
+   column is twice one frame plus the gap the pair leaves. */
+.clips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+  overflow-y: auto;
+  max-height: calc(88dvh - 12rem);
+}
+
+.clip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.clip:hover {
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.clipName {
+  max-width: 13rem;
+  overflow: hidden;
+  font-size: var(--text-2xs);
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  padding-block-start: var(--space-12);
+  border-block-start: var(--border-width) solid var(--border);
+}
+
+.count {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding-block: var(--space-48);
+  color: var(--text-muted);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

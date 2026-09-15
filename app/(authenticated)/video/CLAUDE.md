@@ -162,6 +162,12 @@ source images; `use-view.ts` owns everything after the first paint.
   returned 0.558s and 0.837s as separate tiles -- a duplicate pair, and a tile
   of coverage lost.
 
+  **The tiles are `ClipFrameGrid`, shared with Director** (#665), which picks
+  frames off the same sheet to use as reference images. The component is
+  presentational and fetches nothing -- `src/components/` may not import from
+  `app/` -- so this dialog owns the loading and the rule that an imported tile
+  is out of bounds, while Director marks the same tile and reuses its row.
+
   **Full-resolution frames are only ever made on import.** The selected
   timestamps are re-extracted one at a time and each goes through
   `saveFileToLibrary` like any upload, stamped `kind: 'grid'`. That stamp is

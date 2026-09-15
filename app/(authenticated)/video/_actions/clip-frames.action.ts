@@ -164,27 +164,38 @@ export async function grabClipFrame({
   })
 }
 
+/** A still already cut from this clip, and the library row holding it. */
+export interface ImportedClipFrame {
+  imageId: string
+  timeSeconds: number
+}
+
 /**
- * The positions in this clip that have already been imported as stills.
+ * The positions in this clip that have already been imported as stills, and
+ * the rows they landed in.
  *
- * The grid marks those tiles and leaves them out of a selection, so pressing
+ * Grab frames marks those tiles and leaves them out of a selection, so pressing
  * Import twice on the same clip does not put the same picture in the library
- * twice. Provenance, not bytes, for the reasons `findClipEndFrame` sets out --
- * and `kind = 'grid'` so a scrub from `lab/frames` at a coincidentally equal
- * second is not mistaken for one of these tiles.
+ * twice. Director's reference picker wants the opposite half of the same
+ * answer: the row id, so choosing a tile that exists reuses it instead of
+ * extracting an identical PNG (#665).
+ *
+ * Provenance, not bytes, for the reasons `findClipEndFrame` sets out -- and
+ * `kind = 'grid'` so a scrub from `lab/frames` at a coincidentally equal second
+ * is not mistaken for one of these tiles.
  *
  * Trashed rows are excluded: a frame that was thrown away should be grabbable
  * again rather than showing as already there.
  */
-export async function importedClipFrameTimes({
+export async function importedClipFrames({
   clipId,
 }: {
   clipId: string
-}): Promise<Array<number>> {
+}): Promise<Array<ImportedClipFrame>> {
   const { userId } = await resolveAuth()
 
-  const rows = await sql<Array<{ time_seconds: string | null }>>`
-    select generation_metadata->'frame_source'->>'time_seconds' as time_seconds
+  const rows = await sql<Array<{ id: string; time_seconds: string | null }>>`
+    select id, generation_metadata->'frame_source'->>'time_seconds' as time_seconds
     from user_images
     where user_id = ${userId}
       and deleted_at is null
@@ -193,6 +204,6 @@ export async function importedClipFrameTimes({
   `
 
   return rows
-    .map((row) => Number(row.time_seconds))
-    .filter((time) => Number.isFinite(time))
+    .map((row) => ({ imageId: row.id, timeSeconds: Number(row.time_seconds) }))
+    .filter((frame) => Number.isFinite(frame.timeSeconds))
 }

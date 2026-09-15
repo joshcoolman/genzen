@@ -1,8 +1,18 @@
 'use client'
 
-import { X } from 'lucide-react'
-import { GEN_FALLBACK_RATIO, genModel, genRatios } from '../../gen'
+import { useState } from 'react'
+import { Plus, X } from 'lucide-react'
+import {
+  GEN_FALLBACK_RATIO,
+  MAX_REFS,
+  clampRatio,
+  genModel,
+  genModelFor,
+  genRatiosFor,
+} from '../../gen'
+import { RefPicker } from '../ref-picker/ref-picker'
 import styles from './gen-form.module.css'
+import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 import { estimateVideoCost } from '#/features/video/inputs'
 import { cx } from '#/lib/utils'
 import { Button, CostNote, Textarea, Thumbnail } from '#/components'
@@ -31,6 +41,15 @@ export interface GenFrame {
  * pills appear only with no frame, which is the one case where nothing else
  * can answer the question.
  *
+ * **References are the one control that changes the model** (#665). A run
+ * drifts as soon as a clip moves away from what came before it, and no wording
+ * restores a face that left the shot -- the picture that would is in an earlier
+ * clip. Adding one moves the request to Kling O3 Pro, the only model in the
+ * lineup taking references and a first frame together, so the continuity frame
+ * survives; dropping every reference moves it back to H3 Max Turbo. That costs
+ * 14c/s against 0.625, and the form says so beside the price rather than
+ * offering a picker -- the inputs select the model, the way they do on Video.
+ *
  * Nothing is sent to Claude. There is no enhance step and no rewrite before
  * FAL -- the words submitted are the words typed, which is the bargain that
  * keeps a press cheap enough to make casually.
@@ -43,6 +62,10 @@ export function GenForm({
   endFrame,
   endFrameLoading,
   onDropEndFrame,
+  refs,
+  runClips,
+  onAddRefs,
+  onDropRef,
   prompt,
   onPromptChange,
   duration,
@@ -64,6 +87,13 @@ export function GenForm({
   endFrame: GenFrame | null
   endFrameLoading: boolean
   onDropEndFrame: () => void
+  /** Frames pulled out of earlier clips, carrying identity and look (#665). */
+  refs: Array<GenFrame>
+  /** The run's finished clips: the first step of picking a reference is saying
+   *  which clip it is in. */
+  runClips: Array<VideoRecord>
+  onAddRefs: (frames: Array<GenFrame>) => void
+  onDropRef: (id: string) => void
   prompt: string
   onPromptChange: (value: string) => void
   duration: number
@@ -75,12 +105,19 @@ export function GenForm({
   submitLabel: string
   onSubmit: () => void
 }) {
-  const model = genModel()
+  const [pickingRef, setPickingRef] = useState(false)
+
+  /* The inputs choose the model, and the duration pills do not follow it: every
+     duration H3 Max Turbo offers is one Kling takes, so adding a reference
+     changes the price and nothing else on screen. */
+  const model = genModelFor(refs.length)
   const images = [
     ...(frame ? [{ id: frame.id, role: 'first' as const }] : []),
+    ...refs.map((ref) => ({ id: ref.id, role: 'reference' as const })),
     ...(endFrame ? [{ id: endFrame.id, role: 'last' as const }] : []),
   ]
   const cost = estimateVideoCost(model, duration, undefined, images)
+  const ratios = genRatiosFor(refs.length)
 
   return (
     <div className={styles.form}>
@@ -121,6 +158,50 @@ export function GenForm({
         </p>
       </div>
 
+      {/* Beside frame one, because that is the frame they exist to make sense
+          of: the run continues from where it is, and the references are what
+          let the prompt name something no longer in it. */}
+      <div className={styles.refs}>
+        <div className={styles.refStrip}>
+          {refs.map((ref) => (
+            <div key={ref.id} className={styles.refThumb}>
+              <Thumbnail url={ref.url} alt={ref.title} />
+              <button
+                type="button"
+                className={styles.drop}
+                onClick={() => onDropRef(ref.id)}
+                aria-label={`Drop ${ref.title}`}
+                title="Drop this reference"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={refs.length >= MAX_REFS}
+            onClick={() => setPickingRef(true)}
+          >
+            <Plus size={14} />
+            Add ref
+          </Button>
+        </div>
+        <p className={styles.frameNote}>
+          {refs.length === 0
+            ? `A frame from an earlier clip, so the prompt can name someone who has left the shot. Up to ${MAX_REFS}.`
+            : `${model.label}: the only model taking references and a starting frame together. It carries identity and look -- framing is still the prompt's job.`}
+        </p>
+      </div>
+
+      <RefPicker
+        open={pickingRef}
+        onOpenChange={setPickingRef}
+        clips={runClips}
+        remaining={MAX_REFS - refs.length}
+        onAdd={onAddRefs}
+      />
+
       <Textarea
         autoFocus
         value={prompt}
@@ -144,17 +225,21 @@ export function GenForm({
           ))}
         </div>
 
-        {/* Only without a frame. With one the endpoint has no ratio parameter
-            and the output follows the picture, so a control here would offer a
-            choice that is not taken. */}
+        {/* Only without a frame. With one the endpoint either has no ratio
+            parameter or follows the picture, so a control here would offer a
+            choice that is not taken. The options are the chosen model's: Kling
+            names three shapes and refuses the rest. */}
         {!frame && !endFrame && (
           <div className={styles.pills} role="group" aria-label="Aspect ratio">
-            {genRatios().map((value) => (
+            {ratios.map((value) => (
               <button
                 key={value}
                 type="button"
-                className={cx(styles.pill, ratio === value && styles.pillOn)}
-                aria-pressed={ratio === value}
+                className={cx(
+                  styles.pill,
+                  clampRatio(ratios, ratio) === value && styles.pillOn,
+                )}
+                aria-pressed={clampRatio(ratios, ratio) === value}
                 onClick={() => onRatioChange(value)}
               >
                 {value}
@@ -172,8 +257,15 @@ export function GenForm({
           {busy ? 'Submitting' : submitLabel}
         </Button>
         {/* Lighting's rule: a lab page that spends money prints the figure
-            before the press. */}
+            before the press -- and once a reference can move the request to a
+            model twenty times the price, the figure is not enough on its own.
+            The model is named where the money is. */}
         <CostNote cents={cost} />
+        <p className={styles.frameNote}>
+          {refs.length > 0
+            ? `${model.label}, and drop every reference to fall back to ${genModel().label}.`
+            : model.label}
+        </p>
       </div>
     </div>
   )

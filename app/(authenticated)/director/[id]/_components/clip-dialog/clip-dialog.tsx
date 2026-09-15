@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { GenForm } from '../gen-form/gen-form'
 import styles from './clip-dialog.module.css'
 import type { GenFrame } from '../gen-form/gen-form'
+import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 import { cx } from '#/lib/utils'
 import {
   Button,
@@ -23,6 +24,10 @@ export interface GenFormState {
   endFrame: GenFrame | null
   endFrameLoading: boolean
   onDropEndFrame: () => void
+  refs: Array<GenFrame>
+  runClips: Array<VideoRecord>
+  onAddRefs: (frames: Array<GenFrame>) => void
+  onDropRef: (id: string) => void
   prompt: string
   onPromptChange: (value: string) => void
   duration: number

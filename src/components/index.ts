@@ -24,6 +24,10 @@ export {
 } from './confirm-dialog/confirm-dialog'
 export { useConfirm, type UseConfirm } from './confirm-dialog/use-confirm'
 export { CopyButton } from './copy-button/copy-button'
+export {
+  ClipFrameGrid,
+  markedFrameIndexes,
+} from './clip-frame-grid/clip-frame-grid'
 export { ClipFrames } from './clip-frames/clip-frames'
 export { ClipPicker } from './clip-picker/clip-picker'
 export { CostNote, type CostNoteProps } from './cost-note/cost-note'

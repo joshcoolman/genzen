@@ -1,26 +1,28 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { Check, Loader2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import {
   clipFrameGrid,
   grabClipFrame,
-  importedClipFrameTimes,
+  importedClipFrames,
 } from '../../_actions/clip-frames.action'
 import styles from './frame-grid-dialog.module.css'
 import type { ClipFrameGridView } from '../../_actions/clip-frames.action'
 import type { VideoRecord } from '../../_actions/generate-video.action'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
 import { stampFrameSource } from '#/features/video/server/stamp-frame.action'
-import { Button, Dialog, DialogContent, DialogTitle, toast } from '#/components'
+import {
+  Button,
+  ClipFrameGrid,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  markedFrameIndexes,
+  toast,
+} from '#/components'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
-import { cx } from '#/lib/utils'
-
-/** Two timestamps are the same tile within this much. The grid's own numbers
- *  are rounded to a millisecond, and a stamp read back out of jsonb should not
- *  miss its tile over the last digit. */
-const SAME_TIME = 0.05
 
 /** PNG bytes from the server, as the `File` the library takes. */
 function fileFromBase64(base64: string, name: string): File {
@@ -30,20 +32,12 @@ function fileFromBase64(base64: string, name: string): File {
   return new File([bytes], name, { type: 'image/png' })
 }
 
-function timeLabel(seconds: number): string {
-  const whole = Math.floor(seconds)
-  const m = Math.floor(whole / 60)
-  const s = whole % 60
-  return `${m}:${String(s).padStart(2, '0')}`
-}
-
 /**
  * A clip's frames, start to finish, and the ones worth keeping (#647).
  *
- * **One picture, not twenty-eight.** The tiles arrive as a single sprite sheet
- * from `/img/[id]?v=frames` and each cell slices it with `background-position`.
- * Twenty-eight `<img>` elements would be twenty-eight requests every open, for
- * pictures that only exist together -- and the browser caches the one.
+ * **The tiles are `ClipFrameGrid`**, shared with Director's reference picker
+ * (#665); this dialog is the loading, the import and the rule that an imported
+ * tile is out of bounds.
  *
  * **Selection is the whole interaction.** No scrubbing, no timeline, no
  * precision: the grid answers "which of these is the shot", and `lab/frames`
@@ -94,12 +88,12 @@ function Grid({ clip }: { clip: VideoRecord }) {
        before. */
     void Promise.all([
       clipFrameGrid({ clipId: clip.id }),
-      importedClipFrameTimes({ clipId: clip.id }).catch(() => []),
+      importedClipFrames({ clipId: clip.id }).catch(() => []),
     ])
-      .then(([view, times]) => {
+      .then(([view, frames]) => {
         if (!live) return
         setGrid(view)
-        setImported(times)
+        setImported(frames.map((frame) => frame.timeSeconds))
       })
       .catch((err: unknown) => {
         if (live) setError((err as Error).message)
@@ -110,9 +104,9 @@ function Grid({ clip }: { clip: VideoRecord }) {
     }
   }, [clip.id])
 
-  const isImported = useCallback(
-    (time: number) => imported.some((t) => Math.abs(t - time) < SAME_TIME),
-    [imported],
+  const marked = useMemo(
+    () => markedFrameIndexes(grid?.times ?? [], imported),
+    [grid, imported],
   )
 
   const toggle = (index: number) => {
@@ -198,43 +192,20 @@ function Grid({ clip }: { clip: VideoRecord }) {
 
   return (
     <>
-      <div className={styles.grid}>
-        {grid.times.map((time, index) => {
-          const already = isImported(time)
-          const selected = picked.has(index)
-          return (
-            <button
-              key={time}
-              type="button"
-              className={cx(
-                styles.tile,
-                selected && styles.tileOn,
-                already && styles.tileDone,
-              )}
-              disabled={already || busy}
-              aria-pressed={selected}
-              onClick={() => toggle(index)}
-            >
-              <span
-                className={styles.frame}
-                style={{
-                  aspectRatio: `${grid.tileWidth} / ${grid.tileHeight}`,
-                  backgroundImage: `url(${sheet})`,
-                  backgroundSize: `100% ${count * 100}%`,
-                  /* A single column of `count` tiles: the nth is n/(count-1)
-                     of the way down the track the background can travel. */
-                  backgroundPosition:
-                    count > 1 ? `0 ${(index / (count - 1)) * 100}%` : '0 0',
-                }}
-              />
-              <span className={styles.time}>
-                {already ? <Check size={12} /> : null}
-                {timeLabel(time)}
-              </span>
-            </button>
-          )
-        })}
-      </div>
+      <ClipFrameGrid
+        className={styles.grid}
+        sheetUrl={sheet}
+        times={grid.times}
+        tileWidth={grid.tileWidth}
+        tileHeight={grid.tileHeight}
+        selected={picked}
+        marked={marked}
+        /* Imported already: there is nothing left to do with it here, unlike
+           in Director where that row is exactly what gets reused. */
+        lockMarked
+        busy={busy}
+        onToggle={toggle}
+      />
 
       <div className={styles.footer}>
         <p className={styles.count}>
