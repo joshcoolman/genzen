@@ -266,13 +266,10 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — open **#665** and build it: Add refs in the Add gen dialog, so a
-prompt can name something that has left the shot. Pick a clip from the run
-first, then a frame from its grab-frames grid; the frames become reference
-images while frame one stays the previous clip's ending. That switches the clip
-to Kling O3 Pro, which is the only model taking both — say so in the dialog and
-quote the cost, because it is 14c/s against H3 Max Turbo's 0.625c/s. The issue
-is the spec.
+**Focus** — #665 has shipped. Open **#502** and clear it: two dead webhook
+variables are still set on the deployed service, left behind when the webhook
+route went in #362. The issue is the spec, and the board at
+`localhost:3210/kanban/genzen` has what follows it.
 
 Also outstanding, and independent: the **deployed** database still holds the old
 Director's rows and bucket objects. Run `node scripts/purge-director.mjs --yes`
@@ -282,6 +279,10 @@ says outright is not trusted.
 
 Recent highlights:
 
+- Add refs in Director's Add gen dialog: pick a clip from the run, then frames
+  off its contact sheet, and the prompt can name someone who has left the shot.
+  Frame one still holds the previous clip's ending; a reference switches the
+  clip to Kling O3 Pro, which the dialog names beside the price (#665).
 - Director is a named session holding a run of library clips, and Sequence
   graduated out of the lab into it. Final Cut, exports, stitching, the private
   media path and Enhance are deleted, along with the content they made (#662).
@@ -293,7 +294,6 @@ Recent highlights:
   navigation, and the transport bar is gone (#655, #659).
 - Name a clip — from the Video card's menu, the playback dialog header, or a
   session tile; the name shows on the wall (#657).
-- Delete a clip from the playback dialog, straight to Trash (#658).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.

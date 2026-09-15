@@ -1,0 +1,58 @@
+/* The tiles and their spacing, and nothing about how much room they get: the
+   caller's class supplies the height and the scrolling, because that is a fact
+   about the dialog around this rather than about the sheet. Declaring it here
+   too would put two rules of equal specificity on one element and let bundle
+   order decide. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: var(--space-8);
+  padding-block-end: var(--space-4);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 0;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.tile:hover:not(:disabled) {
+  border-color: var(--border);
+}
+
+.tileOn {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* Already in the library and nothing left to do with it: still readable,
+   because it is information about the clip. */
+.tileDone {
+  cursor: default;
+  opacity: 0.45;
+}
+
+/* One sprite sheet, sliced by `background-position` -- the inline styles carry
+   the tile's own shape and its offset, which only the data knows. */
+.frame {
+  display: block;
+  width: 100%;
+  background-color: var(--image-backing);
+  background-repeat: no-repeat;
+}
+
+.time {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+}

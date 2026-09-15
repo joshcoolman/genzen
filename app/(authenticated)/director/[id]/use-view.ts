@@ -4,7 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { generateVideo } from '../../video/_actions/generate-video.action'
 import { writeRun } from '../_actions/sessions.action'
-import { GEN_MODEL_SLUG, genModel, nearestGenRatio } from './gen'
+import {
+  GEN_MODEL_SLUG,
+  MAX_REFS,
+  REF_MODEL_SLUG,
+  clampRatio,
+  genModel,
+  genModelFor,
+  genRatiosFor,
+  nearestGenRatio,
+  nearestRatio,
+} from './gen'
 import { isPending, playableClips, toPlayableIndex, toRowIndex } from './run'
 import type { GenFrame } from './_components/gen-form/gen-form'
 import type { Session } from '../_lib/types'
@@ -273,7 +283,30 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
   /** The frame a replacement has to end on, when the run continues past it. */
   const [endFrame, setEndFrame] = useState<GenFrame | null>(null)
   const [endFrameLoading, setEndFrameLoading] = useState(false)
+  /**
+   * Frames pulled out of earlier clips, so the prompt can name what left the
+   * shot (#665). Empty on every open: a reference is about this request, not
+   * about the run, and carrying the last one forward would spend Kling money on
+   * a continuation that did not ask for it.
+   */
+  const [refs, setRefs] = useState<Array<GenFrame>>([])
   const [busy, setBusy] = useState(false)
+
+  /** Appended, skipping anything already on the strip and stopping at the cap
+   *  the model takes. */
+  const addRefs = useCallback((chosen: Array<GenFrame>) => {
+    setRefs((current) => {
+      const have = new Set(current.map((r) => r.id))
+      return [...current, ...chosen.filter((r) => !have.has(r.id))].slice(
+        0,
+        MAX_REFS,
+      )
+    })
+  }, [])
+
+  const dropRef = useCallback((id: string) => {
+    setRefs((current) => current.filter((r) => r.id !== id))
+  }, [])
 
   /**
    * The library row holding a clip's last frame, made if it does not exist.
@@ -378,6 +411,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     setRatio(nearestGenRatio(runRatio))
     setFrame(null)
     setFrameError(null)
+    setRefs([])
     // Appending has no join after it, so there is never an ending to pin.
     setEndFrame(null)
     setEndFrameLoading(false)
@@ -413,6 +447,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
       )
       setRatio(nearestGenRatio(aspectRatio(clip)))
       setFrameError(null)
+      setRefs([])
 
       /* The frame it was made from, as a starting point the dialog can show
          before anything is read. It is replaced below by the frame the run
@@ -487,24 +522,37 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     const text = prompt.trim()
     if (!text) return
 
+    /* The inputs choose the model, exactly as they do on Video: a reference
+       means Kling O3 Pro, which is the only one taking references and a
+       starting frame together, and none means H3 Max Turbo. See `gen.ts`. */
+    const ratios = genRatiosFor(refs.length)
+
     setBusy(true)
     try {
       const { recordId } = await generateVideo({
         images: [
           ...(frame ? [{ id: frame.id, role: 'first' as const }] : []),
+          ...refs.map((ref) => ({ id: ref.id, role: 'reference' as const })),
           ...(endFrame ? [{ id: endFrame.id, role: 'last' as const }] : []),
         ],
         prompt: text,
         duration,
-        // Ignored by the image endpoint, which has no such parameter and
-        // follows the frame; the real choice only when there is no frame.
-        aspectRatio: frame || endFrame ? nearestGenRatio(runRatio) : ratio,
-        modelSlug: GEN_MODEL_SLUG,
+        /* Ignored by H3's image endpoint, which has no such parameter and
+           follows the frame; a real choice only when there is no frame. Kling's
+           reference endpoint does take one and validates it, so whichever of
+           the two this is, it is brought back to a shape the endpoint names. */
+        aspectRatio:
+          frame || endFrame
+            ? nearestRatio(ratios, runRatio)
+            : clampRatio(ratios, ratio),
+        modelSlug: refs.length > 0 ? REF_MODEL_SLUG : GEN_MODEL_SLUG,
       })
 
       const placeholder: VideoRecord = {
         id: recordId,
-        title: model.label,
+        // The model the inputs chose, not the page's default -- the row's own
+        // title is written server-side from the same choice.
+        title: genModelFor(refs.length).label,
         description: text,
         status: 'pending',
         generation_error: null,
@@ -514,6 +562,9 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
           duration_seconds: duration,
           ...(frame ? { source_image_id: frame.id } : {}),
           ...(endFrame ? { end_image_id: endFrame.id } : {}),
+          ...(refs.length > 0
+            ? { reference_image_ids: refs.map((r) => r.id) }
+            : {}),
         },
         width: null,
         height: null,
@@ -546,10 +597,10 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     prompt,
     frame,
     endFrame,
+    refs,
     duration,
     ratio,
     runRatio,
-    model.label,
     router,
   ])
 
@@ -584,6 +635,12 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
       endFrame,
       endFrameLoading,
       onDropEndFrame: dropEndFrame,
+      refs,
+      /* Only the finished clips: a pending row has nothing behind `/img/[id]`
+         to cut a frame out of. */
+      runClips: picked.filter((c) => c.status === 'completed'),
+      onAddRefs: addRefs,
+      onDropRef: dropRef,
       prompt,
       onPromptChange: setPrompt,
       duration,

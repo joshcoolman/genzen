@@ -164,35 +164,54 @@ export async function grabClipFrame({
   })
 }
 
+/** A still already cut from this clip, and the library row holding it. */
+export interface ImportedClipFrame {
+  imageId: string
+  timeSeconds: number
+}
+
 /**
- * The positions in this clip that have already been imported as stills.
+ * The positions in this clip that have already been imported as stills, and
+ * the rows they landed in.
  *
- * The grid marks those tiles and leaves them out of a selection, so pressing
+ * Grab frames marks those tiles and leaves them out of a selection, so pressing
  * Import twice on the same clip does not put the same picture in the library
- * twice. Provenance, not bytes, for the reasons `findClipEndFrame` sets out --
- * and `kind = 'grid'` so a scrub from `lab/frames` at a coincidentally equal
- * second is not mistaken for one of these tiles.
+ * twice. Director's reference picker wants the opposite half of the same
+ * answer: the row id, so choosing a tile that exists reuses it instead of
+ * extracting an identical PNG (#665).
+ *
+ * Provenance, not bytes, for the reasons `findClipEndFrame` sets out. **Which
+ * kinds count is the caller's**, because the two callers are asking different
+ * questions. Grab frames asks "is there nothing left to do with this tile",
+ * where a scrub from `lab/frames` at a coincidentally equal second must not
+ * mark one -- so it takes the default, `grid` alone. The reference picker asks
+ * "is this picture already a row", and at the same clip and the same second it
+ * is, however it got there: it takes all three, which is what stops the closing
+ * tile being cut a second time on every run that ever pressed Add gen (#665).
  *
  * Trashed rows are excluded: a frame that was thrown away should be grabbable
  * again rather than showing as already there.
  */
-export async function importedClipFrameTimes({
+export async function importedClipFrames({
   clipId,
+  kinds = ['grid'],
 }: {
   clipId: string
-}): Promise<Array<number>> {
+  kinds?: Array<'end' | 'scrub' | 'grid'>
+}): Promise<Array<ImportedClipFrame>> {
   const { userId } = await resolveAuth()
+  if (kinds.length === 0) return []
 
-  const rows = await sql<Array<{ time_seconds: string | null }>>`
-    select generation_metadata->'frame_source'->>'time_seconds' as time_seconds
+  const rows = await sql<Array<{ id: string; time_seconds: string | null }>>`
+    select id, generation_metadata->'frame_source'->>'time_seconds' as time_seconds
     from user_images
     where user_id = ${userId}
       and deleted_at is null
       and generation_metadata->'frame_source'->>'clip_id' = ${clipId}
-      and generation_metadata->'frame_source'->>'kind' = 'grid'
+      and generation_metadata->'frame_source'->>'kind' in ${sql(kinds)}
   `
 
   return rows
-    .map((row) => Number(row.time_seconds))
-    .filter((time) => Number.isFinite(time))
+    .map((row) => ({ imageId: row.id, timeSeconds: Number(row.time_seconds) }))
+    .filter((frame) => Number.isFinite(frame.timeSeconds))
 }

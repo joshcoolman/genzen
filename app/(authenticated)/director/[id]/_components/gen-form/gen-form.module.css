@@ -116,3 +116,27 @@
   color: var(--text-muted);
   font-size: var(--text-sm);
 }
+
+/* References sit under frame one rather than beside it: the strip grows to four
+   and a row that wraps under the frame reads as a second kind of slot. */
+.refs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.refStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.refThumb {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
