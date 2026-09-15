@@ -1,0 +1,118 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.frame {
+  display: flex;
+  gap: var(--space-12);
+  align-items: center;
+}
+
+/* The same footprint whether a frame is there, still being read, or dropped --
+   so the dialog does not resize under the pointer at the moment the frame
+   lands, which is a moment early enough to still be aiming at something. */
+.thumb,
+.slot {
+  position: relative;
+  flex: none;
+  width: 96px;
+  height: 72px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  text-align: center;
+}
+
+.slotBusy {
+  border-style: solid;
+  background: var(--surface-sunken);
+}
+
+.drop {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface-sunken) 70%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.drop:hover {
+  color: var(--danger);
+}
+
+.frameNote {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-16);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.pill {
+  padding: var(--space-4) var(--space-10);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.pill:hover {
+  color: var(--text);
+}
+
+.pillOn {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+/* The button and its price, the shape `CostNote` was written for: the act is
+   named on the control and the money sits under it. */
+.submit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  align-items: flex-start;
+}
+
+/* Between the two ends, when both are pinned: the clip is what happens from
+   the frame on the left to the frame on the right. */
+.arrow {
+  flex: none;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}

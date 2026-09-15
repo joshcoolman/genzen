@@ -83,7 +83,14 @@ export interface VideoModel {
   resolutions?: Array<VideoResolution>
   durations: Array<number>
   defaultDuration: number
-  /** Sends `generate_audio`. H3 has no such param. */
+  /**
+   * Whether this endpoint takes a `generate_audio` parameter -- **not whether
+   * its clips have sound**. H3 and H3 Max have no such param and their output
+   * carries native audio regardless, which is why Director strips it. Read as
+   * a capability, this field says the opposite of the truth for two of six
+   * models; it has misled once (#660) and the name is kept only because it is
+   * what the param is called.
+   */
   supportsAudio: boolean
   /** Optional lower rate when native audio is disabled. */
   silentPricePerSecondCents?: number
@@ -260,6 +267,56 @@ export const VIDEO_MODELS: Array<VideoModel> = [
     durations: [5, 6, 8, 10, 12, 15],
     defaultDuration: 6,
     // No `generate_audio` param, same as H3.
+    supportsAudio: false,
+  },
+  {
+    slug: 'h3-max-turbo',
+    label: 'H3 Max Turbo',
+    description: 'Fastest in the lineup, and follows the first frame',
+    endpoints: {
+      textToVideo: {
+        id: 'minimax/h3-max-turbo/text-to-video',
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'],
+        defaults: { prompt_expansion_mode: 'balanced' },
+      },
+      withImage: {
+        id: 'minimax/h3-max-turbo/image-to-video',
+        firstFrameParam: 'image_url',
+        acceptsEndImage: true,
+        acceptsEndOnly: true,
+        // Empty deliberately, as on the rest of the family: this endpoint has
+        // no `aspect_ratio` param and fal's own note is that the output canvas
+        // follows whichever frame it was given.
+        aspectRatios: [],
+        defaults: { prompt_expansion_mode: 'balanced' },
+      },
+    },
+    /**
+     * **fal's stated rate, and it is low enough to distrust.** Its pricing API
+     * answers $0.00625/s for both endpoints with no per-resolution breakdown --
+     * an eighth of h3-max at the same 768P, for a model fal describes as
+     * strictly better. That is not impossible (it is their own inference stack
+     * rather than MiniMax's hosted API, which is the whole pitch) but it is the
+     * shape of a number that turns out to be a base unit something else
+     * multiplies.
+     *
+     * Encoded as stated, with the same warning h3 carries: this family has
+     * already billed on 1.2x the requested duration once, so **the estimate
+     * may read low until an invoice settles it**. Check Activity against fal's
+     * bill after the first few clips.
+     */
+    pricePerSecondCents: 0.625,
+    // 480P and 1080P exist on both endpoints. They are not offered here,
+    // because a resolution control has to move the price with it and there is
+    // one number above rather than three -- the same reason LTX and Flux 3
+    // carry no tiers.
+    resolution: '768P',
+    // fal types `duration` as a plain integer with no enum, exactly as h3 and
+    // h3-max do, so this is the family's range rather than a list fal stated.
+    durations: [5, 6, 8, 10, 12, 15],
+    defaultDuration: 6,
+    // No `generate_audio` param -- which, as on the rest of the family, is not
+    // the same as no sound. See `supportsAudio`.
     supportsAudio: false,
   },
   {

@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useState } from 'react'
-import { Pencil, Plus, X } from 'lucide-react'
+import { Loader, Pencil, Plus, Sparkles, X } from 'lucide-react'
 import { ClipFrames } from '../../../_components/clip-frames/clip-frames'
 import styles from './clip-row.module.css'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
@@ -12,6 +12,9 @@ import { cx } from '#/lib/utils'
  *  the add button and the open slot match: a `MediaBox` is sized in px, not by
  *  its container. */
 const TILE = 108
+
+/** A clip the run is holding a place for, which FAL has not finished yet. */
+const pending = (clip: VideoRecord) => clip.status !== 'completed'
 
 /**
  * The run, as clips you can drag into order -- each one showing the frame it
@@ -71,6 +74,7 @@ export function ClipRow({
   clips,
   playingIndex,
   onAdd,
+  onAddGen,
   onRemove,
   onMove,
   onPlayFrom,
@@ -80,6 +84,8 @@ export function ClipRow({
   /** Where the player is in the run, so the row can say so (#512). */
   playingIndex: number | null
   onAdd: () => void
+  /** Open the dialog that makes the next clip (#660). */
+  onAddGen: () => void
   onRemove: (id: string) => void
   onMove: (from: number, to: number) => void
   /** Play the run from this clip's first frame (#655). */
@@ -134,9 +140,17 @@ export function ClipRow({
               styles.tile,
               draggingIndex === index && styles.tileLifted,
               playingIndex === index && styles.tilePlaying,
+              pending(clip) && styles.tilePending,
             )}
-            draggable
-            onClick={() => onPlayFrom(index)}
+            /* A clip still being made cannot be dragged or played: there is
+               nothing behind `/img/[id]` yet, and a run rearranged around a
+               picture nobody has seen is an arrangement judged blind. It keeps
+               its place in the row, because the press that asked for it was a
+               press on this position. */
+            draggable={!pending(clip)}
+            onClick={() => {
+              if (!pending(clip)) onPlayFrom(index)
+            }}
             onDragStart={() => {
               /* Deferred a frame, and that is the whole reason the tile can be
                  taken out of the flow at all. The browser's drag image is a
@@ -162,22 +176,31 @@ export function ClipRow({
             {/* The position, not the clip's name: what you are checking while
                 rearranging is where in the run this sits. */}
             <span className={styles.ordinal}>{index + 1}</span>
-            <ClipFrames clip={clip} size={TILE} alt={clipFacts(clip)} />
+            {pending(clip) ? (
+              <div className={styles.making}>
+                <Loader size={14} />
+                <span>Making this</span>
+              </div>
+            ) : (
+              <ClipFrames clip={clip} size={TILE} alt={clipFacts(clip)} />
+            )}
             {/* Both corner buttons stop the click: the tile behind them plays
                 the run, and neither naming a clip nor dropping one is also a
                 request to watch it. */}
-            <button
-              type="button"
-              className={styles.rename}
-              onClick={(e) => {
-                e.stopPropagation()
-                onRename(clip)
-              }}
-              aria-label="Name this clip"
-              title="Name this clip"
-            >
-              <Pencil size={12} />
-            </button>
+            {!pending(clip) && (
+              <button
+                type="button"
+                className={styles.rename}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRename(clip)
+                }}
+                aria-label="Edit this clip"
+                title="Edit this clip"
+              >
+                <Pencil size={12} />
+              </button>
+            )}
             <button
               type="button"
               className={styles.remove}
@@ -203,8 +226,14 @@ export function ClipRow({
       {dragging && overGap === clips.length && slot}
 
       {/* Always last, so adding a clip appends to the end of the run and the
-          control does not move as the run grows. Dragging over it means the
-          end of the run, which is the one slot no tile can express. */}
+          controls do not move as the run grows. Dragging over either means the
+          end of the run, which is the one slot no tile can express.
+
+          **Two buttons, and neither is the primary** (#660). One picks from
+          what you have, the other makes something new; an empty run offers
+          both, because a run can just as well start from a prompt as from the
+          library. They are told apart by icon rather than by label -- they are
+          adjacent, both say "add", and one of them spends money. */}
       <button
         type="button"
         className={styles.add}
@@ -214,6 +243,17 @@ export function ClipRow({
       >
         <Plus size={16} />
         <span className={styles.addLabel}>Add clips</span>
+      </button>
+
+      <button
+        type="button"
+        className={cx(styles.add, styles.addGen)}
+        onClick={onAddGen}
+        onDragEnter={() => setOverGap(clips.length)}
+        onDragOver={(e) => e.preventDefault()}
+      >
+        <Sparkles size={16} />
+        <span className={styles.addLabel}>Add gen</span>
       </button>
     </div>
   )
