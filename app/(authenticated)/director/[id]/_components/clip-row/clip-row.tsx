@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useState } from 'react'
-import { Loader, Pencil, Plus, Sparkles, X } from 'lucide-react'
+import { Loader, Pencil, Plus, ScrollText, Sparkles, X } from 'lucide-react'
 import styles from './clip-row.module.css'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 import { clipFacts, clipName } from '#/features/video/clip-facts'
@@ -75,6 +75,7 @@ export function ClipRow({
   playingIndex,
   onAdd,
   onAddGen,
+  onScript,
   onRemove,
   onMove,
   onPlayFrom,
@@ -86,6 +87,8 @@ export function ClipRow({
   onAdd: () => void
   /** Open the dialog that makes the next clip (#660). */
   onAddGen: () => void
+  /** Show the run's prompts in one box, to copy out. */
+  onScript: () => void
   onRemove: (id: string) => void
   onMove: (from: number, to: number) => void
   /** Play the run from this clip's first frame (#655). */
@@ -255,6 +258,22 @@ export function ClipRow({
         <Sparkles size={16} />
         <span className={styles.addLabel}>Add gen</span>
       </button>
+
+      {/* Reads the run rather than adding to it, but it sits with the two adds
+          because it is the third thing you do from the end of a row. Offered
+          only once there is a prompt to read. */}
+      {clips.length > 0 && (
+        <button
+          type="button"
+          className={cx(styles.add, styles.script)}
+          onClick={onScript}
+          onDragEnter={() => setOverGap(clips.length)}
+          onDragOver={(e) => e.preventDefault()}
+        >
+          <ScrollText size={16} />
+          <span className={styles.addLabel}>Script</span>
+        </button>
+      )}
     </div>
   )
 }

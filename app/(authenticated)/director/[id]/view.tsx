@@ -7,6 +7,7 @@ import {
   AddGenDialog,
   EditClipDialog,
 } from './_components/clip-dialog/clip-dialog'
+import { ScriptDialog } from './_components/script-dialog/script-dialog'
 import { SequencePlayer } from './_components/sequence-player/sequence-player'
 import { useView } from './use-view'
 import styles from './view.module.css'
@@ -60,6 +61,7 @@ export function View({
             playingIndex={view.toRowIndex(view.playingIndex)}
             onAdd={() => view.setPickerOpen(true)}
             onAddGen={view.openAdd}
+            onScript={() => view.setScriptOpen(true)}
             onRemove={view.removeClip}
             onMove={view.move}
             onPlayFrom={(index) => {
@@ -88,6 +90,13 @@ export function View({
         canRegenerate={Boolean(view.editing?.generation_metadata)}
         form={view.genForm}
         onRegenerate={view.submitGen}
+      />
+
+      {/* Script: the run's prompts, verbatim, in one box to copy. */}
+      <ScriptDialog
+        open={view.scriptOpen}
+        onOpenChange={view.setScriptOpen}
+        script={view.script}
       />
 
       {/* Add gen: the clip that comes after the run (#660). */}
