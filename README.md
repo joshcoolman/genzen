@@ -279,6 +279,9 @@ says outright is not trusted.
 
 Recent highlights:
 
+- Director's stage is drawn at the run's shape, so a portrait run fills the
+  player column instead of sitting in a 16:9 letterbox; Add gen opens on the
+  previous clip's duration as well as its prompt (#668).
 - Add refs in Director's Add gen dialog: pick a clip from the run, then frames
   off its contact sheet, and the prompt can name someone who has left the shot.
   Frame one still holds the previous clip's ending; a reference switches the
@@ -292,8 +295,6 @@ Recent highlights:
   had been using through a hardcoded endpoint the lineup never knew (#660).
 - Sequence: click a thumbnail to play from it; the run loops and survives
   navigation, and the transport bar is gone (#655, #659).
-- Name a clip — from the Video card's menu, the playback dialog header, or a
-  session tile; the name shows on the wall (#657).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.
