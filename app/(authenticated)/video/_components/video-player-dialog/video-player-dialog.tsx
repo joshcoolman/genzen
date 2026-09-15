@@ -49,16 +49,19 @@ export function VideoPlayerDialog({
       }}
     >
       <DialogContent className={styles.dialog}>
+        {/* Both keyed on the clip so they reset when it changes, and each with
+            its own prefix: siblings sharing one key is the duplicate-key
+            warning React raised on every open. */}
         {video ? (
           <TitleRow
-            key={video.id}
+            key={`title-${video.id}`}
             video={video}
             onRename={(title) => onRename(video, title)}
           />
         ) : (
           <DialogTitle>Video playback</DialogTitle>
         )}
-        {video && <Player key={video.id} video={video} />}
+        {video && <Player key={`player-${video.id}`} video={video} />}
         {video && (
           <div className={styles.actions}>
             <Button
