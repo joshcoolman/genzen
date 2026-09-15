@@ -358,7 +358,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
    * before it. An empty run has nothing to carry on from, which is the one case
    * that starts as text-to-video and shows the ratio pills.
    *
-   * **And so does the prompt** (#664). It opens on the previous clip's text, to
+   * **And so does the prompt** (#662). It opens on the previous clip's text, to
    * be edited down to the new action rather than retyped -- which is the method
    * that was already being used by hand, with a copy and a paste in the middle
    * of it. Regenerate has always refilled its form from the clip; this was the
