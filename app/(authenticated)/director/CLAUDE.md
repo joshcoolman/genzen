@@ -53,6 +53,10 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   intro; the model returns a `title` with every answer and the first turn's
   is written as the session name (`appendChatTurn`). The heading's pencil
   still renames it after.
+- **The conversation is stored, not shown.** The panel is the intro, then a
+  question box and a "making the answer" line; the words are behind a
+  Transcript button that opens Script's read-only, copyable box under another
+  title. The character's description is printed nowhere.
 - Missing Anthropic key: the ask fails through `useReportError`, which opens
   the key dialog.
 

@@ -5,49 +5,25 @@
   margin-top: var(--space-12);
 }
 
-/* Capped and scrolling, because the panel sits in the sticky player column
-   and a long conversation must not push the compose box off screen. */
-.transcript {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-12);
-  max-height: 40vh;
-  overflow-y: auto;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.empty,
-.turn {
-  font-size: var(--text-sm);
-}
-
 .empty {
+  margin: 0;
+  font-size: var(--text-sm);
   color: var(--text-muted);
 }
 
-.turn {
+/* Whether an answer is still being made, and the way to the words. */
+.status {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.question {
-  margin: 0;
-  color: var(--text-muted);
-}
-
-.line {
-  margin: 0;
-  white-space: pre-wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: 2rem;
 }
 
 .making {
   display: inline-flex;
   align-items: center;
   gap: var(--space-4);
-  margin-left: var(--space-8);
   color: var(--text-muted);
   font-size: var(--text-xs);
 }

@@ -257,6 +257,16 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
 
   const [chat, setChat] = useState(session.chat)
   const [asking, setAsking] = useState(false)
+  /** The conversation as text, for the dialog: a question, its answer, a
+   *  blank line. The character is left out on purpose -- see `ChatPanel`. */
+  const [transcriptOpen, setTranscriptOpen] = useState(false)
+  const transcript = useMemo(
+    () =>
+      (chat?.turns ?? [])
+        .map((turn) => `${turn.question}\n\n${turn.line}`)
+        .join('\n\n---\n\n'),
+    [chat],
+  )
   const reportError = useReportError()
 
   /**
@@ -748,6 +758,9 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     answering,
     answerReady,
     ask,
+    transcript,
+    transcriptOpen,
+    setTranscriptOpen,
     clips: pickable,
     picked,
     playable,

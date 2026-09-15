@@ -1,25 +1,31 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { Loader, Send } from 'lucide-react'
+import { useState } from 'react'
+import { Loader, ScrollText, Send } from 'lucide-react'
 import styles from './chat-panel.module.css'
 import type { ChatTurn } from '../../../_lib/types'
 import { Button, Textarea } from '#/components'
 
 /**
- * The conversation, under the player (#670): every question and the line the
- * character answered with, then a box for the next one.
+ * The question box, under the player (#670), and the intro before the first
+ * question. That is all it shows.
  *
- * The character's description is not printed. The surprise is who turns up in
- * the clip, and a paragraph naming them above the stage would spoil it before
- * the clip had loaded. The transcript shows the words, which is what you need
- * to ask a follow-up.
+ * **The conversation is not on the page.** It is stored and it is valuable --
+ * the character, every question, every line -- but the clips are the answer
+ * and a transcript beside them read as a chat app with a video attached. So
+ * the words are behind a Transcript button, in the same read-only, copyable
+ * box Script uses, opened on purpose. The character's description is never
+ * printed anywhere: the surprise is who turns up in the clip.
+ *
+ * What the panel does say is that an answer is still being made, because
+ * nothing else on the page says it until a tile lands.
  */
 export function ChatPanel({
   turns,
   busy,
   answering,
   onAsk,
+  onTranscript,
 }: {
   turns: Array<ChatTurn>
   /** A question is with the model or being submitted. */
@@ -27,15 +33,10 @@ export function ChatPanel({
   /** Turn ids whose clips are still being made. */
   answering: Set<string>
   onAsk: (question: string) => void
+  /** Open the conversation so far, to read and copy. */
+  onTranscript: () => void
 }) {
   const [draft, setDraft] = useState('')
-  const end = useRef<HTMLLIElement>(null)
-
-  /* The newest turn at the bottom, and scrolled to: a transcript you have to
-     scroll to read the answer you just got is a transcript read once. */
-  useEffect(() => {
-    end.current?.scrollIntoView({ block: 'nearest' })
-  }, [turns.length])
 
   const trimmed = draft.trim()
   const submit = () => {
@@ -46,30 +47,28 @@ export function ChatPanel({
 
   return (
     <div className={styles.panel}>
-      <ol className={styles.transcript}>
-        {turns.length === 0 && (
-          <li className={styles.empty}>
-            A quick experiment. Ask anything and someone, invented on the spot
-            to suit the question, answers on camera in a clip or three.
-            Follow-ups go to the same character, and the chat names itself from
-            your first question. What do you want to know?
-          </li>
-        )}
-        {turns.map((turn) => (
-          <li key={turn.id} className={styles.turn}>
-            <p className={styles.question}>{turn.question}</p>
-            <p className={styles.line}>
-              {turn.line}
-              {answering.has(turn.id) && (
-                <span className={styles.making}>
-                  <Loader size={12} /> making the clips
-                </span>
-              )}
-            </p>
-          </li>
-        ))}
-        <li ref={end} aria-hidden />
-      </ol>
+      {turns.length === 0 ? (
+        <p className={styles.empty}>
+          A quick experiment. Ask anything and someone, invented on the spot to
+          suit the question, answers on camera in a clip or three. Follow-ups go
+          to the same character, and the chat names itself from your first
+          question. What do you want to know?
+        </p>
+      ) : (
+        <div className={styles.status}>
+          {answering.size > 0 ? (
+            <span className={styles.making}>
+              <Loader size={12} /> making the answer
+            </span>
+          ) : (
+            <span />
+          )}
+          <Button size="sm" onClick={onTranscript}>
+            <ScrollText size={14} />
+            Transcript
+          </Button>
+        </div>
+      )}
       <div className={styles.compose}>
         <Textarea
           className={styles.input}
