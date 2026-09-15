@@ -57,6 +57,7 @@ export function SessionCard({
         <button onClick={() => onOpen(session)}>{session.name}</button>
         <p>
           {session.count} {session.count === 1 ? 'clip' : 'clips'}
+          {session.kind === 'chat' && ' \u00b7 chat'}
         </p>
         <div className={styles.strip} aria-hidden="true">
           {Array.from({ length: 5 }, (_, i) => (

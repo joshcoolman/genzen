@@ -9,6 +9,7 @@ import {
   saveRun,
 } from '../_lib/sessions.server'
 import { idSchema } from '../_lib/types'
+import type { SessionKind } from '../_lib/types'
 import { resolveAuth } from '#/lib/server/auth.server'
 
 export async function loadSession(id: string) {
@@ -17,8 +18,12 @@ export async function loadSession(id: string) {
 export async function loadSessions() {
   return listSessions((await resolveAuth()).userId)
 }
-export async function newSession(name: string, id: string) {
-  return createSession((await resolveAuth()).userId, name, id)
+export async function newSession(
+  name: string,
+  id: string,
+  kind: SessionKind = 'run',
+) {
+  return createSession((await resolveAuth()).userId, name, id, kind)
 }
 export async function changeSessionName(id: string, name: string) {
   await renameSession((await resolveAuth()).userId, id, name)

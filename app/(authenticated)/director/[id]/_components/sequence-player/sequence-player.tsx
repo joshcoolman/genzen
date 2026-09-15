@@ -83,6 +83,8 @@ export function SequencePlayer({
   ratio,
   controls,
   onIndexChange,
+  placeholder = 'Add clips below to start the run.',
+  stageMax,
 }: {
   clips: Array<VideoRecord>
   /** The run's shape as width over height, so the stage is drawn at it rather
@@ -94,6 +96,10 @@ export function SequencePlayer({
    *  whether or not it is playing: the tile the highlight is on is the clip
    *  that is loaded, and pausing does not move it. */
   onIndexChange?: (index: number) => void
+  /** What the empty stage says. A chat has no clips to add (#670). */
+  placeholder?: string
+  /** The tallest the stage may be, as a CSS length; 70vh when unset. */
+  stageMax?: string
 }) {
   const a = useRef<HTMLVideoElement>(null)
   const b = useRef<HTMLVideoElement>(null)
@@ -294,7 +300,10 @@ export function SequencePlayer({
         type="button"
         className={styles.stage}
         style={
-          ratio ? ({ '--stage-ratio': ratio } as CSSProperties) : undefined
+          {
+            ...(ratio ? { '--stage-ratio': ratio } : {}),
+            ...(stageMax ? { '--stage-max': stageMax } : {}),
+          } as CSSProperties
         }
         onClick={toggle}
         disabled={empty}
@@ -310,11 +319,7 @@ export function SequencePlayer({
             onEnded={() => handleEnded(i)}
           />
         ))}
-        {empty && (
-          <span className={styles.placeholder}>
-            Add clips below to start the run.
-          </span>
-        )}
+        {empty && <span className={styles.placeholder}>{placeholder}</span>}
       </button>
 
       <div className={styles.controls}>

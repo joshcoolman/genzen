@@ -16,16 +16,20 @@
    than 70vh -- a 9:16 run in the sticky column would otherwise run off the
    bottom of the screen -- in which case it is the widest box that height
    allows, centred. Either way the box is exactly the clip's shape, so
-   `object-fit: contain` fills it with no bars.
+   `object-fit: contain` fills it with no bars. The cap is `--stage-max`,
+   written inline from the `stageMax` prop like the ratio is, so a chat
+   (#670), which has a transcript and a question box under the stage in the
+   same sticky column, can set it lower and keep the box on screen.
 
    It is a `<button>` (#655) -- the stage is play/pause -- so it resets the
    padding and border a button brings and keeps the same box it always had. */
 .stage {
   --stage-ratio: 16 / 9;
+  --stage-max: 70vh;
 
   display: grid;
   place-items: center;
-  width: min(100%, calc(70vh * var(--stage-ratio)));
+  width: min(100%, calc(var(--stage-max) * var(--stage-ratio)));
   margin-inline: auto;
   padding: 0;
   aspect-ratio: var(--stage-ratio);

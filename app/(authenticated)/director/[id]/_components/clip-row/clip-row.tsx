@@ -69,9 +69,15 @@ const pending = (clip: VideoRecord) => clip.status !== 'completed'
  * transport, which is why there is no longer a bar of buttons under the player.
  * Click and drag need no disambiguating: a browser does not fire `click` after
  * a completed drag, so there is no movement threshold and no timer here.
+ *
+ * **A chat's row is the same row, read-only** (#670). The clips are the
+ * answers, in the order they were asked, so nothing is added, dragged or
+ * regenerated here; what survives is watching the answer be built, tapping a
+ * clip to play from it, dropping one, and Script.
  */
 export function ClipRow({
   clips,
+  mode = 'run',
   playingIndex,
   onAdd,
   onAddGen,
@@ -82,6 +88,8 @@ export function ClipRow({
   onRename,
 }: {
   clips: Array<VideoRecord>
+  /** A chat's row loses Add clips, Add gen, drag and the pencil (#670). */
+  mode?: 'run' | 'chat'
   /** Where the player is in the run, so the row can say so (#512). */
   playingIndex: number | null
   onAdd: () => void
@@ -102,6 +110,7 @@ export function ClipRow({
   const [overGap, setOverGap] = useState<number | null>(null)
 
   const dragging = draggingIndex !== null
+  const editable = mode === 'run'
 
   const reset = () => {
     setDraggingIndex(null)
@@ -150,7 +159,7 @@ export function ClipRow({
                picture nobody has seen is an arrangement judged blind. It keeps
                its place in the row, because the press that asked for it was a
                press on this position. */
-            draggable={!pending(clip)}
+            draggable={editable && !pending(clip)}
             onClick={() => {
               if (!pending(clip)) onPlayFrom(index)
             }}
@@ -190,7 +199,7 @@ export function ClipRow({
             {/* Both corner buttons stop the click: the tile behind them plays
                 the run, and neither naming a clip nor dropping one is also a
                 request to watch it. */}
-            {!pending(clip) && (
+            {editable && !pending(clip) && (
               <button
                 type="button"
                 className={styles.rename}
@@ -237,27 +246,31 @@ export function ClipRow({
           both, because a run can just as well start from a prompt as from the
           library. They are told apart by icon rather than by label -- they are
           adjacent, both say "add", and one of them spends money. */}
-      <button
-        type="button"
-        className={styles.add}
-        onClick={onAdd}
-        onDragEnter={() => setOverGap(clips.length)}
-        onDragOver={(e) => e.preventDefault()}
-      >
-        <Plus size={16} />
-        <span className={styles.addLabel}>Add clips</span>
-      </button>
+      {editable && (
+        <>
+          <button
+            type="button"
+            className={styles.add}
+            onClick={onAdd}
+            onDragEnter={() => setOverGap(clips.length)}
+            onDragOver={(e) => e.preventDefault()}
+          >
+            <Plus size={16} />
+            <span className={styles.addLabel}>Add clips</span>
+          </button>
 
-      <button
-        type="button"
-        className={cx(styles.add, styles.addGen)}
-        onClick={onAddGen}
-        onDragEnter={() => setOverGap(clips.length)}
-        onDragOver={(e) => e.preventDefault()}
-      >
-        <Sparkles size={16} />
-        <span className={styles.addLabel}>Add gen</span>
-      </button>
+          <button
+            type="button"
+            className={cx(styles.add, styles.addGen)}
+            onClick={onAddGen}
+            onDragEnter={() => setOverGap(clips.length)}
+            onDragOver={(e) => e.preventDefault()}
+          >
+            <Sparkles size={16} />
+            <span className={styles.addLabel}>Add gen</span>
+          </button>
+        </>
+      )}
 
       {/* Reads the run rather than adding to it, but it sits with the two adds
           because it is the third thing you do from the end of a row. Offered

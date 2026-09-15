@@ -1,0 +1,65 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  margin-top: var(--space-12);
+}
+
+/* Capped and scrolling, because the panel sits in the sticky player column
+   and a long conversation must not push the compose box off screen. */
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  max-height: 40vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.empty,
+.turn {
+  font-size: var(--text-sm);
+}
+
+.empty {
+  color: var(--text-muted);
+}
+
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.question {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.line {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.making {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-left: var(--space-8);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.compose {
+  display: flex;
+  gap: var(--space-8);
+  align-items: flex-end;
+}
+
+.input {
+  flex: 1;
+  min-height: 0;
+  resize: none;
+}

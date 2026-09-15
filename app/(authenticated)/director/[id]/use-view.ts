@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { generateVideo } from '../../video/_actions/generate-video.action'
+import { askCharacter } from '../_actions/chat.action'
 import { writeRun } from '../_actions/sessions.action'
 import {
   GEN_MODEL_SLUG,
@@ -15,10 +16,17 @@ import {
   nearestGenRatio,
   nearestRatio,
 } from './gen'
-import { isPending, playableClips, toPlayableIndex, toRowIndex } from './run'
+import {
+  isPending,
+  isReady,
+  playableClips,
+  toPlayableIndex,
+  toRowIndex,
+} from './run'
 import { scriptOf } from './script'
+import type { Ready } from './run'
 import type { GenFrame } from './_components/gen-form/gen-form'
-import type { Session } from '../_lib/types'
+import type { ChatTurn, Session } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { aspectRatio } from '#/features/video/clip-facts'
 import { captureLastFrame } from '#/features/video/frame-capture'
@@ -29,7 +37,7 @@ import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
 import { updateImageMeta } from '#/features/user-images/server/images.action'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
-import { toast } from '#/components'
+import { toast, useReportError } from '#/components'
 
 /**
  * A run of clips, in the order they should be watched.
@@ -243,18 +251,133 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     })
   }, [])
 
+  /* ---------------------------------------------------------------- chat
+     A session started as a chat (#670): the same run, answered a turn at a
+     time by a character the model invents on the first question. */
+
+  const [chat, setChat] = useState(session.chat)
+  const [asking, setAsking] = useState(false)
+  const reportError = useReportError()
+
+  /**
+   * Which turns are still being answered: those with a clip the library has
+   * not settled. Read off the run's rows rather than kept as state, so the poll
+   * that finishes a clip is what finishes the answer.
+   */
+  const answering = useMemo(() => {
+    const done = new Set(
+      picked.filter((c) => c.status === 'completed').map((c) => c.id),
+    )
+    return new Set(
+      (chat?.turns ?? [])
+        .filter((turn) => turn.clipIds.some((id) => !done.has(id)))
+        .map((turn) => turn.id),
+    )
+  }, [chat, picked])
+
+  /**
+   * What the player may hold. A run: every finished clip. A chat: only clips
+   * of answers finished *entirely*, so the stage never starts an answer it
+   * cannot end -- the first clip of a three-clip answer playing on a loop while
+   * the other two render is an answer heard wrong.
+   */
+  const ready = useMemo<Ready>(() => {
+    if (!chat) return isReady
+    const held = new Set(
+      chat.turns
+        .filter((turn) => answering.has(turn.id))
+        .flatMap((turn) => turn.clipIds),
+    )
+    return (clip) => isReady(clip) && !held.has(clip.id)
+  }, [chat, answering])
+
+  /**
+   * The answer that just finished, as the row index of its first clip, so the
+   * view can play it from the top. Fires once per turn: the ids already
+   * answered when the page opened are seeded, so a restored chat does not
+   * replay its last answer on load.
+   */
+  const played = useRef<Set<string> | null>(null)
+  const [answerReady, setAnswerReady] = useState<{
+    turnId: string
+    rowIndex: number
+  } | null>(null)
+  useEffect(() => {
+    if (!chat) return
+    if (played.current === null) {
+      played.current = new Set(
+        chat.turns.filter((t) => !answering.has(t.id)).map((t) => t.id),
+      )
+      return
+    }
+    for (const turn of chat.turns) {
+      if (answering.has(turn.id) || played.current.has(turn.id)) continue
+      played.current.add(turn.id)
+      const rowIndex = picked.findIndex((c) => c.id === turn.clipIds[0])
+      if (rowIndex >= 0) setAnswerReady({ turnId: turn.id, rowIndex })
+    }
+  }, [chat, answering, picked])
+
+  /**
+   * Ask, and put the answer's clips in the run before they exist -- the same
+   * bargain Add gen makes. The server records the turn with its clip ids, so
+   * what comes back is the session as written: its revision replaces the one
+   * this tab holds and its ids are what the persist effect would otherwise try
+   * to write again.
+   */
+  const ask = useCallback(
+    async (question: string) => {
+      if (!chat || asking) return
+      setAsking(true)
+      try {
+        const updated = await askCharacter(session.id, question)
+        const turn: ChatTurn | undefined = updated.chat?.turns.at(-1)
+        revision.current = updated.revision
+        saved.current = updated.cut.clipIds.join(',')
+        setChat(updated.chat)
+        if (turn) {
+          const placeholders: Array<VideoRecord> = turn.clipIds.map((id) => ({
+            id,
+            title: genModel().label,
+            description: '',
+            status: 'pending',
+            generation_error: null,
+            created_at: new Date().toISOString(),
+            group_id: null,
+            generation_metadata: {},
+            width: null,
+            height: null,
+            hidden_at: null,
+            has_end_frame: false,
+          }))
+          setPicked((current) => {
+            const have = new Set(current.map((c) => c.id))
+            return [...current, ...placeholders.filter((p) => !have.has(p.id))]
+          })
+        }
+        router.refresh()
+      } catch (err) {
+        // A missing Anthropic key opens the key dialog; anything else toasts.
+        reportError(err, 'The character could not answer.')
+      } finally {
+        setAsking(false)
+      }
+    },
+    [chat, asking, session.id, router, reportError],
+  )
+
   /* The row shows a clip being made and the player cannot, so the two are
      indexed apart. `run.ts` owns both directions; see there. */
-  const playable = useMemo(() => playableClips(picked), [picked])
+  const playable = useMemo(() => playableClips(picked, ready), [picked, ready])
 
   const playableIndexOf = useCallback(
-    (rowIndex: number) => toPlayableIndex(picked, rowIndex),
-    [picked],
+    (rowIndex: number) => toPlayableIndex(picked, rowIndex, ready),
+    [picked, ready],
   )
 
   const rowIndexOf = useCallback(
-    (playableIndex: number | null) => toRowIndex(picked, playableIndex),
-    [picked],
+    (playableIndex: number | null) => toRowIndex(picked, playableIndex, ready),
+    [picked, ready],
   )
 
   /* The shape of the run: the first *finished* clip's, since a clip still being
@@ -620,6 +743,11 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
 
   return {
     error,
+    chat,
+    asking,
+    answering,
+    answerReady,
+    ask,
     clips: pickable,
     picked,
     playable,
