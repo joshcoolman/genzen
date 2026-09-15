@@ -48,6 +48,7 @@ export function View({
         <div className={styles.player}>
           <SequencePlayer
             clips={view.playable}
+            ratio={view.runRatio}
             controls={player}
             onIndexChange={view.setPlayingIndex}
           />

@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { Volume2, VolumeX } from 'lucide-react'
 import styles from './sequence-player.module.css'
-import type { RefObject } from 'react'
+import type { CSSProperties, RefObject } from 'react'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 
 const srcFor = (clip: VideoRecord) => `/img/${clip.id}`
@@ -80,10 +80,15 @@ function blank(el: HTMLVideoElement) {
  */
 export function SequencePlayer({
   clips,
+  ratio,
   controls,
   onIndexChange,
 }: {
   clips: Array<VideoRecord>
+  /** The run's shape as width over height, so the stage is drawn at it rather
+   *  than at 16:9 with the clip floating inside. Null while nothing is
+   *  finished, which falls back to 16:9. */
+  ratio?: number | null
   controls?: RefObject<SequencePlayerHandle | null>
   /** Which clip the stage is on, so the row can mark it (#512). Reported
    *  whether or not it is playing: the tile the highlight is on is the clip
@@ -288,6 +293,9 @@ export function SequencePlayer({
       <button
         type="button"
         className={styles.stage}
+        style={
+          ratio ? ({ '--stage-ratio': ratio } as CSSProperties) : undefined
+        }
         onClick={toggle}
         disabled={empty}
         aria-label={isPlaying ? 'Pause' : 'Play'}
