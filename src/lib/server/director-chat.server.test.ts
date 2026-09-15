@@ -11,19 +11,19 @@ describe('director chat answers (#670)', () => {
     expect(nearestDuration(durations, 1)).toBe(5)
   })
 
-  it('keeps at most three clips and refuses none', () => {
-    const clip = { prompt: 'p', spoken: 's', duration: 9 }
-    const four = clampAnswer(
+  it('keeps at most six clips and refuses none', () => {
+    const clip = { prompt: 'p', spoken: 's', duration: 4 }
+    const seven = clampAnswer(
       {
         character: 'c',
         title: 't',
         line: 'l',
-        clips: [clip, clip, clip, clip],
+        clips: Array.from({ length: 7 }, () => clip),
       },
       durations,
     )
-    expect(four.clips).toHaveLength(3)
-    expect(four.clips[0].duration).toBe(8)
+    expect(seven.clips).toHaveLength(6)
+    expect(seven.clips[0].duration).toBe(5)
     expect(() =>
       clampAnswer(
         { character: 'c', title: 't', line: 'l', clips: [] },

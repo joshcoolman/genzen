@@ -74,6 +74,12 @@ function blank(el: HTMLVideoElement) {
  * The button appears only when the caller owns the choice; a run has no
  * choice and no button.
  *
+ * **And when it stops because the run ran out, it picks up when the run
+ * grows.** A chat's bursts land one at a time and play as they arrive, so the
+ * stage reaching the end of what is ready is a wait, not an ending: the next
+ * clip appearing continues from where it stopped. A pause the person made is
+ * not that -- `starved` tells the two apart.
+ *
  * **Sound is on by default and mutes both elements at once.** A run is one
  * thing to watch, so a mute that applied to whichever element happened to be on
  * top would come back at the next join. Mute is also the only control no
@@ -142,6 +148,9 @@ export function SequencePlayer({
   clipsRef.current = clips
   const loopRef = useRef(loop)
   loopRef.current = loop
+  /** Stopped because there was nothing after the clip that ended, rather
+   *  than because someone pressed pause. */
+  const starved = useRef(false)
 
   /**
    * Keep each element pointed at the right clip: the active one at `index`, the
@@ -200,7 +209,9 @@ export function SequencePlayer({
       }
       if (index + 1 >= run.length && !loopRef.current) {
         // The end, and nothing rejoins: stop on the last frame. The element
-        // keeps its source, so the picture stays and a tile click restarts.
+        // keeps its source, so the picture stays and a tile click restarts --
+        // or the next clip landing does, see below.
+        starved.current = true
         setIsPlaying(false)
         return
       }
@@ -247,6 +258,7 @@ export function SequencePlayer({
       if (first.src.endsWith(src)) first.currentTime = 0
       else first.src = src
 
+      starved.current = false
       setActive(0)
       setIndex(next)
       setIsPlaying(true)
@@ -272,6 +284,7 @@ export function SequencePlayer({
     if (clips.length === 0) return
     const el = els[active].current
     if (!el) return
+    starved.current = false
     if (isPlaying) {
       el.pause()
       setIsPlaying(false)
@@ -301,6 +314,13 @@ export function SequencePlayer({
     if (wasEmpty.current && !empty) jumpTo(0)
     wasEmpty.current = empty
   }, [clips.length, jumpTo])
+
+  /* The clip after the one the stage starved on has arrived: carry on. Only
+     when starved, so a run growing under a deliberate pause stays paused. */
+  useEffect(() => {
+    if (!starved.current || index + 1 >= clips.length) return
+    jumpTo(index + 1)
+  }, [clips.length, index, jumpTo])
 
   /* An effect rather than a call inside each handler: `index` moves from the
      `ended` handler, from a jump and from a run that shrinks underneath it, and

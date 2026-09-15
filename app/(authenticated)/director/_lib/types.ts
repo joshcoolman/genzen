@@ -51,7 +51,7 @@ export const chatTurnSchema = z.object({
   question: z.string().trim().min(1).max(2000),
   /** The character's own words, as a transcript line. */
   line: z.string().max(4000),
-  clipIds: z.array(idSchema).max(3),
+  clipIds: z.array(idSchema).max(6),
   created_at: z.string(),
 })
 export type ChatTurn = z.infer<typeof chatTurnSchema>
