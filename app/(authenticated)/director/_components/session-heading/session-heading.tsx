@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ArrowLeft, Pencil } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { changeSessionName } from '../../_actions/sessions.action'
 import styles from './session-heading.module.css'
 import type { ReactNode } from 'react'
@@ -18,6 +18,10 @@ export function SessionHeading({
   children?: ReactNode
 }) {
   const [title, setTitle] = useState(name)
+  /* The server can rename a session too -- a chat is titled from its first
+     question (#670) -- and the refreshed prop has to win over what was typed
+     here before it. */
+  useEffect(() => setTitle(name), [name])
   const [renaming, setRenaming] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)

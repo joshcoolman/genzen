@@ -25,22 +25,19 @@ export function View({ initial }: { initial: Array<SessionSummary> }) {
           <Stack direction="row" gap={8}>
             {/* A chat is a kind of session, chosen at birth (#670): a
                 question box instead of Add clips, a character instead of a
-                prompt. Two buttons rather than a kind picker in the dialog,
-                because the dialog asks for a name and nothing else. */}
+                prompt. It opens at once, unnamed -- the model names it from
+                the first question, so nothing stands between you and
+                asking it. */}
             <Button
               disabled={state.busy}
-              onClick={() =>
-                state.setFlow({ kind: 'create', sessionKind: 'chat' })
-              }
+              onClick={() => void state.createChat()}
             >
               <MessageSquare size={16} />
               New chat
             </Button>
             <Button
               disabled={state.busy}
-              onClick={() =>
-                state.setFlow({ kind: 'create', sessionKind: 'run' })
-              }
+              onClick={() => state.setFlow({ kind: 'create' })}
             >
               <Plus size={16} />
               New session
@@ -66,16 +63,9 @@ export function View({ initial }: { initial: Array<SessionSummary> }) {
       )}
       <NameDialog
         open={state.flow?.kind === 'create'}
-        title={
-          state.flow?.kind === 'create' && state.flow.sessionKind === 'chat'
-            ? 'New chat'
-            : 'New session'
-        }
+        title="New session"
         confirmLabel="Create"
-        onSubmit={(name) => {
-          if (state.flow?.kind === 'create')
-            void state.create(name, state.flow.sessionKind)
-        }}
+        onSubmit={(name) => void state.create(name)}
         onCancel={() => state.setFlow(null)}
       />
       <NameDialog

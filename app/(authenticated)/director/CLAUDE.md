@@ -44,9 +44,15 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   predicate, and a chat's holds back every clip of a turn until all of them
   have settled, then plays from the first. The row still shows each clip as it
   lands, which is how you watch the answer being built.
-- **The row is read-only**: no Add clips, Add gen, drag or pencil. Remove and
-  Script stay. The chat box sits under the player, so the stage is capped at
-  45vh there (`stageMax`) to keep the box on screen.
+- **Locked down, on purpose**: all you can do in a chat is chat. No Add
+  clips, Add gen, drag, pencil or Remove, no model or duration controls --
+  the model, the ratio and the lengths are fixed server-side. Script stays
+  because it only reads. The chat box sits under the player, so the stage is
+  capped at 45vh there (`stageMax`) to keep the box on screen.
+- **A chat opens unnamed.** New chat skips the name dialog and lands on an
+  intro; the model returns a `title` with every answer and the first turn's
+  is written as the session name (`appendChatTurn`). The heading's pencil
+  still renames it after.
 - Missing Anthropic key: the ask fails through `useReportError`, which opens
   the key dialog.
 

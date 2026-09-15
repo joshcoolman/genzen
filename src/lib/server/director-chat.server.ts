@@ -16,6 +16,7 @@ const clipSchema = z.object({
 
 const answerSchema = z.object({
   character: z.string().min(1),
+  title: z.string(),
   line: z.string(),
   // No `.min`/`.max` on the array: Anthropic's native output format rejects
   // array length constraints, so the count is clamped below instead.
@@ -30,6 +31,8 @@ export interface AnswerClip {
 
 export interface CharacterAnswer {
   character: string
+  /** A name for the conversation, from the first question. */
+  title: string
   line: string
   clips: Array<AnswerClip>
 }

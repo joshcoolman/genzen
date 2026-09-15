@@ -77,5 +77,6 @@ export async function askCharacter(sessionId: string, question: string) {
       created_at: new Date().toISOString(),
     },
     answer.character,
+    answer.title.trim().slice(0, 120) || undefined,
   )
 }

@@ -124,8 +124,9 @@ export async function saveRun(
  * Record an answered turn (#670): the character if this is the turn that
  * invented it, the turn itself, and its clips appended to the run.
  *
- * One write for both columns, so a turn can never be in the chat without its
- * clips being in the run or the other way round. It bumps `revision` like
+ * One write for both columns (and the name, on the first turn), so a turn can
+ * never be in the chat without its clips being in the run or the other way
+ * round. It bumps `revision` like
  * `saveRun`, but does not check it: the caller is the server answering a
  * question, not a tab holding a stale order, and refusing the write would lose
  * clips FAL is already making.
@@ -135,6 +136,9 @@ export async function appendChatTurn(
   id: string,
   turn: ChatTurn,
   character: string,
+  /** The chat's name, written on the first turn only: a chat opens unnamed
+   *  and the model titles it from the question. */
+  name?: string,
 ): Promise<Session> {
   const session = await requireSession(owner, id)
   if (!session.chat) throw new Error('This session is not a chat.')
@@ -148,9 +152,14 @@ export async function appendChatTurn(
     version: 2 as const,
     clipIds: [...session.cut.clipIds, ...parsed.clipIds],
   }
+  const title =
+    session.chat.turns.length === 0 && name
+      ? nameSchema.parse(name)
+      : session.name
   await sql`
     update director_sessions
-    set chat = ${jsonb(chat)}, cut = ${jsonb(cut)}, revision = revision + 1, updated_at = now()
+    set chat = ${jsonb(chat)}, cut = ${jsonb(cut)}, name = ${title},
+      revision = revision + 1, updated_at = now()
     where id = ${id} and user_id = ${owner}
   `
   return requireSession(owner, id)

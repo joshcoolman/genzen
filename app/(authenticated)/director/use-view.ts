@@ -8,10 +8,10 @@ import {
   newSession,
   removeSession,
 } from './_actions/sessions.action'
-import type { SessionKind, SessionSummary } from './_lib/types'
+import type { SessionSummary } from './_lib/types'
 
 type Flow =
-  | { kind: 'create'; sessionKind: SessionKind }
+  | { kind: 'create' }
   | { kind: 'rename' | 'delete'; session: SessionSummary }
   | null
 export function useView(initial: Array<SessionSummary>) {
@@ -61,12 +61,24 @@ export function useView(initial: Array<SessionSummary>) {
     busy,
     error,
     open: (session: SessionSummary) => router.push(`/director/${session.id}`),
-    create: (name: string, kind: SessionKind) =>
+    create: (name: string) =>
       run(async () => {
         createId.current ??= crypto.randomUUID()
-        const created = await newSession(name, createId.current, kind)
+        const created = await newSession(name, createId.current)
         createId.current = null
         setFlow(null)
+        router.push(`/director/${created.id}`)
+      }),
+    /**
+     * A chat asks for no name (#670). You arrive with a question, not a
+     * title, and the model names the chat from that first question. The
+     * placeholder holds until then and the pencil is still there after.
+     */
+    createChat: () =>
+      run(async () => {
+        createId.current ??= crypto.randomUUID()
+        const created = await newSession('New chat', createId.current, 'chat')
+        createId.current = null
         router.push(`/director/${created.id}`)
       }),
     rename: (id: string, name: string) =>
