@@ -146,7 +146,7 @@ source images; `use-view.ts` owns everything after the first paint.
   only way a change here reaches the clips being worked on.
 
   **Both ends of the clip are tiles** (#665). Every candidate group hands back
-  its *centre* frame, so the sheet used to open a third of an interval in and
+  its _centre_ frame, so the sheet used to open a third of an interval in and
   close up to a whole interval short -- the clip's actual first and last frames
   were the two it never offered. The opening tile is now forced to the
   candidate at t=0, which `fps=` had already decoded, and the closing one is a

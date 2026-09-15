@@ -610,14 +610,6 @@ export function useView(initial: Array<SavedAiImage>) {
     await visibility.hide(ids)
   }, [images, selection, visibility])
 
-  const focusSelected = useCallback(() => {
-    const ids = images
-      .filter((img) => selection.selectedIds.has(img.id))
-      .map((img) => img.id)
-    selection.clearSelection()
-    visibility.focusOn(ids)
-  }, [images, selection, visibility])
-
   const [isBatchDeleting, setIsBatchDeleting] = useState(false)
 
   const deleteSelected = useCallback(async () => {
@@ -1442,7 +1434,6 @@ export function useView(initial: Array<SavedAiImage>) {
     selectMode,
     visibility,
     hideSelected,
-    focusSelected,
     isBatchDeleting,
     deleteSelected,
     viewer,

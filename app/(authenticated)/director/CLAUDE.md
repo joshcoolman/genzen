@@ -110,7 +110,7 @@ clips or generate them, drag them into order, click one to watch from there.
       interval in and closed an interval short -- and the opening and closing
       frames are exactly the two a reference wants. `clip-frames.server.ts`
       forces the first tile to t=0 and seeks a closing one at `duration -
-      0.05`; Video's Grab frames gets both for free.
+0.05`; Video's Grab frames gets both for free.
     - **Not the end-frame slot.** Pinning an appended clip to an earlier frame
       makes the model interpolate _toward_ it -- a dissolve or a slow push,
       not a cut back. A different mechanism answering a different question.

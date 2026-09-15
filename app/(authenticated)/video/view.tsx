@@ -178,8 +178,6 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             }))}
             onShowAll={() => void visibility.showAll()}
             onUnhide={(id: string) => void visibility.unhide([id])}
-            focusCount={visibility.focusIds?.size ?? null}
-            onClearFocus={visibility.clearFocus}
             noun={{ one: 'clip', many: 'clips' }}
           />
 

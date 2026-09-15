@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDown, EyeOff, ScanSearch } from 'lucide-react'
+import { ChevronDown, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import styles from './hidden-bar.module.css'
 import { imageUrl } from '#/lib/image-url'
@@ -20,8 +20,6 @@ interface HiddenBarProps {
   onShowAll: () => void
   /** One back, from the tray. */
   onUnhide: (id: string) => void
-  focusCount: number | null
-  onClearFocus: () => void
   /** What the things are called on this surface -- "image" or "clip". The bar
    *  counts them out loud, and "3 hidden images" over a wall of video is the
    *  kind of wrong that makes a shared component read as a port. */
@@ -52,30 +50,10 @@ export function HiddenBar({
   hidden,
   onShowAll,
   onUnhide,
-  focusCount,
-  onClearFocus,
   noun = { one: 'image', many: 'images' },
 }: HiddenBarProps) {
   const [open, setOpen] = useState(false)
   const [overIcon, setOverIcon] = useState(false)
-
-  if (focusCount !== null) {
-    // Focus is the louder statement and it replaces the count on purpose:
-    // while a spotlight is on, hidden is not the reason anything is missing,
-    // and two bars each explaining a different absence is one too many for a
-    // state you are in for a minute. No tray -- nothing is being held.
-    return (
-      <div className={cx(styles.bar, styles.focus)}>
-        <ScanSearch className={styles.icon} />
-        <span className={styles.count}>
-          Showing {focusCount} {focusCount === 1 ? noun.one : noun.many}
-        </span>
-        <button type="button" className={styles.action} onClick={onClearFocus}>
-          Show all
-        </button>
-      </div>
-    )
-  }
 
   if (hidden.length === 0) return null
 

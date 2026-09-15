@@ -576,15 +576,6 @@ export function useView(initialVideos: Array<VideoRecord>) {
     await visibility.hide(ids)
   }, [selection, visibility])
 
-  /** The drawer's Focus: show only these. Dies with the page -- a spotlight
-   *  left on yesterday is indistinguishable from a broken wall. */
-  const focusSelected = useCallback(() => {
-    const ids = [...selection.selectedIds]
-    if (ids.length === 0) return
-    visibility.focusOn(ids)
-    selection.clearSelection()
-  }, [selection, visibility])
-
   /**
    * "Add to group", from the selection drawer.
    *
@@ -978,7 +969,6 @@ export function useView(initialVideos: Array<VideoRecord>) {
     cells,
     visibility,
     hideSelected,
-    focusSelected,
     groups: groups.groups,
     groupsLoading: groups.loading,
     expandedGroupIds: groups.expandedIds,
