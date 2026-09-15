@@ -531,6 +531,23 @@ export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
  * contributes nothing to `cents`. Reporting that separately is what stops the
  * total quietly under-reporting — genzen's whole cost promise is that its
  * numbers match FAL's, so a partial figure has to say it is partial.
+ *
+ * **This is the number the panel quotes, and it is not the number the database
+ * records.** `generate-image-internal.server.ts` and `retry-generation.action.ts`
+ * write `estimated_cost_cents` from `computeFalCostCents`, which reads FAL's
+ * pricing API — the source rejected two paragraphs up — and
+ * `fal-completion.server.ts` promotes that to `provider_cost_cents`, because
+ * FAL's image queue returns no cost. So Activity and the account totals are
+ * built on the table the panel refused, and three things follow: the quote and
+ * the logged row can disagree for one generation; an **edit is logged at
+ * roughly half price**, since that path passes no input-image term where
+ * `editPrice` is about 2x `price`; and a model with no price vanishes into the
+ * totals as zero rather than as `unpriced`.
+ *
+ * Known and deliberately not fixed (#552, closed 2026-09-15): genzen is a
+ * personal project and the recorded totals are not relied on. The fix, if they
+ * ever are, is the shape `src/features/video/models.ts` already has — one price
+ * source, this one, recorded at submit from the same inputs the estimate used.
  */
 export function estimateImageCostCents(
   modelIds: Array<string>,

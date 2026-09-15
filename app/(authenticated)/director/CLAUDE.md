@@ -78,42 +78,36 @@ clips or generate them, drag them into order, click one to watch from there.
     that would is in an earlier clip. Add ref is two steps in this order:
     **which clip**, drawn as the run's own tiles, then which frames off that
     clip's Grab Frames sheet. You remember the clip he was in, never the frame
-    id he is on.
-    - **Frame one still holds the previous clip's ending**, so the shot
-      continues from where the run is; the references are what make naming
-      something that left it mean anything. They carry identity and look, not
-      framing -- "tight shot" stays the prompt's job.
-    - **Kling O3 Pro, because it is the only model taking both.** Its
-      `reference-to-video` endpoint accepts `start_image_url` and `image_urls`
-      on one request; Seedance 2.5's reference endpoint has no first-frame
-      param at all and H3 Max Turbo has no reference endpoint. So the inputs
-      choose the model, as they do on Video, and the dialog names it beside the
-      price rather than offering a picker: **14c/s against 0.625c/s**, roughly
-      $1.12 for an eight second clip against $0.05. Drop every reference and it
-      falls back. Four is the app's cap, read off `models.ts`.
-    - **The ratio has to be clamped, and the durations do not.** Kling's
-      reference endpoint names three shapes and validates what it is sent,
-      while H3 Max Turbo's pills offer 4:3, 3:4 and 21:9 -- so `clampRatio`
-      brings the value back to a shape the chosen endpoint accepts. Every
-      duration H3 Max Turbo offers is one Kling takes, which is why the pills
-      do not move; `gen.test.ts` fails if that stops being true.
-    - **A tile the library already holds is reused, not cut again.** Grab
-      frames stamps each still with its clip and second, so a frame picked
-      twice is one row -- provenance before bytes, the rule `findClipEndFrame`
-      follows for a clip's ending. The tiles are `ClipFrameGrid`, shared with
-      Video's Grab frames, which locks an imported tile where this one reuses
-      it -- and the reuse counts **every** kind of stamp, not just Grab frames'
-      own, because the closing tile is the frame Add gen already cut as a
-      continuity frame on any run that appended to this clip.
-    - **The sheet had neither end of the clip on it until this** (#665). Each
-      candidate group hands back its centre frame, so it opened a third of an
-      interval in and closed an interval short -- and the opening and closing
-      frames are exactly the two a reference wants. `clip-frames.server.ts`
-      forces the first tile to t=0 and seeks a closing one at `duration -
-0.05`; Video's Grab frames gets both for free.
-    - **Not the end-frame slot.** Pinning an appended clip to an earlier frame
-      makes the model interpolate _toward_ it -- a dissolve or a slow push,
-      not a cut back. A different mechanism answering a different question.
+    id he is on. - **Frame one still holds the previous clip's ending**, so the shot
+    continues from where the run is; the references are what make naming
+    something that left it mean anything. They carry identity and look, not
+    framing -- "tight shot" stays the prompt's job. - **Kling O3 Pro, because it is the only model taking both.** Its
+    `reference-to-video` endpoint accepts `start_image_url` and `image_urls`
+    on one request; Seedance 2.5's reference endpoint has no first-frame
+    param at all and H3 Max Turbo has no reference endpoint. So the inputs
+    choose the model, as they do on Video, and the dialog names it beside the
+    price rather than offering a picker: **14c/s against 0.625c/s**, roughly
+    $1.12 for an eight second clip against $0.05. Drop every reference and it
+    falls back. Four is the app's cap, read off `models.ts`. - **The ratio has to be clamped, and the durations do not.** Kling's
+    reference endpoint names three shapes and validates what it is sent,
+    while H3 Max Turbo's pills offer 4:3, 3:4 and 21:9 -- so `clampRatio`
+    brings the value back to a shape the chosen endpoint accepts. Every
+    duration H3 Max Turbo offers is one Kling takes, which is why the pills
+    do not move; `gen.test.ts` fails if that stops being true. - **A tile the library already holds is reused, not cut again.** Grab
+    frames stamps each still with its clip and second, so a frame picked
+    twice is one row -- provenance before bytes, the rule `findClipEndFrame`
+    follows for a clip's ending. The tiles are `ClipFrameGrid`, shared with
+    Video's Grab frames, which locks an imported tile where this one reuses
+    it -- and the reuse counts **every** kind of stamp, not just Grab frames'
+    own, because the closing tile is the frame Add gen already cut as a
+    continuity frame on any run that appended to this clip. - **The sheet had neither end of the clip on it until this** (#665). Each
+    candidate group hands back its centre frame, so it opened a third of an
+    interval in and closed an interval short -- and the opening and closing
+    frames are exactly the two a reference wants. `clip-frames.server.ts`
+    forces the first tile to t=0 and seeks a closing one at `duration -
+0.05`; Video's Grab frames gets both for free. - **Not the end-frame slot.** Pinning an appended clip to an earlier frame
+    makes the model interpolate _toward_ it -- a dissolve or a slow push,
+    not a cut back. A different mechanism answering a different question.
   - **The estimate is printed before the press**, as everywhere else that
     spends.
 

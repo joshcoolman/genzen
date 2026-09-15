@@ -266,10 +266,10 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — #665 has shipped. Open **#502** and clear it: two dead webhook
-variables are still set on the deployed service, left behind when the webhook
-route went in #362. The issue is the spec, and the board at
-`localhost:3210/kanban/genzen` has what follows it.
+**Focus** — the column is empty. Open the board at
+`localhost:3210/kanban/genzen` and promote from Now: **#623** (Storyboard
+preparation errors) and **#585** (describe an image on upload) are what is
+queued.
 
 Also outstanding, and independent: the **deployed** database still holds the old
 Director's rows and bucket objects. Run `node scripts/purge-director.mjs --yes`
