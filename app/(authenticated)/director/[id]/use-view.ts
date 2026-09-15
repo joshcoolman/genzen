@@ -383,6 +383,24 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
   )
 
   /**
+   * A clip's length as a pill the form can show, or the model's default.
+   *
+   * Read off `generation_metadata`, which is where every clip made here or on
+   * Video records it. An upload has none; a clip made elsewhere at a length the
+   * pills do not offer falls back rather than putting a value on the form it
+   * cannot draw.
+   */
+  const durationOf = useCallback(
+    (clip: VideoRecord | undefined) => {
+      const seconds = clip?.generation_metadata?.duration_seconds
+      return typeof seconds === 'number' && model.durations.includes(seconds)
+        ? seconds
+        : model.defaultDuration
+    },
+    [model.durations, model.defaultDuration],
+  )
+
+  /**
    * Add gen: make the clip that comes after the run.
    *
    * **The frame comes from the last clip, whatever it is.** That is the whole
@@ -391,11 +409,13 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
    * before it. An empty run has nothing to carry on from, which is the one case
    * that starts as text-to-video and shows the ratio pills.
    *
-   * **And so does the prompt** (#662). It opens on the previous clip's text, to
-   * be edited down to the new action rather than retyped -- which is the method
-   * that was already being used by hand, with a copy and a paste in the middle
-   * of it. Regenerate has always refilled its form from the clip; this was the
-   * one door that opened blank.
+   * **And so do the prompt and the duration** (#662). It opens on the previous
+   * clip's text, to be edited down to the new action rather than retyped --
+   * which is the method that was already being used by hand, with a copy and a
+   * paste in the middle of it -- and on the previous clip's length, since a run
+   * cut in eights wants another eight and the model's default was reset to
+   * every time. Regenerate has always refilled its form from the clip; this
+   * was the one door that opened blank.
    *
    * The frame carries the look, so what the text is really carrying is
    * everything a picture cannot hold: motion, pace, camera, and whatever was
@@ -407,7 +427,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     const last = picked.at(-1)
     setTarget({ kind: 'append' })
     setPrompt(last?.description ?? '')
-    setDuration(model.defaultDuration)
+    setDuration(durationOf(last))
     setRatio(nearestGenRatio(runRatio))
     setFrame(null)
     setFrameError(null)
@@ -419,7 +439,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     // A clip still being made has no last frame to read, so appending after one
     // starts from nothing rather than waiting on it.
     if (last && last.status === 'completed') void loadFrameFrom(last)
-  }, [picked, runRatio, model.defaultDuration, loadFrameFrom])
+  }, [picked, runRatio, durationOf, loadFrameFrom])
 
   /**
    * Regenerate: make another clip for a position the run already has.
@@ -436,15 +456,10 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
       if (index < 0) return
       const meta = clip.generation_metadata ?? {}
       const sourceId = meta.source_image_id
-      const seconds = meta.duration_seconds
 
       setTarget({ kind: 'replace', index })
       setPrompt(clip.description ?? '')
-      setDuration(
-        typeof seconds === 'number' && model.durations.includes(seconds)
-          ? seconds
-          : model.defaultDuration,
-      )
+      setDuration(durationOf(clip))
       setRatio(nearestGenRatio(aspectRatio(clip)))
       setFrameError(null)
       setRefs([])
@@ -492,13 +507,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
           .finally(() => setEndFrameLoading(false))
       }
     },
-    [
-      picked,
-      model.durations,
-      model.defaultDuration,
-      loadFrameFrom,
-      resolveEndFrame,
-    ],
+    [picked, durationOf, loadFrameFrom, resolveEndFrame],
   )
 
   const dropFrame = useCallback(() => {

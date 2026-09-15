@@ -9,14 +9,26 @@
    then takes its height from the videos themselves at whatever aspect they
    are.
 
+   **The box is the run's shape, not 16:9.** The player writes `--stage-ratio`
+   from the first finished clip; a fixed 16:9 box drew a portrait run as a
+   strip down the middle of a letterbox, at a third of the width the column
+   had for it. Width is the column's, unless that would make the stage taller
+   than 70vh -- a 9:16 run in the sticky column would otherwise run off the
+   bottom of the screen -- in which case it is the widest box that height
+   allows, centred. Either way the box is exactly the clip's shape, so
+   `object-fit: contain` fills it with no bars.
+
    It is a `<button>` (#655) -- the stage is play/pause -- so it resets the
    padding and border a button brings and keeps the same box it always had. */
 .stage {
+  --stage-ratio: 16 / 9;
+
   display: grid;
   place-items: center;
-  width: 100%;
+  width: min(100%, calc(70vh * var(--stage-ratio)));
+  margin-inline: auto;
   padding: 0;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: var(--stage-ratio);
   border: none;
   border-radius: var(--radius-md);
   background: var(--surface-sunken);

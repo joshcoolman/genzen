@@ -40,7 +40,8 @@ clips or generate them, drag them into order, click one to watch from there.
   waiting, coming back and re-picking -- enough friction that the run being
   judged stopped being the thing being worked on. Add gen makes the next clip
   here: the previous clip's last frame in the first slot, removable, a prompt,
-  a duration, one button.
+  a duration, one button. Prompt and duration open on the previous clip's, to
+  be edited rather than retyped.
   - **One model, H3 Max Turbo, and no picker** -- see `[id]/gen.ts` for why,
     including why it is not plain H3: Director's speed came from an endpoint
     hardcoded in its old clip code, which was not in the lineup at all until
@@ -111,6 +112,12 @@ clips or generate them, drag them into order, click one to watch from there.
   - **The estimate is printed before the press**, as everywhere else that
     spends.
 
+- **The stage is the run's shape.** It was a fixed 16:9 box, which drew a
+  portrait run as a strip down the middle of a letterbox at a third of the
+  column's width. `--stage-ratio` comes off the first finished clip; the box
+  is the column's width unless that makes it taller than 70vh, then the widest
+  box that height allows, centred -- so a 9:16 run stays on screen in the
+  sticky column and the clip fills the box with no bars either way.
 - **Two `<video>` elements ping-ponging, not one swapping its `src`.** The
   visible one plays while the next loads hidden; at `ended` they swap which is on
   top. The join has to be free of a stutter, because the join is the thing being
