@@ -1,8 +1,7 @@
 # Visibility
 
-Taking rows off a wall without destroying them, and its opposite -- showing
-only the ones you named (#504). `hidden_at` on `user_images` is the whole
-store.
+Taking rows off a wall without destroying them (#504). `hidden_at` on
+`user_images` is the whole store.
 
 Promoted here from `app/(authenticated)/images/_hooks/` in #537, when Video
 became the second consumer. The same shape as grouping before #517: the write
@@ -11,22 +10,18 @@ only the surface was missing.
 
 ## Quirks
 
-- **Focus has no entry point.** #587 took the Focus verb out of select mode on
-  both routes, and nothing else ever set `focusIds` -- so every focus branch
-  below is unreachable, and its tests keep it looking maintained. #590 is the
-  decision: remove it, or give it a home that is not a batch verb. The two
-  quirks under this one are written as if it still runs, and go with it.
-- **Hide and focus are one predicate**, `isVisible`. "Hide these eight" and
-  "show only these two" are the same filtered view from opposite ends, so there
-  is one rule with two inputs rather than two filters to keep in agreement.
-- **Focus wins outright over hidden**, never intersects with it. While a
-  spotlight is on, "hidden" is not the question being asked -- you named the
-  rows you wanted. Intersecting would silently drop rows you had just selected,
-  with the bar reporting a count that did not match the wall.
-- **Only hiding persists.** Hidden is a decision and survives a refresh, because
-  the noise you cleared away is still noise tomorrow. Focus is a glance and dies
-  with the page, because a spotlight left on yesterday is indistinguishable from
-  a broken wall.
+- **There was a Focus, and it is gone** (#590). It showed only the rows you
+  named -- Hide from the other end -- and its only way in was a select-mode
+  verb #587 deleted, so nothing had been able to set `focusIds` since. What
+  that left was a predicate with two inputs, a second `HiddenBar` state, a
+  `focusSelected` on both routes, and tests that kept all of it looking
+  maintained. **A visible feature removed is not a feature removed**, which is
+  the thing worth carrying forward from it.
+- **So `visible` is one rule: a row is drawn unless it is hidden.** No
+  extracted predicate and no test for it -- it was both only while Focus shared
+  it and there was a second input to get wrong.
+- **Hiding persists, and it is the only state here.** It survives a refresh,
+  because the noise you cleared away is still noise tomorrow.
 - **Independent of `deleted_at`.** Trashing does not clear `hidden_at`, so a
   restore puts a hidden row back hidden. Nothing else is cleared either -- group,
   canvas membership, objects all stay, because nothing is being taken away.

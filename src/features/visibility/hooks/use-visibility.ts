@@ -28,17 +28,12 @@ export interface HideableRow {
  * them hidden. That was the first shape: the strip read "4 hidden" over four
  * visible pictures and needed a second verb to undo itself.
  *
- * **Hide and focus are one mechanism from opposite ends.** "Hide these eight"
- * and "show only these two" both produce a filtered view, so there is one
- * predicate with two inputs rather than two filters to keep in agreement.
- *
- * They differ in what they are for, which is why only one persists:
- *
- * - **Hidden is a decision.** It survives a refresh, because the noise you
- *   cleared away is still noise tomorrow. It is a column (`hidden_at`).
- * - **Focus is a glance.** Show me these two while I think about them. It dies
- *   with the page, because a spotlight left on yesterday is indistinguishable
- *   from a broken gallery.
+ * **Hiding is a decision, and it is the only one here.** It survives a refresh,
+ * because the noise you cleared away is still noise tomorrow; it is a column
+ * (`hidden_at`) and nothing else. This was one predicate with two inputs while
+ * Focus -- show only these, the mirror of Hide -- shared it, and #590 removed
+ * that half: its only entry point was a select-mode verb deleted in #587, so
+ * every branch of it had been unreachable since.
  *
  * The count is the safety design, not the hiding. Hidden state that is not
  * visible is a slower kind of lost -- so the strip that says how many there
@@ -60,10 +55,6 @@ export interface VisibilityState<T extends HideableRow> {
    *  group card reports its own hidden members separately (#546); that count
    *  is arithmetic over rows the route already holds, not this hook's job. */
   hiddenCount: number
-  /** The spotlight, or null when there is none. */
-  focusIds: ReadonlySet<string> | null
-  focusOn: (ids: Array<string>) => void
-  clearFocus: () => void
   hide: (ids: Array<string>) => Promise<void>
   /** Everything hidden *here*, back at once -- the bar's Show. Scoped for the
    *  same reason the count is: the bar says "4 hidden" and Show is the button
@@ -75,23 +66,6 @@ export interface VisibilityState<T extends HideableRow> {
    *  what is hidden *where you are standing*. */
   hiddenImages: Array<T>
   busy: boolean
-}
-
-/**
- * The one rule about what the grid draws, extracted so it can be tested.
- *
- * **Focus wins outright.** While a spotlight is on, "hidden" is not the
- * question being asked -- you named the images you wanted, and a hidden one
- * among them is one you deliberately pointed at. Intersecting the two would
- * make a focus silently drop images you had just selected, with the strip
- * reporting a count that did not match the grid.
- */
-export function isVisible(
-  row: HideableRow,
-  focusIds: ReadonlySet<string> | null,
-): boolean {
-  if (focusIds) return focusIds.has(row.id)
-  return !row.hidden_at
 }
 
 /**
@@ -148,7 +122,6 @@ export function useVisibility<T extends HideableRow>({
   patch,
   inScope,
 }: UseVisibilityOptions<T>): VisibilityState<T> {
-  const [focusIds, setFocusIds] = useState<ReadonlySet<string> | null>(null)
   const [busy, setBusy] = useState(false)
 
   // Newest hidden first: the tray is opened to undo something, and the thing
@@ -176,7 +149,10 @@ export function useVisibility<T extends HideableRow>({
 
   const withheldIds = useMemo(() => new Set(allHiddenIds), [allHiddenIds])
 
-  const visible = useCallback((row: T) => isVisible(row, focusIds), [focusIds])
+  /* The whole rule, since #590: a row is drawn unless it is hidden. It was an
+     extracted, tested predicate while Focus shared it and had a second input
+     to get wrong. */
+  const visible = useCallback((row: T) => !row.hidden_at, [])
 
   /**
    * Optimistic, then the write. A hide is a view change and has to feel like
@@ -211,19 +187,10 @@ export function useVisibility<T extends HideableRow>({
 
   const unhide = useCallback((ids: Array<string>) => write(ids, false), [write])
 
-  const focusOn = useCallback((ids: Array<string>) => {
-    setFocusIds(ids.length > 0 ? new Set(ids) : null)
-  }, [])
-
-  const clearFocus = useCallback(() => setFocusIds(null), [])
-
   return {
     visible,
     withheldIds,
     hiddenCount: hiddenIds.length,
-    focusIds,
-    focusOn,
-    clearFocus,
     hide,
     showAll,
     unhide,

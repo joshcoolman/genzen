@@ -38,12 +38,6 @@
   border-bottom-color: transparent;
 }
 
-.focus {
-  border-color: var(--accent-soft);
-  background: var(--accent-soft);
-  color: var(--text);
-}
-
 /* The eye is the Show-all target, so it gets a hit area of its own rather
    than being decoration beside the count. */
 .iconButton {
@@ -70,21 +64,6 @@
 
 .count {
   flex: 1;
-}
-
-/* Show-all inside the focus bar. The reset in base.css already strips the
-   button's chrome, so this only has to say it is pressable: the bar's own type
-   and colour are inherited, and the underline plus pointer are what separate a
-   text action from the sentence beside it. */
-.action {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-  cursor: pointer;
-}
-
-.action:hover {
-  color: var(--accent);
 }
 
 .chevron {

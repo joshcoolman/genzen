@@ -164,8 +164,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           hidden={visibility.hiddenImages}
           onShowAll={() => void visibility.showAll()}
           onUnhide={(id: string) => void visibility.unhide([id])}
-          focusCount={visibility.focusIds?.size ?? null}
-          onClearFocus={visibility.clearFocus}
         />
 
         {/* Top level only -- inside a group the group is already the scope
