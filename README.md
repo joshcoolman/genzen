@@ -266,13 +266,17 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — #662 is on a branch and open for review: Director is now named
-Sequence sessions and the other 9,600 lines are deleted. Look at
-`/director/[id]` and say whether the split between the player and the run is
-right. After that, confirm H3 Max Turbo's real price — `models.ts` records fal's
-stated $0.00625/s and says outright it is not trusted, an eighth of h3-max at
-the same resolution, and this family has billed on 1.2x duration before. Check
-Activity against fal's bill and correct the number.
+**Focus** — #662 is merged. One thing is outstanding and nothing else depends
+on it: the **deployed** database still holds the old Director's rows and bucket
+objects. Run `node scripts/purge-director.mjs --yes` and `pnpm db:migrate`
+against it, then delete that script — it has nothing left to read.
+
+Then open #664 (Set the scene, and an enhance button for the clips after it) —
+but test the prefill first: write a pacing-and-music clause into a session's
+first prompt, add four more clips editing only the action each time, and see
+whether the clause is still there at clip five. If it survives, #664 shrinks to
+Set the scene alone. Also still open: confirm H3 Max Turbo's real price, which
+`models.ts` records as fal's stated $0.00625/s and says outright is not trusted.
 
 Recent highlights:
 
