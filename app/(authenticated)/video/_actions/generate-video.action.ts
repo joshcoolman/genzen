@@ -41,6 +41,8 @@ export interface GenerateVideoInput {
    * listing below, and trashed with the run or the session.
    */
   origin?: 'images' | 'director'
+  /** Pins the generation's starting noise, on endpoints that take one. */
+  seed?: number
 }
 
 /**
@@ -61,6 +63,7 @@ export async function generateVideo({
   generateAudio = true,
   groupId,
   origin = 'images',
+  seed,
 }: GenerateVideoInput): Promise<{ recordId: string }> {
   const { userId } = await resolveAuth()
 
@@ -126,6 +129,7 @@ export async function generateVideo({
       resolution: sentResolution,
       estimated_cost_cents: estimatedCostCents,
       ...(model.supportsAudio ? { generate_audio: generateAudio } : {}),
+      ...(seed !== undefined && endpoint.acceptsSeed ? { seed } : {}),
     },
   })
 
@@ -153,6 +157,7 @@ export async function generateVideo({
           resolution: sentResolution,
           supportsAudio: model.supportsAudio,
           generateAudio,
+          seed,
         }),
       }),
     )
