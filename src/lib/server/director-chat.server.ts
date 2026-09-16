@@ -9,7 +9,7 @@ import { ai, requireAiRole } from '#/lib/server/ai.server'
 export const MAX_ANSWER_CLIPS = 6
 
 const clipSchema = z.object({
-  prompt: z.string().min(1),
+  action: z.string().min(1),
   spoken: z.string(),
   duration: z.number(),
 })
@@ -17,6 +17,7 @@ const clipSchema = z.object({
 const answerSchema = z.object({
   character: z.string().min(1),
   title: z.string(),
+  scene: z.string(),
   line: z.string(),
   // No `.min`/`.max` on the array: Anthropic's native output format rejects
   // array length constraints, so the count is clamped below instead.
@@ -24,7 +25,9 @@ const answerSchema = z.object({
 })
 
 export interface AnswerClip {
-  prompt: string
+  /** What happens on camera in this burst, with the line in quotes. The
+   *  character and the scene are not in it -- see `composeClipPrompt`. */
+  action: string
   spoken: string
   duration: number
 }
@@ -33,8 +36,43 @@ export interface CharacterAnswer {
   character: string
   /** A name for the conversation, from the first question. */
   title: string
+  /** Where and how this answer is shot, written once for all its clips. */
+  scene: string
   line: string
   clips: Array<AnswerClip>
+}
+
+/**
+ * The prompt one burst is generated from: the anchors, then the action.
+ *
+ * The model writes the character once per session and the scene once per
+ * answer, and the code puts them in front of every clip. Continuity by
+ * repetition was the first cut -- every clip prompt restated the whole
+ * description -- and it worked, at the cost of the model writing five times
+ * the words; a turn went from eight seconds to fifteen when the bursts came
+ * in. The picture FAL sees is the same either way, so the anchors are
+ * prepended here and the model writes only what changes.
+ *
+ * The line is appended here too, in quotes, because the model keeps action
+ * and speech apart when asked for both as fields -- and a clip whose prompt
+ * has no quoted line is a silent one.
+ */
+export function composeClipPrompt(
+  character: string,
+  scene: string,
+  action: string,
+  spoken: string,
+): string {
+  const line = spoken.trim().replace(/^["\u201c]+|["\u201d]+$/g, '')
+  return [
+    'Vertical 9:16 video, the character facing the camera.',
+    character.trim(),
+    scene.trim(),
+    action.trim(),
+    line && `Speaking to camera: "${line}"`,
+  ]
+    .filter(Boolean)
+    .join(' ')
 }
 
 /** The nearest length the video model offers to what the writer asked for. */

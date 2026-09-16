@@ -5,7 +5,10 @@ import { generateVideo } from '../../video/_actions/generate-video.action'
 import { genModel } from '../[id]/gen'
 import { appendChatTurn, requireSession } from '../_lib/sessions.server'
 import { chatTurnSchema, idSchema } from '../_lib/types'
-import { answerAsCharacter } from '#/lib/server/director-chat.server'
+import {
+  answerAsCharacter,
+  composeClipPrompt,
+} from '#/lib/server/director-chat.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 
 /** Every chat clip is vertical (#670): the format is fixed, not chosen. */
@@ -46,10 +49,18 @@ export async function askCharacter(sessionId: string, question: string) {
      failed row in the library, and the ones that went through are being made
      and paid for. An answer with fewer clips than written still plays; only
      one with none is an error. */
+  /* The stored character wins over the one the model wrote back: a later turn
+     may paraphrase it, and the anchor is the one thing that must not drift. */
+  const character = session.chat.character ?? answer.character
   const submitted = await Promise.allSettled(
     answer.clips.map((clip) =>
       generateVideo({
-        prompt: clip.prompt,
+        prompt: composeClipPrompt(
+          character,
+          answer.scene,
+          clip.action,
+          clip.spoken,
+        ),
         duration: clip.duration,
         aspectRatio: CHAT_RATIO,
         modelSlug: model.slug,

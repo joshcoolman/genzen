@@ -91,7 +91,6 @@ export function View({
               busy={view.asking}
               answering={view.answering}
               onAsk={(question) => void view.ask(question)}
-              onTranscript={() => view.setTranscriptOpen(true)}
             />
           )}
         </div>
@@ -103,7 +102,14 @@ export function View({
             playingIndex={view.toRowIndex(view.playingIndex)}
             onAdd={() => view.setPickerOpen(true)}
             onAddGen={view.openAdd}
-            onScript={() => view.setScriptOpen(true)}
+            /* A chat's script is the questions and answers, not the clip
+               prompts: those are anchors plus an action, assembled in code,
+               and the words that matter are the ones said. */
+            onScript={() =>
+              view.chat
+                ? view.setTranscriptOpen(true)
+                : view.setScriptOpen(true)
+            }
             onRemove={view.removeClip}
             onMove={view.move}
             onPlayFrom={(index) => {
@@ -141,12 +147,11 @@ export function View({
         script={view.script}
       />
 
-      {/* Transcript: the conversation so far, opened on purpose (#670). */}
+      {/* A chat's Script: the conversation so far, opened on purpose (#670). */}
       <ScriptDialog
         open={view.transcriptOpen}
         onOpenChange={view.setTranscriptOpen}
         script={view.transcript}
-        title="Transcript"
       />
 
       {/* Add gen: the clip that comes after the run (#660). */}
