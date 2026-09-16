@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { generateVideo } from '../../video/_actions/generate-video.action'
 import { askCharacter } from '../_actions/chat.action'
-import { writeRun } from '../_actions/sessions.action'
+import { trashClip, writeRun } from '../_actions/sessions.action'
 import {
   GEN_MODEL_SLUG,
   MAX_REFS,
@@ -165,7 +165,6 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
   }, [picked])
 
   useGenerationPoll(pendingSince, () => router.refresh())
-  const [pickerOpen, setPickerOpen] = useState(false)
   /* The run's prompts, verbatim, as they stand. Nothing is stored and nothing
      is sent to a model -- see `script.ts`. */
   const [scriptOpen, setScriptOpen] = useState(false)
@@ -181,22 +180,17 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
   const [playingIndex, setPlayingIndex] = useState<number | null>(null)
 
   /**
-   * Append, skipping anything already in the run.
+   * Drop a clip from the run, and trash it (#679).
    *
-   * A clip twice in one sequence is a real thing to want eventually and a
-   * confusing thing to get by accident, since the picker shows what is already
-   * picked. Appending only what is new means the row's ids stay unique, which
-   * is what lets a card key on one.
+   * A Director-born clip lives and dies with its session: nothing else shows
+   * it, so a clip that left the run would otherwise be a row nobody can reach.
+   * Trash can restore it, which is the safety a confirm dialog would have
+   * bought at the cost of a click on every remove. The row leaves the run at
+   * once; the trash follows and is guarded server-side on origin.
    */
-  const addClips = useCallback((chosen: Array<VideoRecord>) => {
-    setPicked((current) => {
-      const have = new Set(current.map((c) => c.id))
-      return [...current, ...chosen.filter((c) => !have.has(c.id))]
-    })
-  }, [])
-
   const removeClip = useCallback((id: string) => {
     setPicked((current) => current.filter((c) => c.id !== id))
+    trashClip(id).catch(() => toast.error('The clip could not be trashed'))
   }, [])
 
   /** The clip the pencil was pressed on, or null (#657, #660). */
@@ -429,14 +423,6 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
   /* The shape of the run: the first *finished* clip's, since a clip still being
      made has no pixels to measure yet. */
   const runRatio = playable.length > 0 ? aspectRatio(playable[0]) : null
-
-  /* What the picker may offer. A pending row has no object behind `/img/[id]`,
-     so choosing one gets you a blank stage -- the same rule the page has always
-     applied, now that the run itself can hold one. */
-  const pickable = useMemo(
-    () => clips.filter((c) => c.status === 'completed'),
-    [clips],
-  )
 
   /* ---------------------------------------------------------------- generate
      Making the next clip from inside the run (#660). */
@@ -729,6 +715,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
             ? nearestRatio(ratios, runRatio)
             : clampRatio(ratios, ratio),
         modelSlug: refs.length > 0 ? REF_MODEL_SLUG : GEN_MODEL_SLUG,
+        origin: 'director',
       })
 
       const placeholder: VideoRecord = {
@@ -758,7 +745,13 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
       setPicked((current) => {
         if (target.kind === 'append') return [...current, placeholder]
         const next = [...current]
-        next.splice(target.index, 1, placeholder)
+        const [replaced] = next.splice(target.index, 1, placeholder)
+        /* The take that dropped out is trashed (#679). It used to stay in
+           Video for cleaning up by hand; nothing shows it now, so it goes
+           where a re-roll you did not keep belongs. Restorable from Trash. */
+        trashClip(replaced.id).catch(() =>
+          toast.error('The replaced clip could not be trashed'),
+        )
         return next
       })
 
@@ -801,7 +794,6 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     transcript,
     transcriptOpen,
     setTranscriptOpen,
-    clips: pickable,
     picked,
     playable,
     toPlayableIndex: playableIndexOf,
@@ -809,12 +801,9 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     runRatio,
     playingIndex: picked.length > 0 ? playingIndex : null,
     setPlayingIndex,
-    pickerOpen,
-    setPickerOpen,
     scriptOpen,
     setScriptOpen,
     script,
-    addClips,
     removeClip,
     move,
     editing,

@@ -84,9 +84,9 @@ export function View({ initial }: { initial: Array<SessionSummary> }) {
       <ConfirmDialog
         open={state.flow?.kind === 'delete'}
         title="Delete this session?"
-        /* The clips are library rows and stay there (#662): what goes is the
-           name and the order, which is all a session is now. */
-        message={`Delete "${state.flow?.kind === 'delete' ? state.flow.session.name : ''}"? The clips stay in your library.`}
+        /* A session's clips go with it (#679): they are shown nowhere else,
+           so they go to Trash, where any of them can be restored. */
+        message={`Delete "${state.flow?.kind === 'delete' ? state.flow.session.name : ''}"? Its clips go to Trash.`}
         confirmLabel="Delete session"
         onConfirm={() => {
           if (state.flow?.kind === 'delete')

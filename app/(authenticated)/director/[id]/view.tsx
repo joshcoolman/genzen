@@ -16,7 +16,6 @@ import type { SequencePlayerHandle } from './_components/sequence-player/sequenc
 import type { Session } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { clipName } from '#/features/video/clip-facts'
-import { ClipPicker } from '#/components'
 
 /**
  * A session: the player on top, the run underneath it (#662).
@@ -106,7 +105,6 @@ export function View({
             clips={view.picked}
             mode={view.chat ? 'chat' : 'run'}
             playingIndex={view.toRowIndex(view.playingIndex)}
-            onAdd={() => view.setPickerOpen(true)}
             onAddGen={view.openAdd}
             /* A chat's script is the questions and answers, not the clip
                prompts: those are anchors plus an action, assembled in code,
@@ -166,25 +164,6 @@ export function View({
         onOpenChange={view.setGenOpen}
         form={view.genForm}
         onSubmit={view.submitGen}
-      />
-
-      {/* Every clip you have is pickable -- a run has no length of its own, so
-          the only honest cap is the library. The picker was written for more
-          than one from the start; this is the number it was waiting for. With
-          exactly one clip it auto-confirms on the click, which is the right
-          behaviour for a choice that can only go one way. */}
-      <ClipPicker
-        open={view.pickerOpen}
-        onOpenChange={view.setPickerOpen}
-        clips={view.clips}
-        pickedIds={new Set(view.picked.map((c) => c.id))}
-        onConfirm={view.addClips}
-        max={view.clips.length || 1}
-        /* The first clip picked sets the run's shape and every later one has to
-           match it (#512). Read off the run rather than chosen: you pick a
-           shape by picking a clip, which is one decision instead of two, and an
-           empty run constrains nothing. */
-        matchRatio={view.runRatio}
       />
     </>
   )

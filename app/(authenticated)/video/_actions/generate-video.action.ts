@@ -35,6 +35,12 @@ export interface GenerateVideoInput {
    *  work rather than a folder. Verified server-side against both the caller's
    *  user id and the group's kind -- see `createPendingGeneration`. */
   groupId?: string | null
+  /**
+   * Which surface is making the clip. Director stamps its own (#679): a clip
+   * born in a session is shown only there, hidden from the Video wall by the
+   * listing below, and trashed with the run or the session.
+   */
+  origin?: 'images' | 'director'
 }
 
 /**
@@ -54,6 +60,7 @@ export async function generateVideo({
   modelSlug,
   generateAudio = true,
   groupId,
+  origin = 'images',
 }: GenerateVideoInput): Promise<{ recordId: string }> {
   const { userId } = await resolveAuth()
 
@@ -95,7 +102,7 @@ export async function generateVideo({
 
   const { recordId } = await createPendingGeneration({
     userId,
-    origin: 'images',
+    origin,
     source: 'ai_video',
     groupId,
     generationType: images.length > 0 ? 'image_to_video' : 'text_to_video',
@@ -194,7 +201,15 @@ export interface VideoRecord {
  * gallery query by its `source in ('upload', 'ai_generated')` filter, so this
  * route is the only place they are listed.
  */
-export async function listVideos(): Promise<Array<VideoRecord>> {
+/**
+ * The clips a surface may show. Director is isolated (#679): a clip born in a
+ * session appears in that session and nowhere else, and the Video wall is the
+ * clips made on Video. Same table, split by `origin`, and every reader names
+ * which side it is on -- there is no listing of both.
+ */
+export async function listVideos(
+  scope: 'video' | 'director' = 'video',
+): Promise<Array<VideoRecord>> {
   const { userId } = await resolveAuth()
 
   const rows = await sql<Array<VideoRecord>>`
@@ -207,6 +222,7 @@ export async function listVideos(): Promise<Array<VideoRecord>> {
     where user_id = ${userId}
       and source = 'ai_video'
       and deleted_at is null
+      and ${scope === 'director' ? sql`origin = 'director'` : sql`origin <> 'director'`}
     order by created_at desc
   `
 

@@ -165,6 +165,28 @@ export async function appendChatTurn(
   return requireSession(owner, id)
 }
 
+/**
+ * Trash clips a session made (#679).
+ *
+ * Guarded on `origin = 'director'` rather than trusting the ids: a session
+ * from before isolation may still hold a clip picked off the Video wall, and
+ * that one belongs to Video. A row already trashed is left as it is.
+ */
+export async function trashSessionClips(owner: string, ids: Array<string>) {
+  const clipIds = ids.map((clipId) => idSchema.parse(clipId))
+  if (clipIds.length === 0) return
+  await sql`
+    update user_images set deleted_at = now(), group_id = null
+    where id in ${sql(clipIds)} and user_id = ${owner}
+      and origin = 'director' and deleted_at is null
+  `
+}
+
+/** A Director-born clip lives and dies with its session (#679): deleting the
+ *  session trashes every clip it made. Trash can still restore them. */
 export async function deleteSession(owner: string, id: string) {
+  const session = await getSession(owner, id)
+  if (!session) return
+  await trashSessionClips(owner, session.cut.clipIds)
   await sql`delete from director_sessions where id = ${id} and user_id = ${owner}`
 }

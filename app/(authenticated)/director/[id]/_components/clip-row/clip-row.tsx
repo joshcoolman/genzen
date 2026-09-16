@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useState } from 'react'
-import { Loader, Pencil, Plus, ScrollText, Sparkles, X } from 'lucide-react'
+import { Loader, Pencil, ScrollText, Sparkles, X } from 'lucide-react'
 import styles from './clip-row.module.css'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 import { clipFacts, clipName } from '#/features/video/clip-facts'
@@ -80,7 +80,6 @@ export function ClipRow({
   clips,
   mode = 'run',
   playingIndex,
-  onAdd,
   onAddGen,
   onScript,
   onRemove,
@@ -94,7 +93,6 @@ export function ClipRow({
   mode?: 'run' | 'chat'
   /** Where the player is in the run, so the row can say so (#512). */
   playingIndex: number | null
-  onAdd: () => void
   /** Open the dialog that makes the next clip (#660). */
   onAddGen: () => void
   /** Show the run's prompts in one box, to copy out. */
@@ -223,7 +221,8 @@ export function ClipRow({
                   e.stopPropagation()
                   onRemove(clip.id)
                 }}
-                aria-label="Remove from the run"
+                aria-label="Remove from the run and trash it"
+                title="Remove from the run and trash it"
               >
                 <X size={12} />
               </button>
@@ -242,38 +241,25 @@ export function ClipRow({
       {dragging && overGap === clips.length && slot}
 
       {/* Always last, so adding a clip appends to the end of the run and the
-          controls do not move as the run grows. Dragging over either means the
+          controls do not move as the run grows. Dragging over it means the
           end of the run, which is the one slot no tile can express.
 
-          **Two buttons, and neither is the primary** (#660). One picks from
-          what you have, the other makes something new; an empty run offers
-          both, because a run can just as well start from a prompt as from the
-          library. They are told apart by icon rather than by label -- they are
-          adjacent, both say "add", and one of them spends money. */}
+          Add gen is the only way a clip enters a run (#679). Add clips -- a
+          pick off the Video wall -- stood beside it from #660 until Director
+          was isolated: nothing was ever brought in that way, and a session
+          whose clips can come from two places has two rules for what removing
+          one means. */}
       {editable && (
-        <>
-          <button
-            type="button"
-            className={styles.add}
-            onClick={onAdd}
-            onDragEnter={() => setOverGap(clips.length)}
-            onDragOver={(e) => e.preventDefault()}
-          >
-            <Plus size={16} />
-            <span className={styles.addLabel}>Add clips</span>
-          </button>
-
-          <button
-            type="button"
-            className={cx(styles.add, styles.addGen)}
-            onClick={onAddGen}
-            onDragEnter={() => setOverGap(clips.length)}
-            onDragOver={(e) => e.preventDefault()}
-          >
-            <Sparkles size={16} />
-            <span className={styles.addLabel}>Add gen</span>
-          </button>
-        </>
+        <button
+          type="button"
+          className={cx(styles.add, styles.addGen)}
+          onClick={onAddGen}
+          onDragEnter={() => setOverGap(clips.length)}
+          onDragOver={(e) => e.preventDefault()}
+        >
+          <Sparkles size={16} />
+          <span className={styles.addLabel}>Add gen</span>
+        </button>
       )}
 
       {/* Reads the run rather than adding to it, but it sits with the two adds

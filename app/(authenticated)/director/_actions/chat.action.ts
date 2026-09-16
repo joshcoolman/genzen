@@ -64,6 +64,7 @@ export async function askCharacter(sessionId: string, question: string) {
         duration: clip.duration,
         aspectRatio: CHAT_RATIO,
         modelSlug: model.slug,
+        origin: 'director',
       }),
     ),
   )
