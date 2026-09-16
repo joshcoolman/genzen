@@ -279,26 +279,20 @@ says outright is not trusted.
 
 Recent highlights:
 
+- Director chat answers are written as speech first, in the character's
+  voice, then cut into five-second bursts word for word (#683). The audience
+  is fifteen to adult whoever answers (#682).
 - Director is isolated from Video: a clip born in a session is stamped at
-  birth, shown only in that session, and trashed when it leaves the run, is
-  re-rolled, or the session is deleted. Add clips is gone (#679).
-- Director chat sessions: New chat opens unnamed on an intro, you ask, and a
-  character the model invents answers in up to six five-second 9:16 bursts,
-  submitted together and played in order as they land, once, with a Loop
-  toggle. Sonnet 5 writes the answer; the first question names the chat, the
-  transcript is behind a button, and all you can do in one is chat (#670).
-- A Script button on a Director session shows the run's prompts verbatim, one
-  after another, in a box with a copy button (#669).
-- Director's stage is drawn at the run's shape, so a portrait run fills the
-  player column instead of sitting in a 16:9 letterbox; Add gen opens on the
-  previous clip's duration as well as its prompt (#668).
-- Add refs in Director's Add gen dialog: pick a clip from the run, then frames
-  off its contact sheet, and the prompt can name someone who has left the shot.
-  Frame one still holds the previous clip's ending; a reference switches the
-  clip to Kling O3 Pro, which the dialog names beside the price (#665).
-- Director is a named session holding a run of library clips, and Sequence
-  graduated out of the lab into it. Final Cut, exports, stitching, the private
-  media path and Enhance are deleted, along with the content they made (#662).
+  birth, shown only there, and trashed when it leaves the run, is re-rolled,
+  or the session is deleted. Add clips is gone (#679, backfill in 0021).
+- Chat questions queue and the box never locks; an answer landing mid-answer
+  is the next clip, not a jump (#678).
+- Chat anchors -- character once per session, scene once per answer -- are
+  prepended in code, and a chat's Script is its questions and answers (#677).
+- Chat bursts play in order as they land, once, with a Loop toggle; Sonnet 5
+  writes the answer (#675, #676).
+- Director chat sessions: New chat opens on an intro, you ask, and a
+  character invented from the question answers on camera (#670-#674).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.
