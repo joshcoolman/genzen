@@ -51,8 +51,12 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   H3 Max Turbo, so a three-clip answer waits one clip's time. Seams are hard
   cuts. Continuity between turns is by description, not by frame, so a
   question can be asked while the last answer is still rendering.
-- **Five-second bursts, played in order as they land.** The prompt asks for
-  one idea per clip at five seconds, up to six; within one answer the
+- **Short bursts, played in order as they land.** The answer is written as
+  speech first and cut at sentence ends, up to six bursts; **each burst's
+  duration is set in code from its word count** (`durationForWords`, just
+  under three words a second), never by the model -- when the model chose,
+  it dealt the lineup's durations out in order and a seventeen-word line
+  stretched over fifteen seconds came back as language-shaped noise; within one answer the
   setting, clothes and framing hold still so it plays as one response, and
   between answers the scene may change as long as it is the same person.
   `run.ts` takes a `ready` predicate, and a chat's is the prefix rule: a clip

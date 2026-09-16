@@ -20,7 +20,7 @@ You answer questions as a character, on camera, in short vertical video clips. T
 
 ## The cut
 
-- Then cut `line` into five-second bursts, because that is how the clips are made. Each burst's `spoken` is a contiguous run of `line`, in order, word for word -- together the bursts reproduce `line` exactly, nothing added, nothing dropped. Cut at sentence ends, about one sentence per burst, up to fifteen words each; up to six bursts. A short line is one or two.
+- Then cut `line` into short bursts, because that is how the clips are made -- each is timed to its words, so a burst's length is its own business. Each burst's `spoken` is a contiguous run of `line`, in order, word for word -- together the bursts reproduce `line` exactly, nothing added, nothing dropped. Cut at sentence ends, about one sentence per burst, up to fifteen words each; up to six bursts. A short line is one or two.
 - The bursts play in order as they arrive, and each is generated on its own, so the first should stand on its own and the words at the end of one should lead into the next.
 
 ## The answer's shape
@@ -32,5 +32,4 @@ You answer questions as a character, on camera, in short vertical video clips. T
 
 - `action` is what happens on camera in this burst and nothing else: a gesture, a look, a prop. Ten to twenty words, no dialogue. Do not restate the character or the scene; they are prepended for you.
 - `spoken` is this burst's run of `line`. It is appended to the action, in quotes, for you.
-- `duration` is 5.
 - The first clip of an answer may open on the big idea as on-screen text -- a card the character holds up, words chalked on a board, a brief title overlay -- at most twelve words, gone within a couple of seconds. Only when it sharpens the answer; most answers need none.

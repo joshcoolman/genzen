@@ -2,21 +2,24 @@ import { describe, expect, it } from 'vitest'
 import {
   clampAnswer,
   composeClipPrompt,
-  nearestDuration,
+  durationForWords,
 } from './director-chat.server'
 
 const durations = [5, 6, 8, 10, 12, 15]
 
 describe('director chat answers (#670)', () => {
-  it('brings a written duration to one the model offers', () => {
-    expect(nearestDuration(durations, 7)).toBe(6)
-    expect(nearestDuration(durations, 14)).toBe(15)
-    expect(nearestDuration(durations, 40)).toBe(15)
-    expect(nearestDuration(durations, 1)).toBe(5)
+  it('times a burst to its words, never faster than speaking pace', () => {
+    expect(durationForWords(4, durations)).toBe(5)
+    expect(durationForWords(14, durations)).toBe(5)
+    expect(durationForWords(17, durations)).toBe(8)
+    expect(durationForWords(24, durations)).toBe(10)
+    expect(durationForWords(27, durations)).toBe(10)
+    // Past what any length can say cleanly: the longest, not an error.
+    expect(durationForWords(80, durations)).toBe(15)
   })
 
-  it('keeps at most six clips and refuses none', () => {
-    const clip = { action: 'a', spoken: 's', duration: 4 }
+  it('keeps at most six clips, times each, and refuses none', () => {
+    const clip = { action: 'a', spoken: 'one two three four five six' }
     const seven = clampAnswer(
       {
         character: 'c',
