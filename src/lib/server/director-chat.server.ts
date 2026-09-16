@@ -14,6 +14,14 @@ const clipSchema = z.object({
   duration: z.number(),
 })
 
+/**
+ * Field order is writing order: the model fills a structured object top to
+ * bottom, so `line` before `clips` means the answer is composed as speech
+ * first and cut into bursts after. The other way round -- clips first, line
+ * as their concatenation -- had the model thinking in five-second units from
+ * the start, and a six-burst answer wandered, each sentence following the
+ * last rather than serving a shape.
+ */
 const answerSchema = z.object({
   character: z.string().min(1),
   title: z.string(),
