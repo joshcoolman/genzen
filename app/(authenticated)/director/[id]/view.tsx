@@ -115,6 +115,9 @@ export function View({
                 : view.setScriptOpen(true)
             }
             onRemove={view.removeClip}
+            onRerun={
+              view.chat ? (clip) => void view.rerunClip(clip) : undefined
+            }
             onMove={view.move}
             onPlayFrom={(index) => {
               const target = view.toPlayableIndex(index)

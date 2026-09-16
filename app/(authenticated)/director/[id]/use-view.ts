@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { generateVideo } from '../../video/_actions/generate-video.action'
-import { askCharacter } from '../_actions/chat.action'
+import {
+  askCharacter,
+  dropChatClip,
+  rerunChatClip,
+} from '../_actions/chat.action'
 import { trashClip, writeRun } from '../_actions/sessions.action'
 import {
   GEN_MODEL_SLUG,
@@ -188,11 +192,6 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
    * bought at the cost of a click on every remove. The row leaves the run at
    * once; the trash follows and is guarded server-side on origin.
    */
-  const removeClip = useCallback((id: string) => {
-    setPicked((current) => current.filter((c) => c.id !== id))
-    trashClip(id).catch(() => toast.error('The clip could not be trashed'))
-  }, [])
-
   /** The clip the pencil was pressed on, or null (#657, #660). */
   const [editing, setEditing] = useState<VideoRecord | null>(null)
 
@@ -407,6 +406,70 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
       }
     })()
   }, [questions, session.id, router, reportError])
+
+  const removeClip = useCallback(
+    (id: string) => {
+      setPicked((current) => current.filter((c) => c.id !== id))
+      if (!chat) {
+        trashClip(id).catch(() => toast.error('The clip could not be trashed'))
+        return
+      }
+      /* A chat's burst also leaves its turn (#688), server-side in one write
+         with the run, so the turn is not left waiting on a clip that is gone.
+         The returned session is the truth; its revision and ids replace what
+         this tab holds, as an answer's do. */
+      dropChatClip(session.id, id)
+        .then((updated) => {
+          revision.current = updated.revision
+          saved.current = updated.cut.clipIds.join(',')
+          setChat(updated.chat)
+        })
+        .catch(() => toast.error('The clip could not be removed'))
+    },
+    [chat, session.id],
+  )
+
+  /**
+   * Make one burst again (#688), in place. A placeholder takes the tile at
+   * once, as Add gen's does; the poll swaps the real row in. The old take is
+   * trashed server-side.
+   */
+  const rerunClip = useCallback(
+    async (clip: VideoRecord) => {
+      if (!chat) return
+      try {
+        const {
+          session: updated,
+          recordId,
+          duration,
+        } = await rerunChatClip(session.id, clip.id)
+        revision.current = updated.revision
+        saved.current = updated.cut.clipIds.join(',')
+        setChat(updated.chat)
+        setPicked((current) =>
+          current.map((c) =>
+            c.id === clip.id
+              ? {
+                  ...c,
+                  id: recordId,
+                  status: 'pending',
+                  generation_error: null,
+                  created_at: new Date().toISOString(),
+                  generation_metadata: { duration_seconds: duration },
+                  width: null,
+                  height: null,
+                  has_end_frame: false,
+                }
+              : c,
+          ),
+        )
+        router.refresh()
+      } catch (err) {
+        reportError(err, 'The clip could not be rerun')
+      }
+    },
+    [chat, session.id, router, reportError],
+  )
 
   /* The row shows a clip being made and the player cannot, so the two are
      indexed apart. `run.ts` owns both directions; see there. */
@@ -807,6 +870,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     setScriptOpen,
     script,
     removeClip,
+    rerunClip,
     move,
     editing,
     setEditing,

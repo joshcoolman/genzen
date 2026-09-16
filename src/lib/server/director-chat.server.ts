@@ -78,12 +78,15 @@ export function composeClipPrompt(
   spoken: string,
 ): string {
   const line = spoken.trim().replace(/^["\u201c]+|["\u201d]+$/g, '')
+  /* "Speaking English" leads, before the character: the front of a prompt is
+     weighted heaviest, and the odd burst still came out as language-shaped
+     sound. Said again beside the line for the same reason. */
   return [
-    'Vertical 9:16 video, the character facing the camera.',
+    'Vertical 9:16 video, the character facing the camera and speaking English.',
     character.trim(),
     scene.trim(),
     action.trim(),
-    line && `Speaking to camera: "${line}"`,
+    line && `Speaking to camera, in English: "${line}"`,
   ]
     .filter(Boolean)
     .join(' ')

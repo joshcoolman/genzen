@@ -80,10 +80,14 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   answer being built. While you wait, the panel cycles a word -- musing,
   distilling -- that says the character is working and nothing about what it
   will say.
-- **Locked down, on purpose**: all you can do in a chat is chat. No Add
-  clips, Add gen, drag, pencil or Remove, no model or duration controls --
-  the model, the ratio and the lengths are fixed server-side. Script stays
-  because it only reads. The chat box sits under the player, so the stage is
+- **Locked down, mostly**: no Add gen, drag or pencil, no model or duration
+  controls -- the model, the ratio and the lengths are fixed server-side.
+  Script stays because it only reads. Two per-burst repairs came back in
+  #688, once the bursts proved to stand on their own: **Remove** drops a
+  burst from the run and its turn and trashes it (the line stays in the
+  transcript -- cutting a garbled clip does not unsay it), and **Rerun**
+  makes the same burst again in place on a fresh seed for that clip only,
+  since the same words on the session's seed would be the same clip. The chat box sits under the player, so the stage is
   capped at 45vh there (`stageMax`) to keep the box on screen.
 - **A chat opens unnamed.** New chat skips the name dialog and lands on an
   intro; the model returns a `title` with every answer and the first turn's
