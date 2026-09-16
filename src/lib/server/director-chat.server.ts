@@ -11,7 +11,6 @@ export const MAX_ANSWER_CLIPS = 6
 const clipSchema = z.object({
   action: z.string().min(1),
   spoken: z.string(),
-  duration: z.number(),
 })
 
 /**
@@ -37,6 +36,7 @@ export interface AnswerClip {
    *  character and the scene are not in it -- see `composeClipPrompt`. */
   action: string
   spoken: string
+  /** Seconds, set here from the word count -- never by the model. */
   duration: number
 }
 
@@ -83,22 +83,43 @@ export function composeClipPrompt(
     .join(' ')
 }
 
-/** The nearest length the video model offers to what the writer asked for. */
-export function nearestDuration(
+/**
+ * How long a burst runs, from how many words it has to say.
+ *
+ * Set in code, never by the model. It used to be a field the model filled,
+ * with the lineup's durations passed in as data for it to choose from -- and
+ * it dealt them out in order, 5, 6, 8, 10, 12, 15, one per burst. The last
+ * burst of that turn had seventeen words to fill fifteen seconds, and at a
+ * third of speaking pace the audio model padded with language-shaped sounds
+ * that were not English or anything else. Words per second is what decides
+ * whether a line is spoken cleanly, so it is the one thing this computes.
+ *
+ * Just under three words a second: comfortable delivery with a beat to
+ * breathe. The shortest lineup duration that keeps the pace under that, so
+ * a short line stays a five-second burst and a long one gets the room it
+ * needs rather than being rushed.
+ */
+export const WORDS_PER_SECOND = 2.8
+
+export function durationForWords(
+  words: number,
   durations: ReadonlyArray<number>,
-  wanted: number,
 ): number {
-  return durations.reduce((best, d) =>
-    Math.abs(d - wanted) < Math.abs(best - wanted) ? d : best,
+  const sorted = [...durations].sort((a, b) => a - b)
+  return (
+    sorted.find((seconds) => words / seconds <= WORDS_PER_SECOND) ??
+    sorted[sorted.length - 1]
   )
 }
 
 /**
- * Bring a model's answer to what the video model can make: one to three
- * clips, each at a duration the lineup offers.
+ * Bring a model's answer to what the video model can make: one to six
+ * clips, each timed to its line.
  */
 export function clampAnswer(
-  answer: CharacterAnswer,
+  answer: Omit<CharacterAnswer, 'clips'> & {
+    clips: Array<Omit<AnswerClip, 'duration'>>
+  },
   durations: ReadonlyArray<number>,
 ): CharacterAnswer {
   const clips = answer.clips.slice(0, MAX_ANSWER_CLIPS)
@@ -107,7 +128,10 @@ export function clampAnswer(
     ...answer,
     clips: clips.map((clip) => ({
       ...clip,
-      duration: nearestDuration(durations, clip.duration),
+      duration: durationForWords(
+        clip.spoken.trim().split(/\s+/).filter(Boolean).length,
+        durations,
+      ),
     })),
   }
 }
@@ -157,7 +181,6 @@ export async function answerAsCharacter(input: {
           transcript: input.transcript,
           question: input.question,
           maxClips: MAX_ANSWER_CLIPS,
-          durations: input.durations,
         }),
       },
     ],
