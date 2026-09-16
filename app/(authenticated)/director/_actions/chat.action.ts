@@ -3,11 +3,7 @@
 import { randomUUID } from 'node:crypto'
 import { generateVideo } from '../../video/_actions/generate-video.action'
 import { genModel } from '../[id]/gen'
-import {
-  appendChatTurn,
-  listCharactersMet,
-  requireSession,
-} from '../_lib/sessions.server'
+import { appendChatTurn, requireSession } from '../_lib/sessions.server'
 import { chatTurnSchema, idSchema } from '../_lib/types'
 import {
   answerAsCharacter,
@@ -48,7 +44,6 @@ export async function askCharacter(
   const first = session.chat.character === null
   const answer = await answerAsCharacter({
     character: session.chat.character,
-    avoid: first ? await listCharactersMet(userId, session.id) : [],
     steer: first ? steer : null,
     transcript: session.chat.turns.map((t) => ({
       question: t.question,

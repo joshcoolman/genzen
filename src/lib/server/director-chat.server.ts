@@ -117,15 +117,9 @@ export async function answerAsCharacter(input: {
   transcript: Array<{ question: string; line: string }>
   question: string
   durations: ReadonlyArray<number>
-  /**
-   * Characters this person has already met, one line each, so the next one
-   * is pushed away from all of them. Sampling alone cannot leave the centre
-   * of the distribution -- "invent someone" lands on a warm elder every time
-   * -- but a list of what has been seen moves the centre for each session,
-   * and the push is personal. Only read on the first turn.
-   */
-  avoid?: Array<string>
-  /** What the person asked for, if they asked. First turn only. */
+  /** Who should answer, in the person's words, if they said. First turn
+   *  only, and absent from the call entirely when empty: an empty steer is
+   *  not a fact the model needs. */
   steer?: string | null
 }): Promise<CharacterAnswer> {
   requireAiRole('chat')
@@ -149,12 +143,9 @@ export async function answerAsCharacter(input: {
         role: 'user',
         content: JSON.stringify({
           character: input.character,
-          ...(input.character
-            ? {}
-            : {
-                avoid: input.avoid ?? [],
-                steer: input.steer?.trim() || null,
-              }),
+          ...(!input.character && input.steer?.trim()
+            ? { steer: input.steer.trim() }
+            : {}),
           transcript: input.transcript,
           question: input.question,
           maxClips: MAX_ANSWER_CLIPS,
