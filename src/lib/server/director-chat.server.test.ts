@@ -16,6 +16,9 @@ describe('director chat answers (#670)', () => {
     expect(durationForWords(27, durations)).toBe(10)
     // Past what any length can say cleanly: the longest, not an error.
     expect(durationForWords(80, durations)).toBe(15)
+    // A quick talker fits more into the same clip; there is no slow.
+    expect(durationForWords(16, durations)).toBe(6)
+    expect(durationForWords(16, durations, 'quick')).toBe(5)
   })
 
   it('keeps at most six clips, times each, and refuses none', () => {
@@ -26,6 +29,7 @@ describe('director chat answers (#670)', () => {
         title: 't',
         scene: 'sc',
         line: 'l',
+        pace: 'normal' as const,
         clips: Array.from({ length: 7 }, () => clip),
       },
       durations,
@@ -34,7 +38,14 @@ describe('director chat answers (#670)', () => {
     expect(seven.clips[0].duration).toBe(5)
     expect(() =>
       clampAnswer(
-        { character: 'c', title: 't', scene: 'sc', line: 'l', clips: [] },
+        {
+          character: 'c',
+          title: 't',
+          scene: 'sc',
+          line: 'l',
+          pace: 'normal' as const,
+          clips: [],
+        },
         durations,
       ),
     ).toThrow('nothing to say')

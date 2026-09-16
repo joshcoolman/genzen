@@ -21,11 +21,15 @@ const clipSchema = z.object({
  * the start, and a six-burst answer wandered, each sentence following the
  * last rather than serving a shape.
  */
+const paceSchema = z.enum(['normal', 'quick'])
+export type Pace = z.infer<typeof paceSchema>
+
 const answerSchema = z.object({
   character: z.string().min(1),
   title: z.string(),
   scene: z.string(),
   line: z.string(),
+  pace: paceSchema,
   // No `.min`/`.max` on the array: Anthropic's native output format rejects
   // array length constraints, so the count is clamped below instead.
   clips: z.array(clipSchema),
@@ -46,6 +50,8 @@ export interface CharacterAnswer {
   title: string
   /** Where and how this answer is shot, written once for all its clips. */
   scene: string
+  /** How fast this character talks, so the timing honours the voice. */
+  pace: Pace
   line: string
   clips: Array<AnswerClip>
 }
@@ -94,20 +100,31 @@ export function composeClipPrompt(
  * that were not English or anything else. Words per second is what decides
  * whether a line is spoken cleanly, so it is the one thing this computes.
  *
- * Just under three words a second: comfortable delivery with a beat to
- * breathe. The shortest lineup duration that keeps the pace under that, so
- * a short line stays a five-second burst and a long one gets the room it
- * needs rather than being rushed.
+ * The pace is the character's, marked once per answer, so the voice the
+ * description asks for and the seconds the clip gets agree. When they did
+ * not -- a "deliberate" voice at four words a second -- each burst resolved
+ * the conflict differently, which is what a voice changing between bursts
+ * sounds like. There is no slow: a burst that suddenly drags is as wrong
+ * as one that garbles, and the energy is meant to hold from clip to clip.
+ * Normal is just under three words a second, comfortable delivery with a
+ * beat to breathe, which the action is written to fill. The shortest lineup
+ * duration that keeps under the pace, so a short line stays a five-second
+ * burst and a long one gets the room it needs.
  */
-export const WORDS_PER_SECOND = 2.8
+export const WORDS_PER_SECOND: Record<Pace, number> = {
+  normal: 2.8,
+  quick: 3.2,
+}
 
 export function durationForWords(
   words: number,
   durations: ReadonlyArray<number>,
+  pace: Pace = 'normal',
 ): number {
   const sorted = [...durations].sort((a, b) => a - b)
+  const limit = WORDS_PER_SECOND[pace]
   return (
-    sorted.find((seconds) => words / seconds <= WORDS_PER_SECOND) ??
+    sorted.find((seconds) => words / seconds <= limit) ??
     sorted[sorted.length - 1]
   )
 }
@@ -131,6 +148,7 @@ export function clampAnswer(
       duration: durationForWords(
         clip.spoken.trim().split(/\s+/).filter(Boolean).length,
         durations,
+        answer.pace,
       ),
     })),
   }

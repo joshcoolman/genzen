@@ -54,7 +54,10 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
 - **Short bursts, played in order as they land.** The answer is written as
   speech first and cut at sentence ends, up to six bursts; **each burst's
   duration is set in code from its word count** (`durationForWords`, just
-  under three words a second), never by the model -- when the model chose,
+  under three words a second at the character's own pace -- the model marks
+  the answer normal or quick from the voice it wrote; there is no slow,
+  because a burst that drags is as wrong as one that garbles), never by the
+  model -- when the model chose,
   it dealt the lineup's durations out in order and a seventeen-word line
   stretched over fifteen seconds came back as language-shaped noise; within one answer the
   setting, clothes and framing hold still so it plays as one response, and
