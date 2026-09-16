@@ -173,6 +173,72 @@ export async function appendChatTurn(
 }
 
 /**
+ * Take one burst out of a chat (#688): out of the run, out of its turn, and
+ * into Trash. The turn keeps its line -- the transcript is what was said,
+ * and a burst you cut because it came out garbled does not unsay it. One
+ * write against both columns, like `appendChatTurn`.
+ */
+export async function removeChatClip(
+  owner: string,
+  id: string,
+  clipId: string,
+): Promise<Session> {
+  const session = await requireSession(owner, id)
+  if (!session.chat) throw new Error('This session is not a chat.')
+  idSchema.parse(clipId)
+  const chat = {
+    ...session.chat,
+    turns: session.chat.turns.map((turn) => ({
+      ...turn,
+      clipIds: turn.clipIds.filter((c) => c !== clipId),
+    })),
+  }
+  const cut = {
+    version: 2 as const,
+    clipIds: session.cut.clipIds.filter((c) => c !== clipId),
+  }
+  await sql`
+    update director_sessions
+    set chat = ${jsonb(chat)}, cut = ${jsonb(cut)}, revision = revision + 1, updated_at = now()
+    where id = ${id} and user_id = ${owner}
+  `
+  await trashSessionClips(owner, [clipId])
+  return requireSession(owner, id)
+}
+
+/**
+ * Swap one burst for its re-roll (#688): the new id takes the old one's place
+ * in the run and in its turn, and the old row goes to Trash.
+ */
+export async function replaceChatClip(
+  owner: string,
+  id: string,
+  oldId: string,
+  newId: string,
+): Promise<Session> {
+  const session = await requireSession(owner, id)
+  if (!session.chat) throw new Error('This session is not a chat.')
+  idSchema.parse(oldId)
+  idSchema.parse(newId)
+  const swap = (c: string) => (c === oldId ? newId : c)
+  const chat = {
+    ...session.chat,
+    turns: session.chat.turns.map((turn) => ({
+      ...turn,
+      clipIds: turn.clipIds.map(swap),
+    })),
+  }
+  const cut = { version: 2 as const, clipIds: session.cut.clipIds.map(swap) }
+  await sql`
+    update director_sessions
+    set chat = ${jsonb(chat)}, cut = ${jsonb(cut)}, revision = revision + 1, updated_at = now()
+    where id = ${id} and user_id = ${owner}
+  `
+  await trashSessionClips(owner, [oldId])
+  return requireSession(owner, id)
+}
+
+/**
  * Trash clips a session made (#679).
  *
  * Guarded on `origin = 'director'` rather than trusting the ids: a session

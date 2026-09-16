@@ -3,13 +3,19 @@
 import { randomInt, randomUUID } from 'node:crypto'
 import { generateVideo } from '../../video/_actions/generate-video.action'
 import { genModel } from '../[id]/gen'
-import { appendChatTurn, requireSession } from '../_lib/sessions.server'
+import {
+  appendChatTurn,
+  removeChatClip,
+  replaceChatClip,
+  requireSession,
+} from '../_lib/sessions.server'
 import { chatTurnSchema, idSchema } from '../_lib/types'
 import {
   answerAsCharacter,
   composeClipPrompt,
 } from '#/lib/server/director-chat.server'
 import { resolveAuth } from '#/lib/server/auth.server'
+import { sql } from '#/lib/server/db.server'
 
 /** Every chat clip is vertical (#670): the format is fixed, not chosen. */
 const CHAT_RATIO = '9:16'
@@ -108,4 +114,47 @@ export async function askCharacter(
     first ? steer : null,
     seed,
   )
+}
+
+/** Drop one burst from a chat and trash it (#688). The line stays said. */
+export async function dropChatClip(sessionId: string, clipId: string) {
+  const { userId } = await resolveAuth()
+  return removeChatClip(userId, idSchema.parse(sessionId), clipId)
+}
+
+/**
+ * Make one burst again (#688), for the odd one that came out garbled.
+ *
+ * Same prompt, same length, **a fresh seed for this burst only**: with the
+ * session's seed pinned, the same words on the same seed are the same clip,
+ * so a re-roll has to move the one thing that would change it. The rest of
+ * the session keeps its seed. The new row takes the old one's place in the
+ * run and the turn; the old row goes to Trash.
+ */
+export async function rerunChatClip(sessionId: string, clipId: string) {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  if (!session.chat) throw new Error('This session is not a chat.')
+  if (!session.cut.clipIds.includes(idSchema.parse(clipId)))
+    throw new Error('That clip is not in this chat.')
+  const rows = await sql<
+    Array<{ description: string | null; duration: string | null }>
+  >`
+    select description, generation_metadata->>'duration_seconds' as duration
+    from user_images where id = ${clipId} and user_id = ${userId}
+  `
+  const row = rows.at(0)
+  if (!row?.description) throw new Error('That clip has no prompt to rerun.')
+  const model = genModel()
+  const duration = Number(row.duration) || model.defaultDuration
+  const { recordId } = await generateVideo({
+    prompt: row.description,
+    duration,
+    aspectRatio: CHAT_RATIO,
+    modelSlug: model.slug,
+    origin: 'director',
+    seed: randomInt(0, 2 ** 31),
+  })
+  const updated = await replaceChatClip(userId, session.id, clipId, recordId)
+  return { session: updated, recordId, duration }
 }

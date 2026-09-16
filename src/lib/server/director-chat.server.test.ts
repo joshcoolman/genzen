@@ -60,10 +60,10 @@ describe('director chat answers (#670)', () => {
         '"Ciao."',
       ),
     ).toBe(
-      'Vertical 9:16 video, the character facing the camera. Enzo, a fisherman. On the dock. He waves. Speaking to camera: "Ciao."',
+      'Vertical 9:16 video, the character facing the camera and speaking English. Enzo, a fisherman. On the dock. He waves. Speaking to camera, in English: "Ciao."',
     )
     expect(composeClipPrompt('Enzo.', '', 'He waves.', '')).toBe(
-      'Vertical 9:16 video, the character facing the camera. Enzo. He waves.',
+      'Vertical 9:16 video, the character facing the camera and speaking English. Enzo. He waves.',
     )
   })
 })

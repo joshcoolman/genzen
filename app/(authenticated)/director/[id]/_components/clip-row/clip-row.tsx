@@ -1,7 +1,14 @@
 'use client'
 
 import { Fragment, useState } from 'react'
-import { Loader, Pencil, ScrollText, Sparkles, X } from 'lucide-react'
+import {
+  Loader,
+  Pencil,
+  RefreshCw,
+  ScrollText,
+  Sparkles,
+  X,
+} from 'lucide-react'
 import styles from './clip-row.module.css'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 import { clipFacts, clipName } from '#/features/video/clip-facts'
@@ -70,11 +77,15 @@ const pending = (clip: VideoRecord) => clip.status !== 'completed'
  * Click and drag need no disambiguating: a browser does not fire `click` after
  * a completed drag, so there is no movement threshold and no timer here.
  *
- * **A chat's row is the same row, locked** (#670). The clips are the answers,
- * in the order they were asked, and the run is the conversation: nothing is
- * added, dragged, removed or regenerated here, and the model and the lengths
- * are fixed out of reach. What survives is watching the answer be built,
- * tapping a clip to play from it, and Script, which only reads.
+ * **A chat's row is the same row, mostly locked** (#670). The clips are the
+ * answers, in the order they were asked, and the run is the conversation:
+ * nothing is added or dragged here, and the model and the lengths are fixed
+ * out of reach. What a chat keeps is watching the answer be built, tapping a
+ * clip to play from it, Script, and -- since #688 -- two per-burst repairs:
+ * Rerun, for the odd burst that came out garbled, and Remove, for one the
+ * story survives without. Both because the bursts turned out to stand on
+ * their own well enough that losing or redoing one does not break the
+ * answer.
  */
 export function ClipRow({
   clips,
@@ -83,13 +94,14 @@ export function ClipRow({
   onAddGen,
   onScript,
   onRemove,
+  onRerun,
   onMove,
   onPlayFrom,
   onRename,
 }: {
   clips: Array<VideoRecord>
-  /** A chat's row loses Add clips, Add gen, drag, the pencil and Remove
-   *  (#670): all you can do in a chat is chat. */
+  /** A chat's row loses Add gen, drag and the pencil (#670); it keeps
+   *  Remove and gains Rerun (#688). */
   mode?: 'run' | 'chat'
   /** Where the player is in the run, so the row can say so (#512). */
   playingIndex: number | null
@@ -98,6 +110,8 @@ export function ClipRow({
   /** Show the run's prompts in one box, to copy out. */
   onScript: () => void
   onRemove: (id: string) => void
+  /** Make this burst again, in place (#688). Chat only. */
+  onRerun?: (clip: VideoRecord) => void
   onMove: (from: number, to: number) => void
   /** Play the run from this clip's first frame (#655). */
   onPlayFrom: (index: number) => void
@@ -213,20 +227,34 @@ export function ClipRow({
                 <Pencil size={12} />
               </button>
             )}
-            {editable && (
+            {/* The pencil's slot, in a chat: the same words again on a fresh
+                seed. Hidden while the burst is being made. */}
+            {!editable && onRerun && !pending(clip) && (
               <button
                 type="button"
-                className={styles.remove}
+                className={styles.rename}
                 onClick={(e) => {
                   e.stopPropagation()
-                  onRemove(clip.id)
+                  onRerun(clip)
                 }}
-                aria-label="Remove from the run and trash it"
-                title="Remove from the run and trash it"
+                aria-label="Rerun this burst"
+                title="Rerun this burst"
               >
-                <X size={12} />
+                <RefreshCw size={12} />
               </button>
             )}
+            <button
+              type="button"
+              className={styles.remove}
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemove(clip.id)
+              }}
+              aria-label="Remove from the run and trash it"
+              title="Remove from the run and trash it"
+            >
+              <X size={12} />
+            </button>
             {/* In the corner opposite the ordinal, and out of the flow: a name
                 that took its own line would make named tiles taller than
                 unnamed ones and the row ragged. Absent until there is one, so
