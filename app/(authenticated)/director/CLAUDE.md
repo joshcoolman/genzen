@@ -69,6 +69,12 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   intro; the model returns a `title` with every answer and the first turn's
   is written as the session name (`appendChatTurn`). The heading's pencil
   still renames it after.
+- **Questions queue and the box never locks.** `ask` appends; a drain in
+  `use-view` sends them one at a time, in order, because each turn reads
+  the transcript the last one wrote and the run is the conversation. The
+  panel lists what is waiting. An answer landing while the previous one is
+  still being said is not jumped to: it is the next clip, and the stage
+  continues into it (`isPlaying` on the player handle).
 - **The conversation is stored, not shown.** The panel is the intro, then a
   question box and a musing line; the words are behind the row's Script
   button, which in a chat opens the questions and answers rather than the

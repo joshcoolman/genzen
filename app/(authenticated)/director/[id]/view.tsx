@@ -51,6 +51,11 @@ export function View({
   useEffect(() => {
     if (!answerReady || playedTurn.current === answerReady.turnId) return
     playedTurn.current = answerReady.turnId
+    /* Only when the stage is idle. Questions queue, so an answer can land
+       while the previous one is still being said -- and the run simply
+       continues into it, because it is the next clip. Jumping would cut the
+       previous answer off mid-sentence. */
+    if (player.current?.isPlaying()) return
     const target = playableIndexOf(answerReady.rowIndex)
     if (target >= 0) player.current?.playFrom(target)
   }, [answerReady, playableIndexOf])
@@ -88,7 +93,8 @@ export function View({
           {view.chat && (
             <ChatPanel
               turns={view.chat.turns}
-              busy={view.asking}
+              inFlight={view.inFlight}
+              queued={view.queued}
               answering={view.answering}
               onAsk={(question) => void view.ask(question)}
             />

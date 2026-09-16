@@ -15,8 +15,18 @@
    question box does not jump when the word appears. */
 .status {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--space-4);
   min-height: 1.5rem;
+}
+
+/* A question waiting its turn: quiet, one line, cut short. */
+.queued {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .making {
