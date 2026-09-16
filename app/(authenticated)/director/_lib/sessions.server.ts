@@ -170,31 +170,6 @@ export async function appendChatTurn(
 }
 
 /**
- * The characters this person has met, newest first, one line each -- the
- * first sentence of the stored description, which is what the model leads
- * with: what they are and roughly who. Handed to the next first turn as what
- * not to resemble. Capped, because the list is a nudge and not a history.
- */
-export async function listCharactersMet(
-  owner: string,
-  except: string,
-  limit = 20,
-): Promise<Array<string>> {
-  const rows = await sql<Array<{ character: string }>>`
-    select chat->>'character' as character
-    from director_sessions
-    where user_id = ${owner} and id <> ${except}
-      and chat->>'character' is not null
-    order by updated_at desc
-    limit ${limit}
-  `
-  return rows.map((row) => {
-    const sentence = row.character.match(/^.*?[.!?](?=\s|$)/)?.[0]
-    return (sentence ?? row.character).slice(0, 160)
-  })
-}
-
-/**
  * Trash clips a session made (#679).
  *
  * Guarded on `origin = 'director'` rather than trusting the ids: a session
