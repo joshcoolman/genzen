@@ -48,7 +48,12 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   mode**: the org's fast-mode limit is zero and a request carrying
   `speed: 'fast'` is refused outright, not slowed down (2026-09-15).
 - **Every clip of an answer is submitted at once**, text-to-video at 9:16 on
-  H3 Max Turbo, so a three-clip answer waits one clip's time. Seams are hard
+  H3 Max Turbo, so a three-clip answer waits one clip's time. **One seed per
+  session** (#687), chosen on the first turn, stored in `chat.seed` and sent
+  with every burst: same noise plus near-identical prompts is the endpoint's
+  one non-wording lever for a steady picture, and possibly a steady voice --
+  whether the audio shares the seed is undocumented, and a session is the
+  test. Seams are hard
   cuts. Continuity between turns is by description, not by frame, so a
   question can be asked while the last answer is still rendering.
 - **Short bursts, played in order as they land.** The answer is written as

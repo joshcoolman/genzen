@@ -30,6 +30,12 @@ export interface VideoEndpoint {
   omitResolution?: boolean
   defaults?: Record<string, string | boolean>
   maxPromptLength?: number
+  /**
+   * Takes a `seed`. Marked only where fal's schema was read to say so, since
+   * a param an endpoint does not declare fails at FAL. Director's chat pins
+   * one per session so every burst starts from the same noise (#687).
+   */
+  acceptsSeed?: boolean
 }
 
 /**
@@ -278,6 +284,8 @@ export const VIDEO_MODELS: Array<VideoModel> = [
         id: 'minimax/h3-max-turbo/text-to-video',
         aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'],
         defaults: { prompt_expansion_mode: 'balanced' },
+        // `seed: integer | null` per fal's schema, read 2026-09-16.
+        acceptsSeed: true,
       },
       withImage: {
         id: 'minimax/h3-max-turbo/image-to-video',

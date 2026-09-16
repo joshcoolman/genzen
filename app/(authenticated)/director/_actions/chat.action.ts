@@ -1,6 +1,6 @@
 'use server'
 
-import { randomUUID } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import { generateVideo } from '../../video/_actions/generate-video.action'
 import { genModel } from '../[id]/gen'
 import { appendChatTurn, requireSession } from '../_lib/sessions.server'
@@ -42,6 +42,12 @@ export async function askCharacter(
 
   const model = genModel()
   const first = session.chat.character === null
+  /* One seed per session, chosen here on the first turn and pinned (#687).
+     Same seed and near-identical prompts start every burst from the same
+     noise, which is the one non-wording lever the endpoint has for keeping
+     the picture -- and, if the audio shares the seed, the voice -- steady
+     across clips generated apart. */
+  const seed = session.chat.seed ?? randomInt(0, 2 ** 31)
   const answer = await answerAsCharacter({
     character: session.chat.character,
     steer: first ? steer : null,
@@ -73,6 +79,7 @@ export async function askCharacter(
         aspectRatio: CHAT_RATIO,
         modelSlug: model.slug,
         origin: 'director',
+        seed,
       }),
     ),
   )
@@ -99,5 +106,6 @@ export async function askCharacter(
     answer.character,
     answer.title.trim().slice(0, 120) || undefined,
     first ? steer : null,
+    seed,
   )
 }

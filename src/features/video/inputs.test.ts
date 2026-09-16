@@ -299,3 +299,23 @@ describe('native audio selection', () => {
     ).toBe(112)
   })
 })
+
+describe('seed (#687)', () => {
+  const turbo = videoModelBySlug('h3-max-turbo')!
+  it('is sent only where the endpoint declares it', () => {
+    const withSeed = videoFalInput(turbo.endpoints.textToVideo, [], [], {
+      ...settings,
+      seed: 42,
+    })
+    expect(withSeed.seed).toBe(42)
+    // H3 Max Turbo's image endpoint is not marked: the schema was not read
+    // for it, and an undeclared param fails at FAL rather than here.
+    const image = videoFalInput(turbo.endpoints.withImage!, [], [], {
+      ...settings,
+      seed: 42,
+    })
+    expect(image).not.toHaveProperty('seed')
+    const none = videoFalInput(turbo.endpoints.textToVideo, [], [], settings)
+    expect(none).not.toHaveProperty('seed')
+  })
+})

@@ -180,6 +180,9 @@ export function videoFalInput(
     resolution: string
     supportsAudio: boolean
     generateAudio?: boolean
+    /** Sent only where the endpoint declares it; silently dropped elsewhere
+     *  rather than failing a submit over a param the model cannot take. */
+    seed?: number
   },
 ): Record<string, unknown> {
   if (urls.length !== images.length || urls.some((url) => !url))
@@ -210,6 +213,9 @@ export function videoFalInput(
     ...(last && endpoint.acceptsEndImage ? { end_image_url: last } : {}),
     ...(refs.length && endpoint.references
       ? { [endpoint.references.param]: refs }
+      : {}),
+    ...(settings.seed !== undefined && endpoint.acceptsSeed
+      ? { seed: settings.seed }
       : {}),
   }
 }

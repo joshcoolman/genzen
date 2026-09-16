@@ -61,6 +61,9 @@ export const storedChatSchema = z.object({
   character: z.string().max(4000).nullable(),
   /** What the person asked for before the first question, if anything. */
   steer: z.string().max(1000).optional(),
+  /** One seed for the session, chosen on the first turn and sent with every
+   *  burst, so each starts from the same noise (#687). */
+  seed: z.number().int().nonnegative().optional(),
   turns: z.array(chatTurnSchema).max(200),
 })
 export type StoredChat = z.infer<typeof storedChatSchema>

@@ -141,6 +141,8 @@ export async function appendChatTurn(
   name?: string,
   /** What the person asked for, kept with the character it produced. */
   steer?: string | null,
+  /** The session's seed, pinned on the first turn. */
+  seed?: number,
 ): Promise<Session> {
   const session = await requireSession(owner, id)
   if (!session.chat) throw new Error('This session is not a chat.')
@@ -150,6 +152,7 @@ export async function appendChatTurn(
     ...session.chat,
     character: session.chat.character ?? character,
     ...(first && steer?.trim() ? { steer: steer.trim().slice(0, 1000) } : {}),
+    ...(session.chat.seed === undefined && seed !== undefined ? { seed } : {}),
     turns: [...session.chat.turns, parsed],
   }
   const cut = {
