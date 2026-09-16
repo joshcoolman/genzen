@@ -349,27 +349,29 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
    * order because the run is the conversation. A question that fails is
    * reported and dropped, and the next one goes.
    */
-  const [questions, setQuestions] = useState<Array<string>>([])
+  const [questions, setQuestions] = useState<
+    Array<{ question: string; steer?: string }>
+  >([])
   /** The question with the model right now, or null. */
   const [inFlight, setInFlight] = useState<string | null>(null)
   const draining = useRef(false)
 
   const ask = useCallback(
-    (question: string) => {
+    (question: string, steer?: string) => {
       if (!chat) return
-      setQuestions((current) => [...current, question])
+      setQuestions((current) => [...current, { question, steer }])
     },
     [chat],
   )
 
   useEffect(() => {
     if (draining.current || questions.length === 0) return
-    const question = questions[0]
+    const { question, steer } = questions[0]
     draining.current = true
     setInFlight(question)
     void (async () => {
       try {
-        const updated = await askCharacter(session.id, question)
+        const updated = await askCharacter(session.id, question, steer)
         const turn: ChatTurn | undefined = updated.chat?.turns.at(-1)
         revision.current = updated.revision
         saved.current = updated.cut.clipIds.join(',')
@@ -785,7 +787,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     chat,
     inFlight,
     /** Questions waiting behind the one with the model. */
-    queued: questions.slice(1),
+    queued: questions.slice(1).map((q) => q.question),
     answering,
     answerReady,
     ask,

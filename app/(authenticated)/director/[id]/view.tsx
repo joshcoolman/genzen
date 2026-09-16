@@ -95,7 +95,7 @@ export function View({
               inFlight={view.inFlight}
               queued={view.queued}
               answering={view.answering}
-              onAsk={(question) => void view.ask(question)}
+              onAsk={(question, steer) => void view.ask(question, steer)}
             />
           )}
         </div>

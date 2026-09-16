@@ -66,27 +66,46 @@ export function ChatPanel({
   queued: Array<string>
   /** Turn ids whose clips are still being made. */
   answering: Set<string>
-  onAsk: (question: string) => void
+  /** The question, and on the first turn whatever was typed about who
+   *  should answer. */
+  onAsk: (question: string, steer?: string) => void
 }) {
   const [draft, setDraft] = useState('')
+  /**
+   * Who should answer, in the person's words. Optional, and empty by default
+   * on purpose: the surprise is the default, and this is the door for the
+   * times you want someone in particular -- or someone back. Shown only
+   * before the first question; after that the character is pinned.
+   */
+  const [steer, setSteer] = useState('')
 
   const trimmed = draft.trim()
   const busy = inFlight !== null || answering.size > 0
   const submit = () => {
     if (!trimmed) return
-    onAsk(trimmed)
+    onAsk(trimmed, turns.length === 0 ? steer.trim() || undefined : undefined)
     setDraft('')
   }
 
   return (
     <div className={styles.panel}>
       {turns.length === 0 ? (
-        <p className={styles.empty}>
-          A quick experiment. Ask anything and someone, invented on the spot to
-          suit the question, answers on camera in a clip or three. Follow-ups go
-          to the same character, and the chat names itself from your first
-          question. What do you want to know?
-        </p>
+        <>
+          <p className={styles.empty}>
+            A quick experiment. Ask anything and someone unexpected answers on
+            camera, in a few short clips. Follow-ups go to the same character,
+            and the chat names itself from your first question. What do you want
+            to know?
+          </p>
+          <Textarea
+            className={styles.steer}
+            value={steer}
+            placeholder="Anyone in particular? (optional)"
+            rows={1}
+            maxLength={1000}
+            onChange={(e) => setSteer(e.target.value)}
+          />
+        </>
       ) : (
         <div className={styles.status}>
           {busy && <Musing />}

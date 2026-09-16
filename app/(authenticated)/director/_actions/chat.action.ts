@@ -3,7 +3,11 @@
 import { randomUUID } from 'node:crypto'
 import { generateVideo } from '../../video/_actions/generate-video.action'
 import { genModel } from '../[id]/gen'
-import { appendChatTurn, requireSession } from '../_lib/sessions.server'
+import {
+  appendChatTurn,
+  listCharactersMet,
+  requireSession,
+} from '../_lib/sessions.server'
 import { chatTurnSchema, idSchema } from '../_lib/types'
 import {
   answerAsCharacter,
@@ -28,15 +32,24 @@ const CHAT_RATIO = '9:16'
  * description, not by frame, which is what lets a question be asked while the
  * last answer is still rendering.
  */
-export async function askCharacter(sessionId: string, question: string) {
+export async function askCharacter(
+  sessionId: string,
+  question: string,
+  /** Who should answer, in the person's words. Read on the first turn only;
+   *  after that the character is pinned. */
+  steer?: string | null,
+) {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
   if (!session.chat) throw new Error('This session is not a chat.')
   const asked = chatTurnSchema.shape.question.parse(question)
 
   const model = genModel()
+  const first = session.chat.character === null
   const answer = await answerAsCharacter({
     character: session.chat.character,
+    avoid: first ? await listCharactersMet(userId, session.id) : [],
+    steer: first ? steer : null,
     transcript: session.chat.turns.map((t) => ({
       question: t.question,
       line: t.line,
@@ -90,5 +103,6 @@ export async function askCharacter(sessionId: string, question: string) {
     },
     answer.character,
     answer.title.trim().slice(0, 120) || undefined,
+    first ? steer : null,
   )
 }

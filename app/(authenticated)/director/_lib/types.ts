@@ -59,6 +59,8 @@ export type ChatTurn = z.infer<typeof chatTurnSchema>
 export const storedChatSchema = z.object({
   version: z.literal(1),
   character: z.string().max(4000).nullable(),
+  /** What the person asked for before the first question, if anything. */
+  steer: z.string().max(1000).optional(),
   turns: z.array(chatTurnSchema).max(200),
 })
 export type StoredChat = z.infer<typeof storedChatSchema>

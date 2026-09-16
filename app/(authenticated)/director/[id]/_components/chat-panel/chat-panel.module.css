@@ -37,6 +37,13 @@
   font-size: var(--text-xs);
 }
 
+/* Quieter than the question box: an aside, not the thing itself. */
+.steer {
+  min-height: 0;
+  resize: none;
+  font-size: var(--text-xs);
+}
+
 .compose {
   display: flex;
   gap: var(--space-8);
