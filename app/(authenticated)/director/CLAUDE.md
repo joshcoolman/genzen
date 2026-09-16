@@ -31,9 +31,12 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   prompt in `src/lib/prompts/director-chat.md`): Opus at low effort, adaptive
   thinking, structured output, web search capped at two uses. The character
   is invented on the first turn from the question's cue -- a sports question
-  summons someone from that world -- and pinned from then on; every clip
-  prompt restates the whole description, because each clip is generated on
-  its own and nothing else carries the character across them. **Not fast
+  summons someone from that world -- and pinned from then on. **The anchors
+  are prepended in code, not written by the model**: the character once per
+  session, the scene once per answer, and each clip is only its action and
+  line (`composeClipPrompt`). The first cut had the model restate the
+  description in every clip prompt, which held the picture still and made a
+  turn take fifteen seconds instead of eight. **Not fast
   mode**: the org's fast-mode limit is zero and a request carrying
   `speed: 'fast'` is refused outright, not slowed down (2026-09-15).
 - **Every clip of an answer is submitted at once**, text-to-video at 9:16 on
@@ -67,9 +70,10 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   is written as the session name (`appendChatTurn`). The heading's pencil
   still renames it after.
 - **The conversation is stored, not shown.** The panel is the intro, then a
-  question box and a "making the answer" line; the words are behind a
-  Transcript button that opens Script's read-only, copyable box under another
-  title. The character's description is printed nowhere.
+  question box and a musing line; the words are behind the row's Script
+  button, which in a chat opens the questions and answers rather than the
+  clip prompts -- those are anchors plus an action, assembled in code. The
+  character's description is printed nowhere.
 - Missing Anthropic key: the ask fails through `useReportError`, which opens
   the key dialog.
 

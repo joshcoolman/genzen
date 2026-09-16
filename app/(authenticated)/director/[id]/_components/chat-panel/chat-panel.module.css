@@ -11,13 +11,12 @@
   color: var(--text-muted);
 }
 
-/* Whether an answer is still being made, and the way to the words. */
+/* Whether an answer is still being made. Holds its height empty so the
+   question box does not jump when the word appears. */
 .status {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-  min-height: 2rem;
+  min-height: 1.5rem;
 }
 
 .making {

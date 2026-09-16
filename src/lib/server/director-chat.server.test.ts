@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { clampAnswer, nearestDuration } from './director-chat.server'
+import {
+  clampAnswer,
+  composeClipPrompt,
+  nearestDuration,
+} from './director-chat.server'
 
 const durations = [5, 6, 8, 10, 12, 15]
 
@@ -12,11 +16,12 @@ describe('director chat answers (#670)', () => {
   })
 
   it('keeps at most six clips and refuses none', () => {
-    const clip = { prompt: 'p', spoken: 's', duration: 4 }
+    const clip = { action: 'a', spoken: 's', duration: 4 }
     const seven = clampAnswer(
       {
         character: 'c',
         title: 't',
+        scene: 'sc',
         line: 'l',
         clips: Array.from({ length: 7 }, () => clip),
       },
@@ -26,9 +31,25 @@ describe('director chat answers (#670)', () => {
     expect(seven.clips[0].duration).toBe(5)
     expect(() =>
       clampAnswer(
-        { character: 'c', title: 't', line: 'l', clips: [] },
+        { character: 'c', title: 't', scene: 'sc', line: 'l', clips: [] },
         durations,
       ),
     ).toThrow('nothing to say')
+  })
+
+  it('prepends the anchors and appends the line to every burst', () => {
+    expect(
+      composeClipPrompt(
+        ' Enzo, a fisherman. ',
+        'On the dock.',
+        'He waves.',
+        '"Ciao."',
+      ),
+    ).toBe(
+      'Vertical 9:16 video, the character facing the camera. Enzo, a fisherman. On the dock. He waves. Speaking to camera: "Ciao."',
+    )
+    expect(composeClipPrompt('Enzo.', '', 'He waves.', '')).toBe(
+      'Vertical 9:16 video, the character facing the camera. Enzo. He waves.',
+    )
   })
 })

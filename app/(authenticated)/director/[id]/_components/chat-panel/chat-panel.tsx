@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader, ScrollText, Send } from 'lucide-react'
+import { Loader, Send } from 'lucide-react'
 import styles from './chat-panel.module.css'
 import type { ChatTurn } from '../../../_lib/types'
 import { Button, Textarea } from '#/components'
@@ -42,9 +42,10 @@ function Musing() {
  * **The conversation is not on the page.** It is stored and it is valuable --
  * the character, every question, every line -- but the clips are the answer
  * and a transcript beside them read as a chat app with a video attached. So
- * the words are behind a Transcript button, in the same read-only, copyable
- * box Script uses, opened on purpose. The character's description is never
- * printed anywhere: the surprise is who turns up in the clip.
+ * the words are behind the row's Script button -- a chat's script is its
+ * questions and answers -- in a read-only, copyable box opened on purpose.
+ * The character's description is never printed anywhere: the surprise is
+ * who turns up in the clip.
  *
  * What the panel does say is that an answer is still being made, because
  * nothing else on the page says it until a tile lands.
@@ -54,7 +55,6 @@ export function ChatPanel({
   busy,
   answering,
   onAsk,
-  onTranscript,
 }: {
   turns: Array<ChatTurn>
   /** A question is with the model or being submitted. */
@@ -62,8 +62,6 @@ export function ChatPanel({
   /** Turn ids whose clips are still being made. */
   answering: Set<string>
   onAsk: (question: string) => void
-  /** Open the conversation so far, to read and copy. */
-  onTranscript: () => void
 }) {
   const [draft, setDraft] = useState('')
 
@@ -85,11 +83,7 @@ export function ChatPanel({
         </p>
       ) : (
         <div className={styles.status}>
-          {busy || answering.size > 0 ? <Musing /> : <span />}
-          <Button size="sm" onClick={onTranscript}>
-            <ScrollText size={14} />
-            Transcript
-          </Button>
+          {(busy || answering.size > 0) && <Musing />}
         </div>
       )}
       <div className={styles.compose}>

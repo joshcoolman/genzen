@@ -17,8 +17,8 @@ import {
  * second copy of them that the run does not know about. Editing a line means
  * the pencil on its tile.
  *
- * A chat's transcript is the same box under a different title (#670): the
- * conversation is stored and valuable, but it is not shown on the page --
+ * A chat's script is the same box holding its questions and answers (#670):
+ * the conversation is stored and valuable, but it is not shown on the page --
  * it is opened on purpose, read, copied, closed.
  */
 export function ScriptDialog({
