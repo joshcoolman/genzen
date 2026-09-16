@@ -31,11 +31,11 @@ source images; `use-view.ts` owns everything after the first paint.
   is stopped, or Base UI's document-level Escape listener takes the clip off
   screen along with the half-typed name. A hidden `DialogTitle` stays mounted
   while the visible one is an input, so the dialog is never nameless.
-- **Director's clips are on this wall** (#662). A session generates through
-  `generateVideo` like anything else, so its clips are ordinary `ai_video` rows
-  with `origin = images`, trashed from here, and nothing about them is private
-  to Director. The export copies that used to arrive here with
-  `origin = director` are gone with the machinery that made them.
+- **Director's clips are not on this wall** (#679). They were from #662, when
+  a session's clips became ordinary library rows, until Director was
+  isolated: a clip born in a session is stamped `origin = 'director'` and
+  `listVideos()` excludes it, so the wall is the clips made here. Same table,
+  same poll, same Trash; only the listing is split. Activity shows both.
 - **The wall is `minmax(12rem, 1fr)`, down from 20rem** (#535). 20rem was set
   when a card was a player and a caption; a card is now a player, two end
   frames and a caption, so the same column bought a much taller card -- at a

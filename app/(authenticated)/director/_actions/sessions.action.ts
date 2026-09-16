@@ -7,6 +7,7 @@ import {
   listSessions,
   renameSession,
   saveRun,
+  trashSessionClips,
 } from '../_lib/sessions.server'
 import { idSchema } from '../_lib/types'
 import type { SessionKind } from '../_lib/types'
@@ -44,4 +45,8 @@ export async function writeRun(
     revision,
     clipIds,
   )
+}
+/** Trash a clip the session made, because it left the run (#679). */
+export async function trashClip(id: string) {
+  await trashSessionClips((await resolveAuth()).userId, [idSchema.parse(id)])
 }

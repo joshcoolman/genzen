@@ -279,6 +279,9 @@ says outright is not trusted.
 
 Recent highlights:
 
+- Director is isolated from Video: a clip born in a session is stamped at
+  birth, shown only in that session, and trashed when it leaves the run, is
+  re-rolled, or the session is deleted. Add clips is gone (#679).
 - Director chat sessions: New chat opens unnamed on an intro, you ask, and a
   character the model invents answers in up to six five-second 9:16 bursts,
   submitted together and played in order as they land, once, with a Loop
@@ -296,8 +299,6 @@ Recent highlights:
 - Director is a named session holding a run of library clips, and Sequence
   graduated out of the lab into it. Final Cut, exports, stitching, the private
   media path and Enhance are deleted, along with the content they made (#662).
-- H3 Max Turbo is in the video lineup: fastest of the six, and what Director
-  had been using through a hardcoded endpoint the lineup never knew (#660).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.

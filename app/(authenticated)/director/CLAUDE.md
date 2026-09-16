@@ -5,9 +5,17 @@ A session is a **name and an ordered list of clip ids** (#662). Nothing else.
 - `/director` is the session list; `/director/[id]` is the workspace. The old
   Lab URL redirects here.
 - The clips are ordinary `user_images` rows made by `generateVideo` and settled
-  by the standard poll -- the same path Video uses. **They are not private to
-  Director**: they appear on the Video wall, in Activity, and are trashed from
-  there. That trade is what collapsed 10,000 lines into 700.
+  by the standard poll -- the same path Video uses. That trade is what
+  collapsed 10,000 lines into 700, and it still holds: no private table, no
+  private routes. **But Director is isolated** (#679): every clip in a session
+  was born there, stamped `origin = 'director'` at birth, and shown nowhere
+  but its session -- `listVideos('director')` here, `listVideos()` on the
+  Video wall, and no listing of both. Activity still logs them, since it is
+  the cost record. A Director-born clip lives and dies with its session:
+  removing it from the run trashes it, a re-roll trashes the take it
+  replaced, and deleting the session trashes every clip it made. Trash
+  restores any of them. The guard is the origin, not the id, so a session
+  from before isolation that still holds a Video clip leaves it alone.
 - Storage is `director_sessions.cut` -- `{ version: 2, clipIds: [...] }` --
   written against `revision`, which rejects a second tab's stale order. The run
   is saved on every change, one write at a time (`use-view`), and a failed save
@@ -15,7 +23,7 @@ A session is a **name and an ordered list of clip ids** (#662). Nothing else.
 - Ids are stored unchecked. A clip generated inside the session is in the run
   before its row is visible to the request, and an id that resolves to nothing
   drops out when the session is next opened.
-- Deleting a session deletes a row. The clips stay in the library.
+- Deleting a session trashes its clips, then deletes the row.
 
 ## Chat sessions (#670)
 
@@ -86,10 +94,13 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
 ## The workspace
 
 This is Sequence's workspace (#660), moved out of the lab whole -- the two-video
-player, Sound, the tile row, Add clips / Add gen, and the pencil (Name +
-Regenerate, a middle clip pinned at both ends). `ClipPicker` and `ClipFrames`
-moved to `src/components/` with it, because the app may never import from the
-lab.
+player, Sound, the tile row, Add gen, and the pencil (Name + Regenerate, a
+middle clip pinned at both ends). `ClipPicker` and `ClipFrames` moved to
+`src/components/` with it, because the app may never import from the lab.
+**Add clips went in #679**: picking a clip off the Video wall was a holdover
+from Sequence that was never used once the run could generate its own, and a
+session whose clips can come from two places has two rules for what removing
+one means. Frames still uses the picker; Director does not.
 
 The player is the small column and the run the wide one: rearranging is the
 work, watching is how you judge it.
@@ -98,8 +109,8 @@ work, watching is how you judge it.
 
 Everything below came from Sequence (#497, #512, #655, #657, #659, #660) and is
 stated here because this is where it binds now. The question the workspace
-answers: **does the order cut together, and does the next one follow?** Pick
-clips or generate them, drag them into order, click one to watch from there.
+answers: **does the order cut together, and does the next one follow?**
+Generate clips, drag them into order, click one to watch from there.
 
 - **The run generates its own clips, and that is why the question grew** (#660).
   Judging an order meant leaving for Video, pressing Continue on the last clip,
@@ -119,11 +130,12 @@ clips or generate them, drag them into order, click one to watch from there.
     words submitted are the words typed, which is what keeps a press cheap
     enough to make casually. Director had an Enhance step and it went with the
     rest (#662).
-  - **Regenerate replaces; it never deletes.** The pencil is two tabs, Name and
-    Regenerate, and the second refills its form from the clip's own
-    `generation_metadata` -- so nothing new is stored to make it possible. The
-    clip that drops out of the run is still in Video, untouched. Re-rolls you
-    did not keep accumulate there and are cleaned up by hand.
+  - **Regenerate replaces, and trashes the take it replaced** (#679). The
+    pencil is two tabs, Name and Regenerate, and the second refills its form
+    from the clip's own `generation_metadata` -- so nothing new is stored to
+    make it possible. Until isolation the old take stayed in Video to be
+    cleaned up by hand; nothing shows it now, so it goes to Trash, where a
+    re-roll you regret is one restore away.
   - **A clip in the middle is pinned at both ends**, so the joins either side
     survive and the prompt is only about what happens in between. The far seam
     is **the clip's own ending frame, not the next clip's beginning** -- the
@@ -235,12 +247,11 @@ clips or generate them, drag them into order, click one to watch from there.
   rather than remember. The gap between tiles is wider than the seam inside one
   on purpose — one is a cut, the other is a clip's own middle skipped, and a row
   where those read the same is a strip of frames with no joins in it.
-- **The picker narrows to the run's shape, and only this asks it to.** Clips
-  of different aspect ratios cannot cut together at all, so the first clip picked
-  sets the shape and the dialog then offers what matches — with the count it hid
-  and the way back on screen, because a run whose shape you are still choosing is
-  a real state. `matchRatio` is a prop the caller passes; Frames picks one clip
-  out of the library and has no run to match.
+- **The run's shape is set by its first clip.** Clips of different aspect
+  ratios cannot cut together, and with every clip born here a continuation
+  follows the frame it was given, so the shape holds on its own. The picker's
+  `matchRatio` prop was Director's ask (#512) and has no caller now that
+  Add clips is gone; Frames picks one clip and has no run to match.
 - **A jump lands on a clip and plays it.** Judging the third join by watching
   from the top is most of a minute spent on two joins already settled. It costs
   the gapless swap — the idle element is holding the clip that follows, so a jump

@@ -35,7 +35,8 @@ them, so the same money had two answers.
 
 ## Data Source
 
-Director's clips are in the log like any others since #662 -- a session
+Director's clips are in the log like any others since #662, and stay there
+after #679 hid them from the Video wall: Activity is the cost record -- a session
 generates through `generateVideo`, so there is nothing separate to exclude. The
 `origin = director` filter that stood here (and in the account aggregates) went
 with the export copies it was written for.
