@@ -48,17 +48,22 @@ function Musing() {
  * who turns up in the clip.
  *
  * What the panel does say is that an answer is still being made, because
- * nothing else on the page says it until a tile lands.
+ * nothing else on the page says it until a tile lands -- and which questions
+ * are waiting their turn, because the box never locks and you should be able
+ * to see what you have already asked.
  */
 export function ChatPanel({
   turns,
-  busy,
+  inFlight,
+  queued,
   answering,
   onAsk,
 }: {
   turns: Array<ChatTurn>
-  /** A question is with the model or being submitted. */
-  busy: boolean
+  /** The question with the model right now, or null. */
+  inFlight: string | null
+  /** Questions waiting behind it, in order. */
+  queued: Array<string>
   /** Turn ids whose clips are still being made. */
   answering: Set<string>
   onAsk: (question: string) => void
@@ -66,8 +71,9 @@ export function ChatPanel({
   const [draft, setDraft] = useState('')
 
   const trimmed = draft.trim()
+  const busy = inFlight !== null || answering.size > 0
   const submit = () => {
-    if (!trimmed || busy) return
+    if (!trimmed) return
     onAsk(trimmed)
     setDraft('')
   }
@@ -83,7 +89,12 @@ export function ChatPanel({
         </p>
       ) : (
         <div className={styles.status}>
-          {(busy || answering.size > 0) && <Musing />}
+          {busy && <Musing />}
+          {queued.map((question, i) => (
+            <span key={i} className={styles.queued}>
+              {question}
+            </span>
+          ))}
         </div>
       )}
       <div className={styles.compose}>
@@ -95,7 +106,6 @@ export function ChatPanel({
           }
           rows={2}
           maxLength={2000}
-          disabled={busy}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             // Enter sends, Shift+Enter breaks a line: a chat box, not a form.
@@ -107,12 +117,12 @@ export function ChatPanel({
         />
         <Button
           size="sm"
-          disabled={!trimmed || busy}
+          disabled={!trimmed}
           onClick={submit}
           aria-label="Ask"
           title="Ask"
         >
-          {busy ? <Loader size={16} /> : <Send size={16} />}
+          <Send size={16} />
         </Button>
       </div>
     </div>

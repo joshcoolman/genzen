@@ -17,6 +17,8 @@ const srcFor = (clip: VideoRecord) => `/img/${clip.id}`
 export interface SequencePlayerHandle {
   /** Land on a clip and play it from its first frame. */
   playFrom: (index: number) => void
+  /** Whether the stage is running, so a caller can leave it be. */
+  isPlaying: () => boolean
 }
 
 /**
@@ -278,7 +280,13 @@ export function SequencePlayer({
     [clips],
   )
 
-  useImperativeHandle(controls, () => ({ playFrom: jumpTo }), [jumpTo])
+  const isPlayingRef = useRef(isPlaying)
+  isPlayingRef.current = isPlaying
+  useImperativeHandle(
+    controls,
+    () => ({ playFrom: jumpTo, isPlaying: () => isPlayingRef.current }),
+    [jumpTo],
+  )
 
   const toggle = useCallback(() => {
     if (clips.length === 0) return

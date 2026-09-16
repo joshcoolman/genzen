@@ -256,7 +256,6 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
      time by a character the model invents on the first question. */
 
   const [chat, setChat] = useState(session.chat)
-  const [asking, setAsking] = useState(false)
   /** The conversation as text, for the dialog: a question, its answer, a
    *  blank line. The character is left out on purpose -- see `ChatPanel`. */
   const [transcriptOpen, setTranscriptOpen] = useState(false)
@@ -348,11 +347,33 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
    * what comes back is the session as written: its revision replaces the one
    * this tab holds and its ids are what the persist effect would otherwise try
    * to write again.
+   *
+   * **Questions queue; the box never locks.** The model takes ten seconds a
+   * turn and you may have three questions in your head, so `ask` only
+   * appends, and a drain below sends them one at a time in order -- one at a
+   * time because each turn reads the transcript the last one wrote, and in
+   * order because the run is the conversation. A question that fails is
+   * reported and dropped, and the next one goes.
    */
+  const [questions, setQuestions] = useState<Array<string>>([])
+  /** The question with the model right now, or null. */
+  const [inFlight, setInFlight] = useState<string | null>(null)
+  const draining = useRef(false)
+
   const ask = useCallback(
-    async (question: string) => {
-      if (!chat || asking) return
-      setAsking(true)
+    (question: string) => {
+      if (!chat) return
+      setQuestions((current) => [...current, question])
+    },
+    [chat],
+  )
+
+  useEffect(() => {
+    if (draining.current || questions.length === 0) return
+    const question = questions[0]
+    draining.current = true
+    setInFlight(question)
+    void (async () => {
       try {
         const updated = await askCharacter(session.id, question)
         const turn: ChatTurn | undefined = updated.chat?.turns.at(-1)
@@ -384,11 +405,12 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
         // A missing Anthropic key opens the key dialog; anything else toasts.
         reportError(err, 'The character could not answer.')
       } finally {
-        setAsking(false)
+        draining.current = false
+        setInFlight(null)
+        setQuestions((current) => current.slice(1))
       }
-    },
-    [chat, asking, session.id, router, reportError],
-  )
+    })()
+  }, [questions, session.id, router, reportError])
 
   /* The row shows a clip being made and the player cannot, so the two are
      indexed apart. `run.ts` owns both directions; see there. */
@@ -768,7 +790,9 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
   return {
     error,
     chat,
-    asking,
+    inFlight,
+    /** Questions waiting behind the one with the model. */
+    queued: questions.slice(1),
     answering,
     answerReady,
     ask,
