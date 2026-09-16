@@ -139,13 +139,17 @@ export async function appendChatTurn(
   /** The chat's name, written on the first turn only: a chat opens unnamed
    *  and the model titles it from the question. */
   name?: string,
+  /** What the person asked for, kept with the character it produced. */
+  steer?: string | null,
 ): Promise<Session> {
   const session = await requireSession(owner, id)
   if (!session.chat) throw new Error('This session is not a chat.')
   const parsed = chatTurnSchema.parse(turn)
+  const first = session.chat.character === null
   const chat = {
     ...session.chat,
     character: session.chat.character ?? character,
+    ...(first && steer?.trim() ? { steer: steer.trim().slice(0, 1000) } : {}),
     turns: [...session.chat.turns, parsed],
   }
   const cut = {
@@ -163,6 +167,31 @@ export async function appendChatTurn(
     where id = ${id} and user_id = ${owner}
   `
   return requireSession(owner, id)
+}
+
+/**
+ * The characters this person has met, newest first, one line each -- the
+ * first sentence of the stored description, which is what the model leads
+ * with: what they are and roughly who. Handed to the next first turn as what
+ * not to resemble. Capped, because the list is a nudge and not a history.
+ */
+export async function listCharactersMet(
+  owner: string,
+  except: string,
+  limit = 20,
+): Promise<Array<string>> {
+  const rows = await sql<Array<{ character: string }>>`
+    select chat->>'character' as character
+    from director_sessions
+    where user_id = ${owner} and id <> ${except}
+      and chat->>'character' is not null
+    order by updated_at desc
+    limit ${limit}
+  `
+  return rows.map((row) => {
+    const sentence = row.character.match(/^.*?[.!?](?=\s|$)/)?.[0]
+    return (sentence ?? row.character).slice(0, 160)
+  })
 }
 
 /**
