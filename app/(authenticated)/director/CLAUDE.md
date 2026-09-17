@@ -158,6 +158,25 @@ locations: [ids], frames: [ids] }`. The column is `refs` and not
 - **A tab replaces the work area's body rather than hiding it.** A hidden
   `<video>` keeps playing, and a stage talking over the tab you are reading is
   the wrong answer.
+- **A sheet is drawn as an Images card, on the shared parts of one.**
+  `ImageGrid` at the same size, `Thumbnail`, and `CardCaption` under it holding
+  the prompt the sheet was drawn from -- so the two walls have the same
+  columns, the same clamp and the same copy button. Not `ImageCard` itself:
+  that is Images' own, thick with groups, select mode, the sweep and
+  drag-to-group, and a tab with none of those would set twenty props to leave
+  nineteen unused. Three things differ, each for a reason
+  (`_components/sheet-card/`): the frame is **16:9**, because every sheet is,
+  and a square tile spends a quarter of the grid letterboxing pictures whose
+  point is readable detail; there is **no hiding**, because this collection is
+  pruned by deleting and the corner is the plain Trash; and **New from this is
+  one click** in the top-left corner where Images keeps its `...`, being the
+  tab's whole reason for existing.
+- **Clicking a sheet opens the shared lightbox.** At grid size a turnaround
+  sheet cannot be judged, which is the one thing it exists for. Director keeps
+  its own cursor over the open tab's finished sheets rather than reusing
+  `useImageViewer` -- see the note in `images/CLAUDE.md`: the shell is shared,
+  the cursor never is. Delete from inside it moves the cursor before the row
+  goes, so a pass over an extraction is a run of single presses.
 - The assets are props and never state: every change ends in `router.refresh()`
   and the page re-reads the rows, which is also how a pending sheet turns into
   a picture (`use-references.ts`, on the standard poll).

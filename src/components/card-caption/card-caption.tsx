@@ -1,8 +1,8 @@
 'use client'
 
 import { Redo } from 'lucide-react'
+import { CopyText } from '../copy-text/copy-text'
 import styles from './card-caption.module.css'
-import { CopyText } from '#/components'
 
 interface CardCaptionProps {
   /** The prompt, or an upload's description or filename. */
@@ -24,6 +24,11 @@ interface CardCaptionProps {
 
 /**
  * The block under a card's picture: the prompt, being its own copy button.
+ *
+ * Shared since #690, which gave Director's reference sheets the same card.
+ * Nothing about it moved in the promotion -- the props it already had are
+ * exactly the ones a second surface needed, and the optional ones it does not
+ * use simply stay unset.
  *
  * **One component because it must not differ between states** (#367). A
  * generation's caption used to be written twice -- once in `ImageCard`, once in

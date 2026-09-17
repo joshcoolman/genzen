@@ -1,0 +1,7 @@
+/* Matching the Images card's corner icons exactly: the two grids are the same
+   card and a half-size difference in one corner is the kind of drift that is
+   never noticed and never fixed. */
+.actionIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}

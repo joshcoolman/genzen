@@ -1,5 +1,4 @@
-import { CardCaption } from '../card-caption/card-caption'
-import { Thumbnail } from '#/components'
+import { CardCaption, Thumbnail } from '#/components'
 
 interface PendingImageCardProps {
   prompt: string

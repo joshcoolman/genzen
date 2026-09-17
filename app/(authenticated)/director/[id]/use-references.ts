@@ -10,8 +10,10 @@ import {
 import { DERIVE_MODEL_SLUGS } from './refs'
 import type { RefAsset } from '../_actions/references.action'
 import type { RefKind } from '../_lib/types'
+import type { ViewerItem } from '#/components'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
 import { useReportError } from '#/components'
+import { imageUrl } from '#/lib/image-url'
 
 export type SessionTab = 'work' | RefKind
 
@@ -41,6 +43,8 @@ export function useReferences(
   const [words, setWords] = useState('')
   const [models, setModels] = useState<Array<string>>([DERIVE_MODEL_SLUGS[0]])
   const [submitting, setSubmitting] = useState(false)
+  /** Which sheet the lightbox is on, within the open tab. */
+  const [viewing, setViewing] = useState<number | null>(null)
 
   const all = useMemo(
     () => [...assets.characters, ...assets.locations],
@@ -58,6 +62,64 @@ export function useReferences(
     return pending[0] ?? null
   }, [all])
   useGenerationPoll(pendingSince, () => router.refresh())
+
+  /**
+   * The lightbox's cursor, over the open tab alone.
+   *
+   * **Its own, not `useImageViewer`.** That hook stayed in Images on its own
+   * warning -- sharing a cursor is what once imposed a prompt column and a
+   * filmstrip on the viewer -- and it is the right call: a cursor carries the
+   * rules of the surface it belongs to, and the two disagree on all of them.
+   * Its set is a filtered, scoped, sorted gallery; this one is a tab. Its
+   * Delete has a safe twin in Hide; here there is no hiding, because the whole
+   * mechanism is prune-by-deleting. What is shared is the shell, which takes
+   * the same four props from either.
+   *
+   * Only the finished sheets: a pending tile is not something the lightbox can
+   * show, and "next" landing on a spinner is a dead stop in the middle of a
+   * pass.
+   */
+  const shown = useMemo(
+    () =>
+      (tab === 'work' ? [] : assets[tab]).filter(
+        (a) => a.status === 'completed',
+      ),
+    [assets, tab],
+  )
+  const viewerItems: Array<ViewerItem> = useMemo(
+    () =>
+      shown.map((asset) => ({
+        id: asset.id,
+        title: asset.title,
+        prompt: asset.description ?? undefined,
+      })),
+    [shown],
+  )
+  const viewerUrls = useMemo(
+    () => Object.fromEntries(shown.map((a) => [a.id, imageUrl(a.id)])),
+    [shown],
+  )
+
+  const openViewer = useCallback(
+    (asset: RefAsset) => {
+      const index = shown.findIndex((a) => a.id === asset.id)
+      if (index !== -1) setViewing(index)
+    },
+    [shown],
+  )
+  /* A ring, both ways, as the Images viewer is: a chevron that does nothing on
+     the last sheet reads as broken. */
+  const viewerNext = useCallback(
+    () => setViewing((i) => (i === null ? null : (i + 1) % shown.length)),
+    [shown.length],
+  )
+  const viewerPrev = useCallback(
+    () =>
+      setViewing((i) =>
+        i === null ? null : (i - 1 + shown.length) % shown.length,
+      ),
+    [shown.length],
+  )
 
   const run = useCallback(
     async (work: () => Promise<unknown>) => {
@@ -109,6 +171,28 @@ export function useReferences(
     [run, sessionId],
   )
 
+  /**
+   * Delete from inside the lightbox, and carry on through the tab.
+   *
+   * The cursor moves *before* the delete, because the list it is cycling is
+   * about to be one shorter -- `actAndAdvance`'s reasoning in Images, and the
+   * same payoff: the next sheet slides into the place the last one was, so a
+   * pass over an extraction is a run of single presses.
+   */
+  const dropViewed = useCallback(async () => {
+    if (viewing === null) return
+    /* The index really can outrun the list -- the poll refreshes the page
+       while the lightbox is open -- and TS is not checking indexed access, so
+       the cast is what lets the guard exist. Same reason `ImageViewer` casts
+       its own current item. */
+    const asset = shown[viewing] as RefAsset | undefined
+    if (!asset) return
+    const remaining = shown.length - 1
+    if (remaining === 0) setViewing(null)
+    else if (viewing >= remaining) setViewing(remaining - 1)
+    await drop(asset)
+  }, [drop, shown, viewing])
+
   const toggleModel = useCallback((slug: string) => {
     setModels((current) =>
       current.includes(slug)
@@ -132,5 +216,13 @@ export function useReferences(
     derive,
     openDerive,
     drop,
+    viewing,
+    viewerItems,
+    viewerUrls,
+    openViewer,
+    closeViewer: useCallback(() => setViewing(null), []),
+    viewerNext,
+    viewerPrev,
+    dropViewed,
   }
 }

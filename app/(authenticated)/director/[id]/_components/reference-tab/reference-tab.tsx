@@ -1,12 +1,11 @@
 'use client'
 
-import { Sparkles, Trash2 } from 'lucide-react'
+import { SheetCard } from '../sheet-card/sheet-card'
 import { KIND_LABEL, KIND_NOUN } from '../../refs'
 import styles from './reference-tab.module.css'
 import type { RefAsset } from '../../../_actions/references.action'
 import type { RefKind } from '../../../_lib/types'
-import { Button, EmptyState } from '#/components'
-import { imageUrl } from '#/lib/image-url'
+import { Button, EmptyState, ImageGrid } from '#/components'
 
 /**
  * One tab of reference sheets (#690).
@@ -17,8 +16,9 @@ import { imageUrl } from '#/lib/image-url'
  * until what is left is what is useful. There is no replace, no reorder and no
  * select-many: a flat set with a delete on each is the whole mechanism.
  *
- * A sheet still being made holds its place as a box that says so, on the run's
- * rule: the thing you just paid for must not vanish until it lands.
+ * The grid is Images' own `ImageGrid` at the same size, so the two walls have
+ * the same columns, the same gap and the same reflow. What the cards do inside
+ * it is `SheetCard`'s.
  */
 export function ReferenceTab({
   kind,
@@ -27,6 +27,7 @@ export function ReferenceTab({
   onExtract,
   onDerive,
   onDelete,
+  onOpen,
 }: {
   kind: RefKind
   assets: Array<RefAsset>
@@ -34,6 +35,7 @@ export function ReferenceTab({
   onExtract: () => void
   onDerive: (asset: RefAsset) => void
   onDelete: (asset: RefAsset) => void
+  onOpen: (asset: RefAsset) => void
 }) {
   const label = KIND_LABEL[kind]
   const extract = (
@@ -62,54 +64,17 @@ export function ReferenceTab({
         </p>
         {extract}
       </div>
-      <ul className={styles.grid}>
+      <ImageGrid size="lg">
         {assets.map((asset) => (
-          <li key={asset.id} className={styles.card}>
-            <div className={styles.sheet}>
-              {asset.status === 'completed' ? (
-                <img
-                  src={imageUrl(asset.id)}
-                  alt={asset.title}
-                  loading="lazy"
-                  decoding="async"
-                />
-              ) : (
-                <p className={styles.state}>
-                  {asset.status === 'pending'
-                    ? 'Drawing...'
-                    : (asset.generation_error ?? 'That one failed.')}
-                </p>
-              )}
-            </div>
-            <div className={styles.foot}>
-              <p
-                className={styles.title}
-                title={asset.description ?? undefined}
-              >
-                {asset.title}
-              </p>
-              <Button
-                size="sm"
-                onClick={() => onDerive(asset)}
-                disabled={asset.status !== 'completed'}
-                title="New from this"
-              >
-                <Sparkles size={14} />
-                New from this
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onDelete(asset)}
-                aria-label={`Delete ${asset.title}`}
-                title="Delete"
-              >
-                <Trash2 size={14} />
-              </Button>
-            </div>
-          </li>
+          <SheetCard
+            key={asset.id}
+            asset={asset}
+            onDerive={onDerive}
+            onDelete={onDelete}
+            onOpen={onOpen}
+          />
         ))}
-      </ul>
+      </ImageGrid>
     </div>
   )
 }

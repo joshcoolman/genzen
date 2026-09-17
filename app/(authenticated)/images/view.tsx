@@ -7,7 +7,6 @@ import { useSelectionPanelFits } from '../_components/selection-panel/selection-
 import { ImageGallery } from './_components/image-gallery/image-gallery'
 import { DownloadDialog } from './_components/download-dialog/download-dialog'
 import { GeneratorDock } from './_components/generator-dock/generator-dock'
-import { ImageViewer } from './_components/image-viewer/image-viewer'
 import { ImageDetailsDialog } from './_components/image-details-dialog/image-details-dialog'
 import { OutpaintDialog } from './_components/outpaint-dialog/outpaint-dialog'
 import { OrderRow } from './_components/order-row/order-row'
@@ -19,7 +18,12 @@ import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
 import { useView } from './use-view'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import { ConfirmDialog, NameDialog, ZipDownloadDialog } from '#/components'
+import {
+  ConfirmDialog,
+  ImageViewer,
+  NameDialog,
+  ZipDownloadDialog,
+} from '#/components'
 import { countedBaseName } from '#/lib/download-name'
 
 export function View({ initial }: { initial: Array<SavedAiImage> }) {

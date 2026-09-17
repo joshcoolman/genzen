@@ -2,19 +2,15 @@
 
 import { useMemo, useState } from 'react'
 import type { SavedAiImage } from '#/features/ai-images/types'
+import type { ViewerItem } from '#/components'
 import { imageUrl } from '#/lib/image-url'
 
-export interface ViewerItem {
-  id: string
-  /** Model name for a generation, filename for an upload. Alt text only. */
-  title: string
-  /** What the viewer's prompt panel reads (#580), derived exactly as the
-   *  card's caption is so the two never disagree about the same image. Absent
-   *  on an upload with no description -- there is nothing that made it.
-   *  A generation prefers its metadata over `description`, which is only a
-   *  copy and was for a long time a truncated one (#582). */
-  prompt?: string
-}
+/* The item shape belongs to the viewer (#690). What stays here is how an
+   Images row becomes one: a generation prefers its metadata over
+   `description`, which is only a copy and was for a long time a truncated one
+   (#582), and it is derived exactly as the card's caption is so the two never
+   disagree about the same picture. */
+export type { ViewerItem }
 
 export interface ImageViewerState {
   index: number | null
@@ -39,8 +35,12 @@ export interface ImageViewerState {
  * picture on screen; a viewer scoped differently from the grid sends you
  * somewhere you were not looking.
  *
- * Kept local to Images. Sharing with the former Explore surface imposed a
- * prompt column and filmstrip here; the viewer should follow this grid alone.
+ * **Still local to Images, and deliberately so.** The lightbox itself is
+ * shared (`#/components`, #690), but this is not: sharing the cursor with the
+ * former Explore surface is what imposed a prompt column and a filmstrip on
+ * this one. A cursor carries a surface's own rules -- what the set is, what
+ * Delete means, what Hide means -- and Director's sheets answer all three
+ * differently, so it builds its own and hands the viewer the same four props.
  */
 export function useImageViewer(
   images: Array<SavedAiImage>,

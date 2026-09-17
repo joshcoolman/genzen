@@ -11,6 +11,7 @@ export {
 } from './aspect-ratio-select/aspect-ratio-constants'
 export { RatioIcon } from './aspect-ratio-select/ratio-icon'
 export { Badge, type BadgeProps } from './badge/badge'
+export { CardCaption } from './card-caption/card-caption'
 export {
   Button,
   type ButtonProps,
@@ -55,6 +56,7 @@ export { ExpandableIconButton } from './expandable-icon-button/expandable-icon-b
 export { ExpandableText } from './expandable-text/expandable-text'
 export { IconButton, type IconButtonProps } from './icon-button/icon-button'
 export { ImageBox, type ImageBoxProps } from './image-box/image-box'
+export { ImageViewer, type ViewerItem } from './image-viewer/image-viewer'
 export { Input, type InputProps } from './input/input'
 export { ImageGrid, ImageGridSkeleton } from './image-grid/image-grid'
 export {

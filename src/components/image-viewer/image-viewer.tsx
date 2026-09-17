@@ -3,11 +3,28 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { ChevronLeft, ChevronRight, EyeOff, Trash2, X } from 'lucide-react'
+import { CopyText } from '../copy-text/copy-text'
 import styles from './image-viewer.module.css'
-import type { ViewerItem } from '../../_hooks/use-image-viewer'
 import { cx } from '#/lib/utils'
 import { usePersistedState } from '#/lib/use-persisted-state'
-import { CopyText } from '#/components'
+
+/**
+ * One picture in the viewer's ring.
+ *
+ * Declared here rather than by whatever built the list, because this is the
+ * only shape the viewer knows about and two surfaces now fill it from
+ * different rows -- an Images gallery row, and a Director session's reference
+ * sheets (#690).
+ */
+export interface ViewerItem {
+  id: string
+  /** Model name for a generation, filename for an upload. Alt text only. */
+  title: string
+  /** What the prompt panel reads (#580). Absent where there is nothing that
+   *  made the picture -- the panel then says so rather than inventing a
+   *  caption out of a filename. */
+  prompt?: string
+}
 
 /** One key, so the panel is the same on every image and in every session. */
 const PROMPT_PANEL_KEY = 'genzen:viewer-prompt'
@@ -46,6 +63,12 @@ interface ImageViewerProps {
  * invisible quarters of the screen that revealed a chevron once the pointer
  * was already inside them, which confirms rather than affords -- you had to
  * move the mouse to find out what the mouse could do.
+ *
+ * **Shared, but only the shell** (#690). `useImageViewer` stayed in Images on
+ * its own warning: sharing the *cursor* with the former Explore surface is
+ * what imposed a prompt column and a filmstrip here. The cursor is where a
+ * surface's own rules live -- what the set is, what Delete means -- so each
+ * one keeps its own and hands this component the same four props.
  */
 export function ImageViewer({
   items,

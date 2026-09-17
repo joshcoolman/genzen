@@ -21,6 +21,7 @@ import type { RefAsset } from '../_actions/references.action'
 import type { RefKind, Session } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { clipName } from '#/features/video/clip-facts'
+import { ImageViewer } from '#/components'
 
 /**
  * A session: the player on top, the run underneath it (#662).
@@ -98,6 +99,7 @@ export function View({
           onExtract={() => void references.extract(kind)}
           onDerive={references.openDerive}
           onDelete={(asset) => void references.drop(asset)}
+          onOpen={references.openViewer}
         />
       ) : (
         <div className={styles.stack}>
@@ -199,6 +201,21 @@ export function View({
         onOpenChange={view.setTranscriptOpen}
         script={view.transcript}
       />
+
+      {/* The lightbox, over the open tab (#690). Images' own, with Director's
+          own cursor behind it -- see `use-references`. No Hide: this
+          collection is pruned by deleting. */}
+      {references.viewing !== null && (
+        <ImageViewer
+          items={references.viewerItems}
+          imageUrls={references.viewerUrls}
+          currentIndex={references.viewing}
+          onClose={references.closeViewer}
+          onNext={references.viewerNext}
+          onPrev={references.viewerPrev}
+          onDelete={() => void references.dropViewed()}
+        />
+      )}
 
       {/* New from this: one more asset, from a sheet and some words (#690). */}
       <DeriveDialog
