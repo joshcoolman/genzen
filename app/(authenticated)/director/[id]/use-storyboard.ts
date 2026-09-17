@@ -7,6 +7,7 @@ import {
   createStoryboard,
   dropTake,
   generateSectionVideo,
+  pronounceBoard,
   rerunScene,
   retryFrame,
 } from '../_actions/storyboard.action'
@@ -53,6 +54,8 @@ export function useStoryboard(
   const [generating, setGenerating] = useState<Array<string>>([])
   /** Which rows are asking for a failed frame again. */
   const [retrying, setRetrying] = useState<Array<string>>([])
+  /** Fix pronunciation is in flight. */
+  const [pronouncing, setPronouncing] = useState(false)
   const [words, setWords] = useState('')
   const [model, setModel] = useState<string>(RERUN_MODEL_SLUGS[0])
   const [submitting, setSubmitting] = useState(false)
@@ -153,6 +156,13 @@ export function useStoryboard(
     [run, sessionId],
   )
 
+  const pronounce = useCallback(async () => {
+    if (pronouncing) return
+    setPronouncing(true)
+    await run(() => pronounceBoard(sessionId))
+    setPronouncing(false)
+  }, [pronouncing, run, sessionId])
+
   const openRerun = useCallback((scene: BoardScene) => {
     setRerunning(scene)
     setWords('')
@@ -211,6 +221,8 @@ export function useStoryboard(
     status,
     creating,
     create,
+    pronouncing,
+    pronounce,
     filming,
     setFilming,
     openFilm,

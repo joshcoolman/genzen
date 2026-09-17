@@ -1,8 +1,10 @@
 import 'server-only'
 import { generateObject } from 'ai'
+import { z } from 'zod'
 import { storyboardPlanSchema } from '../[id]/board'
 import type { BoardSheet, StoryboardPlan } from '../[id]/board'
 import type { ScriptLine } from '../[id]/script'
+import pronouncePrompt from '#/lib/prompts/director-pronounce.md'
 import storyboardPrompt from '#/lib/prompts/director-storyboard.md'
 import { ai, requireAiRole } from '#/lib/server/ai.server'
 
@@ -86,4 +88,50 @@ export async function planStoryboard({
   })
 
   return object
+}
+
+/** One line's respelling, as the model answers it (#700). */
+export const pronounceSchema = z.object({
+  lines: z.array(
+    z.object({
+      line: z.number(),
+      spoken: z.string().nullable(),
+    }),
+  ),
+})
+
+/**
+ * Respell a board's lines so they are said correctly (#700).
+ *
+ * **Its own call, because the board it fixes already exists.** The planner
+ * writes `spoken` with everything else, which covers every board made from now
+ * on -- but a board already drawn has frames worth keeping, and re-planning
+ * replaces them. This reads the lines, returns the respellings, and touches
+ * nothing else.
+ *
+ * The whole script at once rather than a line at a time, so a name appearing in
+ * eleven lines is respelled the same way in all of them.
+ */
+export async function pronounceLines(
+  lines: Array<{ number: number; line: string }>,
+): Promise<Map<number, string | null>> {
+  requireAiRole('reasoning')
+  if (lines.length === 0) return new Map()
+
+  const { object } = await generateObject({
+    model: ai.reasoning,
+    maxOutputTokens: 16000,
+    system: pronouncePrompt,
+    schema: pronounceSchema,
+    messages: [
+      {
+        role: 'user',
+        content: lines.map((l) => `${l.number}. ${l.line}`).join('\n'),
+      },
+    ],
+  })
+
+  return new Map(
+    object.lines.map((entry) => [Math.round(entry.line), entry.spoken]),
+  )
 }

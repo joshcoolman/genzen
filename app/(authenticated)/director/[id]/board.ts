@@ -43,6 +43,9 @@ export const storyboardPlanSchema = z.object({
       characters: z.array(z.number()),
       opening: z.string().min(1),
       closing: z.string().min(1),
+      /** The line respelled so it is said correctly, or null when nothing in
+       *  it would be mispronounced (#700). */
+      spoken: z.string().nullable(),
     }),
   ),
 })
@@ -156,6 +159,7 @@ export function assembleScenes({
         locationId,
         openingPrompt: scene.opening.trim().slice(0, 4000),
         closingPrompt: scene.closing.trim().slice(0, 4000),
+        spokenLine: spokenOf(scene.spoken, line.line),
         guidance: null,
         model: null,
         openingId: null,
@@ -164,6 +168,26 @@ export function assembleScenes({
       },
     ]
   })
+}
+
+/**
+ * The respelling to store for a line, or null (#700).
+ *
+ * **Null when it adds nothing**, which is most lines: a respelling identical
+ * to the line is noise on the row and a value to keep in step for no reason.
+ * Null is also what a model returns for a line with nothing hard in it, so the
+ * two agree.
+ */
+export function spokenOf(spoken: string | null, line: string): string | null {
+  const said = spoken?.trim()
+  if (!said || said === line.trim()) return null
+  return said.slice(0, 4000)
+}
+
+/** What a section is actually told to say: the respelling when there is one,
+ *  and the line itself otherwise. The one place the two are chosen between. */
+export function lineToSpeak(scene: BoardScene): string {
+  return scene.spokenLine ?? scene.line
 }
 
 /** The sheets a scene is drawn from: the place, then who is in it. The location

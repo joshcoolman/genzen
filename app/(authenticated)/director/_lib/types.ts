@@ -178,8 +178,22 @@ export const boardSceneSchema = z.object({
   /** The script line's own number -- its position in the run, which is what
    *  the Script tab numbers by. Never renumbered. */
   number: z.number().int().positive(),
-  /** What is said in this scene, verbatim. */
+  /** What is said in this scene, verbatim. **The record, and never the
+   *  respelling** -- the Script tab, the transcript and the copy button read
+   *  this one. */
   line: z.string().max(4000),
+  /**
+   * The line respelled so a model says it correctly (#700), or null when
+   * nothing in it would be mispronounced.
+   *
+   * **Beside the line, never instead of it.** Read only when the video prompt
+   * is assembled. Kling takes a plain prompt string -- no SSML, no phoneme
+   * tags, no lexicon -- so the text sent is the pronunciation instruction, and
+   * "day-KART" is the only way to get Descartes said right. That makes it a
+   * lie about the text which is useful to exactly one consumer, and the moment
+   * it reaches the record there is no telling what the film actually says.
+   */
+  spokenLine: z.string().max(4000).nullable().default(null),
   /** How long the section runs, off the clip's row. **The size of the change
    *  between the two frames**: five seconds is a breath, twelve is a move. A
    *  measurement rather than a recommendation, as the Script tab's is. */

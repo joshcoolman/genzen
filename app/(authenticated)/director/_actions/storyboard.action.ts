@@ -9,8 +9,10 @@ import {
   SECTION_RATIO,
   assembleScenes,
   closingReferenceIds,
+  lineToSpeak,
   sceneReferenceIds,
   sectionDuration,
+  spokenOf,
 } from '../[id]/board'
 import { dialogueOf } from '../[id]/script'
 import {
@@ -19,7 +21,7 @@ import {
   trashSessionClips,
   updateBoardScene,
 } from '../_lib/sessions.server'
-import { planStoryboard } from '../_lib/storyboard.server'
+import { planStoryboard, pronounceLines } from '../_lib/storyboard.server'
 import { boardImageIds, idSchema } from '../_lib/types'
 import {
   generateVideo,
@@ -359,7 +361,10 @@ export async function generateSectionVideo(
     /* The chat's own marker, which is how a line reaches the model as speech
        rather than as description (`composeClipPrompt`, read back by
        `dialogueOf`). Reading back a structure the app wrote. */
-    `Speaking to camera, in English: "${scene.line}"`,
+    /* The respelling when there is one (#700): Kling takes a plain prompt and
+       no lexicon, so the spelling sent is the pronunciation. `scene.line` stays
+       the record and is what the Script tab reads. */
+    `Speaking to camera, in English: "${lineToSpeak(scene)}"`,
     ...(asked ? [asked] : []),
   ].join('\n\n')
 
@@ -632,4 +637,41 @@ export async function dropTake(
     { videoIds: scene.videoIds.filter((id) => id !== takeId) },
     [takeId],
   )
+}
+
+/**
+ * Fix pronunciation across the board (#700).
+ *
+ * One Claude call over every line, filling `spokenLine` and touching nothing
+ * else: no frames are replanned, no takes are affected, and `line` -- the
+ * record -- is unchanged. Non-destructive on purpose, because the board this is
+ * for already has frames worth keeping and re-planning would replace them.
+ *
+ * **It overwrites what was there**, unlike everything else on this board that
+ * adds. A respelling is a correction rather than a candidate, and two of them
+ * for one line is not something anybody would choose between.
+ */
+export async function pronounceBoard(sessionId: string): Promise<Session> {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  if (session.board.scenes.length === 0)
+    throw new Error('There is no storyboard to read.')
+
+  const spoken = await pronounceLines(
+    session.board.scenes.map((scene) => ({
+      number: scene.number,
+      line: scene.line,
+    })),
+  )
+
+  const scenes = session.board.scenes.map((scene) => ({
+    ...scene,
+    /* A line the model did not answer for keeps whatever it had: silence is
+       not an instruction to throw away a respelling that was working. */
+    spokenLine: spoken.has(scene.number)
+      ? spokenOf(spoken.get(scene.number) ?? null, scene.line)
+      : scene.spokenLine,
+  }))
+
+  return saveBoard(userId, session.id, scenes)
 }

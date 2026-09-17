@@ -4,9 +4,11 @@ import {
   assembleScenes,
   boardVideoCostCents,
   closingReferenceIds,
+  lineToSpeak,
   sceneReferenceIds,
   scenesToClose,
   sectionDuration,
+  spokenOf,
 } from './board'
 import type { BoardSheet } from './board'
 import type { ScriptLine } from './script'
@@ -50,6 +52,7 @@ describe('assembleScenes', () => {
           characters: [1],
           opening: 'He arrives.',
           closing: 'He sits.',
+          spoken: null,
         },
         {
           line: 2,
@@ -57,6 +60,7 @@ describe('assembleScenes', () => {
           characters: [1],
           opening: 'He stands.',
           closing: 'He crosses the room.',
+          spoken: null,
         },
         {
           line: 3,
@@ -64,6 +68,7 @@ describe('assembleScenes', () => {
           characters: [1],
           opening: 'Outside.',
           closing: 'Walking away.',
+          spoken: null,
         },
       ]),
       lines,
@@ -84,9 +89,30 @@ describe('assembleScenes', () => {
   it('answers out of order still land in script order', () => {
     const scenes = assembleScenes({
       plan: plan([
-        { line: 3, location: null, characters: [], opening: 'c', closing: 'c' },
-        { line: 1, location: null, characters: [], opening: 'a', closing: 'a' },
-        { line: 2, location: null, characters: [], opening: 'b', closing: 'b' },
+        {
+          line: 3,
+          location: null,
+          characters: [],
+          opening: 'c',
+          closing: 'c',
+          spoken: null,
+        },
+        {
+          line: 1,
+          location: null,
+          characters: [],
+          opening: 'a',
+          closing: 'a',
+          spoken: null,
+        },
+        {
+          line: 2,
+          location: null,
+          characters: [],
+          opening: 'b',
+          closing: 'b',
+          spoken: null,
+        },
       ]),
       lines,
       characters,
@@ -99,10 +125,31 @@ describe('assembleScenes', () => {
   it('drops numbers it was never given, and never renumbers what is left', () => {
     const scenes = assembleScenes({
       plan: plan([
-        { line: 1, location: 9, characters: [9], opening: 'a', closing: 'b' },
+        {
+          line: 1,
+          location: 9,
+          characters: [9],
+          opening: 'a',
+          closing: 'b',
+          spoken: null,
+        },
         // A line that is not in the script cannot be a scene of it.
-        { line: 99, location: 1, characters: [1], opening: 'a', closing: 'b' },
-        { line: 3, location: 1, characters: [1], opening: 'a', closing: 'b' },
+        {
+          line: 99,
+          location: 1,
+          characters: [1],
+          opening: 'a',
+          closing: 'b',
+          spoken: null,
+        },
+        {
+          line: 3,
+          location: 1,
+          characters: [1],
+          opening: 'a',
+          closing: 'b',
+          spoken: null,
+        },
       ]),
       lines,
       characters,
@@ -123,6 +170,7 @@ function scene(over: Partial<BoardScene> = {}): BoardScene {
     id: id(1),
     number: 1,
     line: 'Line 1',
+    spokenLine: null,
     seconds: 3,
     characterIds: [id(2)],
     locationId: id(3),
@@ -220,5 +268,27 @@ describe('boardImageIds', () => {
       ],
     }
     expect(boardImageIds(board)).toEqual([id(1), id(2), id(3), id(4), id(5)])
+  })
+})
+
+describe('spokenOf and lineToSpeak', () => {
+  it('keeps null when the respelling adds nothing', () => {
+    // Null for a line with nothing hard in it, and null for a respelling that
+    // came back identical -- the row should not carry a second copy of the
+    // line, and there is nothing to keep in step.
+    expect(spokenOf(null, 'Plain words.')).toBeNull()
+    expect(spokenOf('Plain words.', 'Plain words.')).toBeNull()
+    expect(spokenOf('  ', 'Plain words.')).toBeNull()
+  })
+
+  it('is what the model is told to say, while the line stays the record', () => {
+    const said = 'day-KART asked the same question.'
+    const s = scene({ line: 'Descartes asked the same question.' })
+    expect(lineToSpeak(s)).toBe('Descartes asked the same question.')
+    expect(lineToSpeak({ ...s, spokenLine: said })).toBe(said)
+    // The record is untouched by the respelling -- the Script tab reads it.
+    expect({ ...s, spokenLine: said }.line).toBe(
+      'Descartes asked the same question.',
+    )
   })
 })

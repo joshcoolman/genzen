@@ -126,7 +126,9 @@ export function View({
           busy={storyboard.creating}
           generating={storyboard.generating}
           retrying={storyboard.retrying}
+          pronouncing={storyboard.pronouncing}
           onCreate={() => void storyboard.create()}
+          onPronounce={() => void storyboard.pronounce()}
           onRerun={storyboard.openRerun}
           onRetry={(scene, which) => void storyboard.retry(scene, which)}
           onFilm={storyboard.openFilm}

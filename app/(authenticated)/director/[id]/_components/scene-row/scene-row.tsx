@@ -84,6 +84,12 @@ export function SceneRow({
           {scene.seconds === null ? null : <span>{scene.seconds}s</span>}
         </p>
         <p className={styles.line}>{scene.line}</p>
+        {/* What the model is actually told to say, when that differs (#700).
+            On the row rather than hidden, because it is a change to what the
+            audience hears and $1.12 is a lot to pay to find out what it was. */}
+        {scene.spokenLine && (
+          <p className={styles.spoken}>Said as: {scene.spokenLine}</p>
+        )}
         {/* What was typed into the last re-run, so the row says what it was
             asked for rather than leaving a changed frame unexplained. */}
         {scene.guidance && <p className={styles.guidance}>{scene.guidance}</p>}

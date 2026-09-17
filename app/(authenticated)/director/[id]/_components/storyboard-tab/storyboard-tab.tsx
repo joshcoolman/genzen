@@ -35,9 +35,11 @@ export function StoryboardTab({
   status,
   frames,
   busy,
+  pronouncing,
   generating,
   retrying,
   onCreate,
+  onPronounce,
   onRerun,
   onRetry,
   onFilm,
@@ -48,11 +50,14 @@ export function StoryboardTab({
   status: FrameStatus
   frames: Record<string, RefAsset>
   busy: boolean
+  /** Fix pronunciation is in flight. */
+  pronouncing: boolean
   /** The rows with a section in flight. */
   generating: Array<string>
   /** The rows asking for a failed frame again. */
   retrying: Array<string>
   onCreate: () => void
+  onPronounce: () => void
   onRerun: (scene: BoardScene) => void
   onRetry: (scene: BoardScene, which: 'opening' | 'closing') => void
   onFilm: (scene: BoardScene) => void
@@ -103,6 +108,12 @@ export function StoryboardTab({
           )}
         </p>
         <CostNote cents={cents} unpriced={unpriced} />
+        {/* A correction, not a candidate (#700): one Claude call respells the
+            names a speaking model would get wrong, and nothing else on the
+            board is touched -- the frames stay exactly as they are. */}
+        <Button onClick={onPronounce} loading={pronouncing}>
+          Fix pronunciation
+        </Button>
         <Button onClick={onCreate} loading={busy}>
           Draw again
         </Button>
