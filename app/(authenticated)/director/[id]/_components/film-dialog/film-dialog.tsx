@@ -62,13 +62,31 @@ export function FilmDialog({
         <DialogHeader>
           <DialogTitle>Generate scene {scene ? scene.number : ''}</DialogTitle>
         </DialogHeader>
+        {/* The frames this take is pinned to, side by side once there are two.
+            The end frame appears when it is switched on and goes when it is
+            switched off, because what the toggle does is add a picture to the
+            request and the dialog should show the request. */}
         {scene?.openingId && (
-          /* The frame the clip will literally begin on. */
-          <img
-            className={styles.frame}
-            src={imageUrl(scene.openingId, 'thumb')}
-            alt={`Scene ${scene.number}, opening frame`}
-          />
+          <div className={styles.frames}>
+            <figure className={styles.frame}>
+              <img
+                className={styles.image}
+                src={imageUrl(scene.openingId, 'thumb')}
+                alt={`Scene ${scene.number}, opening frame`}
+              />
+              <figcaption className={styles.frameCaption}>Opens on</figcaption>
+            </figure>
+            {endFrame && scene.closingId && (
+              <figure className={styles.frame}>
+                <img
+                  className={styles.image}
+                  src={imageUrl(scene.closingId, 'thumb')}
+                  alt={`Scene ${scene.number}, closing frame`}
+                />
+                <figcaption className={styles.frameCaption}>Ends on</figcaption>
+              </figure>
+            )}
+          </div>
         )}
         {/* **The line is editable here, and this is the only place it is.**
             Kling refuses a line naming a trademarked work, and no model may

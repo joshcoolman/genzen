@@ -4,15 +4,36 @@
   gap: var(--space-12);
 }
 
-/* The frame the clip will literally begin on, which is the whole of what
-   pinning buys -- so it is what you look at before pressing. */
+/* What the take is pinned to. One frame fills the width and two share it, from
+   the same rule -- `grid-auto-flow: column` with equal tracks -- so switching
+   the end frame on is one picture arriving beside another rather than a layout
+   changing under the press. Thumbnails: a reminder of what is being sent, not
+   the thing being judged, which is the row's job. */
+.frames {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--space-8);
+}
+
 .frame {
+  margin: 0;
+  min-width: 0;
+}
+
+.image {
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: contain;
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface-sunken);
+}
+
+.frameCaption {
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
 }
 
 .field {

@@ -376,7 +376,7 @@ how long the words take to say.
   to the script, and it is refused here for the same reason. Numbers are never
   reused; the next is the highest ever issued for that scene plus one, so a row
   can read 1, 3, 4. A board written before this holds `videoIds`, where the
-  number *was* the position, and is read as such on the way in -- those were the
+  number _was_ the position, and is read as such on the way in -- those were the
   numbers that had been on screen. They are a grid under the pair,
   four across, each tile the clip's own poster as an `<img>` with a play badge
   -- not a `<video>`, because thirty-two rows each decoding a clip is a board
