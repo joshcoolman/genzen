@@ -53,6 +53,7 @@ export function StoryboardTab({
   onPronounce,
   onChooseModel,
   onRerun,
+  onSwap,
   onRetry,
   onFilm,
   onWatch,
@@ -73,6 +74,7 @@ export function StoryboardTab({
   onPronounce: () => void
   onChooseModel: (slug: string) => void
   onRerun: (scene: BoardScene) => void
+  onSwap: (scene: BoardScene) => void
   onRetry: (scene: BoardScene, which: 'opening' | 'closing') => void
   onFilm: (scene: BoardScene) => void
   onWatch: (takeId: string) => void
@@ -174,6 +176,7 @@ export function StoryboardTab({
             filming={generating.includes(scene.id)}
             retrying={retrying.includes(scene.id)}
             onRerun={onRerun}
+            onSwap={onSwap}
             onRetry={onRetry}
             onFilm={onFilm}
             onWatch={onWatch}

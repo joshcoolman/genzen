@@ -12,6 +12,7 @@ import {
   retryFrame,
   setBoardModel,
   setSpokenLine,
+  swapFrames,
 } from '../_actions/storyboard.action'
 import { RERUN_MODEL_SLUGS, lineToSpeak, scenesToClose } from './board'
 import type { RefAsset } from '../_actions/references.action'
@@ -175,6 +176,15 @@ export function useStoryboard(
     [run, sessionId],
   )
 
+  /** Turn the pair around. Nothing is generated and nothing is trashed, so it
+   *  is safe to press twice and see which way reads better. */
+  const swap = useCallback(
+    async (scene: BoardScene) => {
+      await run(() => swapFrames(sessionId, scene.id))
+    },
+    [run, sessionId],
+  )
+
   const pronounce = useCallback(async () => {
     if (pronouncing) return
     setPronouncing(true)
@@ -265,6 +275,7 @@ export function useStoryboard(
     pronouncing,
     pronounce,
     chooseModel,
+    swap,
     filming,
     setFilming,
     openFilm,

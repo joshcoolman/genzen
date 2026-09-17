@@ -1,6 +1,13 @@
 'use client'
 
-import { Film, Pencil, Play, RefreshCw, Trash2 } from 'lucide-react'
+import {
+  ArrowLeftRight,
+  Film,
+  Pencil,
+  Play,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react'
 import { useState } from 'react'
 import {
   frameState,
@@ -64,6 +71,7 @@ export function SceneRow({
   filming,
   retrying,
   onRerun,
+  onSwap,
   onRetry,
   onFilm,
   onWatch,
@@ -82,6 +90,7 @@ export function SceneRow({
   /** A frame of this row is being asked for again. */
   retrying: boolean
   onRerun: (scene: BoardScene) => void
+  onSwap: (scene: BoardScene) => void
   onRetry: (scene: BoardScene, which: 'opening' | 'closing') => void
   onFilm: (scene: BoardScene) => void
   onWatch: (takeId: string) => void
@@ -121,6 +130,21 @@ export function SceneRow({
         >
           Rerun with guidance
         </MiniButton>
+
+        {/* Turn the pair around. The planner's idea of which frame opens the
+            scene is a guess about a scene it never saw, and on a model that
+            pins the first frame it decides what the clip literally begins on.
+            Nothing is generated and nothing is trashed, so pressing it twice
+            costs nothing -- the prompts travel with the frames, or the clip
+            would be told to move toward the picture it started from. */}
+        {scene.openingId && scene.closingId && (
+          <MiniButton
+            icon={<ArrowLeftRight className={styles.icon} />}
+            onClick={() => onSwap(scene)}
+          >
+            Swap frames
+          </MiniButton>
+        )}
 
         {/* The row's second act (#697): the frames were the spec, this is the
             clip. The price is on the control, because the button is on every

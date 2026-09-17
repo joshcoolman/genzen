@@ -821,3 +821,38 @@ export async function setBoardModel(
     throw new Error('That model cannot generate a section.')
   return saveBoard(userId, session.id, session.board.scenes, { model: slug })
 }
+
+/**
+ * Swap which frame the scene opens on and which it ends on (#697).
+ *
+ * **The prompts swap with the frames**, or the board starts lying: the closing
+ * description is the account of where the shot ends up, and the section prompt
+ * sends it as "it moves toward this". Leave it behind and the clip is told to
+ * move toward the picture it started from.
+ *
+ * Its own press rather than a re-plan because the two frames are already drawn
+ * and paid for: the planner's idea of which is the opening is a guess about a
+ * scene it never saw, and on a model that pins the first frame it decides what
+ * the clip literally begins on. Reversible by pressing it again, which is the
+ * whole shape -- nothing is generated, nothing is trashed.
+ */
+export async function swapFrames(
+  sessionId: string,
+  sceneId: string,
+): Promise<Session> {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  const scene = session.board.scenes.find(
+    (s) => s.id === idSchema.parse(sceneId),
+  )
+  if (!scene) throw new Error('That scene is not in this session.')
+  if (!scene.openingId || !scene.closingId)
+    throw new Error('This scene needs both frames before they can be swapped.')
+
+  return updateBoardScene(userId, session.id, scene.id, {
+    openingId: scene.closingId,
+    closingId: scene.openingId,
+    openingPrompt: scene.closingPrompt,
+    closingPrompt: scene.openingPrompt,
+  })
+}

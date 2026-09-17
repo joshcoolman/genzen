@@ -307,6 +307,16 @@ story -- twelve images at 8c against $38.64 for one Kling O3 Pro pass over a
   rerun may pick one of the three reference-taking models, single choice rather
   than the derive's multi-select, because there is only ever one frame in this
   position.
+- **The pair can be turned around** (`swapFrames`), and **the prompts swap with
+  the frames** or the board starts lying: the closing description is the account
+  of where the shot ends up, and the section prompt sends it as "it moves toward
+  this" -- leave it behind and the clip is told to move toward the picture it
+  started from. Its own press rather than a re-plan because both frames are
+  already drawn and paid for, and the planner's idea of which one opens the
+  scene is a guess about a scene it never saw. On a model that pins the first
+  frame it decides what the clip literally begins on. Nothing is generated and
+  nothing is trashed, so pressing it twice costs nothing, which is the whole
+  shape of it.
 - **A failed frame can be asked for again** (`retryFrame`, #699), in place, same
   prompt and same references, with the failed row going to Trash. It used to be
   a dead end: the drain only picks up a scene whose `closingId` is null and a

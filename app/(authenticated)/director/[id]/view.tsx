@@ -131,6 +131,7 @@ export function View({
           onPronounce={() => void storyboard.pronounce()}
           onChooseModel={(slug) => void storyboard.chooseModel(slug)}
           onRerun={storyboard.openRerun}
+          onSwap={(scene) => void storyboard.swap(scene)}
           onRetry={(scene, which) => void storyboard.retry(scene, which)}
           onFilm={storyboard.openFilm}
           onWatch={storyboard.setWatching}
