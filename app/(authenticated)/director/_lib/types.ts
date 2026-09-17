@@ -242,9 +242,10 @@ export function parseBoard(value: unknown): StoredBoard {
 
 /** Every image a storyboard has made, for the trash that follows a session. */
 export function boardImageIds(board: StoredBoard): Array<string> {
-  return board.scenes.flatMap((scene) =>
-    [scene.openingId, scene.closingId].filter(
+  return board.scenes.flatMap((scene) => [
+    ...[scene.openingId, scene.closingId].filter(
       (id): id is string => id !== null,
     ),
-  )
+    ...scene.videoIds,
+  ])
 }

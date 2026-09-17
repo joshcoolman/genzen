@@ -20,7 +20,7 @@ import {
   updateBoardScene,
 } from '../_lib/sessions.server'
 import { planStoryboard } from '../_lib/storyboard.server'
-import { idSchema } from '../_lib/types'
+import { boardImageIds, idSchema } from '../_lib/types'
 import {
   generateVideo,
   listVideos,
@@ -72,11 +72,15 @@ export async function listBoardFrames(
 ): Promise<Record<string, RefAsset>> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
-  const ids = session.board.scenes.flatMap((scene) =>
-    [scene.openingId, scene.closingId].filter(
-      (id): id is string => id !== null,
-    ),
-  )
+  /* `boardImageIds`, not a flatMap written again here. The takes have to be in
+     this list -- the tab reads every tile's state off it, and `frameState`
+     treats an id it cannot find as one still being made, so a take left out
+     renders as "working" for ever whatever it actually did. That is exactly
+     what happened: this function kept its own copy of "every row the board
+     owns", the copy was not updated when takes were added, and a finished take
+     and a missing one looked identical on screen. One definition now, shared
+     with the trash sweep. */
+  const ids = boardImageIds(session.board)
   if (ids.length === 0) return {}
   const rows = await sql<Array<RefAsset>>`
     select id, title, description, status, generation_error,
@@ -207,11 +211,7 @@ export async function createStoryboard(sessionId: string): Promise<Session> {
     }
   })
 
-  const previous = session.board.scenes.flatMap((scene) =>
-    [scene.openingId, scene.closingId].filter(
-      (id): id is string => id !== null,
-    ),
-  )
+  const previous = boardImageIds(session.board)
   const saved = await saveBoard(userId, session.id, withFrames)
   if (previous.length > 0) await trashSessionClips(userId, previous)
   if (withFrames.every((scene) => scene.openingId === null)) {
