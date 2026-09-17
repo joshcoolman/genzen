@@ -266,12 +266,13 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — build **#690, Extract references**: an "Extract references"
-button on a Director session that produces one 16:9 sheet per primary
-character or object and one clean plate per environment from the session's
-clips, filed as an image group named after the session. The issue is the
-spec, including the code seams; #689 is the larger pass it is phase one of,
-and is not being built.
+**Focus** — build **#690, Extract references**: Characters and Locations
+tabs on a Director session (chat or run) that extract one 16:9 sheet per
+primary character or key object and one per location from the session's
+clips, isolated from Images the way the clips are from Video, living and
+dying with the session, each sheet regenerable with guidance. The issue is
+the spec, including the code seams; #689 is the larger pass it is phase one
+of, and is not being built.
 
 Also outstanding, and independent: the **deployed** database still holds the old
 Director's rows and bucket objects. Run `node scripts/purge-director.mjs --yes`
