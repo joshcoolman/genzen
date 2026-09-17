@@ -198,6 +198,15 @@ async function storeFrame({
  * One download per clip, three seeks off it. The bytes come back with the rows
  * because the inventory needs to look at them and downloading them again from
  * the bucket to do so would be a round trip for something already in hand.
+ *
+ * **One position failing is tolerated; every position failing is not.** A clip
+ * that will not decode at 50% is a still missing from the inventory, and the
+ * rest of the film still describes itself -- so the loop catches and carries
+ * on. But the same catch swallows a bucket that cannot be reached or an ffmpeg
+ * that is not there, and an empty result then reaches the caller as "no
+ * finished clips", which sends you to look at the run when the run was never
+ * the problem. So the last reason is kept and thrown when nothing at all came
+ * back off clips that do exist.
  */
 export async function collectSessionFrames(
   userId: string,
@@ -212,6 +221,7 @@ export async function collectSessionFrames(
     clips.map((clip) => clip.id),
   )
   const frames: Array<SessionFrame> = []
+  let failure: unknown = null
 
   for (const clip of clips) {
     const duration = requestedDuration(clip)
@@ -260,12 +270,19 @@ export async function collectSessionFrames(
           timeSeconds: time,
           bytes: Buffer.from(frame.base64, 'base64'),
         })
-      } catch {
-        // One unreadable position is a still missing from the inventory, not a
-        // failed extraction: the other frames of this clip and every other
-        // clip still describe the film.
+      } catch (cause) {
+        // Kept rather than discarded: see the note above. The last one wins,
+        // and it is only ever read when every position failed, where they are
+        // all the same reason anyway.
+        failure = cause
       }
     }
+  }
+
+  if (frames.length === 0 && failure) {
+    throw failure instanceof Error
+      ? failure
+      : new Error('No stills could be read out of these clips.')
   }
 
   return frames
@@ -284,9 +301,13 @@ const inventorySchema = z.object({
     z.object({
       name: z.string().min(1),
       description: z.string().min(1),
-      // No length constraints on the array: Anthropic's native output format
-      // rejects them, so the count is clamped below instead.
-      frames: z.array(z.number().int()),
+      // **Plain numbers, and no length constraint on the array.** Anthropic's
+      // native output format rejects both -- an array's `minItems`/`maxItems`,
+      // and the `minimum`/`maximum` that Zod emits for `.int()` from the safe
+      // integer range. The request fails outright with "For 'integer' type,
+      // properties maximum, minimum are not supported", so the shape is a bare
+      // number and both the count and the rounding are done below.
+      frames: z.array(z.number()),
     }),
   ),
 })
@@ -361,7 +382,7 @@ export async function inventory({
     const frameIds = [
       ...new Set(
         element.frames
-          .map((n) => frames[n - 1]?.imageId)
+          .map((n) => frames[Math.round(n) - 1]?.imageId)
           .filter((id): id is string => !!id),
       ),
     ].slice(0, MAX_FRAMES_PER_ELEMENT)
