@@ -86,13 +86,24 @@
   height: 100%;
 }
 
-.failed,
+.failed {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-8);
+  padding: var(--space-12);
+}
+
+.failedText,
 .waiting {
   margin: 0;
   padding: var(--space-12);
   text-align: center;
   font-size: var(--text-sm);
   color: var(--text-muted);
+}
+
+.failedText {
+  padding: 0;
 }
 
 .caption {
@@ -117,4 +128,12 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* The provider's own text under the plain sentence: readable, clamped, and
+   visibly secondary to it. */
+.reason {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-align: center;
 }

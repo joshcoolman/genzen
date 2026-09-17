@@ -7,6 +7,7 @@ import {
   createStoryboard,
   generateSectionVideo,
   rerunScene,
+  retryFrame,
 } from '../_actions/storyboard.action'
 import { RERUN_MODEL_SLUGS, scenesToClose } from './board'
 import type { RefAsset } from '../_actions/references.action'
@@ -49,6 +50,8 @@ export function useStoryboard(
   const [watching, setWatching] = useState<string | null>(null)
   /** Which rows have a section in flight, so two presses are not two takes. */
   const [generating, setGenerating] = useState<Array<string>>([])
+  /** Which rows are asking for a failed frame again. */
+  const [retrying, setRetrying] = useState<Array<string>>([])
   const [words, setWords] = useState('')
   const [model, setModel] = useState<string>(RERUN_MODEL_SLUGS[0])
   const [submitting, setSubmitting] = useState(false)
@@ -124,6 +127,24 @@ export function useStoryboard(
     })()
   }, [run, sessionId, waiting])
 
+  /**
+   * Ask again for one failed frame (#699).
+   *
+   * **The drain's guard has to forget the scene**, or a retried closing frame
+   * that lands would never be followed up -- and a retried *opening* has to be
+   * forgotten too, since its closing is about to become derivable again.
+   */
+  const retry = useCallback(
+    async (scene: BoardScene, which: 'opening' | 'closing') => {
+      if (retrying.includes(scene.id)) return
+      setRetrying((current) => [...current, scene.id])
+      const ok = await run(() => retryFrame(sessionId, scene.id, which))
+      setRetrying((current) => current.filter((id) => id !== scene.id))
+      if (ok) asked.current.delete(scene.id)
+    },
+    [retrying, run, sessionId],
+  )
+
   const openRerun = useCallback((scene: BoardScene) => {
     setRerunning(scene)
     setWords('')
@@ -187,6 +208,8 @@ export function useStoryboard(
     openFilm,
     film,
     generating,
+    retry,
+    retrying,
     watching,
     setWatching,
     watchingLabel,

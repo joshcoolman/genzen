@@ -157,6 +157,7 @@ export function assembleScenes({
         openingPrompt: scene.opening.trim().slice(0, 4000),
         closingPrompt: scene.closing.trim().slice(0, 4000),
         guidance: null,
+        model: null,
         openingId: null,
         closingId: null,
         videoIds: [],

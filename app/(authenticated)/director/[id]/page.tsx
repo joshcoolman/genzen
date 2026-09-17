@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation'
 import { getSession } from '../_lib/sessions.server'
 import { listSessionRefs } from '../_actions/references.action'
-import { listBoardFrames } from '../_actions/storyboard.action'
+import {
+  listBoardFrames,
+  settleBoardTakes,
+} from '../_actions/storyboard.action'
 import { listVideos } from '../../video/_actions/generate-video.action'
 import { View } from './view'
 import { resolveAuth } from '#/lib/server/auth.server'
@@ -27,6 +30,10 @@ export default async function SessionPage({
      assets are library rows like the clips are, and every change to them ends
      in a `router.refresh()` that comes back through this function (#690). The
      board itself is a column on the session row and arrives with it. */
+  /* Before the frames are read, not beside them: a take that finished while
+     nobody was looking should be a picture on this render rather than on the
+     next one (#697). */
+  await settleBoardTakes(session.id)
   const [clips, refs, frames] = await Promise.all([
     listVideos('director'),
     listSessionRefs(session.id),

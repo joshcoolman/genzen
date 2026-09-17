@@ -4,6 +4,7 @@ import { SceneRow } from '../scene-row/scene-row'
 import { FRAME_MODEL_SLUG, boardVideoCostCents } from '../../board'
 import styles from './storyboard-tab.module.css'
 import type { FrameStatus } from '../../use-storyboard'
+import type { RefAsset } from '../../../_actions/references.action'
 import type { BoardScene, StoredBoard } from '../../../_lib/types'
 import { Button, CostNote, EmptyState } from '#/components'
 import { estimateImageCostCents } from '#/features/ai-images/models'
@@ -32,20 +33,27 @@ import { formatCost } from '#/features/video/models'
 export function StoryboardTab({
   board,
   status,
+  frames,
   busy,
   generating,
+  retrying,
   onCreate,
   onRerun,
+  onRetry,
   onFilm,
   onWatch,
 }: {
   board: StoredBoard
   status: FrameStatus
+  frames: Record<string, RefAsset>
   busy: boolean
   /** The rows with a section in flight. */
   generating: Array<string>
+  /** The rows asking for a failed frame again. */
+  retrying: Array<string>
   onCreate: () => void
   onRerun: (scene: BoardScene) => void
+  onRetry: (scene: BoardScene, which: 'opening' | 'closing') => void
   onFilm: (scene: BoardScene) => void
   onWatch: (takeId: string) => void
 }) {
@@ -103,8 +111,11 @@ export function StoryboardTab({
             key={scene.id}
             scene={scene}
             status={status}
+            frames={frames}
             filming={generating.includes(scene.id)}
+            retrying={retrying.includes(scene.id)}
             onRerun={onRerun}
+            onRetry={onRetry}
             onFilm={onFilm}
             onWatch={onWatch}
           />

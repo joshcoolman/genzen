@@ -46,6 +46,12 @@ are stacked one under another. So:
   has got to in the argument -- not the same person in the same chair for the
   length of the film.
 
+**Name no film, no brand, no work and no real person in a frame description,
+whatever the script is about.** A script that discusses a film still gets frames
+that describe a room: the man, his coat, the rain on the window. The line says
+what it says -- it is speech, not art direction -- and the picture describes
+what is in front of the camera and nothing it is referring to.
+
 Describe only what is in the frame. No camera jargon standing in for a picture,
 no captions, no shot numbers, no titles, no speech bubbles, and never the
 dialogue as printed text. Do not describe the medium or the style: the frames

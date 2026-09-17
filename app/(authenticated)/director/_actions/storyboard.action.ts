@@ -33,8 +33,10 @@ import openFramePrompt from '#/lib/prompts/director-frame-open.md'
 import sectionPrompt from '#/lib/prompts/director-section.md'
 import { generateImageInternal } from '#/features/ai-images/server/generate-image-internal.server'
 import { updateImageMeta } from '#/features/user-images/server/images.action'
+import { fal } from '#/lib/server/fal-client.server'
+import { processVideoResult } from '#/lib/server/fal-completion.server'
 import { resolveAuth } from '#/lib/server/auth.server'
-import { sql } from '#/lib/server/db.server'
+import { first, sql } from '#/lib/server/db.server'
 
 /**
  * The storyboard tab (#695): a first and last frame for every scene, before any
@@ -294,7 +296,9 @@ export async function rerunScene(
     userId,
     session.id,
     scene.id,
-    { openingId, closingId: null, guidance: asked },
+    /* The model travels with the scene so a later Retry repairs the pair with
+       the hand that drew it (#699). */
+    { openingId, closingId: null, guidance: asked, model: modelSlug },
     [scene.openingId, scene.closingId].filter(
       (id): id is string => id !== null,
     ),
@@ -381,4 +385,161 @@ export async function generateSectionVideo(
   return updateBoardScene(userId, session.id, scene.id, {
     videoIds: [...scene.videoIds, recordId],
   })
+}
+
+/**
+ * Retry one failed frame, in place (#699).
+ *
+ * **Not a re-plan and not a re-run.** Nothing about the scene changes: the same
+ * prompt, the same references, the same position, asked again. The failed row
+ * goes to Trash the way a re-rolled clip's does.
+ *
+ * It exists because a failed frame was otherwise a dead end. The drain only
+ * picks up a scene whose `closingId` is null, and a failed row's id is stored
+ * like a good one -- so a scene that lost half its pair stayed half-drawn, and
+ * the only repair on offer was Rerun with guidance, which replaces the pair and
+ * throws away an opening frame that was never the problem.
+ *
+ * **The likeliest cause of a failure here is not the prompt.** Nano Banana 2
+ * answers every failed generation with one catch-all that leads with "unsafe
+ * content" and goes on to list a media-type mismatch, a missing attachment and
+ * "other cases" -- so a transient miss accuses itself of moderation. Asking
+ * again is the honest first move, which is the other half of why this is a
+ * button and not an edit.
+ */
+export async function retryFrame(
+  sessionId: string,
+  sceneId: string,
+  which: 'opening' | 'closing',
+): Promise<Session> {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  const scene = session.board.scenes.find(
+    (s) => s.id === idSchema.parse(sceneId),
+  )
+  if (!scene) throw new Error('That scene is not in this session.')
+
+  const failedId = which === 'opening' ? scene.openingId : scene.closingId
+  if (!failedId) throw new Error('There is nothing to retry on that frame.')
+  /* Checked against the row rather than taken from the caller: a retry of a
+     frame that is merely slow would trash a generation still being paid for. */
+  const row = first(
+    await sql<Array<{ status: string }>>`
+      select status from user_images
+      where id = ${failedId} and user_id = ${userId}
+        and origin = 'director' and deleted_at is null
+    `,
+  )
+  if (!row || row.status !== 'failed')
+    throw new Error('That frame has not failed, so there is nothing to retry.')
+
+  const model = scene.model ?? FRAME_MODEL_SLUG
+  if (which === 'closing') {
+    if (!scene.openingId)
+      throw new Error('This scene has no opening frame to derive from.')
+    const closingId = await submitFrame({
+      instruction: closeFramePrompt,
+      scene,
+      words: scene.closingPrompt,
+      referenceImageIds: closingReferenceIds(scene, scene.openingId),
+      model,
+      label: 'Closing',
+    })
+    return updateBoardScene(userId, session.id, scene.id, { closingId }, [
+      failedId,
+    ])
+  }
+
+  const openingId = await submitFrame({
+    instruction: openFramePrompt,
+    scene,
+    words: scene.guidance
+      ? `${scene.openingPrompt}\n\n${scene.guidance}`
+      : scene.openingPrompt,
+    referenceImageIds: sceneReferenceIds(scene),
+    model,
+    label: 'Opening',
+  })
+  /* The closing is left alone. A closing frame is derived from a *completed*
+     opening, so a scene whose opening failed has none -- and where one somehow
+     exists it was drawn from a frame that worked, which this retry is not
+     replacing. */
+  return updateBoardScene(userId, session.id, scene.id, { openingId }, [
+    failedId,
+  ])
+}
+
+/**
+ * Ask FAL about this board's pending takes, on the server, when the page loads.
+ *
+ * **Because a section outlives the tab that asked for it.** Every other
+ * generation in the app settles on the browser's poll, and that works because
+ * an image takes twenty seconds -- you are still looking at it. A section takes
+ * four to eight minutes (fal's own p50 is 250s), so the honest thing to do
+ * while waiting is go and look at something else, and a hidden tab stops
+ * polling. Two takes sat finished at FAL and pending here for twenty-two
+ * minutes on the day this was built, with every server-side step working. The
+ * board was simply never asked.
+ *
+ * So coming back to the page is enough, always. The client poll stays -- it is
+ * what settles a take while you *are* watching -- and this is what makes its
+ * absence survivable rather than permanent.
+ *
+ * Bounded by `MAX_SETTLE_PER_LOAD`: a finished take is a download and a poster
+ * before the page can render, and a page that waits on eight of them is a page
+ * that feels broken in a different way. The rest settle on the next load or on
+ * the poll.
+ */
+const MAX_SETTLE_PER_LOAD = 4
+
+export async function settleBoardTakes(sessionId: string): Promise<void> {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  const takeIds = session.board.scenes.flatMap((scene) => scene.videoIds)
+  if (takeIds.length === 0) return
+
+  const pending = await sql<
+    Array<{
+      id: string
+      request_id: string | null
+      fal_model_id: string | null
+    }>
+  >`
+    select id, request_id,
+           generation_metadata->>'fal_model_id' as fal_model_id
+    from user_images
+    where user_id = ${userId}
+      and id = any(${takeIds})
+      and origin = 'director'
+      and status = 'pending'
+      and request_id is not null
+      and deleted_at is null
+    order by created_at
+    limit ${MAX_SETTLE_PER_LOAD}
+  `
+
+  await Promise.all(
+    pending.map(async (row) => {
+      if (!row.fal_model_id || !row.request_id) return
+      try {
+        const status = await fal.queue.status(row.fal_model_id, {
+          requestId: row.request_id,
+          logs: false,
+        })
+        /* Only the finished ones. A take still in the queue is left exactly as
+           it is -- deciding it has failed is the poll's job, which owns the
+           deadline and the error blob, and duplicating that here would be two
+           places disagreeing about when to give up. */
+        if (status.status !== 'COMPLETED') return
+        const result = (await fal.queue.result(row.fal_model_id, {
+          requestId: row.request_id,
+        })) as { data: Record<string, unknown> }
+        await processVideoResult(row.id, userId, result.data)
+      } catch {
+        /* A page load is not the place to surface a transient FAL error: the
+           take stays pending, the poll tries again, and the row still says it
+           is working -- which is true. */
+      }
+    }),
+  )
 }

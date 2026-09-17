@@ -128,6 +128,7 @@ function scene(over: Partial<BoardScene> = {}): BoardScene {
     openingPrompt: 'a',
     closingPrompt: 'b',
     guidance: null,
+    model: null,
     openingId: null,
     closingId: null,
     videoIds: [],

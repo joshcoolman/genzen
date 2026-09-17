@@ -122,10 +122,13 @@ export function View({
         <StoryboardTab
           board={session.board}
           status={storyboard.status}
+          frames={frames}
           busy={storyboard.creating}
           generating={storyboard.generating}
+          retrying={storyboard.retrying}
           onCreate={() => void storyboard.create()}
           onRerun={storyboard.openRerun}
+          onRetry={(scene, which) => void storyboard.retry(scene, which)}
           onFilm={storyboard.openFilm}
           onWatch={storyboard.setWatching}
         />
