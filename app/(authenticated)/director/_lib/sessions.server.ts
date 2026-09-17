@@ -1,16 +1,20 @@
 import 'server-only'
 import { randomUUID } from 'node:crypto'
 import {
+  boardImageIds,
+  boardSceneSchema,
   chatTurnSchema,
   emptyChat,
   emptyRun,
   idSchema,
   nameSchema,
+  parseBoard,
   parseChat,
   parseRefs,
   parseRun,
 } from './types'
 import type {
+  BoardScene,
   ChatTurn,
   RefKind,
   Session,
@@ -34,7 +38,7 @@ export async function getSession(
   if (!idSchema.safeParse(id).success) return null
   const row = first(
     await sql<Array<Session>>`
-    select id, name, revision, cut, chat, refs, to_json(updated_at)#>>'{}' as updated_at
+    select id, name, revision, cut, chat, refs, board, to_json(updated_at)#>>'{}' as updated_at
     from director_sessions where id = ${id} and user_id = ${owner}
   `,
   )
@@ -44,6 +48,7 @@ export async function getSession(
         cut: parseRun(row.cut),
         chat: parseChat(row.chat),
         refs: parseRefs(row.refs),
+        board: parseBoard(row.board),
       }
     : null
 }
@@ -355,6 +360,68 @@ export async function deleteSession(owner: string, id: string) {
     ...session.refs.characters,
     ...session.refs.locations,
     ...session.refs.frames,
+    ...boardImageIds(session.board),
   ])
   await sql`delete from director_sessions where id = ${id} and user_id = ${owner}`
+}
+
+/**
+ * Write a session's storyboard (#695).
+ *
+ * Whole-column, because Create storyboard plans every scene in one call and a
+ * half-written board is a story with a hole in it. Unchecked revision, on
+ * `appendChatTurn`'s reasoning: the frames are generations this server has
+ * already reserved and paid for.
+ */
+export async function saveBoard(
+  owner: string,
+  id: string,
+  scenes: Array<BoardScene>,
+): Promise<Session> {
+  await requireSession(owner, id)
+  const board = {
+    version: 1 as const,
+    scenes: scenes.map((scene) => boardSceneSchema.parse(scene)),
+  }
+  await sql`
+    update director_sessions
+    set board = ${jsonb(board)}, revision = revision + 1, updated_at = now()
+    where id = ${id} and user_id = ${owner}
+  `
+  return requireSession(owner, id)
+}
+
+/**
+ * Change one scene, leaving the rest of the board where it is.
+ *
+ * Read-modify-write on one column, as every other writer here is: a scene is
+ * closed by the drain and re-run by hand, and both only ever touch their own
+ * row. `trash` is what the change replaced -- a re-run's old pair -- and goes
+ * to Trash in the same call, so a board never points at a row nothing will
+ * restore.
+ */
+export async function updateBoardScene(
+  owner: string,
+  id: string,
+  sceneId: string,
+  change: Partial<Omit<BoardScene, 'id' | 'number'>>,
+  trash: Array<string> = [],
+): Promise<Session> {
+  const session = await requireSession(owner, id)
+  idSchema.parse(sceneId)
+  if (!session.board.scenes.some((scene) => scene.id === sceneId))
+    throw new Error('That scene is not in this session.')
+  const scenes = session.board.scenes.map((scene) =>
+    scene.id === sceneId
+      ? boardSceneSchema.parse({ ...scene, ...change })
+      : scene,
+  )
+  await sql`
+    update director_sessions
+    set board = ${jsonb({ version: 1 as const, scenes })},
+      revision = revision + 1, updated_at = now()
+    where id = ${id} and user_id = ${owner}
+  `
+  if (trash.length > 0) await trashSessionClips(owner, trash)
+  return requireSession(owner, id)
 }

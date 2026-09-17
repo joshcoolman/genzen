@@ -25,6 +25,7 @@ export function SessionTabs({
   onChange,
   counts,
   script,
+  storyboard,
 }: {
   tab: SessionTab
   onChange: (tab: SessionTab) => void
@@ -33,6 +34,11 @@ export function SessionTabs({
    *  hand and carry no line to find, so it gets no Script tab rather than an
    *  empty one (#690). */
   script: boolean
+  /** Whether there is anything to storyboard: a script, one character sheet
+   *  and one location sheet. Before all three there is nothing to build from,
+   *  and a tab whose only answer is "not yet" is a question the page should
+   *  not be asking (#695). */
+  storyboard: boolean
 }) {
   return (
     <nav className={styles.tabs} aria-label="Session">
@@ -52,6 +58,12 @@ export function SessionTabs({
           count={counts[kind]}
         />
       ))}
+      {/* After the sheets, because it is made out of them: the script and the
+          two reference tabs are its inputs, and reading left to right is the
+          order the work is done in. */}
+      {storyboard && (
+        <Tab id="storyboard" tab={tab} onChange={onChange} label="Storyboard" />
+      )}
     </nav>
   )
 }

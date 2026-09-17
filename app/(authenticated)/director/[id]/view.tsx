@@ -5,6 +5,8 @@ import { SessionHeading } from '../_components/session-heading/session-heading'
 import { ChatPanel } from './_components/chat-panel/chat-panel'
 import { DeriveDialog } from './_components/derive-dialog/derive-dialog'
 import { ReferenceTab } from './_components/reference-tab/reference-tab'
+import { RerunDialog } from './_components/rerun-dialog/rerun-dialog'
+import { StoryboardTab } from './_components/storyboard-tab/storyboard-tab'
 import { ScriptTab } from './_components/script-tab/script-tab'
 import { SessionTabs } from './_components/session-tabs/session-tabs'
 import { ClipRow } from './_components/clip-row/clip-row'
@@ -16,6 +18,7 @@ import { ScriptDialog } from './_components/script-dialog/script-dialog'
 import { SequencePlayer } from './_components/sequence-player/sequence-player'
 import { dialogueOf } from './script'
 import { useReferences } from './use-references'
+import { useStoryboard } from './use-storyboard'
 import { useView } from './use-view'
 import styles from './view.module.css'
 import type { SequencePlayerHandle } from './_components/sequence-player/sequence-player'
@@ -41,13 +44,23 @@ export function View({
   session,
   clips,
   refs,
+  frames,
 }: {
   session: Session
   clips: Array<VideoRecord>
   refs: Record<RefKind, Array<RefAsset>>
+  /** The storyboard's frames, by row id (#695). */
+  frames: Record<string, RefAsset>
 }) {
   const view = useView(session, clips)
   const references = useReferences(session.id, refs)
+  const storyboard = useStoryboard(session.id, session.board, frames)
+  /* A storyboard is planned from a script and drawn from the sheets, so all
+     three have to exist before the tab is worth offering (#695). */
+  const canStoryboard =
+    view.chat !== null &&
+    refs.characters.length > 0 &&
+    refs.locations.length > 0
   /** Which reference tab is showing, or null for Work and Script. */
   const kind: RefKind | null =
     references.tab === 'characters' || references.tab === 'locations'
@@ -88,6 +101,7 @@ export function View({
               characters: refs.characters.length,
               locations: refs.locations.length,
             }}
+            storyboard={canStoryboard}
           />
         )}
       </SessionHeading>
@@ -100,6 +114,16 @@ export function View({
       {references.tab === 'script' ? (
         /* The run's dialogue, read off the clips in the order they play. */
         <ScriptTab lines={dialogueOf(view.picked)} />
+      ) : references.tab === 'storyboard' ? (
+        /* The same script as frames: what each scene opens on and ends on,
+           before any video exists (#695). */
+        <StoryboardTab
+          board={session.board}
+          status={storyboard.status}
+          busy={storyboard.creating}
+          onCreate={() => void storyboard.create()}
+          onRerun={storyboard.openRerun}
+        />
       ) : kind !== null ? (
         <ReferenceTab
           kind={kind}
@@ -237,6 +261,20 @@ export function View({
         onSubmit={() => void references.derive()}
         onOpenChange={(open) => {
           if (!open) references.setDeriving(null)
+        }}
+      />
+
+      {/* Rerun with guidance: this scene's pair, made again (#695). */}
+      <RerunDialog
+        scene={storyboard.rerunning}
+        words={storyboard.words}
+        onWordsChange={storyboard.setWords}
+        model={storyboard.model}
+        onModelChange={storyboard.setModel}
+        busy={storyboard.submitting}
+        onSubmit={() => void storyboard.rerun()}
+        onOpenChange={(open) => {
+          if (!open) storyboard.setRerunning(null)
         }}
       />
 

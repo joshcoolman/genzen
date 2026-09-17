@@ -1,0 +1,30 @@
+.content {
+  max-width: 34rem;
+  display: grid;
+  gap: var(--space-12);
+}
+
+/* The frame this scene opens on today, so what you are typing about is on
+   screen. The thumbnail, not the full object: it is a reminder, not the thing
+   being judged. */
+.frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+}
+
+.models {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+}

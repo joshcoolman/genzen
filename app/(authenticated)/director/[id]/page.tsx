@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getSession } from '../_lib/sessions.server'
 import { listSessionRefs } from '../_actions/references.action'
+import { listBoardFrames } from '../_actions/storyboard.action'
 import { listVideos } from '../../video/_actions/generate-video.action'
 import { View } from './view'
 import { resolveAuth } from '#/lib/server/auth.server'
@@ -22,12 +23,22 @@ export default async function SessionPage({
   const { userId } = await resolveAuth()
   const session = await getSession(userId, (await params).id)
   if (!session) notFound()
-  /* The clips and the sheets, both read here: a tab's assets are library rows
-     like the clips are, and every change to them ends in a `router.refresh()`
-     that comes back through this function (#690). */
-  const [clips, refs] = await Promise.all([
+  /* The clips, the sheets and the storyboard's frames, all read here: a tab's
+     assets are library rows like the clips are, and every change to them ends
+     in a `router.refresh()` that comes back through this function (#690). The
+     board itself is a column on the session row and arrives with it. */
+  const [clips, refs, frames] = await Promise.all([
     listVideos('director'),
     listSessionRefs(session.id),
+    listBoardFrames(session.id),
   ])
-  return <View key={session.id} session={session} clips={clips} refs={refs} />
+  return (
+    <View
+      key={session.id}
+      session={session}
+      clips={clips}
+      refs={refs}
+      frames={frames}
+    />
+  )
 }

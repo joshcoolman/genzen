@@ -1,0 +1,154 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  closeScene,
+  createStoryboard,
+  rerunScene,
+} from '../_actions/storyboard.action'
+import { RERUN_MODEL_SLUGS, scenesToClose } from './board'
+import type { RefAsset } from '../_actions/references.action'
+import type { BoardScene, StoredBoard } from '../_lib/types'
+import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
+import { useReportError } from '#/components'
+
+/** What a frame is doing, keyed by row id -- what the rows draw and what the
+ *  drain reads. */
+export type FrameStatus = Record<string, 'pending' | 'completed' | 'failed'>
+
+/**
+ * The Storyboard tab (#695).
+ *
+ * **The frames are props, never state**, on `use-references`' reasoning: they
+ * are library rows the page reads, so every change ends in `router.refresh()`
+ * and the server hands back what is actually there. The board itself is a
+ * prop too -- it is a column on the session row, and the page re-reads it.
+ *
+ * What this adds over the reference tabs is the **drain**. A closing frame is
+ * generated from its scene's opening frame, and a reference is bytes out of the
+ * bucket, so nothing can be derived from a row FAL has not answered for yet.
+ * Create storyboard submits the openings; this watches them land and asks for
+ * each closing in turn -- one at a time and in scene order, because the board
+ * is a sequence and filling it from the top is how it is read.
+ */
+export function useStoryboard(
+  sessionId: string,
+  board: StoredBoard,
+  frames: Record<string, RefAsset>,
+) {
+  const router = useRouter()
+  const report = useReportError()
+  const [creating, setCreating] = useState(false)
+  /** The scene the re-run dialog is open on, or null. */
+  const [rerunning, setRerunning] = useState<BoardScene | null>(null)
+  const [words, setWords] = useState('')
+  const [model, setModel] = useState<string>(RERUN_MODEL_SLUGS[0])
+  const [submitting, setSubmitting] = useState(false)
+
+  const status: FrameStatus = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.values(frames).map((frame) => [frame.id, frame.status]),
+      ),
+    [frames],
+  )
+
+  const pendingSince = useMemo(() => {
+    const pending = Object.values(frames)
+      .filter((frame) => frame.status === 'pending')
+      .map((frame) => frame.created_at)
+      .sort()
+    return pending[0] ?? null
+  }, [frames])
+  useGenerationPoll(pendingSince, () => router.refresh())
+
+  const run = useCallback(
+    async (work: () => Promise<unknown>) => {
+      try {
+        await work()
+        router.refresh()
+        return true
+      } catch (cause) {
+        /* Through `useReportError`, which opens the key dialog when the reason
+           is a missing Anthropic key -- the planner is a Claude call and that
+           key is usually empty locally. */
+        report(cause, 'That did not work.')
+        return false
+      }
+    },
+    [report, router],
+  )
+
+  const create = useCallback(async () => {
+    if (creating) return
+    setCreating(true)
+    await run(() => createStoryboard(sessionId))
+    setCreating(false)
+  }, [creating, run, sessionId])
+
+  /**
+   * The drain: one closing frame at a time, as the openings land.
+   *
+   * Guarded by a ref of scenes already asked for, not by the board alone --
+   * the closing id is not on the board until the action returns, and the poll
+   * refreshes the page underneath it. Without the guard a scene whose opening
+   * settled would be submitted again on the next render, which is a second 8c
+   * frame for nothing.
+   */
+  const asked = useRef(new Set<string>())
+  const closing = useRef(false)
+  const waiting = useMemo(
+    () => scenesToClose(board.scenes, status),
+    [board.scenes, status],
+  )
+  useEffect(() => {
+    const next = waiting.find((scene) => !asked.current.has(scene.id))
+    if (!next || closing.current) return
+    closing.current = true
+    asked.current.add(next.id)
+    void (async () => {
+      const ok = await run(() => closeScene(sessionId, next.id))
+      /* A failed submit is forgotten, so the next refresh tries the scene
+         again rather than leaving the board a frame short with nothing saying
+         why. */
+      if (!ok) asked.current.delete(next.id)
+      closing.current = false
+    })()
+  }, [run, sessionId, waiting])
+
+  const openRerun = useCallback((scene: BoardScene) => {
+    setRerunning(scene)
+    setWords('')
+  }, [])
+
+  const rerun = useCallback(async () => {
+    if (!rerunning || submitting) return
+    setSubmitting(true)
+    const ok = await run(() =>
+      rerunScene(sessionId, rerunning.id, words, model),
+    )
+    setSubmitting(false)
+    /* The scene is going to be asked for again the moment its new opening
+       lands, so the guard has to forget it. */
+    if (ok) {
+      asked.current.delete(rerunning.id)
+      setRerunning(null)
+    }
+  }, [model, rerunning, run, sessionId, submitting, words])
+
+  return {
+    status,
+    creating,
+    create,
+    rerunning,
+    setRerunning,
+    words,
+    setWords,
+    model,
+    setModel,
+    submitting,
+    rerun,
+    openRerun,
+  }
+}
