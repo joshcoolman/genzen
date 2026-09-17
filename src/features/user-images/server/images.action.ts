@@ -34,6 +34,10 @@ export async function listImages(
     where user_id = ${userId}
       and source in ('upload', 'ai_generated')
       and deleted_at is null
+      -- Director's own assets are never offered as library images (#690); see
+      -- listGalleryImages. This is the list the pickers read, so without it a
+      -- session's sheets would show up as references on Canvas and Images.
+      and origin <> 'director'
       ${
         pattern
           ? sql`and (title ilike ${pattern} or description ilike ${pattern})`

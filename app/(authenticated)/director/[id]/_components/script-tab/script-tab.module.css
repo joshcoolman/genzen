@@ -1,0 +1,77 @@
+/* A column of dialogue, read top to bottom. Narrow on purpose: a line of
+   speech at the full width of a desktop grid is a 150-character measure, and
+   the one thing this view has to do is read. */
+.tab {
+  display: grid;
+  gap: var(--space-16);
+  max-width: 44rem;
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-16);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.count {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin-right: auto;
+}
+
+.script {
+  display: grid;
+  gap: var(--space-16);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* The number in its own column so the speech lines up down the page whether
+   the clip is 1 or 17 -- a hanging indent, the way a script is set. */
+.line {
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  gap: var(--space-12);
+  align-items: baseline;
+}
+
+.number {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.spoken {
+  line-height: var(--text-base-leading);
+}
+
+.silent {
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: var(--text-base-leading);
+}
+
+/* A third column for the seconds, so the numbers stack down the right edge and
+   the measure of the speech is unchanged by them. */
+.line {
+  grid-template-columns: 2rem 1fr 3rem;
+}
+
+.seconds {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.total {
+  font-variant-numeric: tabular-nums;
+}

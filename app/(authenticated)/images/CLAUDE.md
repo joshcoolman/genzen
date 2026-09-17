@@ -450,7 +450,7 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   detail to tune. The hidden zones failed the same way: a target that reveals
   its chevron only once you are inside it confirms rather than affords.
   `_components/experiment/` is deleted; do not rebuild it without a new reason
-- **The viewer is `_components/image-viewer/`.** A plain lightbox: scrim over the app, the picture
+- **The viewer is `#/components/image-viewer/`, shared since #690.** A plain lightbox: scrim over the app, the picture
   centred, chevrons either side, an X, a counter, click outside the image to
   dismiss, arrows and Escape. **No filmstrip and no metadata** -- and nothing
   else proposed for it gets in without answering why it is not a card action or
@@ -476,9 +476,15 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   is safe because the viewer holds no text field. Listed at
   `/account/shortcuts`, in the same commit as the binding.
 
-  The retired Explore overlay imposed a prompt column and filmstrip when it
-  was shared here. Keep the viewer owned by Images; that history is why the
-  prompt is optional and the filmstrip is absent.
+  **The shell is shared; the cursor is not** (#690). Director's reference tabs
+  became a second surface wanting this exact lightbox, so the component moved
+  to `#/components` and `use-image-viewer.ts` stayed here. That split is the
+  lesson from the retired Explore overlay, which imposed a prompt column and a
+  filmstrip on this viewer when it was shared -- what was shared then was the
+  _cursor_, and a cursor carries its surface's rules: what the set is, what
+  Delete means, whether Hide exists. Director answers all three differently and
+  builds its own. Anything proposed for the shell still has to be true of both
+  surfaces, which is the guard that history asks for.
 
   **It cycles what the grid is showing** -- filtered, sorted, and scoped to the
   open group if there is one (#270). "Next" has to mean the next picture on

@@ -13,13 +13,13 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
-import { CardCaption } from '../card-caption/card-caption'
 import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { refUsageNote } from '#/features/ai-images/ref-usage'
 import { useModifierHeld } from '#/lib/use-modifier-held'
 import { cx } from '#/lib/utils'
 import {
+  CardCaption,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,

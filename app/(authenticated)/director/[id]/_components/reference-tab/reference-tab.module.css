@@ -1,0 +1,24 @@
+/* The tab is a bar and a grid; the grid's own geometry is `ImageGrid`'s, shared
+   with Images so the two walls reflow identically. */
+.tab {
+  display: grid;
+  gap: var(--space-16);
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-16);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.count {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin-right: auto;
+}

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getSession } from '../_lib/sessions.server'
+import { listSessionRefs } from '../_actions/references.action'
 import { listVideos } from '../../video/_actions/generate-video.action'
 import { View } from './view'
 import { resolveAuth } from '#/lib/server/auth.server'
@@ -21,11 +22,12 @@ export default async function SessionPage({
   const { userId } = await resolveAuth()
   const session = await getSession(userId, (await params).id)
   if (!session) notFound()
-  return (
-    <View
-      key={session.id}
-      session={session}
-      clips={await listVideos('director')}
-    />
-  )
+  /* The clips and the sheets, both read here: a tab's assets are library rows
+     like the clips are, and every change to them ends in a `router.refresh()`
+     that comes back through this function (#690). */
+  const [clips, refs] = await Promise.all([
+    listVideos('director'),
+    listSessionRefs(session.id),
+  ])
+  return <View key={session.id} session={session} clips={clips} refs={refs} />
 }

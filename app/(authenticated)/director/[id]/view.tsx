@@ -3,6 +3,10 @@
 import { useEffect, useRef } from 'react'
 import { SessionHeading } from '../_components/session-heading/session-heading'
 import { ChatPanel } from './_components/chat-panel/chat-panel'
+import { DeriveDialog } from './_components/derive-dialog/derive-dialog'
+import { ReferenceTab } from './_components/reference-tab/reference-tab'
+import { ScriptTab } from './_components/script-tab/script-tab'
+import { SessionTabs } from './_components/session-tabs/session-tabs'
 import { ClipRow } from './_components/clip-row/clip-row'
 import {
   AddGenDialog,
@@ -10,12 +14,16 @@ import {
 } from './_components/clip-dialog/clip-dialog'
 import { ScriptDialog } from './_components/script-dialog/script-dialog'
 import { SequencePlayer } from './_components/sequence-player/sequence-player'
+import { dialogueOf } from './script'
+import { useReferences } from './use-references'
 import { useView } from './use-view'
 import styles from './view.module.css'
 import type { SequencePlayerHandle } from './_components/sequence-player/sequence-player'
-import type { Session } from '../_lib/types'
+import type { RefAsset } from '../_actions/references.action'
+import type { RefKind, Session } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { clipName } from '#/features/video/clip-facts'
+import { ImageViewer } from '#/components'
 
 /**
  * A session: the player on top, the run underneath it (#662).
@@ -32,11 +40,19 @@ import { clipName } from '#/features/video/clip-facts'
 export function View({
   session,
   clips,
+  refs,
 }: {
   session: Session
   clips: Array<VideoRecord>
+  refs: Record<RefKind, Array<RefAsset>>
 }) {
   const view = useView(session, clips)
+  const references = useReferences(session.id, refs)
+  /** Which reference tab is showing, or null for Work and Script. */
+  const kind: RefKind | null =
+    references.tab === 'characters' || references.tab === 'locations'
+      ? references.tab
+      : null
   /* The row drives the player and nothing drives the row, so the one call
      between them is imperative: a tile click has to reach the `<video>`
      elements, and routing it through state re-introduces the bail-out that
@@ -61,73 +77,107 @@ export function View({
 
   return (
     <>
-      <SessionHeading id={session.id} name={session.name} />
-      <div className={styles.stack}>
-        {/* Only the clips that exist. A pending one keeps its place in the row
+      <SessionHeading id={session.id} name={session.name}>
+        {/* Only once there is something to extract from (#690). */}
+        {view.picked.length > 0 && (
+          <SessionTabs
+            tab={references.tab}
+            onChange={references.setTab}
+            script={view.chat !== null}
+            counts={{
+              characters: refs.characters.length,
+              locations: refs.locations.length,
+            }}
+          />
+        )}
+      </SessionHeading>
+
+      {/* A reference tab replaces the work area's body and nothing else: the
+          player, the row and the chat panel are the work tab's, and the heading
+          above is the session's. Replaces rather than hides -- a hidden
+          `<video>` keeps playing, and a stage you cannot see talking over the
+          tab you are reading is the wrong answer. */}
+      {references.tab === 'script' ? (
+        /* The run's dialogue, read off the clips in the order they play. */
+        <ScriptTab lines={dialogueOf(view.picked)} />
+      ) : kind !== null ? (
+        <ReferenceTab
+          kind={kind}
+          assets={refs[kind]}
+          busy={references.busy === kind}
+          onExtract={() => void references.extract(kind)}
+          onDerive={references.openDerive}
+          onDelete={(asset) => void references.drop(asset)}
+          onOpen={references.openViewer}
+        />
+      ) : (
+        <div className={styles.stack}>
+          {/* Only the clips that exist. A pending one keeps its place in the row
             and is not something the stage can play, which is why the two are
             indexed separately -- see `toPlayableIndex` in `use-view`. */}
-        <div className={styles.player}>
-          <SequencePlayer
-            clips={view.playable}
-            /* A chat is vertical before its first clip exists (#670), so the
+          <div className={styles.player}>
+            <SequencePlayer
+              clips={view.playable}
+              /* A chat is vertical before its first clip exists (#670), so the
                empty stage is already the shape the answer will be. */
-            ratio={view.runRatio ?? (view.chat ? 9 / 16 : null)}
-            /* The transcript and the question box share the sticky column
+              ratio={view.runRatio ?? (view.chat ? 9 / 16 : null)}
+              /* The transcript and the question box share the sticky column
                with the stage, so a 9:16 stage at 70vh put the box off screen.
                Half the viewport leaves room for both, and the clip is still
                large enough to be a face. */
-            stageMax={view.chat ? '45vh' : undefined}
-            /* A conversation: an answer plays once and stops, unless Loop is
+              stageMax={view.chat ? '45vh' : undefined}
+              /* A conversation: an answer plays once and stops, unless Loop is
                pressed. A run always loops and gets no button. */
-            loop={view.chat ? view.loop : true}
-            onLoopChange={view.chat ? view.setLoop : undefined}
-            controls={player}
-            onIndexChange={view.setPlayingIndex}
-            placeholder={
-              view.chat
-                ? 'The answer plays here.'
-                : 'Add clips below to start the run.'
-            }
-          />
-          {view.chat && (
-            <ChatPanel
-              turns={view.chat.turns}
-              inFlight={view.inFlight}
-              queued={view.queued}
-              answering={view.answering}
-              onAsk={(question, steer) => void view.ask(question, steer)}
+              loop={view.chat ? view.loop : true}
+              onLoopChange={view.chat ? view.setLoop : undefined}
+              controls={player}
+              onIndexChange={view.setPlayingIndex}
+              placeholder={
+                view.chat
+                  ? 'The answer plays here.'
+                  : 'Add clips below to start the run.'
+              }
             />
-          )}
-        </div>
+            {view.chat && (
+              <ChatPanel
+                turns={view.chat.turns}
+                inFlight={view.inFlight}
+                queued={view.queued}
+                answering={view.answering}
+                onAsk={(question, steer) => void view.ask(question, steer)}
+              />
+            )}
+          </div>
 
-        <div>
-          <ClipRow
-            clips={view.picked}
-            mode={view.chat ? 'chat' : 'run'}
-            playingIndex={view.toRowIndex(view.playingIndex)}
-            onAddGen={view.openAdd}
-            /* A chat's script is the questions and answers, not the clip
+          <div>
+            <ClipRow
+              clips={view.picked}
+              mode={view.chat ? 'chat' : 'run'}
+              playingIndex={view.toRowIndex(view.playingIndex)}
+              onAddGen={view.openAdd}
+              /* A chat's script is the questions and answers, not the clip
                prompts: those are anchors plus an action, assembled in code,
                and the words that matter are the ones said. */
-            onScript={() =>
-              view.chat
-                ? view.setTranscriptOpen(true)
-                : view.setScriptOpen(true)
-            }
-            onRemove={view.removeClip}
-            onRerun={
-              view.chat ? (clip) => void view.rerunClip(clip) : undefined
-            }
-            onMove={view.move}
-            onPlayFrom={(index) => {
-              const target = view.toPlayableIndex(index)
-              if (target >= 0) player.current?.playFrom(target)
-            }}
-            onRename={view.openEdit}
-          />
-          {view.error && <p role="alert">{view.error}</p>}
+              onScript={() =>
+                view.chat
+                  ? view.setTranscriptOpen(true)
+                  : view.setScriptOpen(true)
+              }
+              onRemove={view.removeClip}
+              onRerun={
+                view.chat ? (clip) => void view.rerunClip(clip) : undefined
+              }
+              onMove={view.move}
+              onPlayFrom={(index) => {
+                const target = view.toPlayableIndex(index)
+                if (target >= 0) player.current?.playFrom(target)
+              }}
+              onRename={view.openEdit}
+            />
+            {view.error && <p role="alert">{view.error}</p>}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* The pencil: a name, or another take of the same position (#657, #660).
           The run keeps playing behind it. */}
@@ -159,6 +209,35 @@ export function View({
         open={view.transcriptOpen}
         onOpenChange={view.setTranscriptOpen}
         script={view.transcript}
+      />
+
+      {/* The lightbox, over the open tab (#690). Images' own, with Director's
+          own cursor behind it -- see `use-references`. No Hide: this
+          collection is pruned by deleting. */}
+      {references.viewing !== null && (
+        <ImageViewer
+          items={references.viewerItems}
+          imageUrls={references.viewerUrls}
+          currentIndex={references.viewing}
+          onClose={references.closeViewer}
+          onNext={references.viewerNext}
+          onPrev={references.viewerPrev}
+          onDelete={() => void references.dropViewed()}
+        />
+      )}
+
+      {/* New from this: one more asset, from a sheet and some words (#690). */}
+      <DeriveDialog
+        asset={references.deriving}
+        words={references.words}
+        onWordsChange={references.setWords}
+        models={references.models}
+        onToggleModel={references.toggleModel}
+        busy={references.submitting}
+        onSubmit={() => void references.derive()}
+        onOpenChange={(open) => {
+          if (!open) references.setDeriving(null)
+        }}
       />
 
       {/* Add gen: the clip that comes after the run (#660). */}

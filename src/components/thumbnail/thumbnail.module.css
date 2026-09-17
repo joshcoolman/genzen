@@ -189,10 +189,10 @@
   position: absolute;
   padding: var(--space-2) var(--space-6);
   border-radius: var(--radius-full);
-  background: color-mix(in oklab, var(--bg) 80%, transparent);
+  background: var(--scrim-chip);
   backdrop-filter: blur(8px);
   font-size: var(--text-3xs);
-  color: var(--text-muted);
+  color: var(--text);
 }
 
 .badgeTopLeft {
@@ -219,8 +219,8 @@
   max-width: calc(100% - var(--space-8) * 2);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-sm);
-  background: var(--scrim);
-  color: var(--text-muted);
+  background: var(--scrim-chip);
+  color: var(--text);
   font-size: var(--text-3xs);
   white-space: nowrap;
   overflow: hidden;
