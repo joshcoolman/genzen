@@ -1,7 +1,6 @@
 'use client'
 
 import { RefreshCw, Trash2 } from 'lucide-react'
-import { REF_RATIO } from '../../refs'
 import styles from './sheet-card.module.css'
 import type { RefAsset } from '../../../_actions/references.action'
 import { CardCaption, ExpandableIconButton, Thumbnail } from '#/components'
@@ -17,12 +16,17 @@ import { imageUrl } from '#/lib/image-url'
  * would be importing twenty props to leave nineteen unset. `Thumbnail` and
  * `CardCaption` are the parts that were always shared, so this is thin.
  *
+ * **The tile is square and the sheet letterboxes inside it**, exactly as a wide
+ * picture does on Images. A 16:9 frame was built first, on the reasoning that
+ * every sheet is 16:9 so a square tile wastes a quarter of the grid on
+ * pictures whose point is readable detail. Put side by side with the Images
+ * wall that was the wrong trade: the letterboxed tile is what the grid looks
+ * like, the mat around a contained image is a deliberate part of that look,
+ * and a second grid with its own tile shape reads as a different app rather
+ * than as more of the same one. Judging the detail is the lightbox's job.
+ *
  * What differs from an Images card, and why:
  *
- * - **The frame is 16:9, not square.** Every sheet is 16:9 to the last one, so
- *   a square tile letterboxes all of them and spends a quarter of the grid on
- *   nothing -- on exactly the pictures whose point is small detail you have to
- *   be able to read.
  * - **No hiding.** Hiding earns its place on a wall you keep; this collection
  *   is pruned by deleting until what is left is what is useful, so the corner
  *   is the plain Trash it is on a card with no `onHide`, and Cmd means
@@ -67,7 +71,6 @@ export function SheetCard({
       alt={asset.title}
       status={status}
       failedMessage={asset.generation_error ?? undefined}
-      frameRatio={REF_RATIO.replace(':', ' / ')}
       objectFit="contain"
       alwaysShowOverlay
       bottomRightBadge={asset.title}

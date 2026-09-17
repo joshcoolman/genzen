@@ -50,17 +50,6 @@ export interface ThumbnailProps {
   /** Brand border on hover -- the tile is one of a set the user is choosing from. */
   pickable?: boolean
   objectFit?: 'contain' | 'cover'
-  /**
-   * The shape of the picture area. Square by default, which is what a library
-   * of mixed shapes wants -- nothing is favoured and the grid stays a grid.
-   *
-   * A caller whose pictures are all one shape passes it here instead, so they
-   * fill their tiles rather than sitting letterboxed in a square: Director's
-   * reference sheets are 16:9 to the last one (#690), and a quarter of every
-   * tile was empty. A CSS `aspect-ratio` value, so `'16 / 9'` and `'4 / 3'`
-   * read the same as they would in a stylesheet.
-   */
-  frameRatio?: string
   asButton?: boolean
   fallback?: ReactNode
   imageOverlay?: ReactNode
@@ -100,7 +89,6 @@ export function Thumbnail({
   dimmed = false,
   pickable = false,
   objectFit = 'contain',
-  frameRatio,
   asButton = false,
   fallback,
   imageOverlay,
@@ -145,7 +133,6 @@ export function Thumbnail({
             styles.canvas,
             objectFit === 'contain' && styles.canvasContain,
           )}
-          style={frameRatio ? { aspectRatio: frameRatio } : undefined}
           onClick={!asButton ? onClick : undefined}
         >
           {status === 'complete' && url ? (

@@ -164,12 +164,15 @@ locations: [ids], frames: [ids] }`. The column is `refs` and not
   columns, the same clamp and the same copy button. Not `ImageCard` itself:
   that is Images' own, thick with groups, select mode, the sweep and
   drag-to-group, and a tab with none of those would set twenty props to leave
-  nineteen unused. Three things differ, each for a reason
-  (`_components/sheet-card/`): the frame is **16:9**, because every sheet is,
-  and a square tile spends a quarter of the grid letterboxing pictures whose
-  point is readable detail; there is **no hiding**, because this collection is
-  pruned by deleting and the corner is the plain Trash; and **New from this is
-  one click** in the top-left corner where Images keeps its `...`, being the
+  nineteen unused. **The tile is square and the sheet letterboxes in it**, as a
+  wide picture does on Images. A 16:9 frame was built first -- every sheet is
+  16:9, so a square one spends a quarter of the grid on nothing -- and was
+  wrong beside the real wall: the letterboxed tile _is_ what the grid looks
+  like, and a second grid with its own tile shape reads as a different app.
+  Reading the detail is the lightbox's job. Two things do differ
+  (`_components/sheet-card/`): there is **no hiding**, because this collection
+  is pruned by deleting and the corner is the plain Trash; and **New from this
+  is one click** in the top-left corner where Images keeps its `...`, being the
   tab's whole reason for existing.
 - **Clicking a sheet opens the shared lightbox.** At grid size a turnaround
   sheet cannot be judged, which is the one thing it exists for. Director keeps
