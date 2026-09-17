@@ -1,6 +1,6 @@
 'use client'
 
-import { Film, Pencil, Play, RefreshCw } from 'lucide-react'
+import { Film, Pencil, Play, RefreshCw, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { frameState, lineToSpeak, sectionCostCents } from '../../board'
 import styles from './scene-row.module.css'
@@ -11,6 +11,7 @@ import type { BoardScene } from '../../../_lib/types'
 import {
   Button,
   ExpandableText,
+  IconButton,
   MiniButton,
   Skeleton,
   Textarea,
@@ -305,17 +306,24 @@ function Take({
           <Skeleton className={styles.pending} />
         )}
       </button>
+      {/* The label on one side and the delete on the other. Takes add, so
+          something has to subtract -- and unlike everything else here this one
+          destroys rather than trashes, because a take is a candidate generated
+          to be looked at and a board's worth of rejected ones would fill Trash
+          with work. Hence the confirm: the press asks first, which is the
+          protection that fits a thing meant to be thrown away. */}
       <p className={styles.caption}>
-        Take {number}
-        {state === 'pending' && ' · working'}
-        {/* Takes add, so something has to subtract: a refused take would
-            otherwise sit on the row for the life of the board. Trash, like
-            everything else here. */}
-        {state === 'failed' && (
-          <button type="button" className={styles.drop} onClick={onDrop}>
-            Remove
-          </button>
-        )}
+        <span>
+          Take {number}
+          {state === 'pending' && ' · working'}
+        </span>
+        <IconButton
+          aria-label={`Delete take ${number}`}
+          className={styles.delete}
+          onClick={onDrop}
+        >
+          <Trash2 className={styles.icon} />
+        </IconButton>
       </p>
     </li>
   )

@@ -27,6 +27,7 @@ import {
   generateVideo,
   listVideos,
 } from '../../video/_actions/generate-video.action'
+import { permanentlyDeleteImages } from '../../trash/_actions/trash'
 import { listSessionRefs } from './references.action'
 import type { RefAsset } from './references.action'
 import type { BoardScene, Session } from '../_lib/types'
@@ -662,13 +663,25 @@ export async function settleBoardTakes(sessionId: string): Promise<void> {
 }
 
 /**
- * Drop one take off a row and trash it (#697).
+ * Delete one take, for good (#697).
  *
- * **Because takes add, something has to subtract.** A refused take is a dead
- * tile on a row that will otherwise carry it for the life of the board, and
- * the frames' lesson applies here too: a thing you cannot clear is a thing you
- * work around. It goes to Trash like every other Director row, so a take
- * dropped by mistake is one restore away.
+ * **Because takes add, something has to subtract.** A take you have watched and
+ * rejected is a dead tile the row would otherwise carry for the life of the
+ * board, and the frames' lesson applies here too: a thing you cannot clear is a
+ * thing you work around.
+ *
+ * **Destroyed rather than trashed, which is the one place Director does that.**
+ * Everything else here goes to Trash and is one restore away, on the reasoning
+ * that a re-roll you regret should be recoverable. A take is different in kind:
+ * it is a candidate you generated in order to look at, and a board of thirty-two
+ * rows re-rolled a few times each would put a hundred rejected clips in Trash to
+ * be cleared by hand -- which is how a safety net becomes a chore and stops
+ * being read. The press asks first instead, which is the protection that fits a
+ * thing meant to be thrown away.
+ *
+ * Trashed first and then destroyed, so the bucket objects go with the row:
+ * `permanentlyDeleteImages` is where that knowledge lives -- storage path,
+ * poster and end frame -- and it only looks at rows already in the bin.
  */
 export async function dropTake(
   sessionId: string,
@@ -685,13 +698,15 @@ export async function dropTake(
   if (!scene.videoIds.includes(takeId))
     throw new Error('That take is not on this scene.')
 
-  return updateBoardScene(
+  const saved = await updateBoardScene(
     userId,
     session.id,
     scene.id,
     { videoIds: scene.videoIds.filter((id) => id !== takeId) },
     [takeId],
   )
+  await permanentlyDeleteImages([takeId])
+  return saved
 }
 
 /**

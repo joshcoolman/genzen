@@ -6,7 +6,13 @@ import styles from './storyboard-tab.module.css'
 import type { FrameStatus } from '../../use-storyboard'
 import type { RefAsset } from '../../../_actions/references.action'
 import type { BoardScene, StoredBoard } from '../../../_lib/types'
-import { Button, CostNote, EmptyState } from '#/components'
+import {
+  Button,
+  ConfirmDialog,
+  CostNote,
+  EmptyState,
+  useConfirm,
+} from '#/components'
 import { estimateImageCostCents } from '#/features/ai-images/models'
 import { formatCost } from '#/features/video/models'
 
@@ -66,6 +72,20 @@ export function StoryboardTab({
   onDropTake: (scene: BoardScene, takeId: string) => void
   onEditLine: (scene: BoardScene, spoken: string) => void
 }) {
+  /* Deleting a take destroys it -- the one thing on this board that does not
+     go to Trash -- so the press asks first. Here rather than in the row: one
+     dialog for the grid, not one per tile. */
+  const { confirm, dialogProps } = useConfirm()
+  const askThenDrop = async (scene: BoardScene, takeId: string) => {
+    const ok = await confirm({
+      title: 'Delete this take?',
+      message:
+        'The clip is deleted for good, not moved to Trash, and cannot be restored.',
+      confirmLabel: 'Delete',
+    })
+    if (ok) onDropTake(scene, takeId)
+  }
+
   const scenes = board.scenes
   /* Two frames a scene, and what a six-scene board costs is the argument for
      the tab existing: about a dollar against $38 for one video pass over the
@@ -133,11 +153,12 @@ export function StoryboardTab({
             onRetry={onRetry}
             onFilm={onFilm}
             onWatch={onWatch}
-            onDropTake={onDropTake}
+            onDropTake={(s, takeId) => void askThenDrop(s, takeId)}
             onEditLine={onEditLine}
           />
         ))}
       </ol>
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }
