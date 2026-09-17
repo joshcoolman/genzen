@@ -30,6 +30,8 @@ import { imageUrl } from '#/lib/image-url'
  */
 export function FilmDialog({
   scene,
+  spoken,
+  onSpokenChange,
   words,
   onWordsChange,
   busy,
@@ -37,6 +39,9 @@ export function FilmDialog({
   onOpenChange,
 }: {
   scene: BoardScene | null
+  /** What the character says in this take. */
+  spoken: string
+  onSpokenChange: (value: string) => void
   words: string
   onWordsChange: (value: string) => void
   busy: boolean
@@ -59,16 +64,36 @@ export function FilmDialog({
             alt={`Scene ${scene.number}, opening frame`}
           />
         )}
-        {scene && <p className={styles.said}>{scene.line}</p>}
+        {/* **The line is editable here, and this is the only place it is.**
+            Kling refuses a line naming a trademarked work, and no model may
+            reword an author's dialogue on their behalf -- so rewording it is
+            the only thing that gets such a section made, and it has to be a
+            box rather than a rule. The same field a pronunciation respelling
+            writes: what the model is told to say, as against what the film
+            says. `scene.line` is untouched and stays what Script reads. */}
+        <label className={styles.field}>
+          <span className={styles.label}>Said in this take</span>
+          <Textarea
+            value={spoken}
+            onChange={(event) => onSpokenChange(event.target.value)}
+            rows={3}
+          />
+        </label>
+        {scene && spoken.trim() !== scene.line.trim() && (
+          <p className={styles.record}>The script still reads: {scene.line}</p>
+        )}
         <p className={styles.facts}>
           Opens on this frame · {seconds}s · 16:9 · with sound
         </p>
-        <Textarea
-          value={words}
-          onChange={(event) => onWordsChange(event.target.value)}
-          rows={2}
-          placeholder="Optional. He turns away at the end. Hold the camera still."
-        />
+        <label className={styles.field}>
+          <span className={styles.label}>Guidance for the shot</span>
+          <Textarea
+            value={words}
+            onChange={(event) => onWordsChange(event.target.value)}
+            rows={2}
+            placeholder="Optional. He turns away at the end. Hold the camera still."
+          />
+        </label>
         <div className={styles.foot}>
           <CostNote cents={scene ? sectionCostCents(scene.seconds) : 0} />
           <Button variant="primary" loading={busy} onClick={onSubmit}>

@@ -294,6 +294,8 @@ export function View({
       {/* Generate video: the section this row was a spec for (#697). */}
       <FilmDialog
         scene={storyboard.filming}
+        spoken={storyboard.spoken}
+        onSpokenChange={storyboard.setSpoken}
         words={storyboard.words}
         onWordsChange={storyboard.setWords}
         busy={

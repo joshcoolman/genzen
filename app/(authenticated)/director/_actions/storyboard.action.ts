@@ -339,6 +339,24 @@ export async function generateSectionVideo(
   sessionId: string,
   sceneId: string,
   words?: string,
+  /**
+   * What the character should say in this take, when it is not the line as
+   * recorded (#700).
+   *
+   * **The same field a pronunciation respelling writes**, because it is the
+   * same thing: what the model is told to say, as against what the film says.
+   * The two reasons to set it differ -- a respelling keeps what is heard and
+   * only fixes how it is said, while a rephrasing changes what is heard -- but
+   * both are one consumer's version of a line whose record lives elsewhere, and
+   * a second field for the second reason would be two things to keep in step
+   * for no gain.
+   *
+   * The reason it earns a box on the dialog: Kling refuses a line naming a
+   * trademarked work, the line cannot be reworded by a model on the author's
+   * behalf, and the author rewording it is the only thing that gets that
+   * section made at all.
+   */
+  spoken?: string,
 ): Promise<Session> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
@@ -350,6 +368,11 @@ export async function generateSectionVideo(
     throw new Error('This scene has no opening frame to start from yet.')
 
   const asked = words?.trim().slice(0, 2000)
+  /* Written before the submit, so the take is generated from what the board
+     will show as having been said -- and so a refused take still leaves the
+     rewording behind to try again from. */
+  const said = spokenOf(spoken ?? null, scene.line)
+  const speaking = spoken === undefined ? scene : { ...scene, spokenLine: said }
   /* The fixed instruction, then what the shot is, then what it is heading for,
      then the line. The closing frame is not sent, but its description is: it
      is the account of where the shot ends up, which is what the motion is.
@@ -364,7 +387,7 @@ export async function generateSectionVideo(
     /* The respelling when there is one (#700): Kling takes a plain prompt and
        no lexicon, so the spelling sent is the pronunciation. `scene.line` stays
        the record and is what the Script tab reads. */
-    `Speaking to camera, in English: "${lineToSpeak(scene)}"`,
+    `Speaking to camera, in English: "${lineToSpeak(speaking)}"`,
     ...(asked ? [asked] : []),
   ].join('\n\n')
 
@@ -393,6 +416,7 @@ export async function generateSectionVideo(
      take joining the row would put it in the player and in Script. */
   return updateBoardScene(userId, session.id, scene.id, {
     videoIds: [...scene.videoIds, recordId],
+    ...(spoken === undefined ? {} : { spokenLine: said }),
   })
 }
 

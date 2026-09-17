@@ -11,7 +11,7 @@ import {
   rerunScene,
   retryFrame,
 } from '../_actions/storyboard.action'
-import { RERUN_MODEL_SLUGS, scenesToClose } from './board'
+import { RERUN_MODEL_SLUGS, lineToSpeak, scenesToClose } from './board'
 import type { RefAsset } from '../_actions/references.action'
 import type { BoardScene, StoredBoard } from '../_lib/types'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
@@ -57,6 +57,10 @@ export function useStoryboard(
   /** Fix pronunciation is in flight. */
   const [pronouncing, setPronouncing] = useState(false)
   const [words, setWords] = useState('')
+  /** What the character says in the take about to be generated. Seeded from
+   *  the scene when the dialog opens, so editing it is a change rather than a
+   *  retype. */
+  const [spoken, setSpoken] = useState('')
   const [model, setModel] = useState<string>(RERUN_MODEL_SLUGS[0])
   const [submitting, setSubmitting] = useState(false)
 
@@ -171,6 +175,7 @@ export function useStoryboard(
   const openFilm = useCallback((scene: BoardScene) => {
     setFilming(scene)
     setWords('')
+    setSpoken(lineToSpeak(scene))
   }, [])
 
   /**
@@ -185,11 +190,20 @@ export function useStoryboard(
     const sceneId = filming.id
     setGenerating((current) => [...current, sceneId])
     const ok = await run(() =>
-      generateSectionVideo(sessionId, sceneId, words || undefined),
+      generateSectionVideo(
+        sessionId,
+        sceneId,
+        words || undefined,
+        /* Sent only when it is not what the scene already says, so an
+           untouched box writes nothing. */
+        spoken.trim() && spoken.trim() !== lineToSpeak(filming)
+          ? spoken
+          : undefined,
+      ),
     )
     setGenerating((current) => current.filter((id) => id !== sceneId))
     if (ok) setFilming(null)
-  }, [filming, generating, run, sessionId, words])
+  }, [filming, generating, run, sessionId, spoken, words])
 
   const rerun = useCallback(async () => {
     if (!rerunning || submitting) return
@@ -227,6 +241,8 @@ export function useStoryboard(
     setFilming,
     openFilm,
     film,
+    spoken,
+    setSpoken,
     generating,
     retry,
     retrying,

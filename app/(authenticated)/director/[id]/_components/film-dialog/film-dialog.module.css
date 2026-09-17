@@ -15,9 +15,24 @@
   background: var(--surface-sunken);
 }
 
-.said {
+.field {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* What the film says, when the take is about to say something else. The record
+   stays visible so a rewording is a deliberate divergence rather than a quiet
+   overwrite. */
+.record {
   margin: 0;
+  font-size: var(--text-sm);
   line-height: var(--text-base-leading);
+  color: var(--text-muted);
 }
 
 .facts,
