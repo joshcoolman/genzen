@@ -31,6 +31,16 @@ export interface ScriptLine {
   /** Null when the prompt carried no spoken line to find, which is the honest
    *  answer rather than an empty row: the clip is still in the run. */
   spoken: boolean
+  /**
+   * How long this clip runs, off the row.
+   *
+   * **A measurement, not a recommendation.** It is what this clip was
+   * generated at, which for a session made before #685 is a number the model
+   * chose rather than one derived from the words -- so it says what the film
+   * is, and nothing about what these words should run to. Null when the row
+   * never recorded one.
+   */
+  seconds: number | null
 }
 
 /**
@@ -63,23 +73,44 @@ const SPOKEN = /Speaking to camera(?:, in English)?:\s*"([\s\S]*)"\s*$/
  * the film says.
  */
 export function dialogueOf(
-  clips: Array<Pick<VideoRecord, 'id' | 'description'>>,
+  clips: Array<Pick<VideoRecord, 'id' | 'description' | 'generation_metadata'>>,
 ): Array<ScriptLine> {
   return clips.map((clip, index) => {
     const match = SPOKEN.exec(clip.description?.trim() ?? '')
+    const seconds = (clip.generation_metadata ?? {}).duration_seconds
     return {
       clipId: clip.id,
       number: index + 1,
       line: match ? match[1].trim() : '',
       spoken: match !== null,
+      seconds: typeof seconds === 'number' ? seconds : null,
     }
   })
 }
 
-/** The dialogue as one block of text, for the copy button. Numbered, because
- *  the numbers are how a line is found again in the row. */
+/** What the run adds up to. Null contributes nothing rather than breaking the
+ *  sum -- a clip with no recorded duration still played for some length, and
+ *  a total that refused to exist because of one row would be less use than a
+ *  total that is slightly short. */
+export function runSeconds(lines: Array<ScriptLine>): number {
+  return lines.reduce((total, line) => total + (line.seconds ?? 0), 0)
+}
+
+/**
+ * The dialogue as one block of text, for the copy button.
+ *
+ * Numbered, because the numbers are how a line is found again in the row, and
+ * timed, because the two facts together are the brief: what was said, and how
+ * long it took. That is what a re-run of these lines with another character in
+ * another place has to hit.
+ */
 export function dialogueText(lines: Array<ScriptLine>): string {
-  return lines
-    .map((l) => `${l.number}. ${l.spoken ? l.line : '(no dialogue)'}`)
+  const body = lines
+    .map((l) => {
+      const at = l.seconds === null ? '' : `(${l.seconds}s) `
+      return `${l.number}. ${at}${l.spoken ? l.line : '(no dialogue)'}`
+    })
     .join('\n\n')
+  const total = runSeconds(lines)
+  return total > 0 ? `${body}\n\nTotal ${total}s` : body
 }

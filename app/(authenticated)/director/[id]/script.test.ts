@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dialogueOf, dialogueText, scriptOf } from './script'
+import { dialogueOf, dialogueText, runSeconds, scriptOf } from './script'
 import { composeClipPrompt } from '#/lib/server/director-chat.server'
 
 describe('scriptOf', () => {
@@ -27,12 +27,21 @@ describe('dialogueOf', () => {
       'Taps his temple with a stubby claw, grinning.',
       'I think school stops being about memorizing stuff.',
     )
-    expect(dialogueOf([{ id: 'a', description: prompt }])).toEqual([
+    expect(
+      dialogueOf([
+        {
+          id: 'a',
+          description: prompt,
+          generation_metadata: { duration_seconds: 6 },
+        },
+      ]),
+    ).toEqual([
       {
         clipId: 'a',
         number: 1,
         line: 'I think school stops being about memorizing stuff.',
         spoken: true,
+        seconds: 6,
       },
     ])
   })
@@ -44,6 +53,7 @@ describe('dialogueOf', () => {
         id: 'a',
         description:
           'Vertical 9:16 video. A bear cub. A forest. Waves a paw. Speaking to camera: "That\'s still our job."',
+        generation_metadata: null,
       },
     ])
     expect(line.line).toBe("That's still our job.")
@@ -55,14 +65,24 @@ describe('dialogueOf', () => {
      run, and a script that silently renumbers around it lies about the cut. */
   it('keeps an unparseable clip in the list, numbered, marked unspoken', () => {
     const lines = dialogueOf([
-      { id: 'a', description: 'she picks up the phone, wide shot' },
-      { id: 'b', description: 'A bear. Speaking to camera: "Hello."' },
+      {
+        id: 'a',
+        description: 'she picks up the phone, wide shot',
+        generation_metadata: { duration_seconds: 8 },
+      },
+      {
+        id: 'b',
+        description: 'A bear. Speaking to camera: "Hello."',
+        generation_metadata: { duration_seconds: 5 },
+      },
     ])
     expect(lines.map((l) => [l.number, l.spoken])).toEqual([
       [1, false],
       [2, true],
     ])
-    expect(dialogueText(lines)).toBe('1. (no dialogue)\n\n2. Hello.')
+    expect(dialogueText(lines)).toBe(
+      '1. (8s) (no dialogue)\n\n2. (5s) Hello.\n\nTotal 13s',
+    )
   })
 
   /* The numbering follows the run, so removing a burst renumbers everything
@@ -70,9 +90,44 @@ describe('dialogueOf', () => {
   it('numbers by position in the run', () => {
     expect(
       dialogueOf([
-        { id: 'a', description: 'x. Speaking to camera: "One."' },
-        { id: 'b', description: 'x. Speaking to camera: "Two."' },
+        {
+          id: 'a',
+          description: 'x. Speaking to camera: "One."',
+          generation_metadata: null,
+        },
+        {
+          id: 'b',
+          description: 'x. Speaking to camera: "Two."',
+          generation_metadata: null,
+        },
       ]).map((l) => `${l.number}:${l.line}`),
     ).toEqual(['1:One.', '2:Two.'])
+  })
+})
+
+describe('runSeconds', () => {
+  /* A clip with no recorded duration contributes nothing rather than making
+     the total refuse to exist -- it still played for some length, and a total
+     that is slightly short beats no total at all. */
+  it('sums what is known and skips what is not', () => {
+    const lines = dialogueOf([
+      {
+        id: 'a',
+        description: 'x. Speaking to camera: "One."',
+        generation_metadata: { duration_seconds: 5 },
+      },
+      {
+        id: 'b',
+        description: 'x. Speaking to camera: "Two."',
+        generation_metadata: null,
+      },
+      {
+        id: 'c',
+        description: 'x. Speaking to camera: "Three."',
+        generation_metadata: { duration_seconds: 8 },
+      },
+    ])
+    expect(runSeconds(lines)).toBe(13)
+    expect(dialogueText(lines)).toContain('2. Two.')
   })
 })

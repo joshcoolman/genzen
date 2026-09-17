@@ -58,3 +58,20 @@
   font-style: italic;
   line-height: var(--text-base-leading);
 }
+
+/* A third column for the seconds, so the numbers stack down the right edge and
+   the measure of the speech is unchanged by them. */
+.line {
+  grid-template-columns: 2rem 1fr 3rem;
+}
+
+.seconds {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.total {
+  font-variant-numeric: tabular-nums;
+}

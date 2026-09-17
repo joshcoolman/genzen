@@ -1,6 +1,6 @@
 'use client'
 
-import { dialogueText } from '../../script'
+import { dialogueText, runSeconds } from '../../script'
 import styles from './script-tab.module.css'
 import type { ScriptLine } from '../../script'
 import { CopyButton, EmptyState } from '#/components'
@@ -18,6 +18,11 @@ import { CopyButton, EmptyState } from '#/components'
  * **It follows the run.** The numbers are positions in the work area, so a
  * burst removed there renumbers everything after it and drops out of here --
  * the script says what the film says rather than what was written.
+ *
+ * **The duration is the second half of the brief.** What was said and how long
+ * it took are the two facts a re-run has to hit, and they are the two that
+ * survive swapping the character and the place -- which the action and the
+ * scene, being about this bear in this forest, do not.
  */
 export function ScriptTab({ lines }: { lines: Array<ScriptLine> }) {
   if (lines.length === 0) {
@@ -31,12 +36,14 @@ export function ScriptTab({ lines }: { lines: Array<ScriptLine> }) {
   }
 
   const spoken = lines.filter((line) => line.spoken).length
+  const total = runSeconds(lines)
 
   return (
     <div className={styles.tab}>
       <div className={styles.bar}>
         <p className={styles.count}>
           {spoken} {spoken === 1 ? 'line' : 'lines'}
+          {total > 0 && <span className={styles.total}> · {total}s</span>}
         </p>
         {/* The whole thing at once, numbered as it reads. */}
         <CopyButton text={dialogueText(lines)} />
@@ -54,6 +61,13 @@ export function ScriptTab({ lines }: { lines: Array<ScriptLine> }) {
                  lines around a cut that did not happen. */
               <p className={styles.silent}>No dialogue in this clip.</p>
             )}
+            {/* What this clip actually ran, off the row. A measurement rather
+                than a recommendation: a session made before #685 carries
+                durations the model chose, so this says what the film is and
+                not what these words should run to. */}
+            <span className={styles.seconds}>
+              {line.seconds === null ? '' : `${line.seconds}s`}
+            </span>
           </li>
         ))}
       </ol>

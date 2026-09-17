@@ -187,13 +187,20 @@ locations: [ids], frames: [ids] }`. The column is `refs` and not
   prompts and was wrong about which parts mattered. A clip with no line to
   find keeps its number and says so, rather than vanishing and renumbering
   around a cut that did not happen.
-  **Deliberately bare for now**: the prompts also carry a scene (written once
-  per answer, so it changes only at turn boundaries) and a per-clip action,
-  both real scene direction and both cleanly separable. They are left out
-  until the bare list has been read, because whether it needs them is not
-  answerable in advance. Neither is stored -- they exist only inside the
-  composed prompt -- so adding them means either deriving them by common
-  prefix within a turn or storing them on the turn from then on.
+  **The line and its duration, and nothing else, because those are what
+  survive a re-run.** The test for anything proposed here is whether it holds
+  when the character and the place are swapped: the dialogue does, and the
+  seconds do -- they are the brief a re-run has to hit. The per-clip action
+  does not (it is written around this bear's claws and backpack), and neither
+  does the scene (a forest clearing is this bear's world, not the next
+  character's). Both are in the prompts, cleanly separable, and deliberately
+  left out. Neither is stored either -- they exist only inside the composed
+  prompt -- so adding them would mean deriving the scene by common prefix
+  within a turn, or storing both from then on.
+  **The duration is a measurement, not a recommendation.** It is what the clip
+  was generated at, and a session made before #685 carries numbers the model
+  chose rather than derived -- so it says what the film is, never what these
+  words should run to. #693 is the related gap.
 - **Clicking a sheet opens the shared lightbox.** At grid size a turnaround
   sheet cannot be judged, which is the one thing it exists for. Director keeps
   its own cursor over the open tab's finished sheets rather than reusing
