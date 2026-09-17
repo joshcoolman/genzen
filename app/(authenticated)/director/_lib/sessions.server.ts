@@ -7,9 +7,16 @@ import {
   idSchema,
   nameSchema,
   parseChat,
+  parseRefs,
   parseRun,
 } from './types'
-import type { ChatTurn, Session, SessionKind, SessionSummary } from './types'
+import type {
+  ChatTurn,
+  RefKind,
+  Session,
+  SessionKind,
+  SessionSummary,
+} from './types'
 import { first, jsonb, sql } from '#/lib/server/db.server'
 
 /**
@@ -27,12 +34,17 @@ export async function getSession(
   if (!idSchema.safeParse(id).success) return null
   const row = first(
     await sql<Array<Session>>`
-    select id, name, revision, cut, chat, to_json(updated_at)#>>'{}' as updated_at
+    select id, name, revision, cut, chat, refs, to_json(updated_at)#>>'{}' as updated_at
     from director_sessions where id = ${id} and user_id = ${owner}
   `,
   )
   return row
-    ? { ...row, cut: parseRun(row.cut), chat: parseChat(row.chat) }
+    ? {
+        ...row,
+        cut: parseRun(row.cut),
+        chat: parseChat(row.chat),
+        refs: parseRefs(row.refs),
+      }
     : null
 }
 
@@ -239,7 +251,83 @@ export async function replaceChatClip(
 }
 
 /**
- * Trash clips a session made (#679).
+ * Add reference assets to a session (#690).
+ *
+ * Additive, always: an extraction adds its sheets to what is already on the
+ * tab and a derive adds one more beside the sheet it came from. Nothing here
+ * replaces, which is why the word is never "regenerate" -- the collection is
+ * pruned by `removeSessionRef`, not by overwriting.
+ *
+ * Unchecked ids and no revision check, on `appendChatTurn`'s reasoning: these
+ * are rows this server just reserved, and refusing the write would lose
+ * generations FAL is already making.
+ */
+export async function addSessionRefs(
+  owner: string,
+  id: string,
+  add: { characters?: Array<string>; locations?: Array<string> },
+  /** The stills the extraction cut, so they are trashed with the session.
+   *  Deduplicated: a second extraction reuses the frames the first one cut. */
+  frames: Array<string> = [],
+): Promise<Session> {
+  const session = await requireSession(owner, id)
+  const merge = (current: Array<string>, added: Array<string> = []) => [
+    ...current,
+    ...added.map((assetId) => idSchema.parse(assetId)),
+  ]
+  const refs = {
+    version: 1 as const,
+    characters: merge(session.refs.characters, add.characters),
+    locations: merge(session.refs.locations, add.locations),
+    frames: [...new Set(merge(session.refs.frames, frames))],
+  }
+  await sql`
+    update director_sessions
+    set refs = ${jsonb(refs)}, revision = revision + 1, updated_at = now()
+    where id = ${id} and user_id = ${owner}
+  `
+  return requireSession(owner, id)
+}
+
+/**
+ * Take one sheet off a tab and trash it (#690).
+ *
+ * Delete is the whole of pruning: extract and derive only add, so getting the
+ * collection down to what is useful is this. The frames are not touched --
+ * they are on no tab and are what a later extraction reuses.
+ */
+export async function removeSessionRef(
+  owner: string,
+  id: string,
+  assetId: string,
+): Promise<Session> {
+  const session = await requireSession(owner, id)
+  idSchema.parse(assetId)
+  const refs = {
+    ...session.refs,
+    characters: session.refs.characters.filter((a) => a !== assetId),
+    locations: session.refs.locations.filter((a) => a !== assetId),
+  }
+  await sql`
+    update director_sessions
+    set refs = ${jsonb(refs)}, revision = revision + 1, updated_at = now()
+    where id = ${id} and user_id = ${owner}
+  `
+  await trashSessionClips(owner, [assetId])
+  return requireSession(owner, id)
+}
+
+/** Which tab an asset is on, or null when the session does not hold it. A
+ *  derive lands beside the sheet it came from, so this is how it knows. */
+export function refKindOf(session: Session, assetId: string): RefKind | null {
+  if (session.refs.characters.includes(assetId)) return 'characters'
+  if (session.refs.locations.includes(assetId)) return 'locations'
+  return null
+}
+
+/**
+ * Trash rows a session made (#679): its clips, and since #690 its reference
+ * sheets and the stills they were cut from.
  *
  * Guarded on `origin = 'director'` rather than trusting the ids: a session
  * from before isolation may still hold a clip picked off the Video wall, and
@@ -255,11 +343,18 @@ export async function trashSessionClips(owner: string, ids: Array<string>) {
   `
 }
 
-/** A Director-born clip lives and dies with its session (#679): deleting the
- *  session trashes every clip it made. Trash can still restore them. */
+/** A Director-born asset lives and dies with its session (#679, #690):
+ *  deleting the session trashes every clip it made, every reference sheet
+ *  extracted or derived on it, and the stills those came from. Trash can still
+ *  restore any of them. */
 export async function deleteSession(owner: string, id: string) {
   const session = await getSession(owner, id)
   if (!session) return
-  await trashSessionClips(owner, session.cut.clipIds)
+  await trashSessionClips(owner, [
+    ...session.cut.clipIds,
+    ...session.refs.characters,
+    ...session.refs.locations,
+    ...session.refs.frames,
+  ])
   await sql`delete from director_sessions where id = ${id} and user_id = ${owner}`
 }

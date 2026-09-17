@@ -45,6 +45,12 @@ export async function listGalleryImages(options?: {
     where ui.user_id = ${userId}
       and ui.source in ('upload', 'ai_generated')
       and ui.deleted_at is null
+      -- Director is isolated, and not only for clips (#690). A session's
+      -- reference sheets are ai_generated rows like any other, so without this
+      -- they would arrive on the Images wall the moment they landed -- the
+      -- same leak #679 closed for the Video wall. They live on their session
+      -- and nowhere else.
+      and ui.origin <> 'director'
     order by ui.sort_order desc nulls last
     ${options?.limit ? sql`limit ${options.limit}` : sql``}
   `

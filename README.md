@@ -266,14 +266,13 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — build **#690, Extract references**: Characters and Locations
-tabs on a Director session (chat or run) that extract one 16:9 sheet per
-primary character or key object and one per location from the session's
-clips, isolated from Images the way the clips are from Video, living and
-dying with the session; every asset is additive -- "New from this" derives
-a new sheet from a selected one plus your words -- and pruned by delete. The issue is
-the spec, including the code seams; #689 is the larger pass it is phase one
-of, and is not being built.
+**Focus** — **#690 is built and on a branch; judge what comes out.** Open a
+Director session with clips, press **Extract characters** and **Extract
+locations**, and look at the sheets: whether the inventory names the right
+elements, whether a sheet is a usable starting point, and whether **New from
+this** earns its place. It spends -- a handful of image generations per press --
+and nobody has pressed it yet. Tune the four prompts in
+`src/lib/prompts/director-*.md` against what lands, not in advance.
 
 Also outstanding, and independent: the **deployed** database still holds the old
 Director's rows and bucket objects. Run `node scripts/purge-director.mjs --yes`
@@ -283,6 +282,10 @@ says outright is not trusted.
 
 Recent highlights:
 
+- A Director session grows Characters and Locations tabs: 16:9 reference
+  sheets extracted from its own clips, derived from with New from this, and
+  pruned by deleting. Isolated from Images the way the clips are from Video
+  (#690).
 - Director chat answers are written as speech first, in the character's
   voice, then cut into five-second bursts word for word (#683). The audience
   is fifteen to adult whoever answers (#682).
@@ -295,8 +298,6 @@ Recent highlights:
   prepended in code, and a chat's Script is its questions and answers (#677).
 - Chat bursts play in order as they land, once, with a Loop toggle; Sonnet 5
   writes the answer (#675, #676).
-- Director chat sessions: New chat opens on an intro, you ask, and a
-  character invented from the question answers on camera (#670-#674).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.

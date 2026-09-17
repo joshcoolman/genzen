@@ -1,0 +1,12 @@
+-- A session's reference sheets (#690): the characters and locations extracted
+-- from its clips, and the stills they were extracted from.
+--
+-- `refs`, not `references`: REFERENCES is a reserved word in Postgres, so the
+-- obvious name would have to be quoted at every use and would read as a typo
+-- the first time someone forgot. The shape is
+-- `{ version: 1, characters: [ids], locations: [ids], frames: [ids] }`.
+--
+-- Ids of `user_images` rows, as `cut` holds ids of clips, and for the same
+-- reason: the sheet's title and whether it has finished are read off the
+-- library as it is now. Null on every session made before this.
+alter table director_sessions add column refs jsonb;

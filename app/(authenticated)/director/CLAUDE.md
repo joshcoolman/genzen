@@ -1,6 +1,9 @@
 # Director
 
-A session is a **name and an ordered list of clip ids** (#662). Nothing else.
+A session is a **name and an ordered list of clip ids** (#662), and since #690
+the reference sheets extracted from them. Nothing else -- and "nothing else"
+was literally true until References below; the run is still the whole of the
+work area.
 
 - `/director` is the session list; `/director/[id]` is the workspace. The old
   Lab URL redirects here.
@@ -23,7 +26,8 @@ A session is a **name and an ordered list of clip ids** (#662). Nothing else.
 - Ids are stored unchecked. A clip generated inside the session is in the run
   before its row is visible to the request, and an id that resolves to nothing
   drops out when the session is next opened.
-- Deleting a session trashes its clips, then deletes the row.
+- Deleting a session trashes everything it made -- clips, sheets and the
+  stills behind them -- then deletes the row.
 
 ## Chat sessions (#670)
 
@@ -106,6 +110,59 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   character's description is printed nowhere.
 - Missing Anthropic key: the ask fails through `useReportError`, which opens
   the key dialog.
+
+## References (#690)
+
+A session is a container for more than one kind of asset. Beside the work area
+sit two tabs, **Characters** and **Locations**, holding 16:9 reference sheets
+extracted from the session's own clips -- one per primary character or key
+object, one per distinct place. Same tabs in a chat and in a run.
+
+- **Isolated exactly as the clips are.** Every sheet and every still is born
+  `origin = 'director'`, listed nowhere but its session, and trashed when the
+  session is deleted -- `trashSessionClips` does all three, guarded on the
+  origin rather than the ids. The two library listings outside Director,
+  `listGalleryImages` and `listImages`, exclude the origin; without that a
+  sheet would arrive on the Images wall and in every reference picker the
+  moment it landed, which is the leak #679 closed for video.
+- **Storage is `director_sessions.refs`** -- `{ version: 1, characters: [ids],
+locations: [ids], frames: [ids] }`. The column is `refs` and not
+  `references` because that word is reserved in Postgres. Ids of library rows,
+  like `cut`: a sheet's name and whether it has finished are read off the row
+  as it is now, and an id that resolves to nothing drops off the tab.
+- **Everything is additive; the collection is pruned by deleting.** Extract
+  adds a set, New from this adds one sheet beside the one it came from, and
+  Delete is the only thing that removes. **The word is never "regenerate"** --
+  nothing here replaces anything, which is why a second Extract is not a
+  mistake.
+- **Three steps to a sheet** (`_lib/references.server.ts`): three stills out of
+  each finished clip at 20/50/80% -- not the ends, because a clip's first
+  frame is usually the previous clip's ending and would be counted twice --
+  then **one vision call** over them, scoped to the kind, that names the
+  elements and picks the two or three stills showing each best; then one image
+  generation per element with those stills as `referenceImageIds`. The model
+  answers with frame _numbers_, never ids: an id is 36 characters of nothing
+  for a model to hold and one wrong character is somebody else's row.
+- **The stills are library rows, because `generateImageInternal` takes
+  references as ids and not bytes.** They are written here rather than through
+  `saveFileToLibrary` -- that path writes `origin = 'upload'`, since a paste
+  authors nothing, and these are authored by Director. Stamped `frame_source`
+  in the same insert, which is what lets a second extraction reuse them
+  instead of decoding an identical PNG: provenance before bytes, the rule
+  `findClipEndFrame` follows.
+- **Locked down.** Nano Banana 2 alone for the extraction; a derive offers
+  those three models that take references as a multi-select, where every one
+  ticked is one generation. No aspect, no resolution, no enhance, no reference
+  roles. 16:9 always -- an opinionated workflow sets a standard it can pivot
+  from later, and a 9:16 chat shows too little of a location to judge one.
+- **A tab replaces the work area's body rather than hiding it.** A hidden
+  `<video>` keeps playing, and a stage talking over the tab you are reading is
+  the wrong answer.
+- The assets are props and never state: every change ends in `router.refresh()`
+  and the page re-reads the rows, which is also how a pending sheet turns into
+  a picture (`use-references.ts`, on the standard poll).
+- **Not `/api/reference-sheet`.** That route composites selected library images
+  into one JPEG to download (#476) and shares nothing with this but a word.
 
 ## The workspace
 

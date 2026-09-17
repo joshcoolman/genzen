@@ -91,6 +91,8 @@ export interface Session {
   cut: StoredRun
   /** Null for a run session. */
   chat: StoredChat | null
+  /** The reference sheets extracted from its clips (#690). */
+  refs: StoredRefs
   updated_at: string
 }
 
@@ -103,4 +105,42 @@ export interface SessionSummary {
    *  draws them through `/img/[id]?v=thumb` like anything else. */
   thumbnails: Array<string>
   updated_at: string
+}
+
+/**
+ * A session's reference sheets (#690).
+ *
+ * Beside the run and the chat, not instead of either: a session is becoming a
+ * container for more than one kind of asset, and these are the second kind.
+ * `characters` and `locations` are what the two tabs draw, in the order they
+ * were added; `frames` are the stills the extraction cut out of the clips to
+ * have something to hand the image model, shown on no tab and kept only so
+ * they are trashed with the session.
+ *
+ * Ids, not rows, on `StoredRun`'s reasoning. An id that resolves to nothing --
+ * a sheet trashed from somewhere else -- simply drops out of the tab.
+ */
+export const storedRefsSchema = z.object({
+  version: z.literal(1),
+  characters: z.array(idSchema).max(200),
+  locations: z.array(idSchema).max(200),
+  frames: z.array(idSchema).max(1000),
+})
+export type StoredRefs = z.infer<typeof storedRefsSchema>
+
+/** The two tabs. The kind is which list an asset lands in, and which
+ *  instruction the sheet is generated from. */
+export type RefKind = 'characters' | 'locations'
+
+export const REF_KINDS = ['characters', 'locations'] as const
+
+export function emptyRefs(): StoredRefs {
+  return { version: 1, characters: [], locations: [], frames: [] }
+}
+
+/** Null on every session made before #690, and an unreadable value opens empty
+ *  rather than 500ing the page -- `parseRun`'s rule. */
+export function parseRefs(value: unknown): StoredRefs {
+  const parsed = storedRefsSchema.safeParse(value)
+  return parsed.success ? parsed.data : emptyRefs()
 }
