@@ -371,9 +371,17 @@ how long the words take to say.
   frame is a spec and a take is a candidate. They are a grid under the pair,
   four across, each tile the clip's own poster as an `<img>` with a play badge
   -- not a `<video>`, because thirty-two rows each decoding a clip is a board
-  you cannot scroll. Watching one is a press and opens a popup. A take can be
-  removed, to Trash: something has to subtract, or a refused one sits on the row
-  for the life of the board.
+  you cannot scroll. Watching one is a press and opens a popup.
+  **A take is deleted for good, and it is the one thing here that does not go to
+  Trash.** Something has to subtract or a rejected take sits on the row for the
+  life of the board -- but a take is a candidate generated in order to be looked
+  at, and thirty-two rows re-rolled a few times each would put a hundred clips
+  in Trash to be cleared by hand, which is how a safety net becomes a chore and
+  stops being read. The press asks first instead, which is the protection that
+  fits a thing meant to be thrown away. The row is trashed and then destroyed in
+  one call, so the bucket objects go with it: `permanentlyDeleteImages` knows
+  about the poster and the end frame and only looks at rows already in the bin.
+  The control is a trash icon opposite the take's own label.
 - **A take is settled on page load, server-side** (`settleBoardTakes`), not only
   by the browser poll. That poll works everywhere else because an image takes
   twenty seconds and you are still looking at it; a section takes four to eight
