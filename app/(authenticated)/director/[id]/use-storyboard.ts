@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation'
 import {
   closeScene,
   createStoryboard,
+  dropTake,
+  generateSectionVideo,
   rerunScene,
+  retryFrame,
 } from '../_actions/storyboard.action'
 import { RERUN_MODEL_SLUGS, scenesToClose } from './board'
 import type { RefAsset } from '../_actions/references.action'
@@ -42,6 +45,14 @@ export function useStoryboard(
   const [creating, setCreating] = useState(false)
   /** The scene the re-run dialog is open on, or null. */
   const [rerunning, setRerunning] = useState<BoardScene | null>(null)
+  /** The scene the Generate video dialog is open on, or null. */
+  const [filming, setFilming] = useState<BoardScene | null>(null)
+  /** The take being watched, or null. */
+  const [watching, setWatching] = useState<string | null>(null)
+  /** Which rows have a section in flight, so two presses are not two takes. */
+  const [generating, setGenerating] = useState<Array<string>>([])
+  /** Which rows are asking for a failed frame again. */
+  const [retrying, setRetrying] = useState<Array<string>>([])
   const [words, setWords] = useState('')
   const [model, setModel] = useState<string>(RERUN_MODEL_SLUGS[0])
   const [submitting, setSubmitting] = useState(false)
@@ -117,10 +128,58 @@ export function useStoryboard(
     })()
   }, [run, sessionId, waiting])
 
+  /**
+   * Ask again for one failed frame (#699).
+   *
+   * **The drain's guard has to forget the scene**, or a retried closing frame
+   * that lands would never be followed up -- and a retried *opening* has to be
+   * forgotten too, since its closing is about to become derivable again.
+   */
+  const retry = useCallback(
+    async (scene: BoardScene, which: 'opening' | 'closing') => {
+      if (retrying.includes(scene.id)) return
+      setRetrying((current) => [...current, scene.id])
+      const ok = await run(() => retryFrame(sessionId, scene.id, which))
+      setRetrying((current) => current.filter((id) => id !== scene.id))
+      if (ok) asked.current.delete(scene.id)
+    },
+    [retrying, run, sessionId],
+  )
+
+  const removeTake = useCallback(
+    async (scene: BoardScene, takeId: string) => {
+      await run(() => dropTake(sessionId, scene.id, takeId))
+    },
+    [run, sessionId],
+  )
+
   const openRerun = useCallback((scene: BoardScene) => {
     setRerunning(scene)
     setWords('')
   }, [])
+
+  const openFilm = useCallback((scene: BoardScene) => {
+    setFilming(scene)
+    setWords('')
+  }, [])
+
+  /**
+   * Generate the section this row is a spec for.
+   *
+   * **Guidance is optional here**, unlike a frame re-run: the row already holds
+   * everything the request needs, and the words are a note on top of it rather
+   * than the whole of what was asked.
+   */
+  const film = useCallback(async () => {
+    if (!filming || generating.includes(filming.id)) return
+    const sceneId = filming.id
+    setGenerating((current) => [...current, sceneId])
+    const ok = await run(() =>
+      generateSectionVideo(sessionId, sceneId, words || undefined),
+    )
+    setGenerating((current) => current.filter((id) => id !== sceneId))
+    if (ok) setFilming(null)
+  }, [filming, generating, run, sessionId, words])
 
   const rerun = useCallback(async () => {
     if (!rerunning || submitting) return
@@ -137,10 +196,32 @@ export function useStoryboard(
     }
   }, [model, rerunning, run, sessionId, submitting, words])
 
+  /** What the take dialog calls the clip it is playing: the row it came off
+   *  and which take it is, which is all there is to say about one. */
+  const watchingLabel = useMemo(() => {
+    if (!watching) return ''
+    for (const scene of board.scenes) {
+      const index = scene.videoIds.indexOf(watching)
+      if (index !== -1) return `Scene ${scene.number} — Take ${index + 1}`
+    }
+    return 'Take'
+  }, [board.scenes, watching])
+
   return {
     status,
     creating,
     create,
+    filming,
+    setFilming,
+    openFilm,
+    film,
+    generating,
+    retry,
+    retrying,
+    removeTake,
+    watching,
+    setWatching,
+    watchingLabel,
     rerunning,
     setRerunning,
     words,

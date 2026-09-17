@@ -8,7 +8,7 @@ import {
   processImageResult,
   processVideoResult,
 } from './fal-completion.server'
-import { extractFalError } from './fal-error.server'
+import { extractFalError, isFalRejection } from './fal-error.server'
 
 /**
  * How long a generation may stay `pending` before the app stops believing in it
@@ -240,14 +240,3 @@ export async function checkPendingGenerations() {
 }
 
 /** Check if the error is a definitive FAL rejection (not a transient network error) */
-function isFalRejection(err: unknown): boolean {
-  if (err && typeof err === 'object') {
-    // FAL client errors include status codes
-    const status = (err as { status?: number }).status
-    if (status && status >= 400 && status < 500) return true
-    const msg = err instanceof Error ? err.message : ''
-    // FAL validation errors
-    if (msg.includes('422') || msg.includes('400')) return true
-  }
-  return false
-}

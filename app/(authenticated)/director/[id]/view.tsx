@@ -5,7 +5,9 @@ import { SessionHeading } from '../_components/session-heading/session-heading'
 import { ChatPanel } from './_components/chat-panel/chat-panel'
 import { DeriveDialog } from './_components/derive-dialog/derive-dialog'
 import { ReferenceTab } from './_components/reference-tab/reference-tab'
+import { FilmDialog } from './_components/film-dialog/film-dialog'
 import { RerunDialog } from './_components/rerun-dialog/rerun-dialog'
+import { TakeDialog } from './_components/take-dialog/take-dialog'
 import { StoryboardTab } from './_components/storyboard-tab/storyboard-tab'
 import { ScriptTab } from './_components/script-tab/script-tab'
 import { SessionTabs } from './_components/session-tabs/session-tabs'
@@ -120,9 +122,18 @@ export function View({
         <StoryboardTab
           board={session.board}
           status={storyboard.status}
+          frames={frames}
           busy={storyboard.creating}
+          generating={storyboard.generating}
+          retrying={storyboard.retrying}
           onCreate={() => void storyboard.create()}
           onRerun={storyboard.openRerun}
+          onRetry={(scene, which) => void storyboard.retry(scene, which)}
+          onFilm={storyboard.openFilm}
+          onWatch={storyboard.setWatching}
+          onDropTake={(scene, takeId) =>
+            void storyboard.removeTake(scene, takeId)
+          }
         />
       ) : kind !== null ? (
         <ReferenceTab
@@ -275,6 +286,30 @@ export function View({
         onSubmit={() => void storyboard.rerun()}
         onOpenChange={(open) => {
           if (!open) storyboard.setRerunning(null)
+        }}
+      />
+
+      {/* Generate video: the section this row was a spec for (#697). */}
+      <FilmDialog
+        scene={storyboard.filming}
+        words={storyboard.words}
+        onWordsChange={storyboard.setWords}
+        busy={
+          storyboard.filming !== null &&
+          storyboard.generating.includes(storyboard.filming.id)
+        }
+        onSubmit={() => void storyboard.film()}
+        onOpenChange={(open) => {
+          if (!open) storyboard.setFilming(null)
+        }}
+      />
+
+      {/* One take, played over the board. */}
+      <TakeDialog
+        takeId={storyboard.watching}
+        label={storyboard.watchingLabel}
+        onOpenChange={(open) => {
+          if (!open) storyboard.setWatching(null)
         }}
       />
 

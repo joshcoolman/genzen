@@ -193,10 +193,33 @@ export const boardSceneSchema = z.object({
   /** What was typed into a re-run of this scene, kept so the row can say what
    *  it was asked for. Null until one. */
   guidance: z.string().max(2000).nullable(),
+  /**
+   * The model this scene's frames were last generated with, or null for the
+   * board's own (#699).
+   *
+   * Written only by a re-run, which is the one place a model is chosen. Retry
+   * reads it so a repaired frame comes back from the model that drew the rest
+   * of the pair, rather than silently reverting to the default and leaving a
+   * row drawn by two hands.
+   */
+  model: z.string().max(80).nullable().default(null),
   /** The two frames. Null until submitted -- the closing one waits for the
    *  opening one to land, because it is generated from it. */
   openingId: idSchema.nullable(),
   closingId: idSchema.nullable(),
+  /**
+   * The takes generated of this section (#697), oldest first.
+   *
+   * **A list, because takes add rather than replace** -- the opposite of the
+   * frames above. A frame is a spec and there is one of it; a take is a
+   * candidate, and pressing Generate again is asking for another one, not
+   * disowning the last. Nothing here is marked canonical: choosing a take per
+   * row is what turns the board into a cut, and that is its own decision.
+   *
+   * Defaulted, so a board stored before #697 parses rather than falling back
+   * to an empty one and losing its frames.
+   */
+  videoIds: z.array(idSchema).max(20).default([]),
 })
 export type BoardScene = z.infer<typeof boardSceneSchema>
 
@@ -219,9 +242,10 @@ export function parseBoard(value: unknown): StoredBoard {
 
 /** Every image a storyboard has made, for the trash that follows a session. */
 export function boardImageIds(board: StoredBoard): Array<string> {
-  return board.scenes.flatMap((scene) =>
-    [scene.openingId, scene.closingId].filter(
+  return board.scenes.flatMap((scene) => [
+    ...[scene.openingId, scene.closingId].filter(
       (id): id is string => id !== null,
     ),
-  )
+    ...scene.videoIds,
+  ])
 }

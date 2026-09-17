@@ -6,6 +6,7 @@ import * as falCompletion from './fal-completion.server'
 import { sql } from './db.server'
 
 import { checkPendingGenerations } from './check-pending-generations.action'
+import type * as FalError from './fal-error.server'
 
 vi.mock('@fal-ai/client', () => ({
   fal: {
@@ -30,7 +31,11 @@ vi.mock('./fal-completion.server', () => ({
   markGenerationFailedWithBlob: vi.fn(),
 }))
 
-vi.mock('./fal-error.server', () => ({
+vi.mock('./fal-error.server', async (importOriginal) => ({
+  /* The real `isFalRejection` (#697): it moved here from the action module,
+     which may only export async functions, and these tests turn on the
+     distinction it draws between FAL refusing and the network dropping. */
+  ...(await importOriginal<typeof FalError>()),
   extractFalError: vi.fn().mockReturnValue({
     code: 'unknown',
     message: 'error',
