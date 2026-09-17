@@ -266,13 +266,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — **#690 is built and on a branch; judge what comes out.** Open a
-Director session with clips, press **Extract characters** and **Extract
-locations**, and look at the sheets: whether the inventory names the right
-elements, whether a sheet is a usable starting point, and whether **New from
-this** earns its place. It spends -- a handful of image generations per press --
-and nobody has pressed it yet. Tune the four prompts in
-`src/lib/prompts/director-*.md` against what lands, not in advance.
+**Focus** — open **#692** and fix it: rerunning a Director chat burst re-uses
+the clip's stored `duration_seconds` instead of timing the line, so it carries
+pre-#685 durations forward forever. `rerunChatClip` in
+`director/_actions/chat.action.ts` is the whole of it; `durationForWords` is
+already exported and the line is already in the prompt Rerun replays. The only
+open question is `pace`, which nothing stores. The issue is the spec.
 
 Also outstanding, and independent: the **deployed** database still holds the old
 Director's rows and bucket objects. Run `node scripts/purge-director.mjs --yes`
@@ -282,10 +281,10 @@ says outright is not trusted.
 
 Recent highlights:
 
-- A Director session grows Characters and Locations tabs: 16:9 reference
-  sheets extracted from its own clips, derived from with New from this, and
-  pruned by deleting. Isolated from Images the way the clips are from Video
-  (#690).
+- A Director session is a container for more than the run: Characters and
+  Locations tabs holding reference sheets extracted from its own clips, and a
+  Script tab holding the dialogue with each clip's duration. Drawn as Images
+  cards, isolated from Images the way the clips are from Video (#690).
 - Director chat answers are written as speech first, in the character's
   voice, then cut into five-second bursts word for word (#683). The audience
   is fifteen to adult whoever answers (#682).
