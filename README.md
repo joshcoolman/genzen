@@ -266,10 +266,15 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — **#697** is built and on the branch `storyboard-section-video`: a
-Generate video button on each storyboard row, turning that row into the clip it
-was a spec for. Neither it nor #695's frames have been run against live
-generations. Open a chat session
+**Focus** — nothing is in flight. The storyboard is shipped end to end: a board
+per script line, and a Generate video button on each row. **The open question is
+content refusals on the video path** — a line naming a trademarked franchise is
+refused by Kling while the lines either side go through, and the spoken line is
+the script, so it cannot be reworded. A silent take (`generate_audio: false`,
+11.2c/s against 14) would drop the line from the request entirely, with voice
+added later. Generate a few more rows first and find out how many actually
+refuse; if it is only the lines naming the film, that is a known set. File the
+issue once the number is known. Open a chat session
 that has both kinds of sheet, press Create storyboard, judge whether the rows
 read as a story, then generate two _adjacent_ rows and listen to the join —
 that is what says whether the no-music rule holds and how far the voice drifts.
