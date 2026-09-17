@@ -65,7 +65,11 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: var(--scrim);
+  /* The chip scrim, because `ExpandableIconButton`'s pill says it matches this
+     tick -- darkening one and not the other splits them on the same card. The
+     ink stays muted: grey here is the unselected *state*, not a contrast
+     choice, and it lights up when taken. */
+  background: var(--scrim-chip);
   backdrop-filter: blur(8px);
   color: var(--text-muted);
   cursor: pointer;
@@ -97,7 +101,7 @@
   bottom: calc(var(--space-8) + 1.15rem);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-sm);
-  background: var(--scrim);
+  background: var(--scrim-chip);
   color: var(--warning);
   font-size: var(--text-3xs);
   white-space: nowrap;

@@ -141,6 +141,15 @@
   /* Dialog and drawer backdrops. */
   --scrim: hsl(0 0% 0% / 0.6);
 
+  /* The wash behind a chip floating on a picture -- a thumbnail's corner
+     actions and its badges. Darker than `--scrim`, because those sit on
+     photographs rather than on the app: a backdrop only has to separate two
+     dark surfaces, while a label over a bright sheet has to stay readable with
+     nothing known behind it. Paired with `--text`, never `--text-muted`;
+     muted grey on 60% black was legible over a dark clip and vanished over a
+     white studio background (#690). */
+  --scrim-chip: hsl(0 0% 0% / 0.8);
+
   /* A slot in a fixed-length row with nothing in it -- the group card's swatch
      strip is the first (#319). Darker than the surface it sits on rather than a
      faded version of it: a tint of the ground disappears into the ground, and

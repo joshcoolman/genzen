@@ -12,23 +12,26 @@
   cursor: pointer;
 }
 
-/* Round, on `--scrim`, matching the select tick on an image card -- that one
+/* Round, on the chip scrim, matching the select tick on an image card -- that one
    was the best-looking of the set and the others are now the same object in a
    different corner. A rounded square and a circle sitting on one card read as
    two systems; the shape was carrying a distinction that does not exist, since
    every one of these is the same thing: a small action floating over content.
 
-   `--scrim` rather than a mix of `--bg`: the tick used it, and one of the two
-   had to go. */
+   `--scrim-chip` rather than a mix of `--bg`: the tick used the scrim, and one
+   of the two had to go. It is the *chip* scrim rather than the dialog one, and
+   the icon is `--text` rather than `--text-muted` -- a corner action sits on a
+   photograph, so its contrast cannot be tuned against the app's own greys
+   (#690). */
 .pill {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
   border-radius: 50%;
-  background: var(--scrim);
+  background: var(--scrim-chip);
   backdrop-filter: blur(8px);
-  color: var(--text-muted);
+  color: var(--text);
   transition: all var(--duration-normal) var(--ease-in-out);
 }
 
