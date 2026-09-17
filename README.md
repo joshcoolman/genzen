@@ -266,13 +266,13 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — **#695** is built and on the branch `storyboard-tab`: a Storyboard
-tab on a Director session, one row per numbered script line, drawing the first
-and last frame of the section that line becomes from the character and location
-sheets. It has not been
-run against live generations — open a chat session that has both kinds of sheet,
-press Create storyboard, and judge whether the rows read as a story. That
-judgement is the acceptance criterion, and the PR stays open until it is made.
+**Focus** — **#697** is built and on the branch `storyboard-section-video`: a
+Generate video button on each storyboard row, turning that row into the clip it
+was a spec for. Neither it nor #695's frames have been run against live
+generations. Open a chat session
+that has both kinds of sheet, press Create storyboard, judge whether the rows
+read as a story, then generate two _adjacent_ rows and listen to the join —
+that is what says whether the no-music rule holds and how far the voice drifts.
 
 Also outstanding, and independent: the **deployed** database still holds the old
 Director's rows and bucket objects. Run `node scripts/purge-director.mjs --yes`
@@ -282,6 +282,9 @@ says outright is not trusted.
 
 Recent highlights:
 
+- Each storyboard row generates its own section: the approved opening frame is
+  the clip's literal first frame, the sheets ride along, and takes add rather
+  than replace. No music by instruction; atmospherics only (#697).
 - A Storyboard tab on a Director session: one row per numbered script line,
   each drawn as the frame it opens on and the frame it ends on, from the
   sheets. No video — a few dollars against $38 for one video pass (#695).

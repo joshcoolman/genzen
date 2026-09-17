@@ -1,0 +1,35 @@
+.content {
+  max-width: 34rem;
+  display: grid;
+  gap: var(--space-12);
+}
+
+/* The frame the clip will literally begin on, which is the whole of what
+   pinning buys -- so it is what you look at before pressing. */
+.frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+}
+
+.said {
+  margin: 0;
+  line-height: var(--text-base-leading);
+}
+
+.facts,
+.wait {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+}

@@ -1,12 +1,13 @@
 'use client'
 
 import { SceneRow } from '../scene-row/scene-row'
-import { FRAME_MODEL_SLUG } from '../../board'
+import { FRAME_MODEL_SLUG, boardVideoCostCents } from '../../board'
 import styles from './storyboard-tab.module.css'
 import type { FrameStatus } from '../../use-storyboard'
 import type { BoardScene, StoredBoard } from '../../../_lib/types'
 import { Button, CostNote, EmptyState } from '#/components'
 import { estimateImageCostCents } from '#/features/ai-images/models'
+import { formatCost } from '#/features/video/models'
 
 /**
  * The storyboard (#695): every line of the script as the frame it opens on and
@@ -32,14 +33,21 @@ export function StoryboardTab({
   board,
   status,
   busy,
+  generating,
   onCreate,
   onRerun,
+  onFilm,
+  onWatch,
 }: {
   board: StoredBoard
   status: FrameStatus
   busy: boolean
+  /** The rows with a section in flight. */
+  generating: Array<string>
   onCreate: () => void
   onRerun: (scene: BoardScene) => void
+  onFilm: (scene: BoardScene) => void
+  onWatch: (takeId: string) => void
 }) {
   const scenes = board.scenes
   /* Two frames a scene, and what a six-scene board costs is the argument for
@@ -52,6 +60,11 @@ export function StoryboardTab({
     Math.max(scenes.length, 1) * 2,
     true,
   )
+
+  /* What this board has spent on video, which is the number the per-row button
+     makes easy to lose track of (#697). */
+  const spent = boardVideoCostCents(scenes)
+  const takes = scenes.reduce((total, s) => total + s.videoIds.length, 0)
 
   if (scenes.length === 0) {
     return (
@@ -72,6 +85,12 @@ export function StoryboardTab({
       <div className={styles.bar}>
         <p className={styles.count}>
           {scenes.length} {scenes.length === 1 ? 'scene' : 'scenes'}
+          {takes > 0 && (
+            <span className={styles.spent}>
+              {' '}
+              · {takes} {takes === 1 ? 'take' : 'takes'}, {formatCost(spent)}
+            </span>
+          )}
         </p>
         <CostNote cents={cents} unpriced={unpriced} />
         <Button onClick={onCreate} loading={busy}>
@@ -84,7 +103,10 @@ export function StoryboardTab({
             key={scene.id}
             scene={scene}
             status={status}
+            filming={generating.includes(scene.id)}
             onRerun={onRerun}
+            onFilm={onFilm}
+            onWatch={onWatch}
           />
         ))}
       </ol>

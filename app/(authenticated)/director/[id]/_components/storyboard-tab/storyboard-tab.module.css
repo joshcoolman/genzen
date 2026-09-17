@@ -32,3 +32,9 @@
   padding: 0;
   margin: 0;
 }
+
+/* What the board has spent on video, beside the count: the button is on every
+   row, so the total is the only thing that makes the spend visible. */
+.spent {
+  font-variant-numeric: tabular-nums;
+}

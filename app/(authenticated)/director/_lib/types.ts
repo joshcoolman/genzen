@@ -197,6 +197,19 @@ export const boardSceneSchema = z.object({
    *  opening one to land, because it is generated from it. */
   openingId: idSchema.nullable(),
   closingId: idSchema.nullable(),
+  /**
+   * The takes generated of this section (#697), oldest first.
+   *
+   * **A list, because takes add rather than replace** -- the opposite of the
+   * frames above. A frame is a spec and there is one of it; a take is a
+   * candidate, and pressing Generate again is asking for another one, not
+   * disowning the last. Nothing here is marked canonical: choosing a take per
+   * row is what turns the board into a cut, and that is its own decision.
+   *
+   * Defaulted, so a board stored before #697 parses rather than falling back
+   * to an empty one and losing its frames.
+   */
+  videoIds: z.array(idSchema).max(20).default([]),
 })
 export type BoardScene = z.infer<typeof boardSceneSchema>
 

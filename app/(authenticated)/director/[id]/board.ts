@@ -1,7 +1,9 @@
 import { z } from 'zod'
+import { REF_MODEL_SLUG, refModel } from './gen'
 import type { BoardScene } from '../_lib/types'
 import type { ScriptLine } from './script'
 import { IMAGE_MODELS } from '#/features/ai-images/models'
+import { estimateCostCents } from '#/features/video/models'
 
 /**
  * Everything a storyboard frame is made with (#695).
@@ -157,6 +159,7 @@ export function assembleScenes({
         guidance: null,
         openingId: null,
         closingId: null,
+        videoIds: [],
       },
     ]
   })
@@ -222,5 +225,63 @@ export function scenesToClose(
       scene.closingId === null &&
       scene.openingId !== null &&
       status[scene.openingId] === 'completed',
+  )
+}
+
+/**
+ * Turning one row into the clip it was a spec for (#697).
+ *
+ * **Kling O3 Pro's reference endpoint, and nothing is chosen.** It is the only
+ * model that takes a first frame and references on one request, which is
+ * exactly what a row holds -- the same reason the run's Add ref lands there
+ * (`gen.ts`). Fixed 16:9, and the duration is the line's own seconds, so there
+ * is nothing to pick.
+ */
+export const SECTION_MODEL_SLUG = REF_MODEL_SLUG
+
+export const SECTION_RATIO = '16:9'
+
+/**
+ * What one section is submitted at.
+ *
+ * The line's own seconds, which came from `durationForWords` rather than from a
+ * model -- so the clip runs as long as the words take to say. Clamped to what
+ * the endpoint names (3 to 15, every integer), and rounded, because a stored
+ * duration is a number and the endpoint's is an enum of strings. A row with no
+ * recorded duration falls back to the model's own default rather than guessing.
+ */
+export function sectionDuration(seconds: number | null): number {
+  const model = refModel()
+  const offered = model.durations
+  if (seconds === null) return model.defaultDuration
+  const rounded = Math.round(seconds)
+  if (offered.includes(rounded)) return rounded
+  return offered.reduce((best, value) =>
+    Math.abs(value - rounded) < Math.abs(best - rounded) ? value : best,
+  )
+}
+
+/** What this row costs to generate, printed before the press as everywhere
+ *  else that spends. Audio on, which is what the row is for. */
+export function sectionCostCents(seconds: number | null): number {
+  return estimateCostCents(
+    refModel(),
+    sectionDuration(seconds),
+    undefined,
+    true,
+  )
+}
+
+/** What the board has spent on video so far.
+ *
+ *  **The bar carries it because the button is on every row.** Thirty-two rows
+ *  at 70c to $1.68 each is the same bill the storyboard exists to avoid,
+ *  available one click at a time; a running total is what makes spending it
+ *  a decision rather than an accident. */
+export function boardVideoCostCents(scenes: Array<BoardScene>): number {
+  return scenes.reduce(
+    (total, scene) =>
+      total + scene.videoIds.length * sectionCostCents(scene.seconds),
+    0,
   )
 }

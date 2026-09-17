@@ -107,3 +107,14 @@
     gap: var(--space-12);
   }
 }
+
+/* The takes of this section, oldest first. A list because they add rather than
+   replace, and nothing here is marked as the one. */
+.takes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

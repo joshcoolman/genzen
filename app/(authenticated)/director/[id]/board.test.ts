@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   assembleScenes,
+  boardVideoCostCents,
   closingReferenceIds,
   sceneReferenceIds,
   scenesToClose,
+  sectionDuration,
 } from './board'
 import type { BoardSheet } from './board'
 import type { ScriptLine } from './script'
@@ -128,6 +130,7 @@ function scene(over: Partial<BoardScene> = {}): BoardScene {
     guidance: null,
     openingId: null,
     closingId: null,
+    videoIds: [],
     ...over,
   }
 }
@@ -167,5 +170,35 @@ describe('sceneReferenceIds', () => {
     // Every frame of every scene sees the character and the location: without
     // them the closing frame inherits its identity from a copy of a copy.
     expect(closingReferenceIds(scene(), id(9))).toEqual([id(9), id(3), id(2)])
+  })
+})
+
+describe('sectionDuration', () => {
+  it('submits the line own seconds, clamped to what the endpoint names', () => {
+    // Every duration a script line carries is one Kling O3 Pro offers, so the
+    // common case is the number unchanged.
+    expect(sectionDuration(5)).toBe(5)
+    expect(sectionDuration(12)).toBe(12)
+    // Outside the range, the nearest offered rather than a refusal: the clip
+    // still has to be generated.
+    expect(sectionDuration(2)).toBe(3)
+    expect(sectionDuration(40)).toBe(15)
+  })
+
+  it('falls back to the model default rather than guessing', () => {
+    expect(sectionDuration(null)).toBe(8)
+  })
+})
+
+describe('boardVideoCostCents', () => {
+  it('counts every take, because the button is on every row', () => {
+    // 14c/s: a 5s row is 70c, and two takes of it are $1.40.
+    expect(boardVideoCostCents([scene({ seconds: 5, videoIds: [] })])).toBe(0)
+    expect(
+      boardVideoCostCents([
+        scene({ seconds: 5, videoIds: [id(1), id(2)] }),
+        scene({ seconds: 10, videoIds: [id(3)] }),
+      ]),
+    ).toBe(70 * 2 + 140)
   })
 })

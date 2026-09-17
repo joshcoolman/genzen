@@ -5,9 +5,12 @@ import {
   FRAME_MODEL_SLUG,
   FRAME_RATIO,
   RERUN_MODEL_SLUGS,
+  SECTION_MODEL_SLUG,
+  SECTION_RATIO,
   assembleScenes,
   closingReferenceIds,
   sceneReferenceIds,
+  sectionDuration,
 } from '../[id]/board'
 import { dialogueOf } from '../[id]/script'
 import {
@@ -18,12 +21,16 @@ import {
 } from '../_lib/sessions.server'
 import { planStoryboard } from '../_lib/storyboard.server'
 import { idSchema } from '../_lib/types'
-import { listVideos } from '../../video/_actions/generate-video.action'
+import {
+  generateVideo,
+  listVideos,
+} from '../../video/_actions/generate-video.action'
 import { listSessionRefs } from './references.action'
 import type { RefAsset } from './references.action'
 import type { BoardScene, Session } from '../_lib/types'
 import closeFramePrompt from '#/lib/prompts/director-frame-close.md'
 import openFramePrompt from '#/lib/prompts/director-frame-open.md'
+import sectionPrompt from '#/lib/prompts/director-section.md'
 import { generateImageInternal } from '#/features/ai-images/server/generate-image-internal.server'
 import { updateImageMeta } from '#/features/user-images/server/images.action'
 import { resolveAuth } from '#/lib/server/auth.server'
@@ -51,8 +58,9 @@ import { sql } from '#/lib/server/db.server'
  * first, and chain scene to scene once there is something to judge.
  */
 
-/** The frames a storyboard has made, read as they are now -- the tab draws
- *  pending, failed and finished off the row like every other generation. */
+/** The rows a storyboard has made -- both frames of every scene and every take
+ *  of it -- read as they are now, so the tab draws pending, failed and finished
+ *  off the row like every other generation. */
 export async function listBoardFrames(
   sessionId: string,
 ): Promise<Record<string, RefAsset>> {
@@ -291,4 +299,86 @@ export async function rerunScene(
       (id): id is string => id !== null,
     ),
   )
+}
+
+/**
+ * Generate the section one row is a spec for (#697).
+ *
+ * **The row maps onto one Kling O3 Pro request with nothing left over**: the
+ * opening frame is the first frame, the sheets it was drawn from are the
+ * references, and the line's own seconds are the duration. Fixed 16:9, audio
+ * on, no picker -- the storyboard's lock-down, for the same reason.
+ *
+ * **The closing frame is not sent, though the endpoint takes one.** Real pairs
+ * read as cuts, which is two camera setups; a single continuous take pinned at
+ * both ends of two setups is a morph or a slow push rather than footage. The
+ * cut is pinned on the other side instead -- the next row's own opening frame
+ * is what the join was judged against, and that is the frame that row's clip
+ * begins on.
+ *
+ * **The opening frame is always sent, and that is not symmetric.** The sheets
+ * are deliberately neutral records -- flat studio light, plain backgrounds, no
+ * grade -- so with references alone nothing in the request carries what the
+ * film looks like, and the model would invent it per row. The opening frame is
+ * the only input that carries it.
+ *
+ * **Takes add.** A second press is another candidate beside the first, never
+ * over it: a frame is a spec and there is one of it; a take is a candidate.
+ */
+export async function generateSectionVideo(
+  sessionId: string,
+  sceneId: string,
+  words?: string,
+): Promise<Session> {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  const scene = session.board.scenes.find(
+    (s) => s.id === idSchema.parse(sceneId),
+  )
+  if (!scene) throw new Error('That scene is not in this session.')
+  if (!scene.openingId)
+    throw new Error('This scene has no opening frame to start from yet.')
+
+  const asked = words?.trim().slice(0, 2000)
+  /* The fixed instruction, then what the shot is, then what it is heading for,
+     then the line. The closing frame is not sent, but its description is: it
+     is the account of where the shot ends up, which is what the motion is.
+     Guidance goes last, where a later sentence overrides an earlier one. */
+  const prompt = [
+    sectionPrompt.trim(),
+    scene.openingPrompt,
+    `It moves toward this: ${scene.closingPrompt}`,
+    /* The chat's own marker, which is how a line reaches the model as speech
+       rather than as description (`composeClipPrompt`, read back by
+       `dialogueOf`). Reading back a structure the app wrote. */
+    `Speaking to camera, in English: "${scene.line}"`,
+    ...(asked ? [asked] : []),
+  ].join('\n\n')
+
+  const { recordId } = await generateVideo({
+    images: [
+      { id: scene.openingId, role: 'first' },
+      ...sceneReferenceIds(scene).map((id) => ({
+        id,
+        role: 'reference' as const,
+      })),
+    ],
+    prompt,
+    duration: sectionDuration(scene.seconds),
+    aspectRatio: SECTION_RATIO,
+    modelSlug: SECTION_MODEL_SLUG,
+    generateAudio: true,
+    origin: 'director',
+  })
+  await updateImageMeta(
+    recordId,
+    `Scene ${scene.number} — Take ${scene.videoIds.length + 1}`,
+    asked ?? scene.line,
+  )
+
+  /* Appended, and never into `cut.clipIds`: the board is not the run, and a
+     take joining the row would put it in the player and in Script. */
+  return updateBoardScene(userId, session.id, scene.id, {
+    videoIds: [...scene.videoIds, recordId],
+  })
 }

@@ -1,12 +1,13 @@
 'use client'
 
-import { RefreshCw } from 'lucide-react'
-import { frameState } from '../../board'
+import { Film, Play, RefreshCw } from 'lucide-react'
+import { frameState, sectionCostCents } from '../../board'
 import styles from './scene-row.module.css'
 import type { FrameState } from '../../board'
 import type { FrameStatus } from '../../use-storyboard'
 import type { BoardScene } from '../../../_lib/types'
 import { MiniButton, Skeleton } from '#/components'
+import { formatCost } from '#/features/video/models'
 import { imageUrl } from '#/lib/image-url'
 
 /**
@@ -34,12 +35,23 @@ import { imageUrl } from '#/lib/image-url'
 export function SceneRow({
   scene,
   status,
+  filming,
   onRerun,
+  onFilm,
+  onWatch,
 }: {
   scene: BoardScene
   status: FrameStatus
+  /** A section is in flight for this row, so a second press is refused rather
+   *  than quietly bought. */
+  filming: boolean
   onRerun: (scene: BoardScene) => void
+  onFilm: (scene: BoardScene) => void
+  onWatch: (takeId: string) => void
 }) {
+  /* The opening frame is what a section starts from, so there is nothing to
+     generate until it exists. */
+  const ready = frameState(scene.openingId, status) === 'completed'
   return (
     <li className={styles.scene}>
       <div className={styles.meta}>
@@ -60,6 +72,45 @@ export function SceneRow({
         >
           Rerun with guidance
         </MiniButton>
+
+        {/* The row's second act (#697): the frames were the spec, this is the
+            clip. The price is on the control, because the button is on every
+            row and thirty-two of them is the bill the board exists to avoid. */}
+        <MiniButton
+          icon={<Film className={styles.icon} />}
+          spinning={filming}
+          disabled={!ready || filming}
+          onClick={() => onFilm(scene)}
+        >
+          Generate video · {formatCost(sectionCostCents(scene.seconds))}
+        </MiniButton>
+
+        {/* Takes add rather than replace, so this is a list and nothing in it
+            is canonical -- choosing one per row is what turns the board into a
+            cut, and that is its own decision. */}
+        {scene.videoIds.length > 0 && (
+          <ul className={styles.takes}>
+            {scene.videoIds.map((takeId, index) => {
+              const state = frameState(takeId, status)
+              return (
+                <li key={takeId}>
+                  <MiniButton
+                    icon={<Play className={styles.icon} />}
+                    disabled={state !== 'completed'}
+                    onClick={() => onWatch(takeId)}
+                  >
+                    Take {index + 1}
+                    {state === 'pending'
+                      ? ' · working'
+                      : state === 'failed'
+                        ? ' · failed'
+                        : ''}
+                  </MiniButton>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </div>
 
       <div className={styles.frames}>
