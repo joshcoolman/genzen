@@ -93,6 +93,8 @@ export interface Session {
   chat: StoredChat | null
   /** The reference sheets extracted from its clips (#690). */
   refs: StoredRefs
+  /** The storyboard planned from its script and those sheets (#695). */
+  board: StoredBoard
   updated_at: string
 }
 
@@ -143,4 +145,83 @@ export function emptyRefs(): StoredRefs {
 export function parseRefs(value: unknown): StoredRefs {
   const parsed = storedRefsSchema.safeParse(value)
   return parsed.success ? parsed.data : emptyRefs()
+}
+
+/**
+ * A session's storyboard (#695).
+ *
+ * **A scene is a numbered script line**, and its two frames are the ends of the
+ * video section that line will become. The script's numbering is the board's:
+ * the boundaries are not something to work out, and the number here prints the
+ * same as the number on the Script tab.
+ *
+ * Drawing them is the cheapest way to find out whether the character sheet, the
+ * location sheets and the script add up to a story, which otherwise costs a
+ * whole video to answer.
+ *
+ * **The plan is stored where the run's assets are not.** Everything else a
+ * session holds is ids, because the facts are on the library row. A scene is
+ * not: what place it happens in and what its two frames were asked for is
+ * recorded nowhere -- the chat wrote a scene per answer and it only ever lived
+ * inside the composed clip prompt. So the plan is written down, and the frames
+ * stay ids.
+ *
+ * **Ordered, and replaced rather than added to.** The reference tabs are
+ * collections pruned by deleting; a storyboard is a sequence, so a re-run of
+ * one scene takes that scene's place and the pair it replaced goes to Trash.
+ *
+ * Two hundred scenes, matching the run's own cap: the board is one row per
+ * clip, so the two can never disagree about how long a session may be.
+ */
+export const boardSceneSchema = z.object({
+  id: idSchema,
+  /** The script line's own number -- its position in the run, which is what
+   *  the Script tab numbers by. Never renumbered. */
+  number: z.number().int().positive(),
+  /** What is said in this scene, verbatim. */
+  line: z.string().max(4000),
+  /** How long the section runs, off the clip's row. **The size of the change
+   *  between the two frames**: five seconds is a breath, twelve is a move. A
+   *  measurement rather than a recommendation, as the Script tab's is. */
+  seconds: z.number().nullable(),
+  /** The character sheets this scene is generated from. */
+  characterIds: z.array(idSchema).max(6),
+  /** The location sheet it is set in, or null when the plan named none. */
+  locationId: idSchema.nullable(),
+  openingPrompt: z.string().max(4000),
+  closingPrompt: z.string().max(4000),
+  /** What was typed into a re-run of this scene, kept so the row can say what
+   *  it was asked for. Null until one. */
+  guidance: z.string().max(2000).nullable(),
+  /** The two frames. Null until submitted -- the closing one waits for the
+   *  opening one to land, because it is generated from it. */
+  openingId: idSchema.nullable(),
+  closingId: idSchema.nullable(),
+})
+export type BoardScene = z.infer<typeof boardSceneSchema>
+
+export const storedBoardSchema = z.object({
+  version: z.literal(1),
+  scenes: z.array(boardSceneSchema).max(200),
+})
+export type StoredBoard = z.infer<typeof storedBoardSchema>
+
+export function emptyBoard(): StoredBoard {
+  return { version: 1, scenes: [] }
+}
+
+/** Null on every session made before #695, and an unreadable value opens empty
+ *  rather than 500ing the page -- `parseRun`'s rule. */
+export function parseBoard(value: unknown): StoredBoard {
+  const parsed = storedBoardSchema.safeParse(value)
+  return parsed.success ? parsed.data : emptyBoard()
+}
+
+/** Every image a storyboard has made, for the trash that follows a session. */
+export function boardImageIds(board: StoredBoard): Array<string> {
+  return board.scenes.flatMap((scene) =>
+    [scene.openingId, scene.closingId].filter(
+      (id): id is string => id !== null,
+    ),
+  )
 }

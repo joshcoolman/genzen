@@ -266,12 +266,13 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — open **#692** and fix it: rerunning a Director chat burst re-uses
-the clip's stored `duration_seconds` instead of timing the line, so it carries
-pre-#685 durations forward forever. `rerunChatClip` in
-`director/_actions/chat.action.ts` is the whole of it; `durationForWords` is
-already exported and the line is already in the prompt Rerun replays. The only
-open question is `pace`, which nothing stores. The issue is the spec.
+**Focus** — **#695** is built and on the branch `storyboard-tab`: a Storyboard
+tab on a Director session, one row per numbered script line, drawing the first
+and last frame of the section that line becomes from the character and location
+sheets. It has not been
+run against live generations — open a chat session that has both kinds of sheet,
+press Create storyboard, and judge whether the rows read as a story. That
+judgement is the acceptance criterion, and the PR stays open until it is made.
 
 Also outstanding, and independent: the **deployed** database still holds the old
 Director's rows and bucket objects. Run `node scripts/purge-director.mjs --yes`
@@ -281,6 +282,9 @@ says outright is not trusted.
 
 Recent highlights:
 
+- A Storyboard tab on a Director session: one row per numbered script line,
+  each drawn as the frame it opens on and the frame it ends on, from the
+  sheets. No video — a few dollars against $38 for one video pass (#695).
 - A Director session is a container for more than the run: Characters and
   Locations tabs holding reference sheets extracted from its own clips, and a
   Script tab holding the dialogue with each clip's duration. Drawn as Images

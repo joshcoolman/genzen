@@ -1,0 +1,13 @@
+-- A session's storyboard (#695): the script broken into scenes, each with the
+-- frame it opens on and the frame it ends on.
+--
+-- `{ version: 1, scenes: [...] }`, beside `cut`, `chat` and `refs` rather than
+-- inside any of them: a storyboard is a fourth kind of asset a session holds,
+-- and it outlives the run it was planned from.
+--
+-- The frames are ids of `user_images` rows, as `cut` and `refs` hold ids, and
+-- for the same reason: whether a frame has finished is read off the library as
+-- it is now. The scene plan itself -- its lines, its seconds, the prompts the
+-- two frames were generated from -- is stored, because nothing else records
+-- which line belongs to which scene. Null on every session made before this.
+alter table director_sessions add column board jsonb;

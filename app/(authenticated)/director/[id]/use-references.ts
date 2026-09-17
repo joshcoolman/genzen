@@ -16,8 +16,10 @@ import { useReportError } from '#/components'
 import { imageUrl } from '#/lib/image-url'
 
 /** The tabs a session can show. `script` is the run's dialogue and exists
- *  only for a chat, whose clip prompts have a line in them to find (#690). */
-export type SessionTab = 'work' | 'script' | RefKind
+ *  only for a chat, whose clip prompts have a line in them to find (#690);
+ *  `storyboard` is the frames planned from that script and the sheets, and
+ *  needs all three to exist before it has anything to build from (#695). */
+export type SessionTab = 'work' | 'script' | 'storyboard' | RefKind
 
 /**
  * The Characters and Locations tabs (#690).
