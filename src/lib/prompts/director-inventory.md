@@ -28,8 +28,16 @@ For each element:
   its light, what is in it. Concrete and visual. Do not invent a backstory, a
   name, or a detail no still shows -- if the face is never clear, say what can
   be seen and stop there.
-- **frames** -- the numbers of the two or three stills that show this element
-  best, best first. A still where the element is large, sharp and unobstructed
-  beats one where it is distant or cut off. Never more than three.
+- **frames** -- the numbers of up to four stills to draw this element from,
+  best first. **Pick for coverage, not for quality alone.** Four near-identical
+  close-ups say less than one close-up, one fuller shot and one different
+  angle: the sheet has to show this element from several sides, and it can only
+  use what these stills contain. For a character, reach for a clear view of the
+  face, a wider view showing the whole figure and the clothing, and a different
+  angle or expression if one exists. For a location, reach for views that
+  between them cover the most of the space. Within that, prefer stills where
+  the element is large, sharp and unobstructed over ones where it is distant or
+  cut off. Never more than four, and fewer is fine when the clips genuinely
+  only show one view.
 
 Every frame number you return must be one you were shown.

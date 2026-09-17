@@ -43,9 +43,20 @@ const INVENTORY_WIDTH = 768
  *  instruction says so too; this is what makes it true. */
 const MAX_ELEMENTS = 6
 
-/** References per sheet. The instruction asks for two or three; a model that
- *  returns eight would otherwise quietly pay for eight. */
-const MAX_FRAMES_PER_ELEMENT = 3
+/**
+ * References per sheet.
+ *
+ * Four, because a sheet has to show an element from several sides and can only
+ * use what the stills contain: a face, a fuller view of the whole figure, and
+ * a different angle is three distinct things before any redundancy. Three was
+ * the first cut and left the model inferring a profile and a back view from
+ * near-identical front-on framings. Nano Banana 2 takes thirteen beyond the
+ * first, so the cap is about what is useful rather than what fits.
+ *
+ * It is also a cap on what the model returns, not a target: a model that asked
+ * for eight would otherwise quietly pay for eight.
+ */
+const MAX_FRAMES_PER_ELEMENT = 4
 
 interface ClipRow {
   id: string

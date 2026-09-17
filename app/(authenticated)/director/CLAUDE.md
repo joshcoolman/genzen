@@ -150,6 +150,24 @@ locations: [ids], frames: [ids] }`. The column is `refs` and not
   in the same insert, which is what lets a second extraction reuse them
   instead of decoding an identical PNG: provenance before bytes, the rule
   `findClipEndFrame` follows.
+- **A sheet prompt must anchor the medium, or the model changes it** (#694).
+  The first character sheet came back as a flat vector illustration off
+  photoreal clips -- and the references had been sent, the endpoint was
+  `/edit`, the identity transferred perfectly. The prompt threw the medium
+  away on its own: "character reference sheet" is animation jargon for a model
+  sheet, "drawn from the reference images" says draw, "flat lighting" says flat
+  shading, and "not a shot from the film" disowns photography outright. Four
+  pulls toward illustration and nothing anchoring the source. Every one of the
+  three image prompts now states the rule outright -- match the references in
+  medium and rendering, photographic stays photographic -- and none of them
+  says "drawn". Worth re-reading before editing any of them: it cost a whole
+  extraction to find.
+- **Four frames per sheet, picked for coverage rather than quality** (#694).
+  A sheet shows an element from several sides and can only use what the stills
+  contain, so four near-identical close-ups say less than a face, a full figure
+  and a different angle. The inventory instruction asks for that spread
+  explicitly; before it, three frames of the same front-on framing left the
+  model inventing the profile and the back view.
 - **Locked down.** Nano Banana 2 alone for the extraction; a derive offers
   those three models that take references as a multi-select, where every one
   ticked is one generation. No aspect, no resolution, no enhance, no reference
