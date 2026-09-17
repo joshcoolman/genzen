@@ -270,7 +270,8 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 tabs on a Director session (chat or run) that extract one 16:9 sheet per
 primary character or key object and one per location from the session's
 clips, isolated from Images the way the clips are from Video, living and
-dying with the session, each sheet regenerable with guidance. The issue is
+dying with the session; every asset is additive -- "New from this" derives
+a new sheet from a selected one plus your words -- and pruned by delete. The issue is
 the spec, including the code seams; #689 is the larger pass it is phase one
 of, and is not being built.
 
