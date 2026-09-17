@@ -174,6 +174,26 @@ locations: [ids], frames: [ids] }`. The column is `refs` and not
   is pruned by deleting and the corner is the plain Trash; and **New from this
   is one click** in the top-left corner where Images keeps its `...`, being the
   tab's whole reason for existing.
+- **Script is the run's dialogue, and only that** (#690). A third tab beside
+  Work, for a chat session alone: the lines the character says, numbered by
+  position in the run, and nothing else. **It reads the clips, not the
+  transcript** -- a turn's stored `line` is the whole answer as written, while
+  the run is what survived being pared down, so a burst removed in the work
+  area drops out here and renumbers the rest. The extraction is `dialogueOf`
+  in `[id]/script.ts`, matching the `Speaking to camera:` marker that
+  `composeClipPrompt` ends every chat prompt with -- reading back a structure
+  the app wrote, which is why it is safe here and was **not** safe in
+  `scriptOf`, whose first cut pulled quoted spans out of hand-typed run
+  prompts and was wrong about which parts mattered. A clip with no line to
+  find keeps its number and says so, rather than vanishing and renumbering
+  around a cut that did not happen.
+  **Deliberately bare for now**: the prompts also carry a scene (written once
+  per answer, so it changes only at turn boundaries) and a per-clip action,
+  both real scene direction and both cleanly separable. They are left out
+  until the bare list has been read, because whether it needs them is not
+  answerable in advance. Neither is stored -- they exist only inside the
+  composed prompt -- so adding them means either deriving them by common
+  prefix within a turn or storing them on the turn from then on.
 - **Clicking a sheet opens the shared lightbox.** At grid size a turnaround
   sheet cannot be judged, which is the one thing it exists for. Director keeps
   its own cursor over the open tab's finished sheets rather than reusing

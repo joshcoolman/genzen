@@ -15,7 +15,9 @@ import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-pol
 import { useReportError } from '#/components'
 import { imageUrl } from '#/lib/image-url'
 
-export type SessionTab = 'work' | RefKind
+/** The tabs a session can show. `script` is the run's dialogue and exists
+ *  only for a chat, whose clip prompts have a line in them to find (#690). */
+export type SessionTab = 'work' | 'script' | RefKind
 
 /**
  * The Characters and Locations tabs (#690).
@@ -79,13 +81,12 @@ export function useReferences(
    * show, and "next" landing on a spinner is a dead stop in the middle of a
    * pass.
    */
-  const shown = useMemo(
-    () =>
-      (tab === 'work' ? [] : assets[tab]).filter(
-        (a) => a.status === 'completed',
-      ),
-    [assets, tab],
-  )
+  const shown = useMemo(() => {
+    /* Checked positively rather than by excluding the other tabs: only a
+       positive test narrows the union to a key of `assets`. */
+    const list = tab === 'characters' || tab === 'locations' ? assets[tab] : []
+    return list.filter((a) => a.status === 'completed')
+  }, [assets, tab])
   const viewerItems: Array<ViewerItem> = useMemo(
     () =>
       shown.map((asset) => ({

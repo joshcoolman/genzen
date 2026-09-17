@@ -24,14 +24,24 @@ export function SessionTabs({
   tab,
   onChange,
   counts,
+  script,
 }: {
   tab: SessionTab
   onChange: (tab: SessionTab) => void
   counts: Record<RefKind, number>
+  /** Whether the session has dialogue to show. A run's prompts are typed by
+   *  hand and carry no line to find, so it gets no Script tab rather than an
+   *  empty one (#690). */
+  script: boolean
 }) {
   return (
     <nav className={styles.tabs} aria-label="Session">
       <Tab id="work" tab={tab} onChange={onChange} label="Work" />
+      {/* Beside Work, because it is the same thing in another form: what the
+          run says, read rather than watched. */}
+      {script && (
+        <Tab id="script" tab={tab} onChange={onChange} label="Script" />
+      )}
       {REF_KINDS.map((kind) => (
         <Tab
           key={kind}

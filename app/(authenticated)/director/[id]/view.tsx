@@ -5,6 +5,7 @@ import { SessionHeading } from '../_components/session-heading/session-heading'
 import { ChatPanel } from './_components/chat-panel/chat-panel'
 import { DeriveDialog } from './_components/derive-dialog/derive-dialog'
 import { ReferenceTab } from './_components/reference-tab/reference-tab'
+import { ScriptTab } from './_components/script-tab/script-tab'
 import { SessionTabs } from './_components/session-tabs/session-tabs'
 import { ClipRow } from './_components/clip-row/clip-row'
 import {
@@ -13,6 +14,7 @@ import {
 } from './_components/clip-dialog/clip-dialog'
 import { ScriptDialog } from './_components/script-dialog/script-dialog'
 import { SequencePlayer } from './_components/sequence-player/sequence-player'
+import { dialogueOf } from './script'
 import { useReferences } from './use-references'
 import { useView } from './use-view'
 import styles from './view.module.css'
@@ -46,8 +48,11 @@ export function View({
 }) {
   const view = useView(session, clips)
   const references = useReferences(session.id, refs)
-  /** Which reference tab is showing, or null for the work area. */
-  const kind: RefKind | null = references.tab === 'work' ? null : references.tab
+  /** Which reference tab is showing, or null for Work and Script. */
+  const kind: RefKind | null =
+    references.tab === 'characters' || references.tab === 'locations'
+      ? references.tab
+      : null
   /* The row drives the player and nothing drives the row, so the one call
      between them is imperative: a tile click has to reach the `<video>`
      elements, and routing it through state re-introduces the bail-out that
@@ -78,6 +83,7 @@ export function View({
           <SessionTabs
             tab={references.tab}
             onChange={references.setTab}
+            script={view.chat !== null}
             counts={{
               characters: refs.characters.length,
               locations: refs.locations.length,
@@ -91,7 +97,10 @@ export function View({
           above is the session's. Replaces rather than hides -- a hidden
           `<video>` keeps playing, and a stage you cannot see talking over the
           tab you are reading is the wrong answer. */}
-      {kind !== null ? (
+      {references.tab === 'script' ? (
+        /* The run's dialogue, read off the clips in the order they play. */
+        <ScriptTab lines={dialogueOf(view.picked)} />
+      ) : kind !== null ? (
         <ReferenceTab
           kind={kind}
           assets={refs[kind]}
