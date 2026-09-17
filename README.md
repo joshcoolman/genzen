@@ -267,8 +267,9 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 ## Status
 
 **Focus** — **#695** is built and on the branch `storyboard-tab`: a Storyboard
-tab on a Director session that breaks the script into scenes and draws the first
-and last frame of each from the character and location sheets. It has not been
+tab on a Director session, one row per numbered script line, drawing the first
+and last frame of the section that line becomes from the character and location
+sheets. It has not been
 run against live generations — open a chat session that has both kinds of sheet,
 press Create storyboard, and judge whether the rows read as a story. That
 judgement is the acceptance criterion, and the PR stays open until it is made.
@@ -281,9 +282,9 @@ says outright is not trusted.
 
 Recent highlights:
 
-- A Storyboard tab on a Director session: the script broken into scenes by a
-  planner, each drawn as the frame it opens on and the frame it ends on, from
-  the sheets. No video — twelve images against $38 for one video pass (#695).
+- A Storyboard tab on a Director session: one row per numbered script line,
+  each drawn as the frame it opens on and the frame it ends on, from the
+  sheets. No video — a few dollars against $38 for one video pass (#695).
 - A Director session is a container for more than the run: Characters and
   Locations tabs holding reference sheets extracted from its own clips, and a
   Script tab holding the dialogue with each clip's duration. Drawn as Images

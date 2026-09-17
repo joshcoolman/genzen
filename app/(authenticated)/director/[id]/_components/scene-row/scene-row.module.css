@@ -15,28 +15,16 @@
   min-width: 0;
 }
 
-.title {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-8);
-  margin: 0;
-  font-weight: 600;
-}
-
 .number {
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text);
 }
 
-.lines {
-  display: grid;
-  gap: var(--space-8);
+/* The line, which is the scene. Read at full size: it is the one thing on the
+   row that is words. */
+.line {
   margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--text-sm);
   line-height: var(--text-base-leading);
-  color: var(--text-muted);
 }
 
 .facts {

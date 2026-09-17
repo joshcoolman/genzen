@@ -13,6 +13,11 @@ import { imageUrl } from '#/lib/image-url'
  * One scene of a storyboard (#695): what it says, and the two frames it runs
  * between.
  *
+ * **A scene is one numbered line of the script**, and the two frames are the
+ * ends of the video section that line will become -- which is why the seconds
+ * sit beside them. Five seconds is a breath between the two pictures; twelve is
+ * a move across the room.
+ *
  * **Large, and side by side, because the row is the judgement.** The question
  * this tab answers is whether the scenes read top to bottom as a story worth
  * watching, and that is answered by looking -- so the frames are as big as the
@@ -38,23 +43,14 @@ export function SceneRow({
   return (
     <li className={styles.scene}>
       <div className={styles.meta}>
-        <p className={styles.title}>
-          <span className={styles.number}>{scene.number}</span>
-          {scene.title}
-        </p>
-        <ol className={styles.lines}>
-          {scene.lines.map((line, index) => (
-            <li key={index}>{line}</li>
-          ))}
-        </ol>
+        {/* The number and the seconds are the Script tab's, printed the same
+            way: the board is one row per line, so the two have to agree at a
+            glance. */}
         <p className={styles.facts}>
-          {/* What the scene's clips ran to, summed. A measurement rather than a
-              recommendation, as the Script tab's is. */}
+          <span className={styles.number}>{scene.number}</span>
           {scene.seconds === null ? null : <span>{scene.seconds}s</span>}
-          <span>
-            {scene.lines.length} {scene.lines.length === 1 ? 'line' : 'lines'}
-          </span>
         </p>
+        <p className={styles.line}>{scene.line}</p>
         {/* What was typed into the last re-run, so the row says what it was
             asked for rather than leaving a changed frame unexplained. */}
         {scene.guidance && <p className={styles.guidance}>{scene.guidance}</p>}
@@ -71,13 +67,13 @@ export function SceneRow({
           id={scene.openingId}
           state={frameState(scene.openingId, status)}
           label="Opens on"
-          alt={`${scene.title}, opening frame`}
+          alt={`Scene ${scene.number}, opening frame`}
         />
         <Frame
           id={scene.closingId}
           state={frameState(scene.closingId, status)}
           label="Ends on"
-          alt={`${scene.title}, closing frame`}
+          alt={`Scene ${scene.number}, closing frame`}
           /* The closing frame is generated from the opening one, so before that
              lands there is nothing to derive from and nothing has been asked
              for. Saying so is the difference between a queue and a hole. */

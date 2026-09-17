@@ -6,6 +6,7 @@ import {
   FRAME_RATIO,
   RERUN_MODEL_SLUGS,
   assembleScenes,
+  closingReferenceIds,
   sceneReferenceIds,
 } from '../[id]/board'
 import { dialogueOf } from '../[id]/script'
@@ -36,6 +37,10 @@ import { sql } from '#/lib/server/db.server'
  * script, the character sheet and the location sheets add up to a story you
  * want to watch. Nothing here generates video and nothing is wired to what
  * comes after it.
+ *
+ * **A scene is a numbered script line**, and its two frames are the ends of
+ * the video section that line will become -- so the board is one row per clip
+ * and its numbers are the run's numbers.
  *
  * **Two stages, and that is forced rather than chosen.** The closing frame is
  * generated *from* the scene's opening frame, and a reference is bytes out of
@@ -88,8 +93,8 @@ async function sheetsOf(sessionId: string) {
 }
 
 /** Submit one frame. The prompt is the fixed instruction plus what this frame
- *  is of; the scene's title travels as the row's name, so the board reads as
- *  the film rather than as a list of model badges. */
+ *  is of; the row is named for its place in the script, which is the one thing
+ *  that identifies it outside the board. */
 async function submitFrame({
   instruction,
   scene,
@@ -113,16 +118,13 @@ async function submitFrame({
     aspectRatio: FRAME_RATIO,
     referenceImageIds,
   })
-  await updateImageMeta(
-    recordId,
-    `${scene.number}. ${scene.title} — ${label}`,
-    words,
-  )
+  await updateImageMeta(recordId, `Scene ${scene.number} — ${label}`, words)
   return recordId
 }
 
 /**
- * Create storyboard: plan the scenes, then submit every opening frame.
+ * Create storyboard: describe every line's two frames, then submit every
+ * opening.
  *
  * All-at-once for the openings, settled by the standard poll like every other
  * generation in the app. The closings follow one by one as the openings land.
@@ -150,9 +152,12 @@ export async function createStoryboard(sessionId: string): Promise<Session> {
     const clip = byId.get(id)
     return clip ? [clip] : []
   })
+  /* Spoken lines only, and their own numbers: a clip carrying no line is not a
+     scene of this script, and the ones around it keep the numbers the Script
+     tab prints for them. */
   const lines = dialogueOf(picked).filter((line) => line.spoken)
   if (lines.length === 0)
-    throw new Error('This session has no script to break into scenes.')
+    throw new Error('This session has no script to storyboard.')
 
   const plan = await planStoryboard({ lines, characters, locations })
   const scenes = assembleScenes({
@@ -163,7 +168,7 @@ export async function createStoryboard(sessionId: string): Promise<Session> {
     newId: randomUUID,
   })
   if (scenes.length === 0)
-    throw new Error('The script could not be broken into scenes.')
+    throw new Error('No frames could be planned for this script.')
 
   /* Settled, not all-or-nothing, on `extractReferences`' reasoning: a submit
      that failed has already left a failed row, and the ones that went through
@@ -229,7 +234,10 @@ export async function closeScene(
     instruction: closeFramePrompt,
     scene,
     words: scene.closingPrompt,
-    referenceImageIds: [scene.openingId],
+    /* The opening frame first, then the same sheets it was drawn from: every
+       frame of every scene sees the character and the place it is of, rather
+       than inheriting them from a copy of a copy. */
+    referenceImageIds: closingReferenceIds(scene, scene.openingId),
     model: FRAME_MODEL_SLUG,
     label: 'Closing',
   })

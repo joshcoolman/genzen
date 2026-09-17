@@ -14,6 +14,13 @@ import { IMAGE_MODELS } from '#/features/ai-images/models'
 /**
  * The plan, as the model answers it.
  *
+ * **One entry per numbered script line, because a scene is a line.** The line
+ * is what will be generated as a video section of its own stated length, so
+ * the boundaries are the script's and the model is never asked to find them --
+ * it is handed a line and describes the two frames that section runs between.
+ * An earlier cut had it group lines into scenes of its own; a scene is what
+ * the script numbers, and nothing should be guessing at that.
+ *
  * Numbers, never ids, exactly as the inventory does it: a line is a number and
  * a sheet is a number. An id is 36 characters of nothing for a model to hold
  * and one wrong character is somebody else's row. `assembleScenes` maps them
@@ -21,8 +28,7 @@ import { IMAGE_MODELS } from '#/features/ai-images/models'
  *
  * Plain numbers and no array bounds: Anthropic's native output format rejects
  * `minItems`/`maxItems` and the `minimum`/`maximum` Zod emits for `.int()`,
- * which is the wall `inventory` hit first. The counting and the rounding are
- * done below.
+ * which is the wall `inventory` hit first. The rounding is done below.
  *
  * Here rather than beside the call that makes it, so the mapping is testable
  * without a server module in the graph.
@@ -30,8 +36,7 @@ import { IMAGE_MODELS } from '#/features/ai-images/models'
 export const storyboardPlanSchema = z.object({
   scenes: z.array(
     z.object({
-      title: z.string().min(1),
-      lines: z.array(z.number()),
+      line: z.number(),
       location: z.number().nullable(),
       characters: z.array(z.number()),
       opening: z.string().min(1),
@@ -40,10 +45,6 @@ export const storyboardPlanSchema = z.object({
   ),
 })
 export type StoryboardPlan = z.infer<typeof storyboardPlanSchema>
-
-/** More scenes than this is the model having planned shots rather than scenes.
- *  The instruction asks for three to eight; this is what makes it true. */
-export const MAX_SCENES = 12
 
 /** 16:9, as the sheets are: a frame of a film, whatever shape the clips are. */
 export const FRAME_RATIO = '16:9'
@@ -92,12 +93,17 @@ export interface BoardSheet {
 /**
  * The plan, mapped back onto the session's own rows.
  *
- * **Every number the model returned is checked here rather than trusted.** A
- * line number outside the script is dropped, a sheet number outside the list is
- * dropped, and a scene left with no lines at all is dropped with them -- the
- * same rule the inventory follows for a frame number it was never shown. The
- * scenes are then renumbered from one, so the board is contiguous whatever came
- * back.
+ * **Driven by the script, not by the answer.** The scenes are the numbered
+ * lines, in the script's own order and carrying the script's own numbers --
+ * never renumbered, because the number is the position in the run and the
+ * Script tab prints the same one. The model's entries are looked up by line
+ * number, and a line it did not answer for simply has no frames to draw and
+ * drops out; that is visible as a board shorter than the script, which is the
+ * honest reading of what happened.
+ *
+ * **Every other number is checked rather than trusted**, the inventory's rule:
+ * a sheet number outside the list it was shown is no sheet at all, never
+ * somebody else's row.
  */
 export function assembleScenes({
   plan,
@@ -113,7 +119,9 @@ export function assembleScenes({
   /** Injected so a test can read the ids it produced. */
   newId: () => string
 }): Array<BoardScene> {
-  const byNumber = new Map(lines.map((line) => [line.number, line]))
+  const planned = new Map(
+    plan.scenes.map((scene) => [Math.round(scene.line), scene]),
+  )
   /* A number the model returned, mapped back to a row -- or nothing, when it
      named a sheet it was never shown. Bounds-checked by hand because indexed
      access is not checked by the compiler here. */
@@ -122,61 +130,63 @@ export function assembleScenes({
     return index >= 0 && index < list.length ? list[index].id : null
   }
 
-  return plan.scenes
-    .flatMap((scene, index) => {
-      const covered = [...new Set(scene.lines.map((n) => Math.round(n)))]
-        .sort((a, b) => a - b)
-        .flatMap((n) => {
-          const line = byNumber.get(n)
-          return line ? [line] : []
-        })
-      if (covered.length === 0) return []
+  return lines.flatMap((line) => {
+    const scene = planned.get(line.number)
+    if (!scene) return []
 
-      const spoken = covered.filter((line) => line.spoken)
-      const seconds = covered.reduce(
-        (total, line) => total + (line.seconds ?? 0),
-        0,
-      )
-      const locationId =
-        scene.location === null
-          ? null
-          : (pickSheet(locations, scene.location) ?? null)
-      const characterIds = [
-        ...new Set(
-          scene.characters
-            .map((n) => pickSheet(characters, n))
-            .filter((id): id is string => !!id),
-        ),
-      ].slice(0, locationId ? MAX_SCENE_REFS - 1 : MAX_SCENE_REFS)
+    const locationId =
+      scene.location === null ? null : pickSheet(locations, scene.location)
+    const characterIds = [
+      ...new Set(
+        scene.characters
+          .map((n) => pickSheet(characters, n))
+          .filter((id): id is string => id !== null),
+      ),
+    ].slice(0, locationId ? MAX_SCENE_REFS - 1 : MAX_SCENE_REFS)
 
-      return [
-        {
-          id: newId(),
-          number: index + 1,
-          title: scene.title.trim().slice(0, 200),
-          lines: spoken.map((line) => line.line),
-          seconds: seconds > 0 ? seconds : null,
-          characterIds,
-          locationId,
-          openingPrompt: scene.opening.trim().slice(0, 4000),
-          closingPrompt: scene.closing.trim().slice(0, 4000),
-          guidance: null,
-          openingId: null,
-          closingId: null,
-        },
-      ]
-    })
-    .map((scene, index) => ({ ...scene, number: index + 1 }))
+    return [
+      {
+        id: newId(),
+        number: line.number,
+        line: line.line,
+        seconds: line.seconds,
+        characterIds,
+        locationId,
+        openingPrompt: scene.opening.trim().slice(0, 4000),
+        closingPrompt: scene.closing.trim().slice(0, 4000),
+        guidance: null,
+        openingId: null,
+        closingId: null,
+      },
+    ]
+  })
 }
 
-/** The sheets one opening frame is generated from: the place, then who is in
- *  it. The location first because it is the one every frame of the scene
- *  shares. */
+/** The sheets a scene is drawn from: the place, then who is in it. The location
+ *  first because it is the one thing every frame of the scene shares. */
 export function sceneReferenceIds(scene: BoardScene): Array<string> {
   return [
     ...(scene.locationId ? [scene.locationId] : []),
     ...scene.characterIds,
   ].slice(0, MAX_SCENE_REFS)
+}
+
+/**
+ * What the closing frame is generated from: its own opening frame **and the
+ * same sheets the opening had**.
+ *
+ * The opening frame leads, because the closing one is the same shot a few
+ * seconds later and that picture is what it continues from. But the sheets ride
+ * along with it: without them the identity and the place are only as good as
+ * whatever survived one generation, and a face drifts by being copied from a
+ * copy. Every frame of every scene sees the character and the location it is
+ * supposed to be of.
+ */
+export function closingReferenceIds(
+  scene: BoardScene,
+  openingId: string,
+): Array<string> {
+  return [openingId, ...sceneReferenceIds(scene)]
 }
 
 /** What a frame is doing, as the row draws it. */

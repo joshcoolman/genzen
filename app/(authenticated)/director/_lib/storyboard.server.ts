@@ -1,6 +1,6 @@
 import 'server-only'
 import { generateObject } from 'ai'
-import { MAX_SCENES, storyboardPlanSchema } from '../[id]/board'
+import { storyboardPlanSchema } from '../[id]/board'
 import type { BoardSheet, StoryboardPlan } from '../[id]/board'
 import type { ScriptLine } from '../[id]/script'
 import storyboardPrompt from '#/lib/prompts/director-storyboard.md'
@@ -10,16 +10,20 @@ import { ai, requireAiRole } from '#/lib/server/ai.server'
  * Planning a session's storyboard (#695).
  *
  * One Claude call that reads the script and the sheets that exist, and answers
- * with scenes: which lines each covers, where it happens, and the two frames it
- * opens and closes on.
+ * with one entry per numbered line: where that line happens, and the two frames
+ * the section it becomes runs between.
  *
- * **A model plans the scenes because nothing stored knows them.** The chat
- * wrote a scene per answer and it only ever lived inside the composed clip
- * prompt, so a session made before this has no record of which line belongs to
- * which scene. Storing it going forward would leave every existing session out,
- * and deriving it by common prefix within a turn guesses at a structure nobody
- * wrote down. Planning it here works on every session that exists today, and is
- * the only option that can also say which location a scene happens in.
+ * **The boundaries are the script's, not the model's.** A scene is a numbered
+ * line, because a numbered line is what gets generated as a video section of
+ * its own stated length -- so nothing here has to work out where scenes begin,
+ * and the board's numbers are the run's numbers. What the model is for is the
+ * part nothing stored knows: what each frame shows, and which location a line
+ * is set in. The clip prompts carried a scene, written once per answer, but it
+ * only ever lived inside the composed prompt.
+ *
+ * **The whole script goes in every time, for one line's frames.** The cut
+ * between two scenes and the drift of the shot sizes down the film are the
+ * things being judged, and neither is visible from one line.
  *
  * Numbers in, numbers out, exactly as the inventory does it: a line is a
  * number, a sheet is a number, and an id never reaches the model. An id is 36
@@ -62,7 +66,11 @@ export async function planStoryboard({
 
   const { object } = await generateObject({
     model: ai.reasoning,
-    maxOutputTokens: 8192,
+    /* One entry per line, and a real script is thirty-odd of them: two frame
+       descriptions each is most of the budget. A truncated answer is a board
+       short of its last scenes, which reads as the planner having stopped
+       early rather than as a limit. */
+    maxOutputTokens: 32000,
     system: storyboardPrompt,
     schema: storyboardPlanSchema,
     messages: [
@@ -77,5 +85,5 @@ export async function planStoryboard({
     ],
   })
 
-  return { scenes: object.scenes.slice(0, MAX_SCENES) }
+  return object
 }

@@ -233,9 +233,9 @@ locations: [ids], frames: [ids] }`. The column is `refs` and not
 
 ## Storyboard (#695)
 
-A fourth tab, and the first one that is neither the run nor a collection: the
-script broken into scenes, each drawn as **the frame it opens on and the frame
-it ends on**, with no video generated at all. It exists because video is the
+A fourth tab, and the first one that is neither the run nor a collection: **one
+row per numbered script line**, each drawn as the frame that section opens on
+and the frame it ends on, with no video generated at all. It exists because video is the
 most expensive way to find out whether the sheets and the script add up to a
 story -- twelve images at 8c against $38.64 for one Kling O3 Pro pass over a
 276-second script, and 8c to re-roll a frame against $1.12 for the clip.
@@ -247,23 +247,36 @@ story -- twelve images at 8c against $38.64 for one Kling O3 Pro pass over a
   before anything here grows a validation step.
 - **It appears only with a script, a character sheet and a location sheet.**
   All three are its inputs, so before them there is nothing to build from.
-- **A model plans the scenes, and that is the considered choice of three.**
-  Nothing stores which line belongs to which scene: the chat wrote a `scene` per
-  answer and it only ever lived inside the composed clip prompt. Storing it
-  going forward does nothing for any session that already exists, and deriving
-  it by common prefix within a turn guesses at a structure nobody wrote down.
-  Planning it (`_lib/storyboard.server.ts`, prompt in
-  `src/lib/prompts/director-storyboard.md`) works on every session that exists
-  today and is the only option that can also say which location a scene is in.
-  **Numbers in, numbers out** -- a line is a number and a sheet is a number,
-  the inventory's rule, and `assembleScenes` drops every number the model was
-  not given and renumbers what is left.
+- **A scene is a numbered line, and nothing works out where scenes begin.** A
+  line is what becomes a video section of its own stated length, so the script's
+  numbering is the board's -- the same number the Script tab prints, never
+  renumbered. The first cut had a model group lines into scenes of its own
+  finding; that is guessing at something the script already says.
+- **The model describes the frames, which is the part nothing stores.** One
+  call (`_lib/storyboard.server.ts`, prompt in
+  `src/lib/prompts/director-storyboard.md`) takes the whole script and the
+  sheets and answers with one entry per line: its location and its two frame
+  descriptions. The whole script goes in for each line's frames because the cut
+  between two scenes and the drift of shot sizes down the film are what is being
+  judged, and neither is visible from one line. **Numbers in, numbers out** --
+  a line is a number and a sheet is a number, the inventory's rule; a line the
+  model skipped simply has no frames and drops out, which reads as a board
+  shorter than the script rather than as a silent renumbering.
+- **The seconds are the size of the change between a pair.** Five seconds is a
+  breath -- a hand rises, a head turns; twelve is a move across the room. The
+  duration is on the row for that reason, and the instruction says it outright:
+  without it a 5s pair and a 12s pair come back looking the same, which is the
+  one thing that makes a per-line board pointless.
 - **Two stages, because the second frame cannot be submitted with the first.**
   The closing frame is generated _from_ the opening one, and a reference is
   bytes out of the bucket -- there is nothing behind a pending row to upload.
   So Create storyboard submits every opening at once and the page drains the
   closings one at a time as the openings land (`scenesToClose`,
-  `use-storyboard`). The drain keeps a ref of what it has already asked for:
+  `use-storyboard`). **The sheets ride along with both frames**: the closing one
+  leads with its own opening frame and carries the same character and location
+  sheets behind it (`closingReferenceIds`), because a face drawn from a copy of
+  a copy drifts, and every frame of every scene should see what it is supposed
+  to be of. The drain keeps a ref of what it has already asked for:
   the closing id is not on the board until the action returns and the poll
   refreshes underneath it, so without the guard a settled opening is submitted
   again, which is a second 8c frame for nothing.
@@ -284,7 +297,7 @@ story -- twelve images at 8c against $38.64 for one Kling O3 Pro pass over a
   scene's lines, its place and the two prompts are on no row anywhere. The
   frames themselves stay ids.
 - **The row is large, and the two gaps are different sizes.** A pair's frames
-  sit tight together and the scenes sit far apart, because one is a scene's own
+  sit tight together and the rows sit far apart, because one is a section's own
   ends and the other is a cut -- the run's tile row learned that first (#512).
   `ClipFrames` is the visual precedent but takes a clip and squares both halves;
   these are two arbitrary rows at 16:9.

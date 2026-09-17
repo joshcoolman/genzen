@@ -150,31 +150,39 @@ export function parseRefs(value: unknown): StoredRefs {
 /**
  * A session's storyboard (#695).
  *
- * The script broken into scenes, each with the frame it opens on and the frame
- * it ends on -- the cheapest way to find out whether the character sheet, the
+ * **A scene is a numbered script line**, and its two frames are the ends of the
+ * video section that line will become. The script's numbering is the board's:
+ * the boundaries are not something to work out, and the number here prints the
+ * same as the number on the Script tab.
+ *
+ * Drawing them is the cheapest way to find out whether the character sheet, the
  * location sheets and the script add up to a story, which otherwise costs a
  * whole video to answer.
  *
  * **The plan is stored where the run's assets are not.** Everything else a
  * session holds is ids, because the facts are on the library row. A scene is
- * not: nothing anywhere records which line belongs to which scene, which place
- * it happens in, or what the two frames were asked for -- the chat wrote a
- * scene per answer and it only ever lived inside the composed clip prompt. So
- * the plan is written down and the frames stay ids.
+ * not: what place it happens in and what its two frames were asked for is
+ * recorded nowhere -- the chat wrote a scene per answer and it only ever lived
+ * inside the composed clip prompt. So the plan is written down, and the frames
+ * stay ids.
  *
  * **Ordered, and replaced rather than added to.** The reference tabs are
  * collections pruned by deleting; a storyboard is a sequence, so a re-run of
  * one scene takes that scene's place and the pair it replaced goes to Trash.
+ *
+ * Two hundred scenes, matching the run's own cap: the board is one row per
+ * clip, so the two can never disagree about how long a session may be.
  */
 export const boardSceneSchema = z.object({
   id: idSchema,
-  /** Position in the story, 1-based, and what the row is numbered by. */
+  /** The script line's own number -- its position in the run, which is what
+   *  the Script tab numbers by. Never renumbered. */
   number: z.number().int().positive(),
-  title: z.string().max(200),
-  /** The script lines this scene covers, verbatim, in run order. */
-  lines: z.array(z.string().max(4000)).max(50),
-  /** What the scene runs to, summed from its clips' durations. Null when none
-   *  of them recorded one. A measurement, as the Script tab's is. */
+  /** What is said in this scene, verbatim. */
+  line: z.string().max(4000),
+  /** How long the section runs, off the clip's row. **The size of the change
+   *  between the two frames**: five seconds is a breath, twelve is a move. A
+   *  measurement rather than a recommendation, as the Script tab's is. */
   seconds: z.number().nullable(),
   /** The character sheets this scene is generated from. */
   characterIds: z.array(idSchema).max(6),
@@ -194,7 +202,7 @@ export type BoardScene = z.infer<typeof boardSceneSchema>
 
 export const storedBoardSchema = z.object({
   version: z.literal(1),
-  scenes: z.array(boardSceneSchema).max(40),
+  scenes: z.array(boardSceneSchema).max(200),
 })
 export type StoredBoard = z.infer<typeof storedBoardSchema>
 

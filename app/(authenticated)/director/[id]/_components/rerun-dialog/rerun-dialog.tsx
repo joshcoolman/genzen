@@ -57,14 +57,17 @@ export function RerunDialog({
       <DialogContent className={styles.content}>
         <DialogHeader>
           <DialogTitle>
-            Rerun {scene ? `${scene.number}. ${scene.title}` : 'this scene'}
+            Rerun {scene ? `scene ${scene.number}` : 'this scene'}
           </DialogTitle>
         </DialogHeader>
+        {/* The line this scene is, so what you are typing about is on screen
+            beside the frame it produced. */}
+        {scene && <p className={styles.said}>{scene.line}</p>}
         {scene?.openingId && (
           <img
             className={styles.frame}
             src={imageUrl(scene.openingId, 'thumb')}
-            alt={`${scene.title}, opening frame`}
+            alt={`Scene ${scene.number}, opening frame`}
           />
         )}
         <Textarea

@@ -9,8 +9,12 @@ import { Button, CostNote, EmptyState } from '#/components'
 import { estimateImageCostCents } from '#/features/ai-images/models'
 
 /**
- * The storyboard (#695): every scene as the frame it opens on and the frame it
- * ends on, before any video exists.
+ * The storyboard (#695): every line of the script as the frame it opens on and
+ * the frame it ends on, before any video exists.
+ *
+ * **One row per numbered line**, because a line is what becomes a video section
+ * of its own length. The board is the script with pictures against it, and its
+ * numbers are the Script tab's numbers.
  *
  * **Success here is a judgement, not a check.** If the rows read top to bottom
  * as a story that is visually interesting and coherent, it worked -- that is
@@ -53,9 +57,8 @@ export function StoryboardTab({
     return (
       <div className={styles.empty}>
         <EmptyState title="No storyboard yet">
-          Break the script into scenes and draw the first and last frame of
-          each, from the character and location sheets. Two images a scene, and
-          no video.
+          Draw the first and last frame of every line in the script, from the
+          character and location sheets. Two images a line, and no video.
         </EmptyState>
         <Button variant="primary" onClick={onCreate} loading={busy}>
           Create storyboard
@@ -72,7 +75,7 @@ export function StoryboardTab({
         </p>
         <CostNote cents={cents} unpriced={unpriced} />
         <Button onClick={onCreate} loading={busy}>
-          Plan again
+          Draw again
         </Button>
       </div>
       <ol className={styles.scenes}>

@@ -28,3 +28,10 @@
   justify-content: space-between;
   gap: var(--space-12);
 }
+
+.said {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--text-base-leading);
+  color: var(--text-muted);
+}
