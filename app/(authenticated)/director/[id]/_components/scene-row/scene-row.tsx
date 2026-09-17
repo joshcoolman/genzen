@@ -103,33 +103,6 @@ export function SceneRow({
         >
           Generate video · {formatCost(sectionCostCents(scene.seconds))}
         </MiniButton>
-
-        {/* Takes add rather than replace, so this is a list and nothing in it
-            is canonical -- choosing one per row is what turns the board into a
-            cut, and that is its own decision. */}
-        {scene.videoIds.length > 0 && (
-          <ul className={styles.takes}>
-            {scene.videoIds.map((takeId, index) => {
-              const state = frameState(takeId, status)
-              return (
-                <li key={takeId}>
-                  <MiniButton
-                    icon={<Play className={styles.icon} />}
-                    disabled={state !== 'completed'}
-                    onClick={() => onWatch(takeId)}
-                  >
-                    Take {index + 1}
-                    {state === 'pending'
-                      ? ' · working'
-                      : state === 'failed'
-                        ? ' · failed'
-                        : ''}
-                  </MiniButton>
-                </li>
-              )
-            })}
-          </ul>
-        )}
       </div>
 
       <div className={styles.frames}>
@@ -159,6 +132,80 @@ export function SceneRow({
           }
         />
       </div>
+
+      {/* The takes of this section, under the pair they were generated from and
+          across the full width of the row.
+
+          **A grid of pictures rather than a row of chips.** Takes add rather
+          than replace, so the reason they exist is to be compared -- and two
+          candidates you cannot see side by side are two things you have to
+          remember. Four across, because a take is a 16:9 frame and four of them
+          still read at this width. Nothing here is marked as the one: choosing
+          a take per row is what turns the board into a cut, and that is its own
+          decision. */}
+      {scene.videoIds.length > 0 && (
+        <ol className={styles.takes}>
+          {scene.videoIds.map((takeId, index) => (
+            <Take
+              key={takeId}
+              id={takeId}
+              number={index + 1}
+              state={frameState(takeId, status)}
+              onWatch={() => onWatch(takeId)}
+            />
+          ))}
+        </ol>
+      )}
+    </li>
+  )
+}
+
+/** One take: its own first frame, and a press to watch it. */
+function Take({
+  id,
+  number,
+  state,
+  onWatch,
+}: {
+  id: string
+  number: number
+  state: FrameState
+  onWatch: () => void
+}) {
+  const done = state === 'completed'
+
+  return (
+    <li className={styles.take}>
+      <button
+        type="button"
+        className={styles.takeBox}
+        disabled={!done}
+        onClick={onWatch}
+      >
+        {done ? (
+          <>
+            {/* The clip's own poster, extracted when it settled -- an `<img>`
+                rather than a `<video>` because a board holding thirty-two
+                elements decoding at once is a board you cannot scroll. */}
+            <img
+              className={styles.image}
+              src={imageUrl(id, 'thumb')}
+              alt={`Take ${number}`}
+            />
+            <span className={styles.play}>
+              <Play className={styles.playIcon} />
+            </span>
+          </>
+        ) : state === 'failed' ? (
+          <span className={styles.takeNote}>This take did not come back.</span>
+        ) : (
+          <Skeleton className={styles.pending} />
+        )}
+      </button>
+      <p className={styles.caption}>
+        Take {number}
+        {state === 'pending' ? ' · working' : state === 'failed' ? '' : ''}
+      </p>
     </li>
   )
 }

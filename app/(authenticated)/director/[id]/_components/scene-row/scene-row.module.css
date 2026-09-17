@@ -117,17 +117,73 @@
     grid-template-columns: 1fr;
     gap: var(--space-12);
   }
+
+  /* Two across on a phone: four 16:9 tiles at that width are stamps. */
+  .takes {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-/* The takes of this section, oldest first. A list because they add rather than
-   replace, and nothing here is marked as the one. */
+/* The takes, under the pair and across the whole row: four across, because a
+   take is a 16:9 frame and comparing them is the reason they add rather than
+   replace. `grid-column: 1 / -1` puts them under both columns of the row. */
 .takes {
-  display: flex;
-  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-8);
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.take {
+  min-width: 0;
+}
+
+.takeBox {
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  overflow: hidden;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.takeBox:disabled {
+  cursor: default;
+}
+
+/* The play badge sits over the poster: a still of a clip and a still of a frame
+   are the same picture otherwise, and the row already has two of the latter. */
+.play {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--scrim);
+  color: var(--text);
+}
+
+.playIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.takeNote {
+  padding: var(--space-12);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
 }
 
 /* The provider's own text under the plain sentence: readable, clamped, and

@@ -489,6 +489,14 @@ export async function retryFrame(
  * before the page can render, and a page that waits on eight of them is a page
  * that feels broken in a different way. The rest settle on the next load or on
  * the poll.
+ *
+ * **One at a time, and that is not caution for its own sake.** The first cut
+ * ran them through `Promise.all`, and the first time two takes were ready
+ * together one settled and the other threw and stayed pending -- the same shape
+ * #556 documents for concurrent multi-megabyte transfers on one FAL connection,
+ * where five of eleven died and six went through. Each settle is a 16MB
+ * download plus an upload; four of them in series is a few seconds, and it
+ * costs nothing worth having.
  */
 const MAX_SETTLE_PER_LOAD = 4
 
@@ -518,28 +526,54 @@ export async function settleBoardTakes(sessionId: string): Promise<void> {
     limit ${MAX_SETTLE_PER_LOAD}
   `
 
-  await Promise.all(
-    pending.map(async (row) => {
-      if (!row.fal_model_id || !row.request_id) return
-      try {
-        const status = await fal.queue.status(row.fal_model_id, {
-          requestId: row.request_id,
-          logs: false,
-        })
-        /* Only the finished ones. A take still in the queue is left exactly as
-           it is -- deciding it has failed is the poll's job, which owns the
-           deadline and the error blob, and duplicating that here would be two
-           places disagreeing about when to give up. */
-        if (status.status !== 'COMPLETED') return
-        const result = (await fal.queue.result(row.fal_model_id, {
-          requestId: row.request_id,
-        })) as { data: Record<string, unknown> }
-        await processVideoResult(row.id, userId, result.data)
-      } catch {
-        /* A page load is not the place to surface a transient FAL error: the
-           take stays pending, the poll tries again, and the row still says it
-           is working -- which is true. */
-      }
-    }),
+  /* Which scene each take belongs to, so its name can be put back below. */
+  const labels = new Map(
+    session.board.scenes.flatMap((scene) =>
+      scene.videoIds.map((takeId, index) => [
+        takeId,
+        `Scene ${scene.number} — Take ${index + 1}`,
+      ]),
+    ),
   )
+
+  for (const row of pending) {
+    if (!row.fal_model_id || !row.request_id) continue
+    try {
+      const status = await fal.queue.status(row.fal_model_id, {
+        requestId: row.request_id,
+        logs: false,
+      })
+      /* Only the finished ones. A take still in the queue is left exactly as
+         it is -- deciding it has failed is the poll's job, which owns the
+         deadline and the error blob, and duplicating that here would be two
+         places disagreeing about when to give up. */
+      if (status.status !== 'COMPLETED') continue
+      const result = (await fal.queue.result(row.fal_model_id, {
+        requestId: row.request_id,
+      })) as { data: Record<string, unknown> }
+      await processVideoResult(row.id, userId, result.data)
+      /* **The name has to be put back.** Completing a clip rewrites its title
+         from the model label -- deliberately, since a clip made on the Video
+         wall should say what made it -- so a take named at submit comes back
+         called "Kling O3 Pro" and the board's own naming is lost everywhere it
+         is read from the row: Activity, Trash, the library. */
+      const label = labels.get(row.id)
+      /* The title alone, written here rather than through `updateImageMeta`:
+         that one takes a description and would write it, and this take's
+         description is the prompt it was generated from. */
+      if (label)
+        await sql`
+          update user_images set title = ${label}
+          where id = ${row.id} and user_id = ${userId}
+        `
+    } catch (cause) {
+      /* A page load is not the place to surface a transient FAL error: the
+         take stays pending, the poll tries again, and the row still says it is
+         working -- which is true. Logged, though, because the first version
+         swallowed one silently and it took a database query to find. */
+      console.error(
+        `[storyboard] take=${row.id} did not settle: ${cause instanceof Error ? cause.message : String(cause)}`,
+      )
+    }
+  }
 }
