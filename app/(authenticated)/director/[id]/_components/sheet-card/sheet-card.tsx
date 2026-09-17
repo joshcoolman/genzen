@@ -1,6 +1,6 @@
 'use client'
 
-import { Sparkles, Trash2 } from 'lucide-react'
+import { RefreshCw, Trash2 } from 'lucide-react'
 import { REF_RATIO } from '../../refs'
 import styles from './sheet-card.module.css'
 import type { RefAsset } from '../../../_actions/references.action'
@@ -30,6 +30,14 @@ import { imageUrl } from '#/lib/image-url'
  * - **New from this is one click, top-left**, where Images puts its `...`
  *   menu. It is the tab's whole reason for existing, and a menu would bury the
  *   primary verb to save an icon the corner already has room for.
+ *
+ * **The circular arrow is the clip row's Rerun icon, and it means something
+ * else here.** There it replaces a burst in place and trashes the take it
+ * replaced; this one only ever adds, leaving the sheet it started from
+ * untouched. Same glyph, one session, two meanings -- so the hover label is
+ * doing the work of telling them apart, and it reads "New from this" rather
+ * than anything with "again" or "re-" in it. Worth knowing before the label
+ * is ever shortened.
  */
 export function SheetCard({
   asset,
@@ -66,7 +74,7 @@ export function SheetCard({
       overlayActionsLeft={
         done ? (
           <ExpandableIconButton
-            icon={<Sparkles className={styles.actionIcon} />}
+            icon={<RefreshCw className={styles.actionIcon} />}
             label="New from this"
             onClick={() => onDerive(asset)}
           />
