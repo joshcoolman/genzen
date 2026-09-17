@@ -34,7 +34,11 @@ import sectionPrompt from '#/lib/prompts/director-section.md'
 import { generateImageInternal } from '#/features/ai-images/server/generate-image-internal.server'
 import { updateImageMeta } from '#/features/user-images/server/images.action'
 import { fal } from '#/lib/server/fal-client.server'
-import { processVideoResult } from '#/lib/server/fal-completion.server'
+import { extractFalError, isFalRejection } from '#/lib/server/fal-error.server'
+import {
+  markGenerationFailedWithBlob,
+  processVideoResult,
+} from '#/lib/server/fal-completion.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 
@@ -567,13 +571,65 @@ export async function settleBoardTakes(sessionId: string): Promise<void> {
           where id = ${row.id} and user_id = ${userId}
         `
     } catch (cause) {
-      /* A page load is not the place to surface a transient FAL error: the
-         take stays pending, the poll tries again, and the row still says it is
-         working -- which is true. Logged, though, because the first version
-         swallowed one silently and it took a database query to find. */
+      /**
+       * **A refused take has to be written down, or it says "working" for
+       * ever.**
+       *
+       * `queue.status` answers COMPLETED for a request the provider refused on
+       * content grounds, and the refusal only surfaces when the result is
+       * fetched -- as a 422. So the happy path above sails past the status
+       * check and throws here, and the first version of this simply logged it:
+       * the take stayed pending, the board kept saying "working", and the only
+       * account of what happened was on fal's dashboard.
+       *
+       * The verdict is the poll's own (`isFalRejection`), so the two cannot
+       * disagree about what counts as the provider refusing. Anything else --
+       * a network blip, a bucket hiccup -- leaves the row pending, which is
+       * true, and the next load or the poll tries again.
+       */
+      if (isFalRejection(cause)) {
+        const blob = extractFalError(cause)
+        blob.stage = 'queue'
+        if (blob.code === 'unknown') blob.code = 'fal_queue'
+        blob.fal_request_id ??= row.request_id
+        await markGenerationFailedWithBlob(row.id, blob)
+      }
       console.error(
         `[storyboard] take=${row.id} did not settle: ${cause instanceof Error ? cause.message : String(cause)}`,
       )
     }
   }
+}
+
+/**
+ * Drop one take off a row and trash it (#697).
+ *
+ * **Because takes add, something has to subtract.** A refused take is a dead
+ * tile on a row that will otherwise carry it for the life of the board, and
+ * the frames' lesson applies here too: a thing you cannot clear is a thing you
+ * work around. It goes to Trash like every other Director row, so a take
+ * dropped by mistake is one restore away.
+ */
+export async function dropTake(
+  sessionId: string,
+  sceneId: string,
+  takeId: string,
+): Promise<Session> {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  const scene = session.board.scenes.find(
+    (s) => s.id === idSchema.parse(sceneId),
+  )
+  if (!scene) throw new Error('That scene is not in this session.')
+  idSchema.parse(takeId)
+  if (!scene.videoIds.includes(takeId))
+    throw new Error('That take is not on this scene.')
+
+  return updateBoardScene(
+    userId,
+    session.id,
+    scene.id,
+    { videoIds: scene.videoIds.filter((id) => id !== takeId) },
+    [takeId],
+  )
 }

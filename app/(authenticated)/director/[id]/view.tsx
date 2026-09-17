@@ -131,6 +131,9 @@ export function View({
           onRetry={(scene, which) => void storyboard.retry(scene, which)}
           onFilm={storyboard.openFilm}
           onWatch={storyboard.setWatching}
+          onDropTake={(scene, takeId) =>
+            void storyboard.removeTake(scene, takeId)
+          }
         />
       ) : kind !== null ? (
         <ReferenceTab

@@ -42,6 +42,7 @@ export function StoryboardTab({
   onRetry,
   onFilm,
   onWatch,
+  onDropTake,
 }: {
   board: StoredBoard
   status: FrameStatus
@@ -56,6 +57,7 @@ export function StoryboardTab({
   onRetry: (scene: BoardScene, which: 'opening' | 'closing') => void
   onFilm: (scene: BoardScene) => void
   onWatch: (takeId: string) => void
+  onDropTake: (scene: BoardScene, takeId: string) => void
 }) {
   const scenes = board.scenes
   /* Two frames a scene, and what a six-scene board costs is the argument for
@@ -118,6 +120,7 @@ export function StoryboardTab({
             onRetry={onRetry}
             onFilm={onFilm}
             onWatch={onWatch}
+            onDropTake={onDropTake}
           />
         ))}
       </ol>

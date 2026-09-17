@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   closeScene,
   createStoryboard,
+  dropTake,
   generateSectionVideo,
   rerunScene,
   retryFrame,
@@ -145,6 +146,13 @@ export function useStoryboard(
     [retrying, run, sessionId],
   )
 
+  const removeTake = useCallback(
+    async (scene: BoardScene, takeId: string) => {
+      await run(() => dropTake(sessionId, scene.id, takeId))
+    },
+    [run, sessionId],
+  )
+
   const openRerun = useCallback((scene: BoardScene) => {
     setRerunning(scene)
     setWords('')
@@ -210,6 +218,7 @@ export function useStoryboard(
     generating,
     retry,
     retrying,
+    removeTake,
     watching,
     setWatching,
     watchingLabel,

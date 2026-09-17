@@ -139,3 +139,30 @@ export function extractFalError(err: unknown): FalErrorBlob {
 
   return blob
 }
+
+/**
+ * Did FAL refuse this, as opposed to the network dropping it?
+ *
+ * **Here rather than beside the poll that first needed it** (#697). A
+ * `'use server'` module may only export async functions, so a sync helper
+ * exported from one fails the build -- and two surfaces now need this verdict:
+ * the poll, and the storyboard settling its own takes. Two places deciding
+ * separately what counts as a refusal is two places that will disagree about
+ * whether a row is dead.
+ *
+ * A 4xx is FAL saying no. Content refusals arrive this way and are worth
+ * knowing about specifically: `queue.status` answers COMPLETED for a request
+ * the provider refused on content grounds, and the refusal only appears when
+ * the result is fetched, as a 422.
+ */
+export function isFalRejection(err: unknown): boolean {
+  if (err && typeof err === 'object') {
+    // FAL client errors include status codes
+    const status = (err as { status?: number }).status
+    if (status && status >= 400 && status < 500) return true
+    const msg = err instanceof Error ? err.message : ''
+    // FAL validation errors
+    if (msg.includes('422') || msg.includes('400')) return true
+  }
+  return false
+}

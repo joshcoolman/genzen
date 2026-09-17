@@ -53,6 +53,7 @@ export function SceneRow({
   onRetry,
   onFilm,
   onWatch,
+  onDropTake,
 }: {
   scene: BoardScene
   status: FrameStatus
@@ -67,6 +68,7 @@ export function SceneRow({
   onRetry: (scene: BoardScene, which: 'opening' | 'closing') => void
   onFilm: (scene: BoardScene) => void
   onWatch: (takeId: string) => void
+  onDropTake: (scene: BoardScene, takeId: string) => void
 }) {
   /* The opening frame is what a section starts from, so there is nothing to
      generate until it exists. */
@@ -151,7 +153,9 @@ export function SceneRow({
               id={takeId}
               number={index + 1}
               state={frameState(takeId, status)}
+              message={errorOf(frames, takeId)}
               onWatch={() => onWatch(takeId)}
+              onDrop={() => onDropTake(scene, takeId)}
             />
           ))}
         </ol>
@@ -165,12 +169,17 @@ function Take({
   id,
   number,
   state,
+  message,
   onWatch,
+  onDrop,
 }: {
   id: string
   number: number
   state: FrameState
+  /** What the provider said, when it refused. */
+  message: string | null
   onWatch: () => void
+  onDrop: () => void
 }) {
   const done = state === 'completed'
 
@@ -197,14 +206,28 @@ function Take({
             </span>
           </>
         ) : state === 'failed' ? (
-          <span className={styles.takeNote}>This take did not come back.</span>
+          /* The provider's own words, which for a take are usually worth
+             reading: Kling refuses on content grounds by answering COMPLETED
+             to a status check and 422 to the result, and its message is the
+             only account of why. */
+          <span className={styles.takeNote}>
+            {message ?? 'This take did not come back.'}
+          </span>
         ) : (
           <Skeleton className={styles.pending} />
         )}
       </button>
       <p className={styles.caption}>
         Take {number}
-        {state === 'pending' ? ' · working' : state === 'failed' ? '' : ''}
+        {state === 'pending' && ' · working'}
+        {/* Takes add, so something has to subtract: a refused take would
+            otherwise sit on the row for the life of the board. Trash, like
+            everything else here. */}
+        {state === 'failed' && (
+          <button type="button" className={styles.drop} onClick={onDrop}>
+            Remove
+          </button>
+        )}
       </p>
     </li>
   )
