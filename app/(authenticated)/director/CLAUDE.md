@@ -328,11 +328,35 @@ story -- twelve images at 8c against $38.64 for one Kling O3 Pro pass over a
 ## Generating a section (#697)
 
 **Generate video** on a row turns that row into the clip it was a spec for.
-Kling O3 Pro's `reference-to-video`, the only model taking a first frame and
-references on one request -- the run's Add ref lands there for the same reason.
-Nothing is chosen: 16:9 like every frame on the board, audio on, and the
-duration is the line's own seconds, which came from `durationForWords` and so is
-how long the words take to say.
+16:9 like every frame on the board, audio on, and the duration is the line's own
+seconds, which came from `durationForWords` and so is how long the words take to
+say.
+
+**Two models, chosen on the board** (#702), because they fail differently and
+only two takes of one row side by side say which trade is worth it. The choice
+lives in `board.model` rather than in the page's head, so it travels with the
+session; a take records the model that made it, so a row holding both is legible
+and the board's total is summed at each take's own rate.
+
+- **Kling O3 Pro**, 14c/s, and the reason the board started here: the only model
+  in the lineup taking a first frame and references on one request, which is the
+  run's reason for Add ref too. So the clip literally begins on the approved
+  opening frame, and the cut the board judged is the cut you get.
+- **Seedance 2.5**, 47.3c/s, which **cannot pin the opening frame at all** --
+  its reference endpoint has no start-image parameter, and `imageCompatibility`
+  refuses references and frames together for exactly that reason. There the
+  opening frame goes in _as a reference_, leading the list: the clip does not
+  begin on it, but it is still the strongest carrier of the film's look in the
+  request, which the sheets cannot be because they are deliberately neutral.
+  What it has in exchange is a **seed**, which Kling's endpoint does not take at
+  all -- pinned once on the board and sent with every take after (#687's rule) --
+  and `audio_urls`, reference audio, which is the real answer to voice drift and
+  is unused because genzen has no audio asset to hand it.
+
+The dialog says which of the two it is doing rather than leaving it implied: the
+frame is captioned "Opens on" or "Reference for the look", Include end frame
+appears only where the endpoint has one, and the duration and the price come
+from the chosen model.
 
 - **The opening frame is always sent, and dropping it is not symmetric with
   dropping the closing one.** Both sheet prompts say a sheet is a neutral record

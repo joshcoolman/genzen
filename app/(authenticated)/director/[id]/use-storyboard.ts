@@ -10,6 +10,7 @@ import {
   pronounceBoard,
   rerunScene,
   retryFrame,
+  setBoardModel,
   setSpokenLine,
 } from '../_actions/storyboard.action'
 import { RERUN_MODEL_SLUGS, lineToSpeak, scenesToClose } from './board'
@@ -165,6 +166,15 @@ export function useStoryboard(
     [run, sessionId],
   )
 
+  /** Switch the model sections are generated with. Stored on the board, so it
+   *  survives a reload and the next machine agrees. */
+  const chooseModel = useCallback(
+    async (slug: string) => {
+      await run(() => setBoardModel(sessionId, slug))
+    },
+    [run, sessionId],
+  )
+
   const pronounce = useCallback(async () => {
     if (pronouncing) return
     setPronouncing(true)
@@ -254,6 +264,7 @@ export function useStoryboard(
     create,
     pronouncing,
     pronounce,
+    chooseModel,
     filming,
     setFilming,
     openFilm,

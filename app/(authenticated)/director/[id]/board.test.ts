@@ -7,7 +7,11 @@ import {
   lineToSpeak,
   sceneReferenceIds,
   scenesToClose,
+  sectionCostCents,
   sectionDuration,
+  sectionImages,
+  sectionPinsOpening,
+  sectionTakesEndFrame,
   spokenOf,
 } from './board'
 import type { BoardSheet } from './board'
@@ -249,11 +253,11 @@ describe('boardVideoCostCents', () => {
         scene({
           seconds: 5,
           takes: [
-            { id: id(1), number: 1 },
-            { id: id(2), number: 2 },
+            { id: id(1), number: 1, model: null },
+            { id: id(2), number: 2, model: null },
           ],
         }),
-        scene({ seconds: 10, takes: [{ id: id(3), number: 1 }] }),
+        scene({ seconds: 10, takes: [{ id: id(3), number: 1, model: null }] }),
       ]),
     ).toBe(70 * 2 + 140)
   })
@@ -268,13 +272,14 @@ describe('boardImageIds', () => {
        screen -- "working", for ever. One definition, and a test on it. */
     const board = {
       version: 1 as const,
+      model: 'kling-o3-pro',
       scenes: [
         scene({
           openingId: id(1),
           closingId: id(2),
           takes: [
-            { id: id(3), number: 1 },
-            { id: id(4), number: 2 },
+            { id: id(3), number: 1, model: null },
+            { id: id(4), number: 2, model: null },
           ],
         }),
         scene({ openingId: id(5), closingId: null, takes: [] }),
@@ -321,8 +326,8 @@ describe('a take keeps its number', () => {
       ],
     })
     expect(parsed.scenes[0].takes).toEqual([
-      { id: id(1), number: 1 },
-      { id: id(2), number: 2 },
+      { id: id(1), number: 1, model: null },
+      { id: id(2), number: 2, model: null },
     ])
   })
 
@@ -331,14 +336,64 @@ describe('a take keeps its number', () => {
        to take 2 -- a thing you had watched and formed an opinion about,
        renamed because something else was thrown away. */
     const takes = [
-      { id: id(1), number: 1 },
-      { id: id(2), number: 2 },
-      { id: id(3), number: 3 },
+      { id: id(1), number: 1, model: null },
+      { id: id(2), number: 2, model: null },
+      { id: id(3), number: 3, model: null },
     ]
     const left = takes.filter((t) => t.id !== id(2))
     expect(left.map((t) => t.number)).toEqual([1, 3])
     // And the next one issued is 4, never a number that has been used.
     const next = left.reduce((high, t) => Math.max(high, t.number), 0) + 1
     expect(next).toBe(4)
+  })
+})
+
+describe('choosing the section model (#702)', () => {
+  const KLING = 'kling-o3-pro'
+  const SEEDANCE = 'seedance-2.5'
+
+  it('pins the opening frame on Kling and references it on Seedance', () => {
+    /* Seedance's reference endpoint has no start-image parameter, and
+       `imageCompatibility` refuses references and frames together -- so the
+       opening frame goes in as a reference, leading the list, and the clip
+       does not begin on it. */
+    const s = scene({ openingId: id(9), closingId: id(8) })
+    expect(sectionImages(s, KLING, id(8))).toEqual([
+      { id: id(9), role: 'first' },
+      { id: id(3), role: 'reference' },
+      { id: id(2), role: 'reference' },
+      { id: id(8), role: 'last' },
+    ])
+    expect(sectionImages(s, SEEDANCE, id(8))).toEqual([
+      { id: id(9), role: 'reference' },
+      { id: id(3), role: 'reference' },
+      { id: id(2), role: 'reference' },
+    ])
+  })
+
+  it('knows which model takes an end frame at all', () => {
+    expect(sectionTakesEndFrame(KLING)).toBe(true)
+    expect(sectionTakesEndFrame(SEEDANCE)).toBe(false)
+    expect(sectionPinsOpening(KLING)).toBe(true)
+    expect(sectionPinsOpening(SEEDANCE)).toBe(false)
+  })
+
+  it('prices a take by the model that made it', () => {
+    // 14c/s against 47.3c/s: a board holding both cannot be summed at one rate.
+    const mixed = [
+      scene({
+        seconds: 5,
+        takes: [
+          { id: id(1), number: 1, model: KLING },
+          { id: id(2), number: 2, model: SEEDANCE },
+        ],
+      }),
+    ]
+    expect(boardVideoCostCents(mixed)).toBe(
+      sectionCostCents(5, KLING) + sectionCostCents(5, SEEDANCE),
+    )
+    expect(sectionCostCents(5, SEEDANCE)).toBeGreaterThan(
+      sectionCostCents(5, KLING),
+    )
   })
 })

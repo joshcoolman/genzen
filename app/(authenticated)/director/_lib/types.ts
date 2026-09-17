@@ -260,7 +260,15 @@ export const boardSceneSchema = z.preprocess(
      * to an empty one and losing its frames.
      */
     takes: z
-      .array(z.object({ id: idSchema, number: z.number().int().positive() }))
+      .array(
+        z.object({
+          id: idSchema,
+          number: z.number().int().positive(),
+          /** Which model made it (#702). Null on a take from before there was
+           *  a choice, which was all of them, on Kling. */
+          model: z.string().max(80).nullable().default(null),
+        }),
+      )
       .max(20)
       .default([]),
   }),
@@ -270,11 +278,29 @@ export type BoardScene = z.infer<typeof boardSceneSchema>
 export const storedBoardSchema = z.object({
   version: z.literal(1),
   scenes: z.array(boardSceneSchema).max(200),
+  /**
+   * The model sections are generated with (#702).
+   *
+   * **On the board rather than in the page's head**, so it travels with the
+   * session and three machines agree about what this film is being made on.
+   * Switched between generations on purpose: putting two takes of one row side
+   * by side is the only way to judge the trade between them.
+   */
+  model: z.string().max(80).default('kling-o3-pro'),
+  /**
+   * One seed for the board, pinned the first time a model that takes one is
+   * used (#687's reasoning, and #702's reason for existing).
+   *
+   * Kling's reference endpoint has no seed at all; Seedance's does, and the
+   * same noise across sections is the only lever either endpoint offers on
+   * whether a voice holds from one to the next.
+   */
+  seed: z.number().int().nonnegative().optional(),
 })
 export type StoredBoard = z.infer<typeof storedBoardSchema>
 
 export function emptyBoard(): StoredBoard {
-  return { version: 1, scenes: [] }
+  return { version: 1, scenes: [], model: 'kling-o3-pro' }
 }
 
 /** Null on every session made before #695, and an unreadable value opens empty

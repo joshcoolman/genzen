@@ -129,6 +129,7 @@ export function View({
           pronouncing={storyboard.pronouncing}
           onCreate={() => void storyboard.create()}
           onPronounce={() => void storyboard.pronounce()}
+          onChooseModel={(slug) => void storyboard.chooseModel(slug)}
           onRerun={storyboard.openRerun}
           onRetry={(scene, which) => void storyboard.retry(scene, which)}
           onFilm={storyboard.openFilm}
@@ -297,6 +298,7 @@ export function View({
       {/* Generate video: the section this row was a spec for (#697). */}
       <FilmDialog
         scene={storyboard.filming}
+        model={session.board.model}
         spoken={storyboard.spoken}
         onSpokenChange={storyboard.setSpoken}
         words={storyboard.words}

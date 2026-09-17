@@ -1,6 +1,12 @@
 'use client'
 
-import { sectionCostCents, sectionDuration } from '../../board'
+import {
+  sectionCostCents,
+  sectionDuration,
+  sectionModel,
+  sectionPinsOpening,
+  sectionTakesEndFrame,
+} from '../../board'
 import styles from './film-dialog.module.css'
 import type { BoardScene } from '../../../_lib/types'
 import {
@@ -31,6 +37,7 @@ import { imageUrl } from '#/lib/image-url'
  */
 export function FilmDialog({
   scene,
+  model,
   spoken,
   onSpokenChange,
   words,
@@ -42,6 +49,8 @@ export function FilmDialog({
   onOpenChange,
 }: {
   scene: BoardScene | null
+  /** The model this take will be generated with (#702). */
+  model: string
   /** What the character says in this take. */
   spoken: string
   onSpokenChange: (value: string) => void
@@ -54,7 +63,13 @@ export function FilmDialog({
   onSubmit: () => void
   onOpenChange: (open: boolean) => void
 }) {
-  const seconds = scene ? sectionDuration(scene.seconds) : 0
+  const seconds = scene ? sectionDuration(scene.seconds, model) : 0
+  /* Kling pins the opening frame; Seedance has no start-image parameter, so
+     there it is a reference instead -- the clip does not begin on it. The
+     dialog says which, because it is the difference between the cut you
+     approved and a picture the model was shown. */
+  const pins = sectionPinsOpening(model)
+  const canEndFrame = sectionTakesEndFrame(model)
 
   return (
     <Dialog open={scene !== null} onOpenChange={onOpenChange}>
@@ -74,9 +89,11 @@ export function FilmDialog({
                 src={imageUrl(scene.openingId, 'thumb')}
                 alt={`Scene ${scene.number}, opening frame`}
               />
-              <figcaption className={styles.frameCaption}>Opens on</figcaption>
+              <figcaption className={styles.frameCaption}>
+                {pins ? 'Opens on' : 'Reference for the look'}
+              </figcaption>
             </figure>
-            {endFrame && scene.closingId && (
+            {endFrame && canEndFrame && scene.closingId && (
               <figure className={styles.frame}>
                 <img
                   className={styles.image}
@@ -107,7 +124,11 @@ export function FilmDialog({
           <p className={styles.record}>The script still reads: {scene.line}</p>
         )}
         <p className={styles.facts}>
-          Opens on this frame · {seconds}s · 16:9 · with sound
+          {sectionModel(model).label} ·{' '}
+          {pins
+            ? 'opens on this frame'
+            : 'this frame as a reference, not pinned'}{' '}
+          · {seconds}s · 16:9 · with sound
         </p>
         <label className={styles.field}>
           <span className={styles.label}>Guidance for the shot</span>
@@ -119,7 +140,9 @@ export function FilmDialog({
           />
         </label>
         <div className={styles.foot}>
-          <CostNote cents={scene ? sectionCostCents(scene.seconds) : 0} />
+          <CostNote
+            cents={scene ? sectionCostCents(scene.seconds, model) : 0}
+          />
           <Button variant="primary" loading={busy} onClick={onSubmit}>
             Generate
           </Button>
@@ -130,21 +153,25 @@ export function FilmDialog({
             is genuinely two moments of one shot is exactly what an end frame
             is for, and only looking at the pair says which kind it is -- so it
             is a choice per take rather than a rule. */}
-        <label className={styles.toggle}>
-          <Switch
-            checked={endFrame}
-            onCheckedChange={onEndFrameChange}
-            disabled={!scene?.closingId}
-          />
-          <span>
-            Include end frame
-            <span className={styles.hint}>
-              {scene?.closingId
-                ? ' — the clip lands on the closing frame. Best when the pair is one shot, not a cut.'
-                : ' — this scene has no closing frame yet.'}
+        {/* Only where the endpoint has one. Seedance's takes no end image at
+            all, so the control would be a switch that does nothing. */}
+        {canEndFrame && (
+          <label className={styles.toggle}>
+            <Switch
+              checked={endFrame}
+              onCheckedChange={onEndFrameChange}
+              disabled={!scene?.closingId}
+            />
+            <span>
+              Include end frame
+              <span className={styles.hint}>
+                {scene?.closingId
+                  ? ' — the clip lands on the closing frame. Best when the pair is one shot, not a cut.'
+                  : ' — this scene has no closing frame yet.'}
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+        )}
         {/* Four to eight minutes on fal's own numbers, which is a different
             order of wait from an image and worth saying before the press. */}
         <p className={styles.wait}>

@@ -1,17 +1,20 @@
 'use server'
 
-import { randomUUID } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import {
   FRAME_MODEL_SLUG,
   FRAME_RATIO,
   RERUN_MODEL_SLUGS,
-  SECTION_MODEL_SLUG,
+  SECTION_MODEL_SLUGS,
   SECTION_RATIO,
   assembleScenes,
   closingReferenceIds,
   lineToSpeak,
   sceneReferenceIds,
   sectionDuration,
+  sectionImages,
+  sectionModel,
+  sectionTakesEndFrame,
   spokenOf,
 } from '../[id]/board'
 import { dialogueOf } from '../[id]/script'
@@ -407,11 +410,12 @@ export async function generateSectionVideo(
     ...(asked ? [asked] : []),
   ].join('\n\n')
 
-  /* Only a closing frame that exists and finished: pinning a pending row is
-     pinning nothing, and the request would be refused for a reference with no
-     object behind it. */
+  const modelSlug = session.board.model
+  /* Only a closing frame that exists, finished, and on a model that takes one:
+     pinning a pending row is pinning nothing, and Seedance's endpoint has no
+     end-image parameter at all. */
   const closing =
-    endFrame && scene.closingId
+    endFrame && scene.closingId && sectionTakesEndFrame(modelSlug)
       ? first(
           await sql<Array<{ id: string }>>`
             select id from user_images
@@ -422,26 +426,29 @@ export async function generateSectionVideo(
         )
       : null
 
+  /* One seed for the board, pinned the first time a model that takes one is
+     used (#687). Kling's endpoint has none and drops it; Seedance's keeps it,
+     which is the whole reason that model is offered here. */
+  const seed =
+    session.board.seed ??
+    (sectionModel(modelSlug).endpoints.withReferences?.acceptsSeed
+      ? randomInt(0, 2 ** 31)
+      : undefined)
+
   /* The next number ever issued for this scene, not the next position. A take
      keeps its name when the ones around it are deleted -- see `takes`. */
   const takeNumber =
     scene.takes.reduce((highest, take) => Math.max(highest, take.number), 0) + 1
 
   const { recordId } = await generateVideo({
-    images: [
-      { id: scene.openingId, role: 'first' },
-      ...sceneReferenceIds(scene).map((id) => ({
-        id,
-        role: 'reference' as const,
-      })),
-      ...(closing ? [{ id: closing.id, role: 'last' as const }] : []),
-    ],
+    images: sectionImages(scene, modelSlug, closing?.id ?? null),
     prompt,
-    duration: sectionDuration(scene.seconds),
+    duration: sectionDuration(scene.seconds, modelSlug),
     aspectRatio: SECTION_RATIO,
-    modelSlug: SECTION_MODEL_SLUG,
+    modelSlug,
     generateAudio: true,
     origin: 'director',
+    seed,
   })
   await updateImageMeta(
     recordId,
@@ -451,10 +458,18 @@ export async function generateSectionVideo(
 
   /* Appended, and never into `cut.clipIds`: the board is not the run, and a
      take joining the row would put it in the player and in Script. */
-  return updateBoardScene(userId, session.id, scene.id, {
-    takes: [...scene.takes, { id: recordId, number: takeNumber }],
+  const saved = await updateBoardScene(userId, session.id, scene.id, {
+    takes: [
+      ...scene.takes,
+      { id: recordId, number: takeNumber, model: modelSlug },
+    ],
     ...(spoken === undefined ? {} : { spokenLine: said }),
   })
+  /* The seed is written once and never again, so every later section of this
+     film starts from the same noise. */
+  return seed !== undefined && session.board.seed === undefined
+    ? saveBoard(userId, session.id, saved.board.scenes, { seed })
+    : saved
 }
 
 /**
@@ -782,4 +797,27 @@ export async function setSpokenLine(
   return updateBoardScene(userId, session.id, scene.id, {
     spokenLine: spokenOf(spoken, scene.line),
   })
+}
+
+/**
+ * Choose the model sections are generated with (#702).
+ *
+ * **On the board, not in the page's head**, so it travels with the session and
+ * three machines agree about what this film is being made on. Switching it
+ * between generations is the point: two takes of one row, one from each, side
+ * by side, is the only way to judge a trade whose terms are a pinned opening
+ * frame against a seed.
+ *
+ * Nothing already generated is touched -- a take records the model that made
+ * it, so a row holding both stays legible.
+ */
+export async function setBoardModel(
+  sessionId: string,
+  slug: string,
+): Promise<Session> {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  if (!(SECTION_MODEL_SLUGS as ReadonlyArray<string>).includes(slug))
+    throw new Error('That model cannot generate a section.')
+  return saveBoard(userId, session.id, session.board.scenes, { model: slug })
 }

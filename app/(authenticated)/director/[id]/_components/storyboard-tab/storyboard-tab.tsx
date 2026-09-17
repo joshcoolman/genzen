@@ -1,7 +1,12 @@
 'use client'
 
 import { SceneRow } from '../scene-row/scene-row'
-import { FRAME_MODEL_SLUG, boardVideoCostCents } from '../../board'
+import {
+  FRAME_MODEL_SLUG,
+  SECTION_MODEL_SLUGS,
+  boardVideoCostCents,
+  sectionModel,
+} from '../../board'
 import styles from './storyboard-tab.module.css'
 import type { FrameStatus } from '../../use-storyboard'
 import type { RefAsset } from '../../../_actions/references.action'
@@ -46,6 +51,7 @@ export function StoryboardTab({
   retrying,
   onCreate,
   onPronounce,
+  onChooseModel,
   onRerun,
   onRetry,
   onFilm,
@@ -65,6 +71,7 @@ export function StoryboardTab({
   retrying: Array<string>
   onCreate: () => void
   onPronounce: () => void
+  onChooseModel: (slug: string) => void
   onRerun: (scene: BoardScene) => void
   onRetry: (scene: BoardScene, which: 'opening' | 'closing') => void
   onFilm: (scene: BoardScene) => void
@@ -129,6 +136,22 @@ export function StoryboardTab({
             </span>
           )}
         </p>
+        {/* Which model a section is generated with (#702), on the board rather
+            than in the dialog: it is a property of how this film is being made,
+            and switching it between generations is how the two are compared. */}
+        <div className={styles.models}>
+          {SECTION_MODEL_SLUGS.map((slug) => (
+            <Button
+              key={slug}
+              size="sm"
+              variant={board.model === slug ? 'primary' : 'secondary'}
+              aria-pressed={board.model === slug}
+              onClick={() => onChooseModel(slug)}
+            >
+              {sectionModel(slug).label}
+            </Button>
+          ))}
+        </div>
         <CostNote cents={cents} unpriced={unpriced} />
         {/* A correction, not a candidate (#700): one Claude call respells the
             names a speaking model would get wrong, and nothing else on the
@@ -145,6 +168,7 @@ export function StoryboardTab({
           <SceneRow
             key={scene.id}
             scene={scene}
+            model={board.model}
             status={status}
             frames={frames}
             filming={generating.includes(scene.id)}

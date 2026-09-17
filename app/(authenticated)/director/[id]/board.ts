@@ -1,9 +1,10 @@
 import { z } from 'zod'
-import { REF_MODEL_SLUG, refModel } from './gen'
+import { REF_MODEL_SLUG } from './gen'
+import type { VideoModel } from '#/features/video/models'
 import type { BoardScene } from '../_lib/types'
 import type { ScriptLine } from './script'
+import { estimateCostCents, videoModelBySlug } from '#/features/video/models'
 import { IMAGE_MODELS } from '#/features/ai-images/models'
-import { estimateCostCents } from '#/features/video/models'
 
 /**
  * Everything a storyboard frame is made with (#695).
@@ -264,6 +265,71 @@ export function scenesToClose(
  */
 export const SECTION_MODEL_SLUG = REF_MODEL_SLUG
 
+/**
+ * The two a section may be generated with (#702), and what separates them.
+ *
+ * **Kling pins the opening frame; Seedance cannot.** Seedance's reference
+ * endpoint has no start-image parameter at all, and `imageCompatibility`
+ * refuses references and frames together for exactly that reason -- so on
+ * Seedance the opening frame goes in *as a reference*, leading the list. Not
+ * the same thing: the clip does not begin on that frame, so the cut the board
+ * approved is not guaranteed. It is still the strongest carrier of the film's
+ * look in the request, which is the job the sheets cannot do because they are
+ * deliberately neutral records.
+ *
+ * What Seedance has in exchange is a **seed** -- Kling's endpoint takes none --
+ * and `audio_urls`, which is the real answer to voice drift and is not used
+ * yet because genzen has no audio asset to hand it.
+ */
+export const SECTION_MODEL_SLUGS = [REF_MODEL_SLUG, 'seedance-2.5'] as const
+
+export function sectionModel(slug: string): VideoModel {
+  const model = videoModelBySlug(slug)
+  if (!model) throw new Error(`Unknown video model: ${slug}`)
+  return model
+}
+
+/** Whether this model can be handed the closing frame as the clip's last
+ *  frame. Read off the endpoint rather than named here, so the two cannot
+ *  disagree. */
+export function sectionTakesEndFrame(slug: string): boolean {
+  return Boolean(sectionModel(slug).endpoints.withReferences?.acceptsEndImage)
+}
+
+/** Whether the opening frame is the clip's first frame, or one of its
+ *  references. The difference the dialog has to show. */
+export function sectionPinsOpening(slug: string): boolean {
+  return Boolean(sectionModel(slug).endpoints.withReferences?.firstFrameParam)
+}
+
+/**
+ * The images one section is generated from, in the order the chosen endpoint
+ * wants them.
+ *
+ * On a model that pins, the opening frame is the first frame and the sheets
+ * are references. On one that does not, the opening frame *is* a reference and
+ * leads them -- so the look still reaches the request even though the clip does
+ * not begin on it.
+ */
+export function sectionImages(
+  scene: BoardScene,
+  slug: string,
+  closingId: string | null,
+): Array<{ id: string; role: 'first' | 'last' | 'reference' }> {
+  const sheets = sceneReferenceIds(scene).map((id) => ({
+    id,
+    role: 'reference' as const,
+  }))
+  if (!scene.openingId) return sheets
+  if (!sectionPinsOpening(slug))
+    return [{ id: scene.openingId, role: 'reference' as const }, ...sheets]
+  return [
+    { id: scene.openingId, role: 'first' as const },
+    ...sheets,
+    ...(closingId ? [{ id: closingId, role: 'last' as const }] : []),
+  ]
+}
+
 export const SECTION_RATIO = '16:9'
 
 /**
@@ -275,8 +341,11 @@ export const SECTION_RATIO = '16:9'
  * duration is a number and the endpoint's is an enum of strings. A row with no
  * recorded duration falls back to the model's own default rather than guessing.
  */
-export function sectionDuration(seconds: number | null): number {
-  const model = refModel()
+export function sectionDuration(
+  seconds: number | null,
+  slug: string = SECTION_MODEL_SLUG,
+): number {
+  const model = sectionModel(slug)
   const offered = model.durations
   if (seconds === null) return model.defaultDuration
   const rounded = Math.round(seconds)
@@ -288,10 +357,13 @@ export function sectionDuration(seconds: number | null): number {
 
 /** What this row costs to generate, printed before the press as everywhere
  *  else that spends. Audio on, which is what the row is for. */
-export function sectionCostCents(seconds: number | null): number {
+export function sectionCostCents(
+  seconds: number | null,
+  slug: string = SECTION_MODEL_SLUG,
+): number {
   return estimateCostCents(
-    refModel(),
-    sectionDuration(seconds),
+    sectionModel(slug),
+    sectionDuration(seconds, slug),
     undefined,
     true,
   )
@@ -306,7 +378,15 @@ export function sectionCostCents(seconds: number | null): number {
 export function boardVideoCostCents(scenes: Array<BoardScene>): number {
   return scenes.reduce(
     (total, scene) =>
-      total + scene.takes.length * sectionCostCents(scene.seconds),
+      total +
+      scene.takes.reduce(
+        /* Each take at the price of the model that made it: a board holding
+           both is a board where one number for all of them is wrong. */
+        (sum, take) =>
+          sum +
+          sectionCostCents(scene.seconds, take.model ?? SECTION_MODEL_SLUG),
+        0,
+      ),
     0,
   )
 }

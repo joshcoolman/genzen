@@ -2,7 +2,12 @@
 
 import { Film, Pencil, Play, RefreshCw, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { frameState, lineToSpeak, sectionCostCents } from '../../board'
+import {
+  frameState,
+  lineToSpeak,
+  sectionCostCents,
+  sectionModel,
+} from '../../board'
 import styles from './scene-row.module.css'
 import type { FrameState } from '../../board'
 import type { FrameStatus } from '../../use-storyboard'
@@ -53,6 +58,7 @@ function errorOf(
 
 export function SceneRow({
   scene,
+  model,
   status,
   frames,
   filming,
@@ -65,6 +71,8 @@ export function SceneRow({
   onEditLine,
 }: {
   scene: BoardScene
+  /** The board's chosen model, which sets the price on the button (#702). */
+  model: string
   status: FrameStatus
   /** The rows themselves, for what a failed one said. */
   frames: Record<string, RefAsset>
@@ -123,7 +131,7 @@ export function SceneRow({
           disabled={!ready || filming}
           onClick={() => onFilm(scene)}
         >
-          Generate video · {formatCost(sectionCostCents(scene.seconds))}
+          Generate video · {formatCost(sectionCostCents(scene.seconds, model))}
         </MiniButton>
       </div>
 
@@ -175,6 +183,7 @@ export function SceneRow({
                  rename take 3 to take 2, which is the renumbering around a cut
                  that did not happen that the script refuses to do. */
               number={take.number}
+              model={take.model}
               state={frameState(take.id, status)}
               message={errorOf(frames, take.id)}
               onWatch={() => onWatch(take.id)}
@@ -260,6 +269,7 @@ function SceneLine({
 function Take({
   id,
   number,
+  model,
   state,
   message,
   onWatch,
@@ -267,6 +277,9 @@ function Take({
 }: {
   id: string
   number: number
+  /** Which model made it, or null on a take from before there was a choice.
+   *  Printed because a row can hold takes from both (#702). */
+  model: string | null
   state: FrameState
   /** What the provider said, when it refused. */
   message: string | null
@@ -318,6 +331,7 @@ function Take({
       <p className={styles.caption}>
         <span>
           Take {number}
+          {model && ` · ${sectionModel(model).label}`}
           {state === 'pending' && ' · working'}
         </span>
         <IconButton
