@@ -45,6 +45,7 @@ export function StoryboardTab({
   onFilm,
   onWatch,
   onDropTake,
+  onEditLine,
 }: {
   board: StoredBoard
   status: FrameStatus
@@ -63,6 +64,7 @@ export function StoryboardTab({
   onFilm: (scene: BoardScene) => void
   onWatch: (takeId: string) => void
   onDropTake: (scene: BoardScene, takeId: string) => void
+  onEditLine: (scene: BoardScene, spoken: string) => void
 }) {
   const scenes = board.scenes
   /* Two frames a scene, and what a six-scene board costs is the argument for
@@ -132,6 +134,7 @@ export function StoryboardTab({
             onFilm={onFilm}
             onWatch={onWatch}
             onDropTake={onDropTake}
+            onEditLine={onEditLine}
           />
         ))}
       </ol>

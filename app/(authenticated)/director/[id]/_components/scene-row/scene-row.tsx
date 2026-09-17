@@ -1,13 +1,20 @@
 'use client'
 
-import { Film, Play, RefreshCw } from 'lucide-react'
-import { frameState, sectionCostCents } from '../../board'
+import { Film, Pencil, Play, RefreshCw } from 'lucide-react'
+import { useState } from 'react'
+import { frameState, lineToSpeak, sectionCostCents } from '../../board'
 import styles from './scene-row.module.css'
 import type { FrameState } from '../../board'
 import type { FrameStatus } from '../../use-storyboard'
 import type { RefAsset } from '../../../_actions/references.action'
 import type { BoardScene } from '../../../_lib/types'
-import { ExpandableText, MiniButton, Skeleton } from '#/components'
+import {
+  Button,
+  ExpandableText,
+  MiniButton,
+  Skeleton,
+  Textarea,
+} from '#/components'
 import { formatCost } from '#/features/video/models'
 import { imageUrl } from '#/lib/image-url'
 
@@ -54,6 +61,7 @@ export function SceneRow({
   onFilm,
   onWatch,
   onDropTake,
+  onEditLine,
 }: {
   scene: BoardScene
   status: FrameStatus
@@ -69,6 +77,7 @@ export function SceneRow({
   onFilm: (scene: BoardScene) => void
   onWatch: (takeId: string) => void
   onDropTake: (scene: BoardScene, takeId: string) => void
+  onEditLine: (scene: BoardScene, spoken: string) => void
 }) {
   /* The opening frame is what a section starts from, so there is nothing to
      generate until it exists. */
@@ -83,13 +92,17 @@ export function SceneRow({
           <span className={styles.number}>{scene.number}</span>
           {scene.seconds === null ? null : <span>{scene.seconds}s</span>}
         </p>
-        <p className={styles.line}>{scene.line}</p>
-        {/* What the model is actually told to say, when that differs (#700).
-            On the row rather than hidden, because it is a change to what the
-            audience hears and $1.12 is a lot to pay to find out what it was. */}
-        {scene.spokenLine && (
-          <p className={styles.spoken}>Said as: {scene.spokenLine}</p>
-        )}
+        {/* **What this scene will say, edited here.** The board is where a
+            script is made ready to shoot: a line that would be refused for
+            naming a trademarked work, or mispronounced, is cheapest to fix
+            before anything is generated rather than at the moment of spending.
+            So the working text leads and the script sits under it when the two
+            differ -- `scene.line` is never written, and retyping it clears the
+            override. */}
+        <SceneLine
+          scene={scene}
+          onSave={(spoken) => onEditLine(scene, spoken)}
+        />
         {/* What was typed into the last re-run, so the row says what it was
             asked for rather than leaving a changed frame unexplained. */}
         {scene.guidance && <p className={styles.guidance}>{scene.guidance}</p>}
@@ -167,6 +180,75 @@ export function SceneRow({
         </ol>
       )}
     </li>
+  )
+}
+
+/**
+ * The line, and the press that edits it.
+ *
+ * Its own component for its own draft state: a row that held the draft would
+ * lose it to the poll's refresh, which lands every few seconds while a section
+ * is being made.
+ */
+function SceneLine({
+  scene,
+  onSave,
+}: {
+  scene: BoardScene
+  onSave: (spoken: string) => void
+}) {
+  const said = lineToSpeak(scene)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(said)
+
+  if (editing) {
+    return (
+      <div className={styles.editor}>
+        <Textarea
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          rows={3}
+          autoFocus
+        />
+        <div className={styles.editorFoot}>
+          <Button
+            size="sm"
+            variant="primary"
+            disabled={!draft.trim()}
+            onClick={() => {
+              onSave(draft)
+              setEditing(false)
+            }}
+          >
+            Save
+          </Button>
+          <Button size="sm" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <p className={styles.line}>{said}</p>
+      {/* The film's own words, when the take is set to say something else. Kept
+          visible so a rewording is a divergence you can see rather than a
+          quiet overwrite. */}
+      {scene.spokenLine && (
+        <p className={styles.spoken}>Script: {scene.line}</p>
+      )}
+      <MiniButton
+        icon={<Pencil className={styles.icon} />}
+        onClick={() => {
+          setDraft(said)
+          setEditing(true)
+        }}
+      >
+        Edit line
+      </MiniButton>
+    </>
   )
 }
 

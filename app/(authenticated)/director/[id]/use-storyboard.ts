@@ -10,6 +10,7 @@ import {
   pronounceBoard,
   rerunScene,
   retryFrame,
+  setSpokenLine,
 } from '../_actions/storyboard.action'
 import { RERUN_MODEL_SLUGS, lineToSpeak, scenesToClose } from './board'
 import type { RefAsset } from '../_actions/references.action'
@@ -167,6 +168,16 @@ export function useStoryboard(
     setPronouncing(false)
   }, [pronouncing, run, sessionId])
 
+  /** Edit what a scene says, from the row -- the same field the dialog writes,
+   *  so a pass down the board before generating anything is the cheap way to
+   *  catch a line that would be refused or mispronounced. */
+  const editLine = useCallback(
+    async (scene: BoardScene, text: string) => {
+      await run(() => setSpokenLine(sessionId, scene.id, text))
+    },
+    [run, sessionId],
+  )
+
   const openRerun = useCallback((scene: BoardScene) => {
     setRerunning(scene)
     setWords('')
@@ -247,6 +258,7 @@ export function useStoryboard(
     retry,
     retrying,
     removeTake,
+    editLine,
     watching,
     setWatching,
     watchingLabel,

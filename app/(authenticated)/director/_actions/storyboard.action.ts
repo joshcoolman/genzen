@@ -699,3 +699,34 @@ export async function pronounceBoard(sessionId: string): Promise<Session> {
 
   return saveBoard(userId, session.id, scenes)
 }
+
+/**
+ * Set what one scene says, from the row (#700).
+ *
+ * **The board is where a script is made ready to shoot.** Editing a line only
+ * inside Generate video meant finding out a line was wrong at the moment of
+ * spending, one row at a time; here a pass down the board fixes every line that
+ * would be refused or mispronounced before anything is generated. Same field,
+ * so the dialog and the row can never disagree.
+ *
+ * Saving the line as the script has it clears the override rather than storing
+ * a copy of it -- `spokenOf`'s rule -- so reverting is retyping the original
+ * and needs no separate affordance.
+ */
+export async function setSpokenLine(
+  sessionId: string,
+  sceneId: string,
+  spoken: string,
+): Promise<Session> {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  const scene = session.board.scenes.find(
+    (s) => s.id === idSchema.parse(sceneId),
+  )
+  if (!scene) throw new Error('That scene is not in this session.')
+  if (!spoken.trim()) throw new Error('A scene has to say something.')
+
+  return updateBoardScene(userId, session.id, scene.id, {
+    spokenLine: spokenOf(spoken, scene.line),
+  })
+}

@@ -136,6 +136,9 @@ export function View({
           onDropTake={(scene, takeId) =>
             void storyboard.removeTake(scene, takeId)
           }
+          onEditLine={(scene, spoken) =>
+            void storyboard.editLine(scene, spoken)
+          }
         />
       ) : kind !== null ? (
         <ReferenceTab
