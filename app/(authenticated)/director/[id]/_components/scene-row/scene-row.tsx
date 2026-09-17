@@ -165,17 +165,20 @@ export function SceneRow({
           still read at this width. Nothing here is marked as the one: choosing
           a take per row is what turns the board into a cut, and that is its own
           decision. */}
-      {scene.videoIds.length > 0 && (
+      {scene.takes.length > 0 && (
         <ol className={styles.takes}>
-          {scene.videoIds.map((takeId, index) => (
+          {scene.takes.map((take) => (
             <Take
-              key={takeId}
-              id={takeId}
-              number={index + 1}
-              state={frameState(takeId, status)}
-              message={errorOf(frames, takeId)}
-              onWatch={() => onWatch(takeId)}
-              onDrop={() => onDropTake(scene, takeId)}
+              key={take.id}
+              id={take.id}
+              /* Its own number, not its position: deleting take 2 used to
+                 rename take 3 to take 2, which is the renumbering around a cut
+                 that did not happen that the script refuses to do. */
+              number={take.number}
+              state={frameState(take.id, status)}
+              message={errorOf(frames, take.id)}
+              onWatch={() => onWatch(take.id)}
+              onDrop={() => onDropTake(scene, take.id)}
             />
           ))}
         </ol>

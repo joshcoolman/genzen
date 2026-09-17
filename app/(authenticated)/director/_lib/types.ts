@@ -173,68 +173,98 @@ export function parseRefs(value: unknown): StoredRefs {
  * Two hundred scenes, matching the run's own cap: the board is one row per
  * clip, so the two can never disagree about how long a session may be.
  */
-export const boardSceneSchema = z.object({
-  id: idSchema,
-  /** The script line's own number -- its position in the run, which is what
-   *  the Script tab numbers by. Never renumbered. */
-  number: z.number().int().positive(),
-  /** What is said in this scene, verbatim. **The record, and never the
-   *  respelling** -- the Script tab, the transcript and the copy button read
-   *  this one. */
-  line: z.string().max(4000),
-  /**
-   * The line respelled so a model says it correctly (#700), or null when
-   * nothing in it would be mispronounced.
-   *
-   * **Beside the line, never instead of it.** Read only when the video prompt
-   * is assembled. Kling takes a plain prompt string -- no SSML, no phoneme
-   * tags, no lexicon -- so the text sent is the pronunciation instruction, and
-   * "day-KART" is the only way to get Descartes said right. That makes it a
-   * lie about the text which is useful to exactly one consumer, and the moment
-   * it reaches the record there is no telling what the film actually says.
-   */
-  spokenLine: z.string().max(4000).nullable().default(null),
-  /** How long the section runs, off the clip's row. **The size of the change
-   *  between the two frames**: five seconds is a breath, twelve is a move. A
-   *  measurement rather than a recommendation, as the Script tab's is. */
-  seconds: z.number().nullable(),
-  /** The character sheets this scene is generated from. */
-  characterIds: z.array(idSchema).max(6),
-  /** The location sheet it is set in, or null when the plan named none. */
-  locationId: idSchema.nullable(),
-  openingPrompt: z.string().max(4000),
-  closingPrompt: z.string().max(4000),
-  /** What was typed into a re-run of this scene, kept so the row can say what
-   *  it was asked for. Null until one. */
-  guidance: z.string().max(2000).nullable(),
-  /**
-   * The model this scene's frames were last generated with, or null for the
-   * board's own (#699).
-   *
-   * Written only by a re-run, which is the one place a model is chosen. Retry
-   * reads it so a repaired frame comes back from the model that drew the rest
-   * of the pair, rather than silently reverting to the default and leaving a
-   * row drawn by two hands.
-   */
-  model: z.string().max(80).nullable().default(null),
-  /** The two frames. Null until submitted -- the closing one waits for the
-   *  opening one to land, because it is generated from it. */
-  openingId: idSchema.nullable(),
-  closingId: idSchema.nullable(),
-  /**
-   * The takes generated of this section (#697), oldest first.
-   *
-   * **A list, because takes add rather than replace** -- the opposite of the
-   * frames above. A frame is a spec and there is one of it; a take is a
-   * candidate, and pressing Generate again is asking for another one, not
-   * disowning the last. Nothing here is marked canonical: choosing a take per
-   * row is what turns the board into a cut, and that is its own decision.
-   *
-   * Defaulted, so a board stored before #697 parses rather than falling back
-   * to an empty one and losing its frames.
-   */
-  videoIds: z.array(idSchema).max(20).default([]),
-})
+/** A board written before takes carried their own numbers holds `videoIds`,
+ *  where the number *was* the position. Reading it as such loses nothing --
+ *  those were the numbers on screen -- and is the last time position decides
+ *  one. */
+export const boardSceneSchema = z.preprocess(
+  (value) => {
+    if (value && typeof value === 'object') {
+      const scene = value as { takes?: unknown; videoIds?: unknown }
+      /* Tested on the value rather than on the key: a scene carrying `takes:
+       undefined` is a scene with no takes read, and a key-presence check lets
+       it through as though it had them. */
+      if (!Array.isArray(scene.takes) && Array.isArray(scene.videoIds))
+        return {
+          ...value,
+          takes: scene.videoIds.map((id, index) => ({ id, number: index + 1 })),
+        }
+    }
+    return value
+  },
+  z.object({
+    id: idSchema,
+    /** The script line's own number -- its position in the run, which is what
+     *  the Script tab numbers by. Never renumbered. */
+    number: z.number().int().positive(),
+    /** What is said in this scene, verbatim. **The record, and never the
+     *  respelling** -- the Script tab, the transcript and the copy button read
+     *  this one. */
+    line: z.string().max(4000),
+    /**
+     * The line respelled so a model says it correctly (#700), or null when
+     * nothing in it would be mispronounced.
+     *
+     * **Beside the line, never instead of it.** Read only when the video prompt
+     * is assembled. Kling takes a plain prompt string -- no SSML, no phoneme
+     * tags, no lexicon -- so the text sent is the pronunciation instruction, and
+     * "day-KART" is the only way to get Descartes said right. That makes it a
+     * lie about the text which is useful to exactly one consumer, and the moment
+     * it reaches the record there is no telling what the film actually says.
+     */
+    spokenLine: z.string().max(4000).nullable().default(null),
+    /** How long the section runs, off the clip's row. **The size of the change
+     *  between the two frames**: five seconds is a breath, twelve is a move. A
+     *  measurement rather than a recommendation, as the Script tab's is. */
+    seconds: z.number().nullable(),
+    /** The character sheets this scene is generated from. */
+    characterIds: z.array(idSchema).max(6),
+    /** The location sheet it is set in, or null when the plan named none. */
+    locationId: idSchema.nullable(),
+    openingPrompt: z.string().max(4000),
+    closingPrompt: z.string().max(4000),
+    /** What was typed into a re-run of this scene, kept so the row can say what
+     *  it was asked for. Null until one. */
+    guidance: z.string().max(2000).nullable(),
+    /**
+     * The model this scene's frames were last generated with, or null for the
+     * board's own (#699).
+     *
+     * Written only by a re-run, which is the one place a model is chosen. Retry
+     * reads it so a repaired frame comes back from the model that drew the rest
+     * of the pair, rather than silently reverting to the default and leaving a
+     * row drawn by two hands.
+     */
+    model: z.string().max(80).nullable().default(null),
+    /** The two frames. Null until submitted -- the closing one waits for the
+     *  opening one to land, because it is generated from it. */
+    openingId: idSchema.nullable(),
+    closingId: idSchema.nullable(),
+    /**
+     * The takes generated of this section (#697), oldest first.
+     *
+     * **A list, because takes add rather than replace** -- the opposite of the
+     * frames above. A frame is a spec and there is one of it; a take is a
+     * candidate, and pressing Generate again is asking for another one, not
+     * disowning the last. Nothing here is marked canonical: choosing a take per
+     * row is what turns the board into a cut, and that is its own decision.
+     *
+     * **The number is stored, not the position.** It was `index + 1`, so
+     * deleting take 2 renamed take 3 to take 2 -- the same renumbering around a
+     * cut that did not happen that `dialogueOf` refuses to do to the script. A
+     * take is a thing you watched and formed an opinion about, and its name has
+     * to survive its neighbours being thrown away. Numbers are never reused: the
+     * next one is the highest ever issued plus one.
+     *
+     * Defaulted, so a board stored before #697 parses rather than falling back
+     * to an empty one and losing its frames.
+     */
+    takes: z
+      .array(z.object({ id: idSchema, number: z.number().int().positive() }))
+      .max(20)
+      .default([]),
+  }),
+)
 export type BoardScene = z.infer<typeof boardSceneSchema>
 
 export const storedBoardSchema = z.object({
@@ -260,6 +290,6 @@ export function boardImageIds(board: StoredBoard): Array<string> {
     ...[scene.openingId, scene.closingId].filter(
       (id): id is string => id !== null,
     ),
-    ...scene.videoIds,
+    ...scene.takes.map((take) => take.id),
   ])
 }

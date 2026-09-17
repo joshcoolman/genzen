@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { boardImageIds } from '../_lib/types'
+import { boardImageIds, parseBoard } from '../_lib/types'
 import {
   assembleScenes,
   boardVideoCostCents,
@@ -180,7 +180,7 @@ function scene(over: Partial<BoardScene> = {}): BoardScene {
     model: null,
     openingId: null,
     closingId: null,
-    videoIds: [],
+    takes: [],
     ...over,
   }
 }
@@ -243,11 +243,17 @@ describe('sectionDuration', () => {
 describe('boardVideoCostCents', () => {
   it('counts every take, because the button is on every row', () => {
     // 14c/s: a 5s row is 70c, and two takes of it are $1.40.
-    expect(boardVideoCostCents([scene({ seconds: 5, videoIds: [] })])).toBe(0)
+    expect(boardVideoCostCents([scene({ seconds: 5, takes: [] })])).toBe(0)
     expect(
       boardVideoCostCents([
-        scene({ seconds: 5, videoIds: [id(1), id(2)] }),
-        scene({ seconds: 10, videoIds: [id(3)] }),
+        scene({
+          seconds: 5,
+          takes: [
+            { id: id(1), number: 1 },
+            { id: id(2), number: 2 },
+          ],
+        }),
+        scene({ seconds: 10, takes: [{ id: id(3), number: 1 }] }),
       ]),
     ).toBe(70 * 2 + 140)
   })
@@ -263,8 +269,15 @@ describe('boardImageIds', () => {
     const board = {
       version: 1 as const,
       scenes: [
-        scene({ openingId: id(1), closingId: id(2), videoIds: [id(3), id(4)] }),
-        scene({ openingId: id(5), closingId: null, videoIds: [] }),
+        scene({
+          openingId: id(1),
+          closingId: id(2),
+          takes: [
+            { id: id(3), number: 1 },
+            { id: id(4), number: 2 },
+          ],
+        }),
+        scene({ openingId: id(5), closingId: null, takes: [] }),
       ],
     }
     expect(boardImageIds(board)).toEqual([id(1), id(2), id(3), id(4), id(5)])
@@ -290,5 +303,42 @@ describe('spokenOf and lineToSpeak', () => {
     expect({ ...s, spokenLine: said }.line).toBe(
       'Descartes asked the same question.',
     )
+  })
+})
+
+describe('a take keeps its number', () => {
+  it('reads a board written before takes carried one', () => {
+    // The number was the position then, so reading it as such loses nothing --
+    // those were the numbers that had been on screen.
+    const parsed = parseBoard({
+      version: 1,
+      scenes: [
+        {
+          ...scene(),
+          takes: undefined,
+          videoIds: [id(1), id(2)],
+        },
+      ],
+    })
+    expect(parsed.scenes[0].takes).toEqual([
+      { id: id(1), number: 1 },
+      { id: id(2), number: 2 },
+    ])
+  })
+
+  it('survives its neighbours being deleted', () => {
+    /* The bug: the number was `index + 1`, so deleting take 2 renamed take 3
+       to take 2 -- a thing you had watched and formed an opinion about,
+       renamed because something else was thrown away. */
+    const takes = [
+      { id: id(1), number: 1 },
+      { id: id(2), number: 2 },
+      { id: id(3), number: 3 },
+    ]
+    const left = takes.filter((t) => t.id !== id(2))
+    expect(left.map((t) => t.number)).toEqual([1, 3])
+    // And the next one issued is 4, never a number that has been used.
+    const next = left.reduce((high, t) => Math.max(high, t.number), 0) + 1
+    expect(next).toBe(4)
   })
 })

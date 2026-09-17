@@ -422,6 +422,11 @@ export async function generateSectionVideo(
         )
       : null
 
+  /* The next number ever issued for this scene, not the next position. A take
+     keeps its name when the ones around it are deleted -- see `takes`. */
+  const takeNumber =
+    scene.takes.reduce((highest, take) => Math.max(highest, take.number), 0) + 1
+
   const { recordId } = await generateVideo({
     images: [
       { id: scene.openingId, role: 'first' },
@@ -440,14 +445,14 @@ export async function generateSectionVideo(
   })
   await updateImageMeta(
     recordId,
-    `Scene ${scene.number} — Take ${scene.videoIds.length + 1}`,
+    `Scene ${scene.number} — Take ${takeNumber}`,
     asked ?? scene.line,
   )
 
   /* Appended, and never into `cut.clipIds`: the board is not the run, and a
      take joining the row would put it in the player and in Script. */
   return updateBoardScene(userId, session.id, scene.id, {
-    videoIds: [...scene.videoIds, recordId],
+    takes: [...scene.takes, { id: recordId, number: takeNumber }],
     ...(spoken === undefined ? {} : { spokenLine: said }),
   })
 }
@@ -568,7 +573,9 @@ const MAX_SETTLE_PER_LOAD = 4
 export async function settleBoardTakes(sessionId: string): Promise<void> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
-  const takeIds = session.board.scenes.flatMap((scene) => scene.videoIds)
+  const takeIds = session.board.scenes.flatMap((scene) =>
+    scene.takes.map((take) => take.id),
+  )
   if (takeIds.length === 0) return
 
   const pending = await sql<
@@ -594,9 +601,9 @@ export async function settleBoardTakes(sessionId: string): Promise<void> {
   /* Which scene each take belongs to, so its name can be put back below. */
   const labels = new Map(
     session.board.scenes.flatMap((scene) =>
-      scene.videoIds.map((takeId, index) => [
-        takeId,
-        `Scene ${scene.number} — Take ${index + 1}`,
+      scene.takes.map((take) => [
+        take.id,
+        `Scene ${scene.number} — Take ${take.number}`,
       ]),
     ),
   )
@@ -695,14 +702,14 @@ export async function dropTake(
   )
   if (!scene) throw new Error('That scene is not in this session.')
   idSchema.parse(takeId)
-  if (!scene.videoIds.includes(takeId))
+  if (!scene.takes.some((take) => take.id === takeId))
     throw new Error('That take is not on this scene.')
 
   const saved = await updateBoardScene(
     userId,
     session.id,
     scene.id,
-    { videoIds: scene.videoIds.filter((id) => id !== takeId) },
+    { takes: scene.takes.filter((take) => take.id !== takeId) },
     [takeId],
   )
   await permanentlyDeleteImages([takeId])

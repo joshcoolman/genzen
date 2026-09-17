@@ -242,8 +242,8 @@ export function useStoryboard(
   const watchingLabel = useMemo(() => {
     if (!watching) return ''
     for (const scene of board.scenes) {
-      const index = scene.videoIds.indexOf(watching)
-      if (index !== -1) return `Scene ${scene.number} — Take ${index + 1}`
+      const take = scene.takes.find((t) => t.id === watching)
+      if (take) return `Scene ${scene.number} — Take ${take.number}`
     }
     return 'Take'
   }, [board.scenes, watching])

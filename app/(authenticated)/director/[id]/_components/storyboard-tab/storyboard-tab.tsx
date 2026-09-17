@@ -101,7 +101,7 @@ export function StoryboardTab({
   /* What this board has spent on video, which is the number the per-row button
      makes easy to lose track of (#697). */
   const spent = boardVideoCostCents(scenes)
-  const takes = scenes.reduce((total, s) => total + s.videoIds.length, 0)
+  const takes = scenes.reduce((total, s) => total + s.takes.length, 0)
 
   if (scenes.length === 0) {
     return (

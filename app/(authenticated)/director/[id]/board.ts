@@ -164,7 +164,7 @@ export function assembleScenes({
         model: null,
         openingId: null,
         closingId: null,
-        videoIds: [],
+        takes: [],
       },
     ]
   })
@@ -306,7 +306,7 @@ export function sectionCostCents(seconds: number | null): number {
 export function boardVideoCostCents(scenes: Array<BoardScene>): number {
   return scenes.reduce(
     (total, scene) =>
-      total + scene.videoIds.length * sectionCostCents(scene.seconds),
+      total + scene.takes.length * sectionCostCents(scene.seconds),
     0,
   )
 }

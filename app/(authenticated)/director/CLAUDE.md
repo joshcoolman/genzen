@@ -368,7 +368,16 @@ how long the words take to say.
   character, deterministic where a seed is hopeful. Not used yet; an element
   wants separate angle images where a sheet is one composite.
 - **Takes add and nothing is canonical**, unlike the frames, which replace: a
-  frame is a spec and a take is a candidate. They are a grid under the pair,
+  frame is a spec and a take is a candidate. **Each carries its own number**,
+  stored rather than derived from position: it was `index + 1`, so deleting
+  take 2 renamed take 3 to take 2 -- a clip you had watched and formed an
+  opinion about, renamed because something else was thrown away. That is the
+  renumbering around a cut that did not happen which `dialogueOf` refuses to do
+  to the script, and it is refused here for the same reason. Numbers are never
+  reused; the next is the highest ever issued for that scene plus one, so a row
+  can read 1, 3, 4. A board written before this holds `videoIds`, where the
+  number *was* the position, and is read as such on the way in -- those were the
+  numbers that had been on screen. They are a grid under the pair,
   four across, each tile the clip's own poster as an `<img>` with a play badge
   -- not a `<video>`, because thirty-two rows each decoding a clip is a board
   you cannot scroll. Watching one is a press and opens a popup.
