@@ -357,6 +357,21 @@ export async function generateSectionVideo(
    * section made at all.
    */
   spoken?: string,
+  /**
+   * Pin the scene's closing frame as the clip's last frame (#697).
+   *
+   * **Off by default, and that default is the considered one.** Real pairs on
+   * this board read as cuts -- two camera setups -- and a single continuous
+   * take pinned at both ends of two setups is a morph or a slow push rather
+   * than footage. The cut is pinned on the other side instead: the next row's
+   * clip begins on the opening frame that join was judged against.
+   *
+   * It is offered per take because the reasoning does not hold for every row.
+   * A pair that is genuinely two moments of one shot -- a hand rising, a head
+   * turning across five seconds -- is exactly what an end frame is for, and
+   * only looking at the pair says which kind it is.
+   */
+  endFrame?: boolean,
 ): Promise<Session> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
@@ -391,6 +406,21 @@ export async function generateSectionVideo(
     ...(asked ? [asked] : []),
   ].join('\n\n')
 
+  /* Only a closing frame that exists and finished: pinning a pending row is
+     pinning nothing, and the request would be refused for a reference with no
+     object behind it. */
+  const closing =
+    endFrame && scene.closingId
+      ? first(
+          await sql<Array<{ id: string }>>`
+            select id from user_images
+            where id = ${scene.closingId} and user_id = ${userId}
+              and origin = 'director' and status = 'completed'
+              and deleted_at is null
+          `,
+        )
+      : null
+
   const { recordId } = await generateVideo({
     images: [
       { id: scene.openingId, role: 'first' },
@@ -398,6 +428,7 @@ export async function generateSectionVideo(
         id,
         role: 'reference' as const,
       })),
+      ...(closing ? [{ id: closing.id, role: 'last' as const }] : []),
     ],
     prompt,
     duration: sectionDuration(scene.seconds),

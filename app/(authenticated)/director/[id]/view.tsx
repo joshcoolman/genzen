@@ -301,6 +301,8 @@ export function View({
         onSpokenChange={storyboard.setSpoken}
         words={storyboard.words}
         onWordsChange={storyboard.setWords}
+        endFrame={storyboard.endFrame}
+        onEndFrameChange={storyboard.setEndFrame}
         busy={
           storyboard.filming !== null &&
           storyboard.generating.includes(storyboard.filming.id)

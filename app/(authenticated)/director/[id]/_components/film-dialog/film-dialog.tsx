@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  Switch,
   Textarea,
 } from '#/components'
 import { imageUrl } from '#/lib/image-url'
@@ -34,6 +35,8 @@ export function FilmDialog({
   onSpokenChange,
   words,
   onWordsChange,
+  endFrame,
+  onEndFrameChange,
   busy,
   onSubmit,
   onOpenChange,
@@ -44,6 +47,9 @@ export function FilmDialog({
   onSpokenChange: (value: string) => void
   words: string
   onWordsChange: (value: string) => void
+  /** Pin the closing frame as the clip's last frame. */
+  endFrame: boolean
+  onEndFrameChange: (value: boolean) => void
   busy: boolean
   onSubmit: () => void
   onOpenChange: (open: boolean) => void
@@ -100,6 +106,27 @@ export function FilmDialog({
             Generate
           </Button>
         </div>
+        {/* **Off by default, and offered anyway.** A pair that reads as a cut
+            is two camera setups, and a continuous take pinned at both ends of
+            two setups morphs between them rather than moving. But a pair that
+            is genuinely two moments of one shot is exactly what an end frame
+            is for, and only looking at the pair says which kind it is -- so it
+            is a choice per take rather than a rule. */}
+        <label className={styles.toggle}>
+          <Switch
+            checked={endFrame}
+            onCheckedChange={onEndFrameChange}
+            disabled={!scene?.closingId}
+          />
+          <span>
+            Include end frame
+            <span className={styles.hint}>
+              {scene?.closingId
+                ? ' — the clip lands on the closing frame. Best when the pair is one shot, not a cut.'
+                : ' — this scene has no closing frame yet.'}
+            </span>
+          </span>
+        </label>
         {/* Four to eight minutes on fal's own numbers, which is a different
             order of wait from an image and worth saying before the press. */}
         <p className={styles.wait}>

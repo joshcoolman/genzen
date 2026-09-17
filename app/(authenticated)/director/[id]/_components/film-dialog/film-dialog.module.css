@@ -48,3 +48,17 @@
   justify-content: space-between;
   gap: var(--space-12);
 }
+
+/* Under the Generate button: a choice about this take rather than a setting,
+   so it sits with the press rather than up with the line. */
+.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.hint {
+  color: var(--text-muted);
+}

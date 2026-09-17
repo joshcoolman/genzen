@@ -62,6 +62,10 @@ export function useStoryboard(
    *  the scene when the dialog opens, so editing it is a change rather than a
    *  retype. */
   const [spoken, setSpoken] = useState('')
+  /** Pin the closing frame as the clip's last frame. **Off on every open**, not
+   *  remembered: the default is the considered one, and a row where it helped
+   *  says nothing about the next row. */
+  const [endFrame, setEndFrame] = useState(false)
   const [model, setModel] = useState<string>(RERUN_MODEL_SLUGS[0])
   const [submitting, setSubmitting] = useState(false)
 
@@ -187,6 +191,7 @@ export function useStoryboard(
     setFilming(scene)
     setWords('')
     setSpoken(lineToSpeak(scene))
+    setEndFrame(false)
   }, [])
 
   /**
@@ -210,11 +215,12 @@ export function useStoryboard(
         spoken.trim() && spoken.trim() !== lineToSpeak(filming)
           ? spoken
           : undefined,
+        endFrame,
       ),
     )
     setGenerating((current) => current.filter((id) => id !== sceneId))
     if (ok) setFilming(null)
-  }, [filming, generating, run, sessionId, spoken, words])
+  }, [endFrame, filming, generating, run, sessionId, spoken, words])
 
   const rerun = useCallback(async () => {
     if (!rerunning || submitting) return
@@ -254,6 +260,8 @@ export function useStoryboard(
     film,
     spoken,
     setSpoken,
+    endFrame,
+    setEndFrame,
     generating,
     retry,
     retrying,
