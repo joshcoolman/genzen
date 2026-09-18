@@ -267,29 +267,32 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 ## Status
 
 **Focus** — nothing is in flight. The storyboard is shipped end to end: a board
-per script line, and a Generate video button on each row. **The open question is
-content refusals on the video path** — a line naming a trademarked franchise is
-refused by Kling while the lines either side go through, and the spoken line is
-the script, so it cannot be reworded. A silent take (`generate_audio: false`,
-11.2c/s against 14) would drop the line from the request entirely, with voice
-added later. Generate a few more rows first and find out how many actually
-refuse; if it is only the lines naming the film, that is a known set. File the
-issue once the number is known. Open a chat session
-that has both kinds of sheet, press Create storyboard, judge whether the rows
-read as a story, then generate two _adjacent_ rows and listen to the join —
-that is what says whether the no-music rule holds and how far the voice drifts.
+per script line, a Generate video button on each row, and a choice of Kling O3
+Pro or Seedance 2.5 to make it with.
 
-Also outstanding, and independent: the **deployed** database still holds the old
-Director's rows and bucket objects. Run `node scripts/purge-director.mjs --yes`
-and `pnpm db:migrate` against it, then delete that script. And confirm H3 Max
-Turbo's real price, which `models.ts` records as fal's stated $0.00625/s and
-says outright is not trusted.
+Two questions are open and both are answered by generating, not by reading.
+**Does respelling work at all?** Press Fix pronunciation and regenerate the
+Descartes row -- Kling is a video model, not a TTS engine with a documented
+lexicon, so it may ignore `day-KART` entirely. **Does the voice hold between
+sections?** Generate two _adjacent_ rows and listen to the join; that also says
+whether the no-music rule is holding. Seedance is on the board for exactly this
+-- it takes a seed where Kling takes none, and its `audio_urls` (reference
+audio, unused because genzen has no audio asset) is the real answer if drift
+turns out to be what ruins the film.
+
+Known and worked around: Kling refuses a line naming a trademarked work. Scene 1
+of the Matrix board was refused and went through once the line was reworded,
+which is what the editable line on each row is for.
 
 Recent highlights:
 
-- Each storyboard row generates its own section: the approved opening frame is
-  the clip's literal first frame, the sheets ride along, and takes add rather
-  than replace. No music by instruction; atmospherics only (#697).
+- A storyboard row generates its own section, on Kling O3 Pro or Seedance 2.5:
+  the approved opening frame is the clip's first frame where the model pins one,
+  the sheets ride along, and takes add rather than replace. No music by
+  instruction; atmospherics only (#697, #702).
+- A scene's spoken line can be respelled for pronunciation or reworded by hand,
+  beside the script rather than over it -- which is also how a line refused for
+  naming a trademarked work gets made (#700).
 - A Storyboard tab on a Director session: one row per numbered script line,
   each drawn as the frame it opens on and the frame it ends on, from the
   sheets. No video — a few dollars against $38 for one video pass (#695).
