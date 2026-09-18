@@ -410,15 +410,6 @@ function findModel(modelId: string): ModelEntry | undefined {
   )
 }
 
-/** Every endpoint the app can submit to. Used to warm the FAL pricing cache. */
-export const ALL_ENDPOINT_IDS: Array<string> = [
-  ...new Set(
-    IMAGE_MODELS.flatMap((m) =>
-      [m.textToImage, m.withImages].filter((id): id is string => !!id),
-    ),
-  ),
-]
-
 /**
  * Every endpoint genzen has ever submitted to, mapped to a display name.
  * `images.model` stores the *resolved* endpoint, so history rows hold ids like

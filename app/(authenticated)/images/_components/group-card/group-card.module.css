@@ -6,11 +6,6 @@
    them carrying something extra. */
 
 .menuIcon,
-.actionIcon {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-
 /* The corner an image card fills with the model name, matched exactly
    (`image-card.module.css` `.model`). Same slot, same weight: that corner
    answers "what is this picture", and for a group the answer is that it stands
@@ -105,28 +100,12 @@ button.swatches:hover .swatchEmpty {
    is no spare cell for it. */
 .swatch,
 .swatchEmpty,
-.swatchLoading {
-  aspect-ratio: 1;
-  border-radius: var(--radius-sm);
-  background-color: var(--surface-sunken);
-  background-size: cover;
-  background-position: center;
-}
-
 /* A filled slot, darker than the caption behind it. It was `--surface-sunken`
    at 35% opacity first, which on the caption's own dark ground is very nearly
    the caption -- the slots were there and invisible, so a short row read as a
    broken grid rather than as room for more. */
 .swatchEmpty {
   background-color: var(--slot-empty);
-}
-
-/* A slot in an expanded strip whose picture has not arrived yet. Breathing
-   rather than ghosted, because the space is held for something specific --
-   holding it is what stops the card growing twice. */
-.swatchLoading {
-  background-color: var(--slot-empty);
-  animation: slot-pulse 1.6s ease-in-out infinite;
 }
 
 @keyframes slot-pulse {

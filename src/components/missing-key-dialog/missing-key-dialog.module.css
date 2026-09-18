@@ -44,11 +44,6 @@
   font-size: var(--text-xs);
 }
 
-.note {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-}
-
 .footer {
   display: flex;
   justify-content: flex-end;

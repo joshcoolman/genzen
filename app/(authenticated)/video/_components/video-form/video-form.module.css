@@ -44,17 +44,6 @@
   width: 100%;
 }
 
-/* Under the button rather than beside it. Beside, it competed with the price
-   for the same row and the button lost width; under, it reads as a footnote to
-   the click -- which is what it is. */
-.note {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: var(--text-3xs);
-  line-height: 1.5;
-  text-align: center;
-}
-
 .audio {
   display: flex;
   align-items: center;

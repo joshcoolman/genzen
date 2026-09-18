@@ -23,8 +23,3 @@ export interface YouTubeSource {
   videoId: string
   title: string
 }
-
-/** What to call the source in a frame's caption. */
-export function sourceTitle(source: FrameSource): string {
-  return source.kind === 'clip' ? source.clip.title : source.title
-}
