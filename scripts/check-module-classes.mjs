@@ -45,6 +45,19 @@
 // costs bytes, not a rendering bug, and it wants a warning rather than a
 // failure. Filed separately if it is ever wanted.
 //
+// **A second fault, added after it shipped (2026-09-18): a selector list cut in
+// half.** Deleting one name from a group -- `.swatch, .swatchEmpty,
+// .swatchLoading { ... }` -- by matching the name and the body that follows it
+// takes the body with it, leaving `.swatch, .swatchEmpty,` dangling into
+// whatever comes next. The survivors silently lose every declaration they were
+// sharing *and* inherit the next rule's, which is how a row of group thumbnails
+// lost its `aspect-ratio` and `background-size` and stopped rendering at all.
+// Nothing above catches it: the classes are still defined, so every
+// `styles.swatch` resolves. Neither does the build -- it is valid CSS, just not
+// the CSS anyone wrote. The signature is a prelude line ending in a comma with
+// a comment or a blank line after it, since a real continuation is another
+// selector.
+//
 // Usage: node scripts/check-module-classes.mjs
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
@@ -55,12 +68,12 @@ const IMPORT = /^import\s+([A-Za-z_$][\w$]*)\s+from\s+'([^']*\.module\.css)'/gm
 const COMMENTS = /\/\*[\s\S]*?\*\//g
 const CLASS_IN_SELECTOR = /\.(-?[A-Za-z_][\w-]*)/g
 
-function walk(dir, out = []) {
+function walk(dir, out = [], ext = '.tsx') {
   for (const entry of readdirSync(dir)) {
     if (entry === 'node_modules' || entry.startsWith('.')) continue
     const full = join(dir, entry)
-    if (statSync(full).isDirectory()) walk(full, out)
-    else if (full.endsWith('.tsx')) out.push(full)
+    if (statSync(full).isDirectory()) walk(full, out, ext)
+    else if (full.endsWith(ext)) out.push(full)
   }
   return out
 }
@@ -121,6 +134,46 @@ for (const file of ['app', 'src'].flatMap((r) => walk(join(ROOT, r)))) {
       })
     }
   }
+}
+
+/**
+ * A selector list whose continuation never arrives.
+ *
+ * A prelude line ending in `,` must be followed by another selector. A comment
+ * or a blank line there means a name was removed from the group along with the
+ * body it was sharing -- see the note above.
+ */
+function danglingSelectors(css, file) {
+  const out = []
+  const lines = css.split('\n')
+  for (const [i, line] of lines.entries()) {
+    if (!/,\s*$/.test(line) || /^\s*\/\//.test(line)) continue
+    const next = lines[i + 1]
+    if (next === undefined) continue
+    if (next.trim() === '' || next.trim().startsWith('/*'))
+      out.push({ file, line: i + 1, text: line.trim() })
+  }
+  return out
+}
+
+const dangling = []
+for (const css of walk(ROOT, [], '.module.css')) {
+  dangling.push(
+    ...danglingSelectors(readFileSync(css, 'utf8'), relative(ROOT, css)),
+  )
+}
+
+if (dangling.length > 0) {
+  for (const d of dangling) {
+    console.error(`${d.file}:${d.line}  selector list ends at \`${d.text}\``)
+  }
+  console.error(
+    `\n${dangling.length} selector list(s) with nothing after the comma.` +
+      ' A name was removed from a group and took the shared declarations with' +
+      ' it, so the selectors left behind lost them and picked up the next' +
+      " rule's instead. Valid CSS, and not the CSS anyone wrote.",
+  )
+  process.exit(1)
 }
 
 if (findings.length === 0) {

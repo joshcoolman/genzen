@@ -5,7 +5,11 @@
    beside contained ones reads as a different kind of card rather than as one of
    them carrying something extra. */
 
-.menuIcon,
+.menuIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
 /* The corner an image card fills with the model name, matched exactly
    (`image-card.module.css` `.model`). Same slot, same weight: that corner
    answers "what is this picture", and for a group the answer is that it stands
@@ -99,23 +103,20 @@ button.swatches:hover .swatchEmpty {
    grid that lost its rhythm. That is also why the count is not in here -- there
    is no spare cell for it. */
 .swatch,
-.swatchEmpty,
+.swatchEmpty {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-sunken);
+  background-size: cover;
+  background-position: center;
+}
+
 /* A filled slot, darker than the caption behind it. It was `--surface-sunken`
    at 35% opacity first, which on the caption's own dark ground is very nearly
    the caption -- the slots were there and invisible, so a short row read as a
    broken grid rather than as room for more. */
 .swatchEmpty {
   background-color: var(--slot-empty);
-}
-
-@keyframes slot-pulse {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.9;
-  }
 }
 
 /* Beside the name rather than in the swatch row. It was a fifth cell there,
