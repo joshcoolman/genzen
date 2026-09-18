@@ -1,16 +1,21 @@
 'use server'
 
-import { randomUUID } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import {
   FRAME_MODEL_SLUG,
   FRAME_RATIO,
   RERUN_MODEL_SLUGS,
-  SECTION_MODEL_SLUG,
+  SECTION_MODEL_SLUGS,
   SECTION_RATIO,
   assembleScenes,
   closingReferenceIds,
+  lineToSpeak,
   sceneReferenceIds,
   sectionDuration,
+  sectionImages,
+  sectionModel,
+  sectionTakesEndFrame,
+  spokenOf,
 } from '../[id]/board'
 import { dialogueOf } from '../[id]/script'
 import {
@@ -19,12 +24,13 @@ import {
   trashSessionClips,
   updateBoardScene,
 } from '../_lib/sessions.server'
-import { planStoryboard } from '../_lib/storyboard.server'
+import { planStoryboard, pronounceLines } from '../_lib/storyboard.server'
 import { boardImageIds, idSchema } from '../_lib/types'
 import {
   generateVideo,
   listVideos,
 } from '../../video/_actions/generate-video.action'
+import { permanentlyDeleteImages } from '../../trash/_actions/trash'
 import { listSessionRefs } from './references.action'
 import type { RefAsset } from './references.action'
 import type { BoardScene, Session } from '../_lib/types'
@@ -337,6 +343,39 @@ export async function generateSectionVideo(
   sessionId: string,
   sceneId: string,
   words?: string,
+  /**
+   * What the character should say in this take, when it is not the line as
+   * recorded (#700).
+   *
+   * **The same field a pronunciation respelling writes**, because it is the
+   * same thing: what the model is told to say, as against what the film says.
+   * The two reasons to set it differ -- a respelling keeps what is heard and
+   * only fixes how it is said, while a rephrasing changes what is heard -- but
+   * both are one consumer's version of a line whose record lives elsewhere, and
+   * a second field for the second reason would be two things to keep in step
+   * for no gain.
+   *
+   * The reason it earns a box on the dialog: Kling refuses a line naming a
+   * trademarked work, the line cannot be reworded by a model on the author's
+   * behalf, and the author rewording it is the only thing that gets that
+   * section made at all.
+   */
+  spoken?: string,
+  /**
+   * Pin the scene's closing frame as the clip's last frame (#697).
+   *
+   * **Off by default, and that default is the considered one.** Real pairs on
+   * this board read as cuts -- two camera setups -- and a single continuous
+   * take pinned at both ends of two setups is a morph or a slow push rather
+   * than footage. The cut is pinned on the other side instead: the next row's
+   * clip begins on the opening frame that join was judged against.
+   *
+   * It is offered per take because the reasoning does not hold for every row.
+   * A pair that is genuinely two moments of one shot -- a hand rising, a head
+   * turning across five seconds -- is exactly what an end frame is for, and
+   * only looking at the pair says which kind it is.
+   */
+  endFrame?: boolean,
 ): Promise<Session> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
@@ -348,6 +387,11 @@ export async function generateSectionVideo(
     throw new Error('This scene has no opening frame to start from yet.')
 
   const asked = words?.trim().slice(0, 2000)
+  /* Written before the submit, so the take is generated from what the board
+     will show as having been said -- and so a refused take still leaves the
+     rewording behind to try again from. */
+  const said = spokenOf(spoken ?? null, scene.line)
+  const speaking = spoken === undefined ? scene : { ...scene, spokenLine: said }
   /* The fixed instruction, then what the shot is, then what it is heading for,
      then the line. The closing frame is not sent, but its description is: it
      is the account of where the shot ends up, which is what the motion is.
@@ -359,36 +403,73 @@ export async function generateSectionVideo(
     /* The chat's own marker, which is how a line reaches the model as speech
        rather than as description (`composeClipPrompt`, read back by
        `dialogueOf`). Reading back a structure the app wrote. */
-    `Speaking to camera, in English: "${scene.line}"`,
+    /* The respelling when there is one (#700): Kling takes a plain prompt and
+       no lexicon, so the spelling sent is the pronunciation. `scene.line` stays
+       the record and is what the Script tab reads. */
+    `Speaking to camera, in English: "${lineToSpeak(speaking)}"`,
     ...(asked ? [asked] : []),
   ].join('\n\n')
 
+  const modelSlug = session.board.model
+  /* Only a closing frame that exists, finished, and on a model that takes one:
+     pinning a pending row is pinning nothing, and Seedance's endpoint has no
+     end-image parameter at all. */
+  const closing =
+    endFrame && scene.closingId && sectionTakesEndFrame(modelSlug)
+      ? first(
+          await sql<Array<{ id: string }>>`
+            select id from user_images
+            where id = ${scene.closingId} and user_id = ${userId}
+              and origin = 'director' and status = 'completed'
+              and deleted_at is null
+          `,
+        )
+      : null
+
+  /* One seed for the board, pinned the first time a model that takes one is
+     used (#687). Kling's endpoint has none and drops it; Seedance's keeps it,
+     which is the whole reason that model is offered here. */
+  const seed =
+    session.board.seed ??
+    (sectionModel(modelSlug).endpoints.withReferences?.acceptsSeed
+      ? randomInt(0, 2 ** 31)
+      : undefined)
+
+  /* The next number ever issued for this scene, not the next position. A take
+     keeps its name when the ones around it are deleted -- see `takes`. */
+  const takeNumber =
+    scene.takes.reduce((highest, take) => Math.max(highest, take.number), 0) + 1
+
   const { recordId } = await generateVideo({
-    images: [
-      { id: scene.openingId, role: 'first' },
-      ...sceneReferenceIds(scene).map((id) => ({
-        id,
-        role: 'reference' as const,
-      })),
-    ],
+    images: sectionImages(scene, modelSlug, closing?.id ?? null),
     prompt,
-    duration: sectionDuration(scene.seconds),
+    duration: sectionDuration(scene.seconds, modelSlug),
     aspectRatio: SECTION_RATIO,
-    modelSlug: SECTION_MODEL_SLUG,
+    modelSlug,
     generateAudio: true,
     origin: 'director',
+    seed,
   })
   await updateImageMeta(
     recordId,
-    `Scene ${scene.number} — Take ${scene.videoIds.length + 1}`,
+    `Scene ${scene.number} — Take ${takeNumber}`,
     asked ?? scene.line,
   )
 
   /* Appended, and never into `cut.clipIds`: the board is not the run, and a
      take joining the row would put it in the player and in Script. */
-  return updateBoardScene(userId, session.id, scene.id, {
-    videoIds: [...scene.videoIds, recordId],
+  const saved = await updateBoardScene(userId, session.id, scene.id, {
+    takes: [
+      ...scene.takes,
+      { id: recordId, number: takeNumber, model: modelSlug },
+    ],
+    ...(spoken === undefined ? {} : { spokenLine: said }),
   })
+  /* The seed is written once and never again, so every later section of this
+     film starts from the same noise. */
+  return seed !== undefined && session.board.seed === undefined
+    ? saveBoard(userId, session.id, saved.board.scenes, { seed })
+    : saved
 }
 
 /**
@@ -507,7 +588,9 @@ const MAX_SETTLE_PER_LOAD = 4
 export async function settleBoardTakes(sessionId: string): Promise<void> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
-  const takeIds = session.board.scenes.flatMap((scene) => scene.videoIds)
+  const takeIds = session.board.scenes.flatMap((scene) =>
+    scene.takes.map((take) => take.id),
+  )
   if (takeIds.length === 0) return
 
   const pending = await sql<
@@ -533,9 +616,9 @@ export async function settleBoardTakes(sessionId: string): Promise<void> {
   /* Which scene each take belongs to, so its name can be put back below. */
   const labels = new Map(
     session.board.scenes.flatMap((scene) =>
-      scene.videoIds.map((takeId, index) => [
-        takeId,
-        `Scene ${scene.number} — Take ${index + 1}`,
+      scene.takes.map((take) => [
+        take.id,
+        `Scene ${scene.number} — Take ${take.number}`,
       ]),
     ),
   )
@@ -602,13 +685,25 @@ export async function settleBoardTakes(sessionId: string): Promise<void> {
 }
 
 /**
- * Drop one take off a row and trash it (#697).
+ * Delete one take, for good (#697).
  *
- * **Because takes add, something has to subtract.** A refused take is a dead
- * tile on a row that will otherwise carry it for the life of the board, and
- * the frames' lesson applies here too: a thing you cannot clear is a thing you
- * work around. It goes to Trash like every other Director row, so a take
- * dropped by mistake is one restore away.
+ * **Because takes add, something has to subtract.** A take you have watched and
+ * rejected is a dead tile the row would otherwise carry for the life of the
+ * board, and the frames' lesson applies here too: a thing you cannot clear is a
+ * thing you work around.
+ *
+ * **Destroyed rather than trashed, which is the one place Director does that.**
+ * Everything else here goes to Trash and is one restore away, on the reasoning
+ * that a re-roll you regret should be recoverable. A take is different in kind:
+ * it is a candidate you generated in order to look at, and a board of thirty-two
+ * rows re-rolled a few times each would put a hundred rejected clips in Trash to
+ * be cleared by hand -- which is how a safety net becomes a chore and stops
+ * being read. The press asks first instead, which is the protection that fits a
+ * thing meant to be thrown away.
+ *
+ * Trashed first and then destroyed, so the bucket objects go with the row:
+ * `permanentlyDeleteImages` is where that knowledge lives -- storage path,
+ * poster and end frame -- and it only looks at rows already in the bin.
  */
 export async function dropTake(
   sessionId: string,
@@ -622,14 +717,142 @@ export async function dropTake(
   )
   if (!scene) throw new Error('That scene is not in this session.')
   idSchema.parse(takeId)
-  if (!scene.videoIds.includes(takeId))
+  if (!scene.takes.some((take) => take.id === takeId))
     throw new Error('That take is not on this scene.')
 
-  return updateBoardScene(
+  const saved = await updateBoardScene(
     userId,
     session.id,
     scene.id,
-    { videoIds: scene.videoIds.filter((id) => id !== takeId) },
+    { takes: scene.takes.filter((take) => take.id !== takeId) },
     [takeId],
   )
+  await permanentlyDeleteImages([takeId])
+  return saved
+}
+
+/**
+ * Fix pronunciation across the board (#700).
+ *
+ * One Claude call over every line, filling `spokenLine` and touching nothing
+ * else: no frames are replanned, no takes are affected, and `line` -- the
+ * record -- is unchanged. Non-destructive on purpose, because the board this is
+ * for already has frames worth keeping and re-planning would replace them.
+ *
+ * **It overwrites what was there**, unlike everything else on this board that
+ * adds. A respelling is a correction rather than a candidate, and two of them
+ * for one line is not something anybody would choose between.
+ */
+export async function pronounceBoard(sessionId: string): Promise<Session> {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  if (session.board.scenes.length === 0)
+    throw new Error('There is no storyboard to read.')
+
+  const spoken = await pronounceLines(
+    session.board.scenes.map((scene) => ({
+      number: scene.number,
+      line: scene.line,
+    })),
+  )
+
+  const scenes = session.board.scenes.map((scene) => ({
+    ...scene,
+    /* A line the model did not answer for keeps whatever it had: silence is
+       not an instruction to throw away a respelling that was working. */
+    spokenLine: spoken.has(scene.number)
+      ? spokenOf(spoken.get(scene.number) ?? null, scene.line)
+      : scene.spokenLine,
+  }))
+
+  return saveBoard(userId, session.id, scenes)
+}
+
+/**
+ * Set what one scene says, from the row (#700).
+ *
+ * **The board is where a script is made ready to shoot.** Editing a line only
+ * inside Generate video meant finding out a line was wrong at the moment of
+ * spending, one row at a time; here a pass down the board fixes every line that
+ * would be refused or mispronounced before anything is generated. Same field,
+ * so the dialog and the row can never disagree.
+ *
+ * Saving the line as the script has it clears the override rather than storing
+ * a copy of it -- `spokenOf`'s rule -- so reverting is retyping the original
+ * and needs no separate affordance.
+ */
+export async function setSpokenLine(
+  sessionId: string,
+  sceneId: string,
+  spoken: string,
+): Promise<Session> {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  const scene = session.board.scenes.find(
+    (s) => s.id === idSchema.parse(sceneId),
+  )
+  if (!scene) throw new Error('That scene is not in this session.')
+  if (!spoken.trim()) throw new Error('A scene has to say something.')
+
+  return updateBoardScene(userId, session.id, scene.id, {
+    spokenLine: spokenOf(spoken, scene.line),
+  })
+}
+
+/**
+ * Choose the model sections are generated with (#702).
+ *
+ * **On the board, not in the page's head**, so it travels with the session and
+ * three machines agree about what this film is being made on. Switching it
+ * between generations is the point: two takes of one row, one from each, side
+ * by side, is the only way to judge a trade whose terms are a pinned opening
+ * frame against a seed.
+ *
+ * Nothing already generated is touched -- a take records the model that made
+ * it, so a row holding both stays legible.
+ */
+export async function setBoardModel(
+  sessionId: string,
+  slug: string,
+): Promise<Session> {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  if (!(SECTION_MODEL_SLUGS as ReadonlyArray<string>).includes(slug))
+    throw new Error('That model cannot generate a section.')
+  return saveBoard(userId, session.id, session.board.scenes, { model: slug })
+}
+
+/**
+ * Swap which frame the scene opens on and which it ends on (#697).
+ *
+ * **The prompts swap with the frames**, or the board starts lying: the closing
+ * description is the account of where the shot ends up, and the section prompt
+ * sends it as "it moves toward this". Leave it behind and the clip is told to
+ * move toward the picture it started from.
+ *
+ * Its own press rather than a re-plan because the two frames are already drawn
+ * and paid for: the planner's idea of which is the opening is a guess about a
+ * scene it never saw, and on a model that pins the first frame it decides what
+ * the clip literally begins on. Reversible by pressing it again, which is the
+ * whole shape -- nothing is generated, nothing is trashed.
+ */
+export async function swapFrames(
+  sessionId: string,
+  sceneId: string,
+): Promise<Session> {
+  const { userId } = await resolveAuth()
+  const session = await requireSession(userId, idSchema.parse(sessionId))
+  const scene = session.board.scenes.find(
+    (s) => s.id === idSchema.parse(sceneId),
+  )
+  if (!scene) throw new Error('That scene is not in this session.')
+  if (!scene.openingId || !scene.closingId)
+    throw new Error('This scene needs both frames before they can be swapped.')
+
+  return updateBoardScene(userId, session.id, scene.id, {
+    openingId: scene.closingId,
+    closingId: scene.openingId,
+    openingPrompt: scene.closingPrompt,
+    closingPrompt: scene.openingPrompt,
+  })
 }

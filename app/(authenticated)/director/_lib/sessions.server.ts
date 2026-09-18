@@ -377,11 +377,18 @@ export async function saveBoard(
   owner: string,
   id: string,
   scenes: Array<BoardScene>,
+  /** The board's own settings, kept as they are unless named (#702): the model
+   *  sections are generated with, and the seed pinned for them. */
+  settings: { model?: string; seed?: number } = {},
 ): Promise<Session> {
-  await requireSession(owner, id)
+  const session = await requireSession(owner, id)
   const board = {
     version: 1 as const,
     scenes: scenes.map((scene) => boardSceneSchema.parse(scene)),
+    model: settings.model ?? session.board.model,
+    ...((settings.seed ?? session.board.seed)
+      ? { seed: settings.seed ?? session.board.seed }
+      : {}),
   }
   await sql`
     update director_sessions
@@ -418,7 +425,7 @@ export async function updateBoardScene(
   )
   await sql`
     update director_sessions
-    set board = ${jsonb({ version: 1 as const, scenes })},
+    set board = ${jsonb({ ...session.board, version: 1 as const, scenes })},
       revision = revision + 1, updated_at = now()
     where id = ${id} and user_id = ${owner}
   `

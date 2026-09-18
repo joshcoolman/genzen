@@ -307,11 +307,189 @@ story -- twelve images at 8c against $38.64 for one Kling O3 Pro pass over a
   rerun may pick one of the three reference-taking models, single choice rather
   than the derive's multi-select, because there is only ever one frame in this
   position.
-- **Nothing downstream is wired to it.** No video, no stitching, no export. The
-  shape is worth having because Kling O3 Pro's `reference-to-video` takes
-  `start_image_url` _and_ `image_urls` on one request (#665), so an approved
-  opening frame can later be the clip's literal first frame -- which makes the
-  storyboard the spec rather than a preview. That is the next issue.
+- **The pair can be turned around** (`swapFrames`), and **the prompts swap with
+  the frames** or the board starts lying: the closing description is the account
+  of where the shot ends up, and the section prompt sends it as "it moves toward
+  this" -- leave it behind and the clip is told to move toward the picture it
+  started from. Its own press rather than a re-plan because both frames are
+  already drawn and paid for, and the planner's idea of which one opens the
+  scene is a guess about a scene it never saw. On a model that pins the first
+  frame it decides what the clip literally begins on. Nothing is generated and
+  nothing is trashed, so pressing it twice costs nothing, which is the whole
+  shape of it.
+- **A failed frame can be asked for again** (`retryFrame`, #699), in place, same
+  prompt and same references, with the failed row going to Trash. It used to be
+  a dead end: the drain only picks up a scene whose `closingId` is null and a
+  failed row's id is stored like a good one, so the only repair was Rerun with
+  guidance -- which replaces the pair and throws away an opening frame that was
+  never the problem. **The provider's message is shown but not led with**: Nano
+  Banana 2 answers every failure with one catch-all beginning "unsafe content"
+  and going on to list a media-type mismatch and "other cases", so a transient
+  miss accuses itself of moderation and sends you to edit a prompt that was
+  fine. The row says it did not come back, offers the retry, and puts the
+  provider's words underneath.
+- **A frame description never names a film, a brand or a real person**, however
+  much the script does. A chat session about a film puts that film's name in its
+  dialogue and the planner reads the whole script, so without the rule a shot
+  description asks for a trademarked thing beside its own iconography, which is
+  indistinguishable from asking to depict it. The line still says what it says:
+  it is speech, not art direction.
+
+## Generating a section (#697)
+
+**Generate video** on a row turns that row into the clip it was a spec for.
+16:9 like every frame on the board, audio on, and the duration is the line's own
+seconds, which came from `durationForWords` and so is how long the words take to
+say.
+
+**Two models, chosen on the board** (#702), because they fail differently and
+only two takes of one row side by side say which trade is worth it. The choice
+lives in `board.model` rather than in the page's head, so it travels with the
+session; a take records the model that made it, so a row holding both is legible
+and the board's total is summed at each take's own rate.
+
+- **Kling O3 Pro**, 14c/s, and the reason the board started here: the only model
+  in the lineup taking a first frame and references on one request, which is the
+  run's reason for Add ref too. So the clip literally begins on the approved
+  opening frame, and the cut the board judged is the cut you get.
+- **Seedance 2.5**, 47.3c/s, which **cannot pin the opening frame at all** --
+  its reference endpoint has no start-image parameter, and `imageCompatibility`
+  refuses references and frames together for exactly that reason. There the
+  opening frame goes in _as a reference_, leading the list: the clip does not
+  begin on it, but it is still the strongest carrier of the film's look in the
+  request, which the sheets cannot be because they are deliberately neutral.
+  What it has in exchange is a **seed**, which Kling's endpoint does not take at
+  all -- pinned once on the board and sent with every take after (#687's rule) --
+  and `audio_urls`, reference audio, which is the real answer to voice drift and
+  is unused because genzen has no audio asset to hand it.
+
+The dialog says which of the two it is doing rather than leaving it implied: the
+frame is captioned "Opens on" or "Reference for the look", Include end frame
+appears only where the endpoint has one, and the duration and the price come
+from the chosen model.
+
+- **The opening frame is always sent, and dropping it is not symmetric with
+  dropping the closing one.** Both sheet prompts say a sheet is a neutral record
+  -- flat studio light, plain background, nothing theatrical -- so with
+  references alone nothing in the request carries what the film _looks_ like and
+  the model invents the grade per row. The opening frame is the only input
+  carrying it, and it is also what makes the approved cut the cut you get: the
+  join was judged as row N's closing into row N+1's opening.
+- **The closing frame is not sent by default, though the endpoint takes one**,
+  and **Include end frame** offers it per take, off on every open. Real pairs on
+  this board read as _cuts_ -- two camera setups -- and a single continuous take
+  pinned at both ends of two setups is a morph or a slow push rather than
+  footage. But that is about the pairs this board produces, not about the
+  mechanism: a pair that is genuinely two moments of one shot is exactly what an
+  end frame is for, and only looking at a pair says which kind it is. Not
+  remembered between rows, and disabled when the closing frame is missing or
+  still being made -- pinning a row with nothing behind it is pinning nothing.
+  Its _description_ is sent either way, being the account of where the shot ends
+  up, which is what the motion is.
+- **No music, and it has to be prompt wording**: the endpoint has no
+  `negative_prompt` (schema read 2026-09-17), so
+  `src/lib/prompts/director-section.md` bans score, swells and instruments
+  outright and asks for what the place makes. Not taste -- a score is generated
+  per clip, so it restarts and changes key at every join, and thirty-two
+  independently scored shots can only fight the edit. Music over a finished cut
+  is one decision instead of thirty-two.
+- **There is no seed here.** That endpoint takes none at all; `models.ts` is
+  right to carry `acceptsSeed` only on `h3-max-turbo/text-to-video`, and the
+  composer drops it in silence. The voice steadiness heard across chat bursts is
+  H3 Max Turbo's, on another endpoint, and is confounded anyway: every burst
+  shares the session seed _and_ a near-identical prompt. What this endpoint has
+  instead is `elements[].voice_id` -- a voice created once and bound to a
+  character, deterministic where a seed is hopeful. Not used yet; an element
+  wants separate angle images where a sheet is one composite.
+- **Takes add and nothing is canonical**, unlike the frames, which replace: a
+  frame is a spec and a take is a candidate. **Each carries its own number**,
+  stored rather than derived from position: it was `index + 1`, so deleting
+  take 2 renamed take 3 to take 2 -- a clip you had watched and formed an
+  opinion about, renamed because something else was thrown away. That is the
+  renumbering around a cut that did not happen which `dialogueOf` refuses to do
+  to the script, and it is refused here for the same reason. Numbers are never
+  reused; the next is the highest ever issued for that scene plus one, so a row
+  can read 1, 3, 4. A board written before this holds `videoIds`, where the
+  number _was_ the position, and is read as such on the way in -- those were the
+  numbers that had been on screen. They are a grid under the pair,
+  four across, each tile the clip's own poster as an `<img>` with a play badge
+  -- not a `<video>`, because thirty-two rows each decoding a clip is a board
+  you cannot scroll. Watching one is a press and opens a popup.
+  **A take is deleted for good, and it is the one thing here that does not go to
+  Trash.** Something has to subtract or a rejected take sits on the row for the
+  life of the board -- but a take is a candidate generated in order to be looked
+  at, and thirty-two rows re-rolled a few times each would put a hundred clips
+  in Trash to be cleared by hand, which is how a safety net becomes a chore and
+  stops being read. The press asks first instead, which is the protection that
+  fits a thing meant to be thrown away. The row is trashed and then destroyed in
+  one call, so the bucket objects go with it: `permanentlyDeleteImages` knows
+  about the poster and the end frame and only looks at rows already in the bin.
+  The control is a trash icon opposite the take's own label.
+- **A take is settled on page load, server-side** (`settleBoardTakes`), not only
+  by the browser poll. That poll works everywhere else because an image takes
+  twenty seconds and you are still looking at it; a section takes four to eight
+  minutes (fal's p50 is 250s), so the honest thing to do while waiting is look
+  at something else, and a hidden tab stops polling. Two takes sat finished at
+  FAL and pending here for twenty-two minutes with every server-side step
+  working -- the board had simply never been asked. Capped at four a load, and
+  done **one at a time**: the first cut used `Promise.all` and the first time two
+  were ready together one settled and the other threw, which is #556's shape
+  exactly. It also **puts the take's name back**, because completing a clip
+  rewrites its title from the model label.
+- **A refused take must be written down.** `queue.status` answers **COMPLETED**
+  for a request Kling refused on content grounds; the refusal only appears when
+  the result is fetched, as a 422. So the happy path sails past the status check
+  and throws at the result, and merely logging it left the take pending and the
+  board saying "working" for ever. The verdict is the poll's own
+  `isFalRejection`, which lives in `fal-error.server.ts` for the purpose: a
+  `'use server'` module may export nothing but async functions, so a sync helper
+  exported from one fails the build.
+- **`boardImageIds` is the one definition of every row the board owns**, and it
+  is load-bearing twice: it is what the session's trash sweep collects, so a row
+  missing from it outlives the session, and it is what the page reads every
+  tile's state from, so a row missing from it renders as still being made for
+  ever. Both happened, from two hand-written copies of that list that were not
+  updated when takes arrived -- neither failed loudly, one lied on screen and the
+  other would have lied only in a bucket.
+- **Content refusals are real on this path, and the spoken line is what trips
+  them.** Scene 1 of the Matrix board was refused -- "material flagged by a
+  content checker" -- while the scenes either side went through; its line names a
+  trademarked franchise and theirs do not. Rewording the line is confirmed to fix
+  it. A silent take (`generate_audio: false`, 11.2c/s rather than 14) would drop
+  the line from the request entirely, with voice added later; not built.
+- **The price is on the button and the total is in the bar.** 14c/s is 70c to
+  $1.68 a row, so a thirty-two row board is $38 available one click at a time --
+  the same bill the storyboard exists to avoid, spent without noticing. The
+  dialog also says the wait out loud.
+
+### What a scene says (#700)
+
+`scene.spokenLine` is what the model is told to say; `scene.line` is the record,
+and what Script, the transcript and the copy button read. `lineToSpeak` is the
+single place the two are chosen between, and retyping the original clears the
+override -- `spokenOf` returns null for text identical to the line, which is why
+reverting needs no button.
+
+- **Respelling is the only pronunciation lever there is.** The endpoint takes a
+  plain prompt string: no SSML, no phoneme tags, no lexicon, and `voice_id`
+  binds a voice without saying anything about pronunciation. So Descartes is
+  said wrong every time unless the text says `day-KART`. The planner returns
+  `spoken` per line; **Fix pronunciation** (`pronounceBoard`) is the same thing
+  for a board that already exists -- one call, fills `spokenLine`, replaces
+  nothing else, because that board has frames worth keeping. A correction rather
+  than a candidate, so it overwrites. Plain letters and never IPA, since a model
+  reads letters, and sparing by instruction: a word that would have been fine is
+  a word you can only make worse.
+- **The same field takes a hand rewording, and the row is where that happens.**
+  The two reasons differ -- a respelling keeps what is heard and fixes how it is
+  said, a rewording changes what is heard -- but both are one consumer's version
+  of a line whose record lives elsewhere, and a second field would be two things
+  to keep in step for nothing. Editing only inside Generate video meant
+  discovering a line was unusable at the moment of spending, one row at a time;
+  on the row, a pass down the board fixes every line that would be refused or
+  mispronounced before anything is generated. The working text leads and the
+  script sits under it when they differ. The draft lives in the line's own
+  component: held on the row it would be lost to the poll's refresh.
 
 ## The workspace
 

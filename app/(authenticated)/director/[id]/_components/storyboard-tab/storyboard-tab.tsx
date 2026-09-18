@@ -1,12 +1,23 @@
 'use client'
 
 import { SceneRow } from '../scene-row/scene-row'
-import { FRAME_MODEL_SLUG, boardVideoCostCents } from '../../board'
+import {
+  FRAME_MODEL_SLUG,
+  SECTION_MODEL_SLUGS,
+  boardVideoCostCents,
+  sectionModel,
+} from '../../board'
 import styles from './storyboard-tab.module.css'
 import type { FrameStatus } from '../../use-storyboard'
 import type { RefAsset } from '../../../_actions/references.action'
 import type { BoardScene, StoredBoard } from '../../../_lib/types'
-import { Button, CostNote, EmptyState } from '#/components'
+import {
+  Button,
+  ConfirmDialog,
+  CostNote,
+  EmptyState,
+  useConfirm,
+} from '#/components'
 import { estimateImageCostCents } from '#/features/ai-images/models'
 import { formatCost } from '#/features/video/models'
 
@@ -35,30 +46,55 @@ export function StoryboardTab({
   status,
   frames,
   busy,
+  pronouncing,
   generating,
   retrying,
   onCreate,
+  onPronounce,
+  onChooseModel,
   onRerun,
+  onSwap,
   onRetry,
   onFilm,
   onWatch,
   onDropTake,
+  onEditLine,
 }: {
   board: StoredBoard
   status: FrameStatus
   frames: Record<string, RefAsset>
   busy: boolean
+  /** Fix pronunciation is in flight. */
+  pronouncing: boolean
   /** The rows with a section in flight. */
   generating: Array<string>
   /** The rows asking for a failed frame again. */
   retrying: Array<string>
   onCreate: () => void
+  onPronounce: () => void
+  onChooseModel: (slug: string) => void
   onRerun: (scene: BoardScene) => void
+  onSwap: (scene: BoardScene) => void
   onRetry: (scene: BoardScene, which: 'opening' | 'closing') => void
   onFilm: (scene: BoardScene) => void
   onWatch: (takeId: string) => void
   onDropTake: (scene: BoardScene, takeId: string) => void
+  onEditLine: (scene: BoardScene, spoken: string) => void
 }) {
+  /* Deleting a take destroys it -- the one thing on this board that does not
+     go to Trash -- so the press asks first. Here rather than in the row: one
+     dialog for the grid, not one per tile. */
+  const { confirm, dialogProps } = useConfirm()
+  const askThenDrop = async (scene: BoardScene, takeId: string) => {
+    const ok = await confirm({
+      title: 'Delete this take?',
+      message:
+        'The clip is deleted for good, not moved to Trash, and cannot be restored.',
+      confirmLabel: 'Delete',
+    })
+    if (ok) onDropTake(scene, takeId)
+  }
+
   const scenes = board.scenes
   /* Two frames a scene, and what a six-scene board costs is the argument for
      the tab existing: about a dollar against $38 for one video pass over the
@@ -74,7 +110,7 @@ export function StoryboardTab({
   /* What this board has spent on video, which is the number the per-row button
      makes easy to lose track of (#697). */
   const spent = boardVideoCostCents(scenes)
-  const takes = scenes.reduce((total, s) => total + s.videoIds.length, 0)
+  const takes = scenes.reduce((total, s) => total + s.takes.length, 0)
 
   if (scenes.length === 0) {
     return (
@@ -102,7 +138,29 @@ export function StoryboardTab({
             </span>
           )}
         </p>
+        {/* Which model a section is generated with (#702), on the board rather
+            than in the dialog: it is a property of how this film is being made,
+            and switching it between generations is how the two are compared. */}
+        <div className={styles.models}>
+          {SECTION_MODEL_SLUGS.map((slug) => (
+            <Button
+              key={slug}
+              size="sm"
+              variant={board.model === slug ? 'primary' : 'secondary'}
+              aria-pressed={board.model === slug}
+              onClick={() => onChooseModel(slug)}
+            >
+              {sectionModel(slug).label}
+            </Button>
+          ))}
+        </div>
         <CostNote cents={cents} unpriced={unpriced} />
+        {/* A correction, not a candidate (#700): one Claude call respells the
+            names a speaking model would get wrong, and nothing else on the
+            board is touched -- the frames stay exactly as they are. */}
+        <Button onClick={onPronounce} loading={pronouncing}>
+          Fix pronunciation
+        </Button>
         <Button onClick={onCreate} loading={busy}>
           Draw again
         </Button>
@@ -112,18 +170,22 @@ export function StoryboardTab({
           <SceneRow
             key={scene.id}
             scene={scene}
+            model={board.model}
             status={status}
             frames={frames}
             filming={generating.includes(scene.id)}
             retrying={retrying.includes(scene.id)}
             onRerun={onRerun}
+            onSwap={onSwap}
             onRetry={onRetry}
             onFilm={onFilm}
             onWatch={onWatch}
-            onDropTake={onDropTake}
+            onDropTake={(s, takeId) => void askThenDrop(s, takeId)}
+            onEditLine={onEditLine}
           />
         ))}
       </ol>
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { boardImageIds } from '../_lib/types'
+import { boardImageIds, parseBoard } from '../_lib/types'
 import {
   assembleScenes,
   boardVideoCostCents,
   closingReferenceIds,
+  lineToSpeak,
   sceneReferenceIds,
   scenesToClose,
+  sectionCostCents,
   sectionDuration,
+  sectionImages,
+  sectionPinsOpening,
+  sectionTakesEndFrame,
+  spokenOf,
 } from './board'
 import type { BoardSheet } from './board'
 import type { ScriptLine } from './script'
@@ -50,6 +56,7 @@ describe('assembleScenes', () => {
           characters: [1],
           opening: 'He arrives.',
           closing: 'He sits.',
+          spoken: null,
         },
         {
           line: 2,
@@ -57,6 +64,7 @@ describe('assembleScenes', () => {
           characters: [1],
           opening: 'He stands.',
           closing: 'He crosses the room.',
+          spoken: null,
         },
         {
           line: 3,
@@ -64,6 +72,7 @@ describe('assembleScenes', () => {
           characters: [1],
           opening: 'Outside.',
           closing: 'Walking away.',
+          spoken: null,
         },
       ]),
       lines,
@@ -84,9 +93,30 @@ describe('assembleScenes', () => {
   it('answers out of order still land in script order', () => {
     const scenes = assembleScenes({
       plan: plan([
-        { line: 3, location: null, characters: [], opening: 'c', closing: 'c' },
-        { line: 1, location: null, characters: [], opening: 'a', closing: 'a' },
-        { line: 2, location: null, characters: [], opening: 'b', closing: 'b' },
+        {
+          line: 3,
+          location: null,
+          characters: [],
+          opening: 'c',
+          closing: 'c',
+          spoken: null,
+        },
+        {
+          line: 1,
+          location: null,
+          characters: [],
+          opening: 'a',
+          closing: 'a',
+          spoken: null,
+        },
+        {
+          line: 2,
+          location: null,
+          characters: [],
+          opening: 'b',
+          closing: 'b',
+          spoken: null,
+        },
       ]),
       lines,
       characters,
@@ -99,10 +129,31 @@ describe('assembleScenes', () => {
   it('drops numbers it was never given, and never renumbers what is left', () => {
     const scenes = assembleScenes({
       plan: plan([
-        { line: 1, location: 9, characters: [9], opening: 'a', closing: 'b' },
+        {
+          line: 1,
+          location: 9,
+          characters: [9],
+          opening: 'a',
+          closing: 'b',
+          spoken: null,
+        },
         // A line that is not in the script cannot be a scene of it.
-        { line: 99, location: 1, characters: [1], opening: 'a', closing: 'b' },
-        { line: 3, location: 1, characters: [1], opening: 'a', closing: 'b' },
+        {
+          line: 99,
+          location: 1,
+          characters: [1],
+          opening: 'a',
+          closing: 'b',
+          spoken: null,
+        },
+        {
+          line: 3,
+          location: 1,
+          characters: [1],
+          opening: 'a',
+          closing: 'b',
+          spoken: null,
+        },
       ]),
       lines,
       characters,
@@ -123,6 +174,7 @@ function scene(over: Partial<BoardScene> = {}): BoardScene {
     id: id(1),
     number: 1,
     line: 'Line 1',
+    spokenLine: null,
     seconds: 3,
     characterIds: [id(2)],
     locationId: id(3),
@@ -132,7 +184,7 @@ function scene(over: Partial<BoardScene> = {}): BoardScene {
     model: null,
     openingId: null,
     closingId: null,
-    videoIds: [],
+    takes: [],
     ...over,
   }
 }
@@ -195,11 +247,17 @@ describe('sectionDuration', () => {
 describe('boardVideoCostCents', () => {
   it('counts every take, because the button is on every row', () => {
     // 14c/s: a 5s row is 70c, and two takes of it are $1.40.
-    expect(boardVideoCostCents([scene({ seconds: 5, videoIds: [] })])).toBe(0)
+    expect(boardVideoCostCents([scene({ seconds: 5, takes: [] })])).toBe(0)
     expect(
       boardVideoCostCents([
-        scene({ seconds: 5, videoIds: [id(1), id(2)] }),
-        scene({ seconds: 10, videoIds: [id(3)] }),
+        scene({
+          seconds: 5,
+          takes: [
+            { id: id(1), number: 1, model: null },
+            { id: id(2), number: 2, model: null },
+          ],
+        }),
+        scene({ seconds: 10, takes: [{ id: id(3), number: 1, model: null }] }),
       ]),
     ).toBe(70 * 2 + 140)
   })
@@ -214,11 +272,128 @@ describe('boardImageIds', () => {
        screen -- "working", for ever. One definition, and a test on it. */
     const board = {
       version: 1 as const,
+      model: 'kling-o3-pro',
       scenes: [
-        scene({ openingId: id(1), closingId: id(2), videoIds: [id(3), id(4)] }),
-        scene({ openingId: id(5), closingId: null, videoIds: [] }),
+        scene({
+          openingId: id(1),
+          closingId: id(2),
+          takes: [
+            { id: id(3), number: 1, model: null },
+            { id: id(4), number: 2, model: null },
+          ],
+        }),
+        scene({ openingId: id(5), closingId: null, takes: [] }),
       ],
     }
     expect(boardImageIds(board)).toEqual([id(1), id(2), id(3), id(4), id(5)])
+  })
+})
+
+describe('spokenOf and lineToSpeak', () => {
+  it('keeps null when the respelling adds nothing', () => {
+    // Null for a line with nothing hard in it, and null for a respelling that
+    // came back identical -- the row should not carry a second copy of the
+    // line, and there is nothing to keep in step.
+    expect(spokenOf(null, 'Plain words.')).toBeNull()
+    expect(spokenOf('Plain words.', 'Plain words.')).toBeNull()
+    expect(spokenOf('  ', 'Plain words.')).toBeNull()
+  })
+
+  it('is what the model is told to say, while the line stays the record', () => {
+    const said = 'day-KART asked the same question.'
+    const s = scene({ line: 'Descartes asked the same question.' })
+    expect(lineToSpeak(s)).toBe('Descartes asked the same question.')
+    expect(lineToSpeak({ ...s, spokenLine: said })).toBe(said)
+    // The record is untouched by the respelling -- the Script tab reads it.
+    expect({ ...s, spokenLine: said }.line).toBe(
+      'Descartes asked the same question.',
+    )
+  })
+})
+
+describe('a take keeps its number', () => {
+  it('reads a board written before takes carried one', () => {
+    // The number was the position then, so reading it as such loses nothing --
+    // those were the numbers that had been on screen.
+    const parsed = parseBoard({
+      version: 1,
+      scenes: [
+        {
+          ...scene(),
+          takes: undefined,
+          videoIds: [id(1), id(2)],
+        },
+      ],
+    })
+    expect(parsed.scenes[0].takes).toEqual([
+      { id: id(1), number: 1, model: null },
+      { id: id(2), number: 2, model: null },
+    ])
+  })
+
+  it('survives its neighbours being deleted', () => {
+    /* The bug: the number was `index + 1`, so deleting take 2 renamed take 3
+       to take 2 -- a thing you had watched and formed an opinion about,
+       renamed because something else was thrown away. */
+    const takes = [
+      { id: id(1), number: 1, model: null },
+      { id: id(2), number: 2, model: null },
+      { id: id(3), number: 3, model: null },
+    ]
+    const left = takes.filter((t) => t.id !== id(2))
+    expect(left.map((t) => t.number)).toEqual([1, 3])
+    // And the next one issued is 4, never a number that has been used.
+    const next = left.reduce((high, t) => Math.max(high, t.number), 0) + 1
+    expect(next).toBe(4)
+  })
+})
+
+describe('choosing the section model (#702)', () => {
+  const KLING = 'kling-o3-pro'
+  const SEEDANCE = 'seedance-2.5'
+
+  it('pins the opening frame on Kling and references it on Seedance', () => {
+    /* Seedance's reference endpoint has no start-image parameter, and
+       `imageCompatibility` refuses references and frames together -- so the
+       opening frame goes in as a reference, leading the list, and the clip
+       does not begin on it. */
+    const s = scene({ openingId: id(9), closingId: id(8) })
+    expect(sectionImages(s, KLING, id(8))).toEqual([
+      { id: id(9), role: 'first' },
+      { id: id(3), role: 'reference' },
+      { id: id(2), role: 'reference' },
+      { id: id(8), role: 'last' },
+    ])
+    expect(sectionImages(s, SEEDANCE, id(8))).toEqual([
+      { id: id(9), role: 'reference' },
+      { id: id(3), role: 'reference' },
+      { id: id(2), role: 'reference' },
+    ])
+  })
+
+  it('knows which model takes an end frame at all', () => {
+    expect(sectionTakesEndFrame(KLING)).toBe(true)
+    expect(sectionTakesEndFrame(SEEDANCE)).toBe(false)
+    expect(sectionPinsOpening(KLING)).toBe(true)
+    expect(sectionPinsOpening(SEEDANCE)).toBe(false)
+  })
+
+  it('prices a take by the model that made it', () => {
+    // 14c/s against 47.3c/s: a board holding both cannot be summed at one rate.
+    const mixed = [
+      scene({
+        seconds: 5,
+        takes: [
+          { id: id(1), number: 1, model: KLING },
+          { id: id(2), number: 2, model: SEEDANCE },
+        ],
+      }),
+    ]
+    expect(boardVideoCostCents(mixed)).toBe(
+      sectionCostCents(5, KLING) + sectionCostCents(5, SEEDANCE),
+    )
+    expect(sectionCostCents(5, SEEDANCE)).toBeGreaterThan(
+      sectionCostCents(5, KLING),
+    )
   })
 })

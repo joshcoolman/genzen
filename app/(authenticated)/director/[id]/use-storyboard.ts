@@ -7,10 +7,14 @@ import {
   createStoryboard,
   dropTake,
   generateSectionVideo,
+  pronounceBoard,
   rerunScene,
   retryFrame,
+  setBoardModel,
+  setSpokenLine,
+  swapFrames,
 } from '../_actions/storyboard.action'
-import { RERUN_MODEL_SLUGS, scenesToClose } from './board'
+import { RERUN_MODEL_SLUGS, lineToSpeak, scenesToClose } from './board'
 import type { RefAsset } from '../_actions/references.action'
 import type { BoardScene, StoredBoard } from '../_lib/types'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
@@ -53,7 +57,17 @@ export function useStoryboard(
   const [generating, setGenerating] = useState<Array<string>>([])
   /** Which rows are asking for a failed frame again. */
   const [retrying, setRetrying] = useState<Array<string>>([])
+  /** Fix pronunciation is in flight. */
+  const [pronouncing, setPronouncing] = useState(false)
   const [words, setWords] = useState('')
+  /** What the character says in the take about to be generated. Seeded from
+   *  the scene when the dialog opens, so editing it is a change rather than a
+   *  retype. */
+  const [spoken, setSpoken] = useState('')
+  /** Pin the closing frame as the clip's last frame. **Off on every open**, not
+   *  remembered: the default is the considered one, and a row where it helped
+   *  says nothing about the next row. */
+  const [endFrame, setEndFrame] = useState(false)
   const [model, setModel] = useState<string>(RERUN_MODEL_SLUGS[0])
   const [submitting, setSubmitting] = useState(false)
 
@@ -153,6 +167,41 @@ export function useStoryboard(
     [run, sessionId],
   )
 
+  /** Switch the model sections are generated with. Stored on the board, so it
+   *  survives a reload and the next machine agrees. */
+  const chooseModel = useCallback(
+    async (slug: string) => {
+      await run(() => setBoardModel(sessionId, slug))
+    },
+    [run, sessionId],
+  )
+
+  /** Turn the pair around. Nothing is generated and nothing is trashed, so it
+   *  is safe to press twice and see which way reads better. */
+  const swap = useCallback(
+    async (scene: BoardScene) => {
+      await run(() => swapFrames(sessionId, scene.id))
+    },
+    [run, sessionId],
+  )
+
+  const pronounce = useCallback(async () => {
+    if (pronouncing) return
+    setPronouncing(true)
+    await run(() => pronounceBoard(sessionId))
+    setPronouncing(false)
+  }, [pronouncing, run, sessionId])
+
+  /** Edit what a scene says, from the row -- the same field the dialog writes,
+   *  so a pass down the board before generating anything is the cheap way to
+   *  catch a line that would be refused or mispronounced. */
+  const editLine = useCallback(
+    async (scene: BoardScene, text: string) => {
+      await run(() => setSpokenLine(sessionId, scene.id, text))
+    },
+    [run, sessionId],
+  )
+
   const openRerun = useCallback((scene: BoardScene) => {
     setRerunning(scene)
     setWords('')
@@ -161,6 +210,8 @@ export function useStoryboard(
   const openFilm = useCallback((scene: BoardScene) => {
     setFilming(scene)
     setWords('')
+    setSpoken(lineToSpeak(scene))
+    setEndFrame(false)
   }, [])
 
   /**
@@ -175,11 +226,21 @@ export function useStoryboard(
     const sceneId = filming.id
     setGenerating((current) => [...current, sceneId])
     const ok = await run(() =>
-      generateSectionVideo(sessionId, sceneId, words || undefined),
+      generateSectionVideo(
+        sessionId,
+        sceneId,
+        words || undefined,
+        /* Sent only when it is not what the scene already says, so an
+           untouched box writes nothing. */
+        spoken.trim() && spoken.trim() !== lineToSpeak(filming)
+          ? spoken
+          : undefined,
+        endFrame,
+      ),
     )
     setGenerating((current) => current.filter((id) => id !== sceneId))
     if (ok) setFilming(null)
-  }, [filming, generating, run, sessionId, words])
+  }, [endFrame, filming, generating, run, sessionId, spoken, words])
 
   const rerun = useCallback(async () => {
     if (!rerunning || submitting) return
@@ -201,8 +262,8 @@ export function useStoryboard(
   const watchingLabel = useMemo(() => {
     if (!watching) return ''
     for (const scene of board.scenes) {
-      const index = scene.videoIds.indexOf(watching)
-      if (index !== -1) return `Scene ${scene.number} — Take ${index + 1}`
+      const take = scene.takes.find((t) => t.id === watching)
+      if (take) return `Scene ${scene.number} — Take ${take.number}`
     }
     return 'Take'
   }, [board.scenes, watching])
@@ -211,14 +272,23 @@ export function useStoryboard(
     status,
     creating,
     create,
+    pronouncing,
+    pronounce,
+    chooseModel,
+    swap,
     filming,
     setFilming,
     openFilm,
     film,
+    spoken,
+    setSpoken,
+    endFrame,
+    setEndFrame,
     generating,
     retry,
     retrying,
     removeTake,
+    editLine,
     watching,
     setWatching,
     watchingLabel,

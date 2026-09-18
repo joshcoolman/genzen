@@ -1,13 +1,33 @@
 'use client'
 
-import { Film, Play, RefreshCw } from 'lucide-react'
-import { frameState, sectionCostCents } from '../../board'
+import {
+  ArrowLeftRight,
+  Film,
+  Pencil,
+  Play,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react'
+import { useState } from 'react'
+import {
+  frameState,
+  lineToSpeak,
+  sectionCostCents,
+  sectionModel,
+} from '../../board'
 import styles from './scene-row.module.css'
 import type { FrameState } from '../../board'
 import type { FrameStatus } from '../../use-storyboard'
 import type { RefAsset } from '../../../_actions/references.action'
 import type { BoardScene } from '../../../_lib/types'
-import { ExpandableText, MiniButton, Skeleton } from '#/components'
+import {
+  Button,
+  ExpandableText,
+  IconButton,
+  MiniButton,
+  Skeleton,
+  Textarea,
+} from '#/components'
 import { formatCost } from '#/features/video/models'
 import { imageUrl } from '#/lib/image-url'
 
@@ -45,17 +65,22 @@ function errorOf(
 
 export function SceneRow({
   scene,
+  model,
   status,
   frames,
   filming,
   retrying,
   onRerun,
+  onSwap,
   onRetry,
   onFilm,
   onWatch,
   onDropTake,
+  onEditLine,
 }: {
   scene: BoardScene
+  /** The board's chosen model, which sets the price on the button (#702). */
+  model: string
   status: FrameStatus
   /** The rows themselves, for what a failed one said. */
   frames: Record<string, RefAsset>
@@ -65,10 +90,12 @@ export function SceneRow({
   /** A frame of this row is being asked for again. */
   retrying: boolean
   onRerun: (scene: BoardScene) => void
+  onSwap: (scene: BoardScene) => void
   onRetry: (scene: BoardScene, which: 'opening' | 'closing') => void
   onFilm: (scene: BoardScene) => void
   onWatch: (takeId: string) => void
   onDropTake: (scene: BoardScene, takeId: string) => void
+  onEditLine: (scene: BoardScene, spoken: string) => void
 }) {
   /* The opening frame is what a section starts from, so there is nothing to
      generate until it exists. */
@@ -83,7 +110,17 @@ export function SceneRow({
           <span className={styles.number}>{scene.number}</span>
           {scene.seconds === null ? null : <span>{scene.seconds}s</span>}
         </p>
-        <p className={styles.line}>{scene.line}</p>
+        {/* **What this scene will say, edited here.** The board is where a
+            script is made ready to shoot: a line that would be refused for
+            naming a trademarked work, or mispronounced, is cheapest to fix
+            before anything is generated rather than at the moment of spending.
+            So the working text leads and the script sits under it when the two
+            differ -- `scene.line` is never written, and retyping it clears the
+            override. */}
+        <SceneLine
+          scene={scene}
+          onSave={(spoken) => onEditLine(scene, spoken)}
+        />
         {/* What was typed into the last re-run, so the row says what it was
             asked for rather than leaving a changed frame unexplained. */}
         {scene.guidance && <p className={styles.guidance}>{scene.guidance}</p>}
@@ -94,6 +131,21 @@ export function SceneRow({
           Rerun with guidance
         </MiniButton>
 
+        {/* Turn the pair around. The planner's idea of which frame opens the
+            scene is a guess about a scene it never saw, and on a model that
+            pins the first frame it decides what the clip literally begins on.
+            Nothing is generated and nothing is trashed, so pressing it twice
+            costs nothing -- the prompts travel with the frames, or the clip
+            would be told to move toward the picture it started from. */}
+        {scene.openingId && scene.closingId && (
+          <MiniButton
+            icon={<ArrowLeftRight className={styles.icon} />}
+            onClick={() => onSwap(scene)}
+          >
+            Swap frames
+          </MiniButton>
+        )}
+
         {/* The row's second act (#697): the frames were the spec, this is the
             clip. The price is on the control, because the button is on every
             row and thirty-two of them is the bill the board exists to avoid. */}
@@ -103,7 +155,7 @@ export function SceneRow({
           disabled={!ready || filming}
           onClick={() => onFilm(scene)}
         >
-          Generate video · {formatCost(sectionCostCents(scene.seconds))}
+          Generate video · {formatCost(sectionCostCents(scene.seconds, model))}
         </MiniButton>
       </div>
 
@@ -145,17 +197,21 @@ export function SceneRow({
           still read at this width. Nothing here is marked as the one: choosing
           a take per row is what turns the board into a cut, and that is its own
           decision. */}
-      {scene.videoIds.length > 0 && (
+      {scene.takes.length > 0 && (
         <ol className={styles.takes}>
-          {scene.videoIds.map((takeId, index) => (
+          {scene.takes.map((take) => (
             <Take
-              key={takeId}
-              id={takeId}
-              number={index + 1}
-              state={frameState(takeId, status)}
-              message={errorOf(frames, takeId)}
-              onWatch={() => onWatch(takeId)}
-              onDrop={() => onDropTake(scene, takeId)}
+              key={take.id}
+              id={take.id}
+              /* Its own number, not its position: deleting take 2 used to
+                 rename take 3 to take 2, which is the renumbering around a cut
+                 that did not happen that the script refuses to do. */
+              number={take.number}
+              model={take.model}
+              state={frameState(take.id, status)}
+              message={errorOf(frames, take.id)}
+              onWatch={() => onWatch(take.id)}
+              onDrop={() => onDropTake(scene, take.id)}
             />
           ))}
         </ol>
@@ -164,10 +220,80 @@ export function SceneRow({
   )
 }
 
+/**
+ * The line, and the press that edits it.
+ *
+ * Its own component for its own draft state: a row that held the draft would
+ * lose it to the poll's refresh, which lands every few seconds while a section
+ * is being made.
+ */
+function SceneLine({
+  scene,
+  onSave,
+}: {
+  scene: BoardScene
+  onSave: (spoken: string) => void
+}) {
+  const said = lineToSpeak(scene)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(said)
+
+  if (editing) {
+    return (
+      <div className={styles.editor}>
+        <Textarea
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          rows={3}
+          autoFocus
+        />
+        <div className={styles.editorFoot}>
+          <Button
+            size="sm"
+            variant="primary"
+            disabled={!draft.trim()}
+            onClick={() => {
+              onSave(draft)
+              setEditing(false)
+            }}
+          >
+            Save
+          </Button>
+          <Button size="sm" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <p className={styles.line}>{said}</p>
+      {/* The film's own words, when the take is set to say something else. Kept
+          visible so a rewording is a divergence you can see rather than a
+          quiet overwrite. */}
+      {scene.spokenLine && (
+        <p className={styles.spoken}>Script: {scene.line}</p>
+      )}
+      <MiniButton
+        icon={<Pencil className={styles.icon} />}
+        onClick={() => {
+          setDraft(said)
+          setEditing(true)
+        }}
+      >
+        Edit line
+      </MiniButton>
+    </>
+  )
+}
+
 /** One take: its own first frame, and a press to watch it. */
 function Take({
   id,
   number,
+  model,
   state,
   message,
   onWatch,
@@ -175,6 +301,9 @@ function Take({
 }: {
   id: string
   number: number
+  /** Which model made it, or null on a take from before there was a choice.
+   *  Printed because a row can hold takes from both (#702). */
+  model: string | null
   state: FrameState
   /** What the provider said, when it refused. */
   message: string | null
@@ -217,17 +346,25 @@ function Take({
           <Skeleton className={styles.pending} />
         )}
       </button>
+      {/* The label on one side and the delete on the other. Takes add, so
+          something has to subtract -- and unlike everything else here this one
+          destroys rather than trashes, because a take is a candidate generated
+          to be looked at and a board's worth of rejected ones would fill Trash
+          with work. Hence the confirm: the press asks first, which is the
+          protection that fits a thing meant to be thrown away. */}
       <p className={styles.caption}>
-        Take {number}
-        {state === 'pending' && ' · working'}
-        {/* Takes add, so something has to subtract: a refused take would
-            otherwise sit on the row for the life of the board. Trash, like
-            everything else here. */}
-        {state === 'failed' && (
-          <button type="button" className={styles.drop} onClick={onDrop}>
-            Remove
-          </button>
-        )}
+        <span>
+          Take {number}
+          {model && ` · ${sectionModel(model).label}`}
+          {state === 'pending' && ' · working'}
+        </span>
+        <IconButton
+          aria-label={`Delete take ${number}`}
+          className={styles.delete}
+          onClick={onDrop}
+        >
+          <Trash2 className={styles.icon} />
+        </IconButton>
       </p>
     </li>
   )

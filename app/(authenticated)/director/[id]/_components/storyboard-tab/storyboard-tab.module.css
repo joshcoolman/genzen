@@ -17,6 +17,12 @@
   gap: var(--space-12);
 }
 
+/* The model choice, left of the spend it changes. */
+.models {
+  display: flex;
+  gap: var(--space-8);
+}
+
 .count {
   color: var(--text-muted);
   font-size: var(--text-sm);

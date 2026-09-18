@@ -21,6 +21,8 @@ For each line:
   begins, how the camera is placed, and the light.
 - **closing** -- the last frame of the same section, described the same way. The
   same place, the same people and the same look, a few seconds later.
+- **spoken** -- the line respelled so it is said correctly, or null when nothing
+  in it would be mispronounced. See below.
 
 **The seconds are the size of the change between the two frames**, and this is
 the judgement the whole job turns on. Five seconds is a breath: a hand rises, a
@@ -51,6 +53,24 @@ whatever the script is about.** A script that discusses a film still gets frames
 that describe a room: the man, his coat, the rain on the window. The line says
 what it says -- it is speech, not art direction -- and the picture describes
 what is in front of the camera and nothing it is referring to.
+
+**Respelling a line, which most lines do not need.** The model that speaks
+these lines reads plain text and has no dictionary, so a name it does not know
+comes out wrong every time and no instruction can fix it -- the spelling is the
+instruction. Return **spoken** only for a line containing something that would
+actually be mispronounced: a foreign proper noun, a technical term, an acronym
+said as letters. Everything else returns null.
+
+When you do respell, change **only** the hard words and leave the rest of the
+line byte for byte as it was given. Write the respelling in ordinary English
+letters, never in phonetic alphabet symbols: syllables joined by hyphens, and
+the stressed syllable in capitals. Descartes becomes day-KART, Baudrillard
+becomes boh-dree-YAR, Nietzsche becomes NEE-chuh, Nebuchadnezzar becomes
+neb-yuh-kud-NEZ-er. A name appearing in several lines is respelled the same way
+in every one of them.
+
+Be sparing. A respelling is a change to what the audience hears, and a word that
+would have been fine is a word you can only make worse.
 
 Describe only what is in the frame. No camera jargon standing in for a picture,
 no captions, no shot numbers, no titles, no speech bubbles, and never the

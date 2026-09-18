@@ -395,6 +395,10 @@ export const VIDEO_MODELS: Array<VideoModel> = [
         references: { param: 'image_urls', max: 9, notation: '@Image' },
         defaults: { task: 'reference' },
         durationAsString: true,
+        // `seed: integer | null` per fal's schema, read 2026-09-17. The one
+        // thing Kling's reference endpoint does not have, and the reason the
+        // storyboard can offer this model at all (#702).
+        acceptsSeed: true,
       },
     },
     // FAL's approximate output-second rates, verified 2026-09-11 for all

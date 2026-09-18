@@ -4,9 +4,24 @@
   gap: var(--space-12);
 }
 
-/* The frame the clip will literally begin on, which is the whole of what
-   pinning buys -- so it is what you look at before pressing. */
+/* What the take is pinned to. One frame fills the width and two share it, from
+   the same rule -- `grid-auto-flow: column` with equal tracks -- so switching
+   the end frame on is one picture arriving beside another rather than a layout
+   changing under the press. Thumbnails: a reminder of what is being sent, not
+   the thing being judged, which is the row's job. */
+.frames {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--space-8);
+}
+
 .frame {
+  margin: 0;
+  min-width: 0;
+}
+
+.image {
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: contain;
@@ -15,9 +30,30 @@
   background: var(--surface-sunken);
 }
 
-.said {
+.frameCaption {
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* What the film says, when the take is about to say something else. The record
+   stays visible so a rewording is a deliberate divergence rather than a quiet
+   overwrite. */
+.record {
   margin: 0;
+  font-size: var(--text-sm);
   line-height: var(--text-base-leading);
+  color: var(--text-muted);
 }
 
 .facts,
@@ -32,4 +68,18 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-12);
+}
+
+/* Under the Generate button: a choice about this take rather than a setting,
+   so it sits with the press rather than up with the line. */
+.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.hint {
+  color: var(--text-muted);
 }

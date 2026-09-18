@@ -36,6 +36,27 @@
   color: var(--text-muted);
 }
 
+/* Editing the line in place, on the row. */
+.editor {
+  display: grid;
+  gap: var(--space-8);
+  width: 100%;
+}
+
+.editorFoot {
+  display: flex;
+  gap: var(--space-8);
+}
+
+/* The script, under the line that replaces it: visibly secondary to it, because
+   the line is the record and this is an instruction to one model. */
+.spoken {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--text-base-leading);
+  color: var(--text-muted);
+}
+
 /* What the last re-run asked for, so a changed frame says why it changed. */
 .guidance {
   margin: 0;
@@ -107,6 +128,10 @@
 }
 
 .caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
   margin-top: var(--space-4);
   font-size: var(--text-sm);
   color: var(--text-muted);
@@ -194,18 +219,9 @@
   text-align: center;
 }
 
-/* Clearing a refused take, in the caption where the status would be. */
-.drop {
-  margin-left: var(--space-8);
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--text-muted);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.drop:hover {
-  color: var(--text);
+/* Destructive on hover only: the delete sits on every take, and a row of red
+   buttons reads as a warning about the board rather than an action on one
+   tile. */
+.delete:hover {
+  color: var(--danger);
 }
