@@ -444,6 +444,27 @@ from the chosen model.
   `isFalRejection`, which lives in `fal-error.server.ts` for the purpose: a
   `'use server'` module may export nothing but async functions, so a sync helper
   exported from one fails the build.
+- **A non-destructive pass writes only its own field** (`patchBoardScenes`).
+  `saveBoard` takes a whole scenes array, which is right for Create storyboard
+  -- that replaces the board anyway -- and wrong for anything meant to leave the
+  rest alone: Fix pronunciation read the scenes, awaited a multi-second Claude
+  call and wrote its snapshot back, while the drain wrote `closingId`s
+  unattended during exactly that window. Each one was silently dropped **and
+  orphaned**, since an id that leaves `boardImageIds` is never drawn and never
+  trashed with the session. The board is re-read at the moment of writing now.
+- **A submit that threw is a failure the row can say out loud** (#703). It
+  leaves `openingId: null`, which read as "not asked for yet" and drew a
+  skeleton for ever while Retry refused for want of a failed id -- the dead end
+  #699 closed for failed rows, one layer up. Retry starts such a scene from
+  nothing; there is no row to check or trash.
+- **Draw again asks first once there are takes**, because it trashes
+  `boardImageIds` -- which includes every take on the board. One press beside
+  Fix pronunciation would otherwise bin the lot while the bar prints what they
+  cost, when deleting a single take asks.
+- **A model slug is printed through `sectionModelLabel`, which never throws.**
+  A take stores its model as free text and the label is read during render, so a
+  board holding a take from a model since renamed would otherwise take the whole
+  tab down rather than printing a slug nobody recognises.
 - **`boardImageIds` is the one definition of every row the board owns**, and it
   is load-bearing twice: it is what the session's trash sweep collects, so a row
   missing from it outlives the session, and it is what the page reads every

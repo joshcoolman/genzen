@@ -6,9 +6,12 @@ import {
   deleteSession,
   getSession,
   listSessions,
+  patchBoardScenes,
   refKindOf,
   removeSessionRef,
+  saveBoard,
   saveRun,
+  updateBoardScene,
 } from './sessions.server'
 import { sql } from '#/lib/server/db.server'
 
@@ -140,5 +143,93 @@ describe('Director sessions', () => {
 
     await sql`delete from user_images where user_id = ${owner}
       and id in ${sql([mine.id, theirs.id])}`
+  })
+})
+
+/** A scene with the least that parses, for the board writers below. */
+function boardScene(over: Record<string, unknown> = {}) {
+  return {
+    id: randomUUID(),
+    number: 1,
+    line: 'A line.',
+    spokenLine: null,
+    seconds: 5,
+    characterIds: [],
+    locationId: null,
+    openingPrompt: 'opens',
+    closingPrompt: 'closes',
+    guidance: null,
+    model: null,
+    openingId: null,
+    closingId: null,
+    takes: [],
+    ...over,
+  } as never
+}
+
+describe('Director board writes', () => {
+  it('keeps a seed of zero, which a truthiness test used to drop', async () => {
+    // `randomInt(0, 2 ** 31)` returns 0 one time in two billion, and zero is a
+    // valid seed. Losing it means the board never pins one at all, which is the
+    // same-noise-across-sections behaviour the seed is stored for (#703).
+    const id = randomUUID()
+    await createSession(owner, 'Seed zero', id)
+    const saved = await saveBoard(owner, id, [boardScene()], { seed: 0 })
+    expect(saved.board.seed).toBe(0)
+
+    // And it survives a later write that does not mention it.
+    const again = await saveBoard(owner, id, saved.board.scenes)
+    expect(again.board.seed).toBe(0)
+  })
+
+  it('patches named scenes without clobbering a concurrent write', async () => {
+    /**
+     * The bug this exists for: `pronounceBoard` read the scenes, awaited a
+     * multi-second Claude call, then wrote the whole array back. The drain
+     * writes `closingId`s unattended during exactly that window, and each one
+     * landed in the discarded snapshot -- and was orphaned with it, since an id
+     * that leaves `boardImageIds` is never drawn and never trashed.
+     */
+    const id = randomUUID()
+    await createSession(owner, 'Concurrent board', id)
+    const one = boardScene({ number: 1 })
+    const two = boardScene({ number: 2 })
+    const start = await saveBoard(owner, id, [one, two])
+    const sceneOne = start.board.scenes[0]
+    const sceneTwo = start.board.scenes[1]
+
+    // Something else writes while the slow call is in flight.
+    const closingId = randomUUID()
+    await updateBoardScene(owner, id, sceneTwo.id, { closingId })
+
+    // The slow call lands, carrying only its own field for its own scene.
+    const after = await patchBoardScenes(
+      owner,
+      id,
+      new Map([[sceneOne.id, { spokenLine: 'day-KART' }]]),
+    )
+
+    expect(after.board.scenes[0].spokenLine).toBe('day-KART')
+    // The concurrent write survives, which whole-array writing lost.
+    expect(after.board.scenes[1].closingId).toBe(closingId)
+  })
+
+  it('leaves a scene it was not given alone, and skips one that has gone', async () => {
+    const id = randomUUID()
+    await createSession(owner, 'Partial patch', id)
+    const start = await saveBoard(owner, id, [boardScene(), boardScene()])
+    const after = await patchBoardScenes(
+      owner,
+      id,
+      new Map([
+        [start.board.scenes[0].id, { spokenLine: 'said' }],
+        // A scene that is not on this board contributes nothing rather than
+        // being resurrected.
+        [randomUUID(), { spokenLine: 'ghost' }],
+      ]),
+    )
+    expect(after.board.scenes[0].spokenLine).toBe('said')
+    expect(after.board.scenes[1].spokenLine).toBeNull()
+    expect(after.board.scenes).toHaveLength(2)
   })
 })
