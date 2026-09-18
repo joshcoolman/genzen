@@ -270,15 +270,16 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 per script line, a Generate video button on each row, and a choice of Kling O3
 Pro or Seedance 2.5 to make it with.
 
-Two questions are open and both are answered by generating, not by reading.
-**Does respelling work at all?** Press Fix pronunciation and regenerate the
-Descartes row -- Kling is a video model, not a TTS engine with a documented
-lexicon, so it may ignore `day-KART` entirely. **Does the voice hold between
-sections?** Generate two _adjacent_ rows and listen to the join; that also says
-whether the no-music rule is holding. Seedance is on the board for exactly this
--- it takes a seed where Kling takes none, and its `audio_urls` (reference
-audio, unused because genzen has no audio asset) is the real answer if drift
-turns out to be what ruins the film.
+**Respelling works** -- confirmed 2026-09-18, `day-KART` said correctly on a row
+that had been getting Descartes wrong. The spelling is the instruction and plain
+letters are enough, so nothing cleverer is needed.
+
+One question is still open, and generating answers it, not reading. **Does the
+voice hold between sections?** Generate two _adjacent_ rows and listen to the
+join; that also says whether the no-music rule is holding. Seedance is on the
+board for exactly this -- it takes a seed where Kling takes none, and its
+`audio_urls` (reference audio, unused because genzen has no audio asset) is the
+real answer if drift turns out to be what ruins the film.
 
 Known and worked around: Kling refuses a line naming a trademarked work. Scene 1
 of the Matrix board was refused and went through once the line was reworded,
