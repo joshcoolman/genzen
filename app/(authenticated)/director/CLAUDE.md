@@ -470,10 +470,14 @@ single place the two are chosen between, and retyping the original clears the
 override -- `spokenOf` returns null for text identical to the line, which is why
 reverting needs no button.
 
-- **Respelling is the only pronunciation lever there is.** The endpoint takes a
-  plain prompt string: no SSML, no phoneme tags, no lexicon, and `voice_id`
-  binds a voice without saying anything about pronunciation. So Descartes is
-  said wrong every time unless the text says `day-KART`. The planner returns
+- **Respelling is the only pronunciation lever there is, and it works** --
+  confirmed 2026-09-18 on the Descartes row, which had been heard getting it
+  wrong. The endpoint takes a plain prompt string: no SSML, no phoneme tags, no
+  lexicon, and `voice_id` binds a voice without saying anything about
+  pronunciation. So Descartes is said wrong every time unless the text says
+  `day-KART` -- and said right when it does. Worth knowing before anyone
+  proposes a cleverer mechanism: the spelling _is_ the instruction, and plain
+  letters are enough. The planner returns
   `spoken` per line; **Fix pronunciation** (`pronounceBoard`) is the same thing
   for a board that already exists -- one call, fills `spokenLine`, replaces
   nothing else, because that board has frames worth keeping. A correction rather
