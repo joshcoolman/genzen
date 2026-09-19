@@ -12,7 +12,6 @@ import { OutpaintDialog } from './_components/outpaint-dialog/outpaint-dialog'
 import { OrderRow } from './_components/order-row/order-row'
 import { ScopeRow } from './_components/scope-row/scope-row'
 import { ShotsDialog } from './_components/shots-dialog/shots-dialog'
-import { LightingDialog } from './_components/lighting-dialog/lighting-dialog'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
@@ -63,10 +62,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     shotsOpen,
     openShots,
     closeShots,
-    lightingOpen,
-    openLighting,
-    closeLighting,
-    runLighting,
     runShots,
     groups,
     workingByGroup,
@@ -291,7 +286,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         userImages={userImages}
         uploadGroupId={activeGroupId}
         onShots={openShots}
-        onLighting={openLighting}
       />
 
       {viewer.isOpen && (
@@ -349,18 +343,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           void runShots(imageIds, shotIds, modelId, instructions)
         }
         onCancel={closeShots}
-      />
-
-      {/* One light applied to each staged reference on its own (#563). Same
-          way in as Shots, for the same reason: the strip already answers
-          "which pictures". */}
-      <LightingDialog
-        open={lightingOpen}
-        images={generator.refImages}
-        onGenerate={(imageIds, effectIds, modelIds) =>
-          void runLighting(imageIds, effectIds, modelIds)
-        }
-        onCancel={closeLighting}
       />
 
       {/* Groups (#319). One flow, four surfaces: pick a group, name a new one,

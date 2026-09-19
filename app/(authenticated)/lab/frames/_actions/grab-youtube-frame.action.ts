@@ -8,7 +8,7 @@ import { resolveAuth } from '#/lib/server/auth.server'
 /**
  * Pull one frame out of a YouTube video (#613).
  *
- * **Development-only, the way Lighting's Save is.** It shells out to `yt-dlp`,
+ * **Development-only, and it says so.** It shells out to `yt-dlp`,
  * a system binary the deploy does not have and would have to keep updated
  * against YouTube's changes -- which is the real cost, not the install. So it
  * refuses in production and says why, rather than the button quietly not being

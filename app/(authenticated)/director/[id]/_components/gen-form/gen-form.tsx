@@ -256,7 +256,7 @@ export function GenForm({
         >
           {busy ? 'Submitting' : submitLabel}
         </Button>
-        {/* Lighting's rule: a lab page that spends money prints the figure
+        {/* The lab's rule: a page that spends money prints the figure
             before the press -- and once a reference can move the request to a
             model twenty times the price, the figure is not enough on its own.
             The model is named where the money is. */}

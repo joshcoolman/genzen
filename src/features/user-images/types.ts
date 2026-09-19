@@ -91,8 +91,7 @@ export const createUserImageSchema = z.object({
 
   /* No length cap (#582). The 1000 that used to be here mirrored a database
      check that no longer exists, and on a generation this field holds the
-     prompt -- Shots and Lighting routinely write three or four thousand
-     characters. */
+     prompt -- Shots routinely writes three or four thousand characters. */
   description: z.string().trim().nullable().optional(),
 
   file: z
@@ -133,8 +132,7 @@ export const updateUserImageSchema = z.object({
 
   /* No length cap (#582). The 1000 that used to be here mirrored a database
      check that no longer exists, and on a generation this field holds the
-     prompt -- Shots and Lighting routinely write three or four thousand
-     characters. */
+     prompt -- Shots routinely writes three or four thousand characters. */
   description: z.string().trim().nullable().optional(),
 })
 

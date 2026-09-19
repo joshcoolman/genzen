@@ -8,8 +8,8 @@
 --
 -- The 1000 was never a real limit. It was a plausible cap on a *user-written*
 -- caption, which is what this column held when it was written; a generation's
--- prompt moved in later, and the Shots and Lighting features write prompts of
--- three or four thousand characters as a matter of course. Truncation is a
+-- prompt moved in later, and Shots writes prompts of three or four thousand
+-- characters as a matter of course. Truncation is a
 -- display concern -- the card clamps its caption to three lines and always
 -- has -- and doing it at write time destroys the thing being described.
 --

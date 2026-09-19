@@ -1,8 +1,8 @@
 # Lab
 
 Where a feature is worked on before it is part of the app (#424). Enhance
-compares prompt rewrites; Frames and Lighting test mechanisms before they earn
-a place in the main workflow.
+compares prompt rewrites; Frames tests a mechanism before it earns a place in
+the main workflow.
 
 **Sequence graduated** (#662): it became Director's workspace and its page here
 is gone. That is the point of this folder working -- and the reason the two
@@ -45,9 +45,8 @@ a "no" now has somewhere to go.
   - **Development-only, and it throws rather than hiding.** `yt-dlp` is a system
     binary the deploy does not have and would have to keep updated against
     YouTube's changes. The button is there in production and says
-    `only works under \`pnpm dev\`` — Lighting's Save is the precedent, and a
-    capability that silently does not exist is worse to meet than an error that
-    names the reason.
+    `only works under \`pnpm dev\`` — a capability that silently does not
+    exist is worse to meet than an error that names the reason.
   - **Nothing about the video is kept.** No clip row, no bucket object, no entry
     on the Video wall. That makes `frame_source` the only record a YouTube frame
     has of where it came from, so the stamp carries `youtube_id` where a clip's
@@ -89,68 +88,6 @@ a "no" now has somewhere to go.
   need a way to ask for "frames", which needs a marker the library query knows
   about, which is the schema this folder may not grow. The frames themselves
   survive in Images; only the run is lost, same as every other page here.
-
-## Lighting is where an effect is written, not where one is applied
-
-Applying is shipped: the Lighting dialog crosses staged pictures with named
-effects (#563). Writing one was hand work with no surface at all. This page is
-the conversion (#562) -- a reference photograph in, a lighting setup out, tested
-before it is trusted.
-
-Its question: **does this reference survive being turned into words?** A
-picture is an inseparable bundle -- hue, direction, hardness, falloff and
-background welded together, with no clause that peels one out -- and a word is
-too coarse, because "gel lighting" names a family and a model hands back the
-family's average. Prose that is neither is the only reusable form, and the only
-way to know a piece of it is any good is to render it.
-
-- **`derive.md` forbids naming a technique, and that is the mechanism rather
-  than a style rule.** "Split gel" is a pointer; a model handed a pointer
-  returns the average of everything the pointer covers. Forbidding it forces a
-  sentence about where a light stood, which is the only thing another model can
-  render. The same file forbids naming anything in the picture, for the reason
-  `src/lib/prompts/lighting/index.ts` paid for: an effect that mentions a cheek
-  is dead on a truck.
-- **Two test subjects, a face and an object, and the second one is the
-  point.** The issue asked for one canonical portrait. A portrait-only grid
-  cannot show the failure this page exists to catch -- #566's split field passed
-  on faces and returned flat colour rectangles on a truck, because the prose
-  described a photograph instead of a lighting setup. A test whose inputs cannot
-  show the failure reports success, which is worse than no test.
-- **Four candidates, two per subject, and each one re-runs alone.** Four is what
-  tells the failures apart: all four wrong is the prose, one or two right is the
-  model being noisy, one column landing while the other does not is prose that
-  described a picture. One candidate answers none of that, and re-deriving to
-  get another draw would change the thing being tested.
-- **It generates, and it stores nothing** -- the only page here that spends
-  money. Every other generation in the app reserves a row, queues and is
-  reconciled by polling; a candidate is a synchronous FAL call whose URL lives
-  as long as the tab. A judging grid is thrown away by design, and four
-  throwaway cards per attempt on the Images wall is a cleanup job. The cost of
-  that is real and named rather than hidden: **these runs do not appear in
-  Activity**, so the page prints the estimate before the press.
-- **Save writes the repo, and only under `pnpm dev`.** Three files: the `.md`,
-  its `LIGHTING_EFFECTS` entry, and the candidate you picked at
-  `public/lighting/<id>.webp`, which is the picture the Lighting dialog puts on
-  the tile. It started as a copy-the-text step and that was the wrong shape --
-  the page had derived, tested and named an effect and then offered a clipboard,
-  so the one moment it could have finished the job was the moment it stopped.
-  **The result is a diff, not a deployment**, which is what makes writing files
-  acceptable here: `git status` is the review and a bad effect is a
-  `git checkout`. The deployed filesystem is read-only and ephemeral, so Save
-  refuses there rather than half-working; authoring is the same local activity
-  as editing one of these `.md` files by hand. The copy blocks stay behind a
-  disclosure for exactly that case. A table is still not on the table -- that is
-  the issue's second tier, and it waits for the day effects are user content
-  rather than something we ship.
-- **An id already in the registry is refused rather than overwritten**, and the
-  fix is a different name, one field away. Overwriting would silently replace an
-  effect other work may already be judging.
-- **The test subjects are pinned in `localStorage`, not checked into
-  `public/`.** Checked-in subjects are right for something that ships and wrong
-  for a page whose first job is finding out which two pictures are good tests.
-  Freezing the pair into the repo is the graduation step, once it has stopped
-  changing.
 
 ## Quirks
 
