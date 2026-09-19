@@ -165,25 +165,39 @@ describe('background generation batches', () => {
     expect(mocks.generate.mock.calls[0][0].typedPrompt).toBe(originalInput)
   })
   /**
-   * The one place the cards-before-planning guarantee does not hold (#714).
+   * The click always draws a card, even when the count is unknown (#714).
    *
-   * An unpinned brief has no shot count until Claude answers, and the card
-   * fan-out is built from that number, so the plan has to land first. Pinning
-   * `--shots` keeps the old ordering, which the test above still covers.
+   * Waiting for the plan left ~35 seconds of a silent screen after the press,
+   * and a real run was lost in that gap: the wall looked idle, the previous
+   * batch was tidied away, and it held the image staged as the reference, so
+   * every shot failed with "Source image not found". Shot 1 now appears on
+   * the press and the rest join it when the plan lands.
    */
-  it('plans before drawing cards when the brief pins no count, and draws the planned number', async () => {
+  it('draws shot 1 on the click and the rest when the plan lands', async () => {
     const plan = deferred<typeof prepared>()
     const input = { ...batch(), prompts: ['/storyboard A chase'] }
     mocks.prepare.mockImplementation(() => {
-      expect(input.onSubmitStart).not.toHaveBeenCalled()
+      // The card is already up by the time anything is asked of the server.
+      expect(input.onSubmitStart).toHaveBeenCalledOnce()
+      expect(input.onSubmitStart.mock.calls[0][0]).toHaveLength(1)
+      expect(input.onSubmitStart.mock.calls[0][0][0]).toMatchObject({
+        storyboardShot: 1,
+      })
       return plan.promise
     })
     const running = submitGenerationBatch(input)
-    expect(mocks.prepare).toHaveBeenCalledOnce()
-    expect(input.onSubmitStart).not.toHaveBeenCalled()
+    expect(input.onSubmitStart).toHaveBeenCalledOnce()
+    expect(mocks.generate).not.toHaveBeenCalled()
     plan.resolve(prepared)
     await running
-    expect(input.onSubmitStart.mock.calls[0][0]).toHaveLength(6)
+    // Six planned: one drawn on the click, five when the plan came back.
+    expect(input.onSubmitStart).toHaveBeenCalledTimes(2)
+    expect(input.onSubmitStart.mock.calls[1][0]).toHaveLength(5)
+    expect(
+      input.onSubmitStart.mock.calls[1][0].map(
+        (c: { storyboardShot: number }) => c.storyboardShot,
+      ),
+    ).toEqual([2, 3, 4, 5, 6])
     expect(mocks.prepare).toHaveBeenCalledOnce()
     expect(mocks.generate).toHaveBeenCalledTimes(6)
   })

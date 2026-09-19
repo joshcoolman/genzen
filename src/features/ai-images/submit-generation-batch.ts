@@ -115,60 +115,92 @@ export async function submitGenerationBatch(batch: GenerationBatch) {
   }
 
   /**
-   * How many cards this prompt draws.
+   * The cards this prompt draws, for a range of shot numbers.
    *
-   * A pinned count and a plain prompt both answer without a round trip, and
-   * keep the guarantee that cards appear before any provider call. Letting the
-   * model choose the count trades that guarantee away on that path alone: the
-   * cards cannot be drawn until the plan says how many there are. A failed
-   * plan draws none and surfaces as the submit error it already was.
+   * Split out because an unpinned storyboard draws its cards in two waves --
+   * see below.
    */
-  const known = (invocation: PromptInvocation) =>
-    invocation.kind === 'skill' ? invocation.shots : 1
-  // Awaiting at all would push the cards past a microtask, so the ordinary
-  // path must not await: every count known means the fan-out is built in the
-  // same synchronous turn as the click, exactly as it was.
-  const shotCounts = invocations.every((i) => known(i) != null)
-    ? invocations.map((i) => known(i)!)
-    : await Promise.all(
-        invocations.map(async (invocation) => {
-          const count = known(invocation)
-          if (count != null) return count
-          const variants = await prepare(
-            invocation as Extract<PromptInvocation, { kind: 'skill' }>,
-          )
-          return variants[0]?.skill.plan.shots.length ?? 0
-        }),
-      )
-
-  const calls = invocations.flatMap((invocation, promptIndex) =>
+  const buildCalls = (invocation: PromptInvocation, from: number, to: number) =>
     batch.selectedModels.flatMap((model) =>
       Array.from({ length: batch.gensPerModel }, () =>
-        Array.from({ length: shotCounts[promptIndex] }, (_, shotIndex) => ({
+        Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => ({
           placeholderId: optimisticId(),
           model,
           resolved: endpointFor(model, !!sourceImageId),
           invocation,
-          shotNumber: invocation.kind === 'skill' ? shotIndex + 1 : undefined,
+          shotNumber: invocation.kind === 'skill' ? from + i : undefined,
           typedPrompt:
             invocation.kind === 'skill'
               ? invocation.originalInput
               : invocation.text,
         })),
       ).flat(),
-    ),
+    )
+
+  type Call = ReturnType<typeof buildCalls>[number]
+
+  const draw = (wave: Array<Call>) => {
+    if (!wave.length) return
+    batch.onSubmitStart?.(
+      wave.map((c) => ({
+        placeholderId: c.placeholderId,
+        model: c.model,
+        title: modelTitleFor(c.resolved),
+        ...(c.shotNumber ? { storyboardShot: c.shotNumber } : {}),
+        prompt: c.typedPrompt.trim() ? c.typedPrompt : blocks,
+        ...(sourceImageId ? { sourceImageId } : {}),
+        ...(referenceImageIds.length ? { referenceImageIds } : {}),
+      })),
+    )
+  }
+
+  /**
+   * A pinned count and a plain prompt both answer without a round trip. An
+   * unpinned storyboard does not: the plan decides how many images the brief
+   * wants (#714), and until Claude answers there is no number to fan out on.
+   *
+   * **Draw shot 1 anyway, before asking.** The first shape of this waited for
+   * the plan and drew every card at once, which left ~35 seconds after the
+   * click with nothing whatsoever on screen -- `handleGenerate` sets no
+   * loading state, because the composer stays usable during background work,
+   * so the optimistic cards were the *only* signal a run was in flight.
+   * During that silence a real run was lost: the wall looked idle, the
+   * previous batch was tidied away, and it contained the image staged as the
+   * reference, so all nine shots failed with "Source image not found".
+   *
+   * So the click always draws something, and the rest of the set joins it
+   * when the plan lands. `onSubmitStart` appends, which is what makes two
+   * waves possible without the gallery learning anything new.
+   */
+  const pinned = (invocation: PromptInvocation) =>
+    invocation.kind === 'skill' ? invocation.shots : 1
+
+  const firstWave = invocations.flatMap((invocation) =>
+    buildCalls(invocation, 1, pinned(invocation) ?? 1),
   )
-  batch.onSubmitStart?.(
-    calls.map((c) => ({
-      placeholderId: c.placeholderId,
-      model: c.model,
-      title: modelTitleFor(c.resolved),
-      ...(c.shotNumber ? { storyboardShot: c.shotNumber } : {}),
-      prompt: c.typedPrompt.trim() ? c.typedPrompt : blocks,
-      ...(sourceImageId ? { sourceImageId } : {}),
-      ...(referenceImageIds.length ? { referenceImageIds } : {}),
-    })),
-  )
+  draw(firstWave)
+
+  // Nothing unpinned means the whole fan-out was built in the same
+  // synchronous turn as the click, exactly as it always was -- so this must
+  // not await when every count is already known.
+  const needsPlan = invocations.some((i) => pinned(i) == null)
+  const laterWave = !needsPlan
+    ? []
+    : (
+        await Promise.all(
+          invocations.map(async (invocation) => {
+            if (pinned(invocation) != null) return []
+            const variants = await prepare(
+              invocation as Extract<PromptInvocation, { kind: 'skill' }>,
+            )
+            const planned = variants[0]?.skill.plan.shots.length ?? 1
+            return buildCalls(invocation, 2, planned)
+          }),
+        )
+      ).flat()
+  draw(laterWave)
+
+  const calls = [...firstWave, ...laterWave]
 
   const outcomes = await Promise.all(
     calls.map(async (c) => {

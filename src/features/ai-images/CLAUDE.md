@@ -31,10 +31,17 @@ full-size image, using the shared continuity, original references and only that
 shot description. `shotNumber` identifies the output; the retained layout shape
 now describes a single full-size canvas. V1 contact-sheet metadata stays readable
 and its saved rendering request remains retryable. Counts and estimates multiply
-shots × selected models × variants. **An unpinned count is planned before the
-optimistic cards are drawn** -- the fan-out needs a number, and there isn't one
-until Claude answers, so that path alone trades away "cards before any provider
-call". Pinned counts and plain prompts keep it.
+shots × selected models × variants. **An unpinned count draws its cards in two
+waves**: shot 1 on the click, the rest when the plan lands. The fan-out needs a
+number and there isn't one until Claude answers, but waiting for it left ~35
+seconds of dead screen after the press -- `handleGenerate` sets no loading
+state, because the composer stays usable during background work, so the
+optimistic cards are the _only_ thing saying a run is in flight. That silence
+cost a real batch: the wall looked idle, the previous set was tidied away, and
+it contained the image staged as the reference, so all nine shots failed with
+"Source image not found". `onSubmitStart` appends, which is what lets two waves
+work without the gallery learning anything new. Pinned counts and plain prompts
+still draw everything in the same synchronous turn as the click.
 
 **Populate** (`populate-storyboard.action.ts`) is the plan without the spend:
 one Claude call, no images, and the shots land in the panel's prompt list as
@@ -48,10 +55,10 @@ only -- so a set that varies by _which_ reference names the subject in words
 instead. No group is created; the submit destination
 is captured before planning. Reference-sheet assembly is an optional separate tool.
 
-`submit-generation-batch.ts` captures each click and draws every optimistic card
-before rendering, and before planning too except on the one path named above
-(an unpinned storyboard count, which has no number to fan out on until the plan
-answers). The composer remains available during background
+`submit-generation-batch.ts` captures each click and draws optimistic cards
+before planning or rendering -- every card, except on an unpinned storyboard,
+where it draws the first and appends the rest once the plan says how many
+there are. The composer remains available during background
 work. Outcomes carry their own placeholder IDs; preparation failures keep a
 failed card with its prompt/references, and submission failures return their
 reserved row through `submit-generator-image.action.ts` for reconciliation.
