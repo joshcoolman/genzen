@@ -92,24 +92,6 @@ export function composeClipPrompt(
     .join(' ')
 }
 
-/**
- * The spoken line back out of a prompt `composeClipPrompt` built.
- *
- * Rerun (#692) has nothing else to time against: the turn records the whole
- * answer's line, not each burst's, so the only surviving copy of what one clip
- * says is the prompt it was generated from. The quoted line is last in that
- * prompt and anchored to its end, which is what makes reading it back safe
- * rather than a guess at where the action stops. A prompt with no quoted line
- * is a silent burst, or one from before the anchors moved into code -- both
- * answer with nothing rather than with the action's words.
- */
-export function spokenFromClipPrompt(prompt: string): string {
-  return (
-    /Speaking to camera, in English: "([\s\S]*)"$/.exec(prompt.trim())?.[1] ??
-    ''
-  )
-}
-
 /** What counts as a word, in the one place that decides it: timing depends on
  *  the count, so the rerun path and the writing path must agree on it. */
 export function countWords(line: string): number {

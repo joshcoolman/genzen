@@ -19,15 +19,14 @@ const SESSION_ID = randomUUID()
 const LINE =
   'Every single one of them asked me the very same question again and yet nobody once stopped to listen properly'
 
-const row = {
-  description: composeClipPrompt(
-    'A tired professor.',
-    'A lecture hall.',
-    'He leans on the lectern.',
-    LINE,
-  ),
-  duration: '12',
-}
+const PROMPT = composeClipPrompt(
+  'A tired professor.',
+  'A lecture hall.',
+  'He leans on the lectern.',
+  LINE,
+)
+
+const row = { description: PROMPT, duration: '12' }
 
 const generateVideo = vi.fn(() => Promise.resolve({ recordId: randomUUID() }))
 
@@ -55,6 +54,7 @@ vi.mock('../_lib/sessions.server', () => ({
 
 beforeEach(() => {
   generateVideo.mockClear()
+  row.description = PROMPT
   row.duration = '12'
 })
 
@@ -64,7 +64,7 @@ describe('rerunning one burst (#688)', () => {
     // Twenty words: 12s is 1.67 a second, which is what #685 exists to stop.
     expect(duration).toBe(8)
     expect(generateVideo).toHaveBeenCalledWith(
-      expect.objectContaining({ duration: 8, prompt: row.description }),
+      expect.objectContaining({ duration: 8, prompt: PROMPT }),
     )
   })
 
@@ -72,6 +72,16 @@ describe('rerunning one burst (#688)', () => {
     row.duration = '5'
     expect((await rerunChatClip(SESSION_ID, CLIP_ID)).duration).toBe(8)
     row.duration = '15'
+    expect((await rerunChatClip(SESSION_ID, CLIP_ID)).duration).toBe(8)
+  })
+
+  /* A clip generated before #688 says "Speaking to camera:" with no
+     ", in English". Those are also the clips generated before #685 timed a
+     burst at all, so they carry the very durations this fix exists to stop --
+     a reader that missed the older spelling would do nothing for the sessions
+     that need it most. */
+  it('re-times a clip whose prompt predates "in English"', async () => {
+    row.description = `A tired professor. A lecture hall. He leans on the lectern. Speaking to camera: "${LINE}"`
     expect((await rerunChatClip(SESSION_ID, CLIP_ID)).duration).toBe(8)
   })
 

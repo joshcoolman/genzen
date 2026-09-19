@@ -15,8 +15,8 @@ import {
   composeClipPrompt,
   countWords,
   durationForWords,
-  spokenFromClipPrompt,
 } from '#/lib/server/director-chat.server'
+import { spokenFromClipPrompt } from '#/lib/director-clip-prompt'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { sql } from '#/lib/server/db.server'
 
@@ -162,11 +162,16 @@ export async function rerunChatClip(sessionId: string, clipId: string) {
   if (!row?.description) throw new Error('That clip has no prompt to rerun.')
   const model = genModel()
   const spoken = spokenFromClipPrompt(row.description)
-  /* A silent burst has no line to time, so it keeps what it had: five seconds
-     is what an empty count would buy it, and that would cut an action short. */
-  const duration = spoken
-    ? durationForWords(countWords(spoken), model.durations, 'normal')
-    : Number(row.duration) || model.defaultDuration
+  /* No spoken segment at all -- a silent burst -- keeps what it had: an empty
+     word count would buy it the shortest duration in the lineup and cut the
+     action short. `null`, not an empty string: the reader tells the two apart,
+     and a clip whose prompt predates #688 says "Speaking to camera:" without
+     ", in English" -- reading those as silent would leave exactly the oldest
+     clips, the ones carrying the durations #685 stopped, on their old number. */
+  const duration =
+    spoken === null
+      ? Number(row.duration) || model.defaultDuration
+      : durationForWords(countWords(spoken), model.durations, 'normal')
   const { recordId } = await generateVideo({
     prompt: row.description,
     duration,
