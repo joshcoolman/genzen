@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import type { ViewerItem } from '#/components'
 import { imageUrl } from '#/lib/image-url'
+import { displayPrompt } from '#/features/ai-images/display-prompt'
 
 /* The item shape belongs to the viewer (#690). What stays here is how an
    Images row becomes one: a generation prefers its metadata over
@@ -61,7 +62,7 @@ export function useImageViewer(
       const prompt =
         img.origin === 'upload'
           ? img.description
-          : (img.generation_metadata?.prompt ?? img.description)
+          : (displayPrompt(img.generation_metadata) ?? img.description)
       list.push({ id: img.id, title: img.title, prompt: prompt ?? undefined })
       if (img.storage_path) urls[img.id] = imageUrl(img.id)
     }

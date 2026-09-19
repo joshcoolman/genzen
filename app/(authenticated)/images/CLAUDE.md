@@ -777,8 +777,21 @@ references. The former Lab Describe and Variations pages were removed in #653.
 ## Storyboard outputs (#626)
 
 `/storyboard` submits one full-size generation per planned shot, model and
-variant. Optimistic, completed and failed cards carry a Shot N badge. Counts and
-estimates include every shot. The shared generator captures the current group
+variant. Optimistic, completed and failed cards carry a Shot N badge.
+
+**A shot's caption is its own description, not the brief** (#714).
+`generation_metadata.prompt` is the typed invocation, which is identical on
+every image in a set -- ten cards captioned "/storyboard I need a bunch of
+shots..." over ten visibly different pictures, so the one thing a caption is
+for could not be done. `displayPrompt` in `src/features/ai-images/` derives it
+from the `image_skill` the row already carries, which is why rows made before
+that read correctly too. Every surface that shows a prompt goes through it --
+card, gallery pending card, viewer, details dialog -- so there is one answer
+rather than four. `prompt` itself is untouched: Load into generator restores
+the invocation, which is what re-running a set needs, and Retry still falls
+back to it.
+
+Counts and estimates include every shot. The shared generator captures the current group
 (or top level) before planning and never creates a storyboard group. The composer
 remains usable while planning and rendering; Create reference sheet stays an
 optional selection action after the images exist.

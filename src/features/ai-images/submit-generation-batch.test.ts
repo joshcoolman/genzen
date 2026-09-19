@@ -29,7 +29,7 @@ const prepared = Array.from({ length: 6 }, (_, i) => ({
     layout: { sheetAspectRatio: '16:9' },
     // The count the batch reads back when the brief pinned none (#714).
     plan: {
-      shots: Array.from({ length: 6 }, (unused, j) => ({ number: j + 1 })),
+      shots: Array.from({ length: 6 }, (_ignored, j) => ({ number: j + 1 })),
     },
   } as PreparedImageSkill,
 }))

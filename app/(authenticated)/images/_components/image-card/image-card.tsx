@@ -18,6 +18,7 @@ import type { SavedAiImage } from '#/features/ai-images/types'
 import { refUsageNote } from '#/features/ai-images/ref-usage'
 import { useModifierHeld } from '#/lib/use-modifier-held'
 import { cx } from '#/lib/utils'
+import { displayPrompt } from '#/features/ai-images/display-prompt'
 import {
   CardCaption,
   DropdownMenu,
@@ -225,7 +226,7 @@ export function ImageCard({
      what was submitted; the copy is for search. */
   const caption = isUpload
     ? (img.description ?? img.title)
-    : (img.generation_metadata?.prompt ?? img.description)
+    : (displayPrompt(img.generation_metadata) ?? img.description)
   // Only when the endpoint could not hold everything it was given (#341). The
   // panel no longer refuses those images, so this is where you find out.
   const refNote = refUsageNote(img.generation_metadata)

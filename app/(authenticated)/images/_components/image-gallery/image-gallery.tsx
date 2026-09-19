@@ -11,6 +11,7 @@ import type { ImageGroupSummary } from '#/features/groups/hooks/use-groups'
 import { getModelName } from '#/features/ai-images/models'
 import { cx } from '#/lib/utils'
 import { EmptyState, ImageGridSkeleton } from '#/components'
+import { displayPrompt } from '#/features/ai-images/display-prompt'
 
 /* One size. The switcher went in #284 -- large was the only setting ever used,
    and a control nobody touches is worse than no control. */
@@ -268,7 +269,7 @@ export function ImageGallery({
               return (
                 <PendingImageCard
                   key={keyFor?.(img.id) ?? img.id}
-                  prompt={img.generation_metadata?.prompt ?? ''}
+                  prompt={displayPrompt(img.generation_metadata) ?? ''}
                   model={getModelName(img.generation_metadata?.model ?? '')}
                   storyboardShot={img.generation_metadata?.storyboard_shot}
                   isVariation={
