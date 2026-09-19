@@ -176,6 +176,12 @@ locations: [ids], frames: [ids] }`. The column is `refs` and not
 - **A tab replaces the work area's body rather than hiding it.** A hidden
   `<video>` keeps playing, and a stage talking over the tab you are reading is
   the wrong answer.
+- **A tab can stop existing while you are standing on it**, so the nav and the
+  body ask one question, not two: `visibleTab` (`[id]/tabs.ts`, tested)
+  answers both, falling back to Work. Script needs a chat and Storyboard needs
+  a script and both kinds of sheet; deleting the last location sheet from
+  Storyboard used to take the button away and leave the panel mounted, with
+  Create storyboard doing nothing but throwing (#707).
 - **A sheet is drawn as an Images card, on the shared parts of one.**
   `ImageGrid` at the same size, `Thumbnail`, and `CardCaption` under it holding
   the prompt the sheet was drawn from -- so the two walls have the same
@@ -436,6 +442,13 @@ from the chosen model.
   were ready together one settled and the other threw, which is #556's shape
   exactly. It also **puts the take's name back**, because completing a clip
   rewrites its title from the model label.
+- **The page starts it and does not wait for it** (#707). It was awaited, so a
+  settled take was a picture on that same render; four sequential 16MB
+  downloads and re-uploads in front of the render meant Work, Script,
+  Characters and Locations all stalled on work only the storyboard wants. The
+  asking is the part that matters and still happens every load; the picture
+  lands one poll cycle later, which is what every other pending row in the app
+  already does.
 - **A refused take must be written down.** `queue.status` answers **COMPLETED**
   for a request Kling refused on content grounds; the refusal only appears when
   the result is fetched, as a 422. So the happy path sails past the status check

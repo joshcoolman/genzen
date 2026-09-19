@@ -19,6 +19,7 @@ import {
 import { ScriptDialog } from './_components/script-dialog/script-dialog'
 import { SequencePlayer } from './_components/sequence-player/sequence-player'
 import { dialogueOf } from './script'
+import { visibleTab } from './tabs'
 import { useReferences } from './use-references'
 import { useStoryboard } from './use-storyboard'
 import { useView } from './use-view'
@@ -63,11 +64,17 @@ export function View({
     view.chat !== null &&
     refs.characters.length > 0 &&
     refs.locations.length > 0
+  /* The tab the nav is drawing, which is not always the tab that was chosen:
+     Script and Storyboard can lose what they are made of while you are
+     standing on one of them (#707). `visibleTab` is the single answer both
+     read. */
+  const tab = visibleTab(references.tab, {
+    script: view.chat !== null,
+    storyboard: canStoryboard,
+  })
   /** Which reference tab is showing, or null for Work and Script. */
   const kind: RefKind | null =
-    references.tab === 'characters' || references.tab === 'locations'
-      ? references.tab
-      : null
+    tab === 'characters' || tab === 'locations' ? tab : null
   /* The row drives the player and nothing drives the row, so the one call
      between them is imperative: a tile click has to reach the `<video>`
      elements, and routing it through state re-introduces the bail-out that
@@ -96,7 +103,7 @@ export function View({
         {/* Only once there is something to extract from (#690). */}
         {view.picked.length > 0 && (
           <SessionTabs
-            tab={references.tab}
+            tab={tab}
             onChange={references.setTab}
             script={view.chat !== null}
             counts={{
@@ -113,10 +120,10 @@ export function View({
           above is the session's. Replaces rather than hides -- a hidden
           `<video>` keeps playing, and a stage you cannot see talking over the
           tab you are reading is the wrong answer. */}
-      {references.tab === 'script' ? (
+      {tab === 'script' ? (
         /* The run's dialogue, read off the clips in the order they play. */
         <ScriptTab lines={dialogueOf(view.picked)} />
-      ) : references.tab === 'storyboard' ? (
+      ) : tab === 'storyboard' ? (
         /* The same script as frames: what each scene opens on and ends on,
            before any video exists (#695). */
         <StoryboardTab
