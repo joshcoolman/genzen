@@ -44,6 +44,9 @@ const input = {
 }
 const plan = {
   continuity: 'The blue fighter stays in the stone courtyard.',
+  held: 'the blue fighter and the stone courtyard',
+  varies: 'the moment of the fight',
+  ordered: true,
   shotAspectRatio: '16:9',
   references: [
     { image: 1, role: 'fighter' },

@@ -15,16 +15,29 @@ const ratioValue = (ratio: string) => {
   return a / b
 }
 
-/** Resolve one full-size canvas per shot. Legacy sheets keep their saved settings. */
-export function layoutForSchema(schema: FalModelSchema): StoryboardLayout {
-  const target = 16 / 9
+/**
+ * Resolve one full-size canvas per shot, at the ratio the plan chose.
+ *
+ * The plan's ratio is a request, not a guarantee: a renderer offers a fixed
+ * menu of sizes, so this snaps to the nearest one it actually accepts and
+ * `sheetAspectRatio` reports what will really be sent. That was already true
+ * of 16:9 -- widening the request from one hard-coded ratio to whatever the
+ * brief called for (#714) does not change the snapping, only what it aims at.
+ *
+ * Legacy sheets keep their saved settings.
+ */
+export function layoutForSchema(
+  schema: FalModelSchema,
+  shotAspectRatio: string = '16:9',
+): StoryboardLayout {
+  const target = ratioValue(shotAspectRatio)
   const common = {
     columns: 1,
     rows: 1,
     emptyCells: 0,
     readingOrder: 'left-to-right, top-to-bottom' as const,
-    shotAspectRatio: '16:9' as const,
-    idealSheetRatio: '16:9',
+    shotAspectRatio,
+    idealSheetRatio: shotAspectRatio,
     fit: 'fill' as const,
   }
   if (
@@ -73,6 +86,12 @@ export function layoutForSchema(schema: FalModelSchema): StoryboardLayout {
   }
 }
 
-export async function resolveStoryboardLayout(model: string) {
-  return layoutForSchema(await fetchModelSchema(model, { strict: true }))
+export async function resolveStoryboardLayout(
+  model: string,
+  shotAspectRatio?: string,
+) {
+  return layoutForSchema(
+    await fetchModelSchema(model, { strict: true }),
+    shotAspectRatio,
+  )
 }

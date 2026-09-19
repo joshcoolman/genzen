@@ -24,14 +24,18 @@ const prepared = Array.from({ length: 6 }, (_, i) => ({
   prompt: `Prepared shot ${i + 1}`,
   skill: {
     model: 'openai/gpt-image-2.5/sunburst/edit',
-    originalInput: '/storyboard A chase',
+    originalInput: '/storyboard --shots 6 A chase',
     shotNumber: i + 1,
     layout: { sheetAspectRatio: '16:9' },
+    // The count the batch reads back when the brief pinned none (#714).
+    plan: {
+      shots: Array.from({ length: 6 }, (unused, j) => ({ number: j + 1 })),
+    },
   } as PreparedImageSkill,
 }))
 function batch() {
   return {
-    prompts: ['/storyboard A chase'],
+    prompts: ['/storyboard --shots 6 A chase'],
     referenceIds: ['reference-one', 'reference-two'],
     selectedModels: [model],
     gensPerModel: 1,
@@ -72,7 +76,7 @@ describe('background generation batches', () => {
     expect(mocks.generate).toHaveBeenCalledTimes(12)
     expect(mocks.generate.mock.calls[0][0]).toMatchObject({
       prompt: 'Prepared shot 1',
-      typedPrompt: '/storyboard A chase',
+      typedPrompt: '/storyboard --shots 6 A chase',
       sourceImageId: 'reference-one',
       referenceImageIds: ['reference-two'],
       aspectRatio: '16:9',
@@ -93,7 +97,7 @@ describe('background generation batches', () => {
     mocks.prepare.mockReturnValueOnce(plan.promise)
     const first = {
       ...batch(),
-      prompts: ['/storyboard A chase', 'A still life'],
+      prompts: ['/storyboard --shots 6 A chase', 'A still life'],
     }
     const firstRunning = submitGenerationBatch(first)
     const second = {
@@ -159,6 +163,29 @@ describe('background generation batches', () => {
     await submitGenerationBatch({ ...batch(), prompts: [originalInput] })
     expect(mocks.prepare.mock.calls[0][0].originalInput).toBe(originalInput)
     expect(mocks.generate.mock.calls[0][0].typedPrompt).toBe(originalInput)
+  })
+  /**
+   * The one place the cards-before-planning guarantee does not hold (#714).
+   *
+   * An unpinned brief has no shot count until Claude answers, and the card
+   * fan-out is built from that number, so the plan has to land first. Pinning
+   * `--shots` keeps the old ordering, which the test above still covers.
+   */
+  it('plans before drawing cards when the brief pins no count, and draws the planned number', async () => {
+    const plan = deferred<typeof prepared>()
+    const input = { ...batch(), prompts: ['/storyboard A chase'] }
+    mocks.prepare.mockImplementation(() => {
+      expect(input.onSubmitStart).not.toHaveBeenCalled()
+      return plan.promise
+    })
+    const running = submitGenerationBatch(input)
+    expect(mocks.prepare).toHaveBeenCalledOnce()
+    expect(input.onSubmitStart).not.toHaveBeenCalled()
+    plan.resolve(prepared)
+    await running
+    expect(input.onSubmitStart.mock.calls[0][0]).toHaveLength(6)
+    expect(mocks.prepare).toHaveBeenCalledOnce()
+    expect(mocks.generate).toHaveBeenCalledTimes(6)
   })
   it('rejects invalid commands before creating cards or requesting paid work', async () => {
     for (const prompt of [

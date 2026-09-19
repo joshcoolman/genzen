@@ -8,11 +8,15 @@ import {
   storyboardShotCount,
 } from '../skills/registry'
 import {
+  STORYBOARD_ASPECT_RATIOS,
   storyboardPlanSchema,
   validateSkillReferences,
   validateStoryboardPlan,
 } from '../skills/validation'
-import { resolveStoryboardLayout } from './storyboard-layout.server'
+import {
+  layoutForSchema,
+  resolveStoryboardLayout,
+} from './storyboard-layout.server'
 import { fetchModelSchema } from './fal-schema.server'
 import type { PreparedImageSkill } from '../skills/types'
 import type { ImagePart, TextPart } from 'ai'
@@ -46,38 +50,23 @@ export async function prepareImageSkillInternal(
   )
 }
 
-async function prepareStoryboard(
-  data: z.infer<typeof requestSchema> & { originalInput: string },
+/**
+ * The plan stage on its own: one Claude call, no renderers, no images.
+ *
+ * Split out for Populate (#714), which wants the plan and nothing else. The
+ * Generate path calls it after it has validated every selected renderer, so
+ * the ordering guarantee -- never spend on the writer for a model that cannot
+ * take the references -- is the caller's rather than this function's.
+ */
+export async function runStoryboardPlan(
+  data: {
+    brief: string
+    referenceIds: Array<string>
+    systemInstructions?: string
+  },
   userId: string,
+  count: number | null,
 ) {
-  const invocation = parsePromptInvocation(data.originalInput)
-  if (invocation.kind !== 'skill' || invocation.brief !== data.brief)
-    throw new Error('The storyboard brief changed. Submit it again.')
-  const count = storyboardShotCount(data.brief)
-  const models = [
-    ...new Set(
-      data.models.map((m) => endpointFor(m, data.referenceIds.length > 0)),
-    ),
-  ]
-  validateSkillReferences(models, data.referenceIds)
-  requireAiRole('reasoning')
-  // Resolve every renderer before spending on the writer. Strict schema lookup
-  // must not inherit ordinary generation's optimistic fallback on network failure.
-  const layouts = await Promise.all(
-    models.map(async (model) => {
-      const schema = await fetchModelSchema(model, { strict: true })
-      if (
-        data.referenceIds.length &&
-        (!schema.imageInputParam ||
-          (schema.imageInputParam === 'image_url' &&
-            data.referenceIds.length > 1))
-      )
-        throw new Error(
-          'This model cannot accept all storyboard references. Choose another model.',
-        )
-      return resolveStoryboardLayout(model)
-    }),
-  )
   const rows = data.referenceIds.length
     ? await sql<Array<{ id: string; storage_path: string | null }>>`
     select id, storage_path from user_images
@@ -103,9 +92,12 @@ async function prepareStoryboard(
     type: 'text',
     text: JSON.stringify({
       brief: data.brief.replace(/(?:^|\s)--shots(?:=|\s+)\S+/gi, '').trim(),
-      requestedShotCount: count,
+      // Absent unless the user pinned one. Its absence is the instruction to
+      // decide the count from the brief.
+      ...(count == null ? {} : { requestedShotCount: count }),
+      shotCountRange: { min: 2, max: 9 },
       referenceCount: data.referenceIds.length,
-      shotAspectRatio: '16:9',
+      allowedAspectRatios: STORYBOARD_ASPECT_RATIOS,
       ...(data.systemInstructions
         ? { userPreferences: data.systemInstructions }
         : {}),
@@ -124,19 +116,72 @@ async function prepareStoryboard(
         references: storyboardPlanSchema.shape.references.length(
           data.referenceIds.length,
         ),
-        shots: storyboardPlanSchema.shape.shots.length(count),
+        ...(count == null
+          ? {}
+          : { shots: storyboardPlanSchema.shape.shots.length(count) }),
       }),
     }),
     messages: [{ role: 'user', content }],
   })
-  const plan = validateStoryboardPlan(output, data.referenceIds.length, count)
-  const preparationId = randomUUID()
-  const preparation = {
-    model: ai.reasoning.modelId,
-    inputTokens: usage.inputTokens ?? 0,
-    outputTokens: usage.outputTokens ?? 0,
-    durationMs: Date.now() - started,
+  const plan = validateStoryboardPlan(
+    output,
+    data.referenceIds.length,
+    count ?? undefined,
+  )
+  return {
+    plan,
+    preparation: {
+      model: ai.reasoning.modelId,
+      inputTokens: usage.inputTokens ?? 0,
+      outputTokens: usage.outputTokens ?? 0,
+      durationMs: Date.now() - started,
+    },
   }
+}
+
+async function prepareStoryboard(
+  data: z.infer<typeof requestSchema> & { originalInput: string },
+  userId: string,
+) {
+  const invocation = parsePromptInvocation(data.originalInput)
+  if (invocation.kind !== 'skill' || invocation.brief !== data.brief)
+    throw new Error('The storyboard brief changed. Submit it again.')
+  const count = storyboardShotCount(data.brief)
+  const models = [
+    ...new Set(
+      data.models.map((m) => endpointFor(m, data.referenceIds.length > 0)),
+    ),
+  ]
+  validateSkillReferences(models, data.referenceIds)
+  requireAiRole('reasoning')
+  // Resolve every renderer before spending on the writer. Strict schema lookup
+  // must not inherit ordinary generation's optimistic fallback on network failure.
+  //
+  // The schemas are kept rather than turned straight into layouts, because the
+  // layout now depends on the ratio the plan chooses (#714) and the plan has
+  // not run yet. Validating the renderers first still fails fast on a model
+  // that cannot take the references, before any Claude spend.
+  const schemas = await Promise.all(
+    models.map(async (model) => {
+      const schema = await fetchModelSchema(model, { strict: true })
+      if (
+        data.referenceIds.length &&
+        (!schema.imageInputParam ||
+          (schema.imageInputParam === 'image_url' &&
+            data.referenceIds.length > 1))
+      )
+        throw new Error(
+          'This model cannot accept all storyboard references. Choose another model.',
+        )
+      return schema
+    }),
+  )
+  const { plan, preparation } = await runStoryboardPlan(data, userId, count)
+  // Now the ratio is known, so each renderer gets a canvas aimed at it.
+  const layouts = schemas.map((schema) =>
+    layoutForSchema(schema, plan.shotAspectRatio),
+  )
+  const preparationId = randomUUID()
   return Promise.all(
     models.flatMap((model, index) =>
       plan.shots.map(async (shot) => {
@@ -200,14 +245,21 @@ export async function validatePreparedSkill(
   const invocation = parsePromptInvocation(typedPrompt)
   if (invocation.kind !== 'skill' || invocation.brief !== skill.brief)
     throw new Error('Invalid storyboard invocation. Generate again.')
-  validateStoryboardPlan(skill.plan, referenceIds.length, invocation.shots)
+  validateStoryboardPlan(
+    skill.plan,
+    referenceIds.length,
+    invocation.shots ?? undefined,
+  )
   if (
     !Number.isInteger(skill.shotNumber) ||
     !skill.plan.shots.some((s) => s.number === skill.shotNumber)
   )
     throw new Error('Invalid storyboard shot. Generate again.')
   validateSkillReferences([model], referenceIds)
-  const layout = await resolveStoryboardLayout(skill.model)
+  const layout = await resolveStoryboardLayout(
+    skill.model,
+    skill.plan.shotAspectRatio,
+  )
   if (JSON.stringify(layout) !== JSON.stringify(skill.layout))
     throw new Error(
       'Storyboard dimensions changed. Generate again to prepare the new layout.',

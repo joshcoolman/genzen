@@ -5,18 +5,21 @@ export interface PromptImageSkillDefinition {
   label: string
   description: string
   input: { briefRequired: boolean; references: 'optional' }
-  defaults: { shots: number; shotAspectRatio: '16:9' }
+  defaults: { shots: number; shotAspectRatio: string }
 }
 
 export interface StoryboardPlan {
   continuity: string
+  held: string
+  varies: string
+  ordered: boolean
   references: Array<{ image: number; role: string }>
   shots: Array<{
     number: number
     description: string
     referenceImages: Array<number>
   }>
-  shotAspectRatio: '16:9'
+  shotAspectRatio: string
 }
 
 export interface StoryboardLayout {
@@ -24,7 +27,7 @@ export interface StoryboardLayout {
   rows: number
   emptyCells: number
   readingOrder: 'left-to-right, top-to-bottom'
-  shotAspectRatio: '16:9'
+  shotAspectRatio: string
   idealSheetRatio: string
   sheetAspectRatio: string
   size:

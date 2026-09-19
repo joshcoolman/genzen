@@ -28,11 +28,14 @@ export function SkillPrompt({
         skill.command.startsWith(text.toLowerCase()),
       )
     : undefined
-  let shotLabel = '6 shots'
+  // Null is the normal case since #714: the plan reads the count off the
+  // brief, and the label says so rather than showing a number nothing chose.
+  let shotLabel = 'Count from your brief'
   try {
-    shotLabel = `${storyboardShotCount(text)} shots`
+    const pinned = storyboardShotCount(text)
+    if (pinned != null) shotLabel = `${pinned} images`
   } catch {
-    shotLabel = 'Choose 2–9 shots'
+    shotLabel = 'Choose 2–9 images'
   }
   const open = focused && !dismissed && !props.disabled && Boolean(choice)
 
@@ -111,7 +114,8 @@ export function SkillPrompt({
         <div className={styles.active}>
           <strong>{command.label}</strong>
           <span>
-            {shotLabel} · separate full-size images · 16:9 each · 2–9 supported
+            {shotLabel} · separate full-size images · shape and count decided
+            from your words · 2–9
           </span>
         </div>
       )}

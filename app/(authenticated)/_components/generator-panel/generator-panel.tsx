@@ -12,6 +12,8 @@ import type { UserImage } from '#/features/user-images/types'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { pricedForImages } from '#/features/ai-images/model-selector/unified-models'
 import { REF_ROLES, isReadRole } from '#/features/ai-images/ref-roles'
+import { populateStoryboard } from '#/features/ai-images/server/populate-storyboard.action'
+import { systemInstructionsPrefix } from '#/features/ai-images/system-instructions'
 import { formatCents } from '#/lib/format'
 import {
   ActionButton,
@@ -82,7 +84,53 @@ export function GeneratorPanel({
     activePrompts.length > 0 &&
     activePrompts.every((p) => /^\s*\/storyboard(?:\s|$)/i.test(p))
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [populating, setPopulating] = useState(false)
+  const [populateError, setPopulateError] = useState<string | null>(null)
   const { confirm, dialogProps } = useConfirm()
+
+  /**
+   * One storyboard command, and nothing else to lose.
+   *
+   * Populate replaces the command with the prompts it planned, so it is only
+   * offered when the command is the whole of the prompt list -- replacing one
+   * row of several would need a per-row action, and reading the planned set is
+   * the point of the button, not editing it in place beside other work.
+   */
+  const canPopulate =
+    storyboardOnly && activePrompts.length === 1 && !generator.loading
+
+  /**
+   * Plan without spending on images.
+   *
+   * The command row is consumed rather than kept: leaving it in the list means
+   * the next Generate plans the brief a second time and renders the whole set
+   * twice. The ratio the plan chose is pushed into the panel so the user
+   * starts from the model's answer rather than from whatever was there before.
+   */
+  async function handlePopulate() {
+    setPopulating(true)
+    setPopulateError(null)
+    try {
+      const result = await populateStoryboard({
+        originalInput: activePrompts[0],
+        referenceIds: generator.refImages
+          .filter((img) => !isReadRole(img.role))
+          .map((img) => img.id),
+        systemInstructions: systemInstructionsPrefix(),
+      })
+      generator.clearPrompts()
+      generator.setPromptAtIndex(0, result.prompts[0])
+      if (result.prompts.length > 1)
+        generator.appendPrompts(result.prompts.slice(1))
+      generator.setAspectRatio(result.aspectRatio)
+    } catch (reason) {
+      setPopulateError(
+        reason instanceof Error ? reason.message : String(reason),
+      )
+    } finally {
+      setPopulating(false)
+    }
+  }
 
   /**
    * Where a generated prompt lands. Fills the first row while the list is one
@@ -292,9 +340,15 @@ export function GeneratorPanel({
           anything on screen suggests, and above CONFIRM_ABOVE the dialog
           spells the whole multiplication out. */}
       <div className={styles.controls}>
+        {/* Not pinned to 16:9 any more (#714): the plan chooses the ratio from
+            the brief, so a control forced to one value was stating something
+            that had stopped being true. Still disabled while a command is the
+            prompt, because on that path the plan's answer overrides whatever
+            this says -- Populate then writes the chosen ratio back here, which
+            is the only press that makes this control meaningful again. */}
         <AspectRatioSelect
-          orientation={storyboardOnly ? 'landscape' : generator.orientation}
-          aspectRatio={storyboardOnly ? '16:9' : generator.aspectRatio}
+          orientation={generator.orientation}
+          aspectRatio={generator.aspectRatio}
           onOrientationChange={generator.setOrientation}
           onAspectRatioChange={generator.setAspectRatio}
           disabled={storyboardOnly || generator.loading}
@@ -306,6 +360,16 @@ export function GeneratorPanel({
           onAdjust={modelSelector.adjustGens}
           disabled={generator.loading}
         />
+        {canPopulate && (
+          <ActionButton
+            onClick={() => void handlePopulate()}
+            loading={populating}
+            loadingText=""
+            className={styles.generate}
+          >
+            Populate
+          </ActionButton>
+        )}
         <ActionButton
           onClick={() => void handleGenerateClick()}
           loading={generator.loading}
@@ -330,9 +394,15 @@ export function GeneratorPanel({
           resolution and whether audio is included, which nothing else says. */}
       {generator.prompts.some((p) => /^\s*\/storyboard(?:\s|$)/i.test(p)) && (
         <p className={styles.skillNote}>
-          Storyboard generates each shot as a separate full-size 16:9 image.
-          Image estimate below excludes Claude planning, charged once per
-          distinct brief.
+          Storyboard plans the set from your brief -- how many images, their
+          shape and what varies between them -- and renders each as its own
+          full-size image. The estimate below assumes six and excludes Claude
+          planning, charged once per distinct brief.
+        </p>
+      )}
+      {populateError && (
+        <p className={styles.skillNote} role="alert">
+          {populateError}
         </p>
       )}
       <CostNote

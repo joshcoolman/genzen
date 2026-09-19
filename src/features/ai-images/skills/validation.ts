@@ -3,8 +3,31 @@ import { getModelName, imageCapacityFor } from '../models'
 import type { StoryboardPlan } from './types'
 
 const prose = z.string().trim().min(1).max(6000)
+
+/**
+ * Ratios a plan may choose. Wider than any one renderer accepts; the layout
+ * resolver snaps to the nearest the selected model actually offers, so this is
+ * the vocabulary of the decision rather than a promise about the output.
+ */
+export const STORYBOARD_ASPECT_RATIOS = [
+  '21:9',
+  '16:9',
+  '3:2',
+  '4:3',
+  '1:1',
+  '3:4',
+  '2:3',
+  '9:16',
+] as const
+
 export const storyboardPlanSchema = z.object({
+  /** What is the same in every image. Written once; the renderer is stateless. */
   continuity: prose,
+  /** The two halves of the one decision: what is held, and what changes. */
+  held: prose,
+  varies: prose,
+  /** A storyboard is a set ordered by time. Most sets are not one. */
+  ordered: z.boolean(),
   references: z
     .array(z.object({ image: z.number().int().min(1).max(16), role: prose }))
     .max(16),
@@ -18,7 +41,7 @@ export const storyboardPlanSchema = z.object({
     )
     .min(2)
     .max(9),
-  shotAspectRatio: z.literal('16:9'),
+  shotAspectRatio: z.enum(STORYBOARD_ASPECT_RATIOS),
 })
 
 export function validateStoryboardPlan(

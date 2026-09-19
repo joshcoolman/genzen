@@ -4,6 +4,9 @@ import { validateSkillReferences, validateStoryboardPlan } from './validation'
 const plan = {
   continuity:
     'Two fighters keep their blue and red uniforms in the same courtyard.',
+  held: 'the two fighters and the courtyard',
+  varies: 'the moment of the fight',
+  ordered: true,
   references: [
     { image: 1, role: 'Blue fighter' },
     { image: 2, role: 'Courtyard' },

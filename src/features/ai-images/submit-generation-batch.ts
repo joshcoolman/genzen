@@ -4,6 +4,7 @@ import { endpointFor, modelTitleFor } from './models'
 import { parsePromptInvocation } from './skills/registry'
 import { prepareImageSkill } from './server/prepare-image-skill.action'
 import { submitGeneratorImage } from './server/submit-generator-image.action'
+import type { PromptInvocation } from './skills/registry'
 import type { ReferenceReading } from './ref-roles'
 import type { GenerationOrigin } from '#/lib/types/db'
 import { optimisticId } from '#/lib/optimistic-id'
@@ -85,23 +86,75 @@ export async function submitGenerationBatch(batch: GenerationBatch) {
   const prompts = active.length ? active : ['']
   // Invalid commands never create a job or make a provider call.
   const invocations = prompts.map(parsePromptInvocation)
-  const calls = invocations.flatMap((invocation) =>
+
+  // Promise sharing starts here rather than after the cards, because an
+  // unpinned storyboard has no shot count until its plan exists (#714) and the
+  // card fan-out is built from that number. One preparation per distinct
+  // brief, reused by every call below, so planning early costs no extra Claude.
+  const preparations = new Map<string, ReturnType<typeof prepareImageSkill>>()
+  const prepare = (
+    invocation: Extract<PromptInvocation, { kind: 'skill' }>,
+  ) => {
+    let preparation = preparations.get(invocation.originalInput)
+    if (!preparation) {
+      preparation = prepareImageSkill({
+        skillId: invocation.skillId,
+        // Readings do not reach a storyboard (#635): the server checks
+        // this brief against the typed command byte for byte, and the
+        // plan takes its look from the references it is handed. Feeding
+        // a read role into the plan is its own change.
+        brief: invocation.brief,
+        originalInput: invocation.originalInput,
+        referenceIds: batch.referenceIds,
+        models: batch.selectedModels,
+        systemInstructions: batch.systemInstructions,
+      })
+      preparations.set(invocation.originalInput, preparation)
+    }
+    return preparation
+  }
+
+  /**
+   * How many cards this prompt draws.
+   *
+   * A pinned count and a plain prompt both answer without a round trip, and
+   * keep the guarantee that cards appear before any provider call. Letting the
+   * model choose the count trades that guarantee away on that path alone: the
+   * cards cannot be drawn until the plan says how many there are. A failed
+   * plan draws none and surfaces as the submit error it already was.
+   */
+  const known = (invocation: PromptInvocation) =>
+    invocation.kind === 'skill' ? invocation.shots : 1
+  // Awaiting at all would push the cards past a microtask, so the ordinary
+  // path must not await: every count known means the fan-out is built in the
+  // same synchronous turn as the click, exactly as it was.
+  const shotCounts = invocations.every((i) => known(i) != null)
+    ? invocations.map((i) => known(i)!)
+    : await Promise.all(
+        invocations.map(async (invocation) => {
+          const count = known(invocation)
+          if (count != null) return count
+          const variants = await prepare(
+            invocation as Extract<PromptInvocation, { kind: 'skill' }>,
+          )
+          return variants[0]?.skill.plan.shots.length ?? 0
+        }),
+      )
+
+  const calls = invocations.flatMap((invocation, promptIndex) =>
     batch.selectedModels.flatMap((model) =>
       Array.from({ length: batch.gensPerModel }, () =>
-        Array.from(
-          { length: invocation.kind === 'skill' ? invocation.shots : 1 },
-          (_, shotIndex) => ({
-            placeholderId: optimisticId(),
-            model,
-            resolved: endpointFor(model, !!sourceImageId),
-            invocation,
-            shotNumber: invocation.kind === 'skill' ? shotIndex + 1 : undefined,
-            typedPrompt:
-              invocation.kind === 'skill'
-                ? invocation.originalInput
-                : invocation.text,
-          }),
-        ),
+        Array.from({ length: shotCounts[promptIndex] }, (_, shotIndex) => ({
+          placeholderId: optimisticId(),
+          model,
+          resolved: endpointFor(model, !!sourceImageId),
+          invocation,
+          shotNumber: invocation.kind === 'skill' ? shotIndex + 1 : undefined,
+          typedPrompt:
+            invocation.kind === 'skill'
+              ? invocation.originalInput
+              : invocation.text,
+        })),
       ).flat(),
     ),
   )
@@ -117,9 +170,6 @@ export async function submitGenerationBatch(batch: GenerationBatch) {
     })),
   )
 
-  // Promise sharing starts after the cards exist. A slow storyboard does not
-  // hold up ordinary prompts, other briefs, or a later click on Generate.
-  const preparations = new Map<string, ReturnType<typeof prepareImageSkill>>()
   const outcomes = await Promise.all(
     calls.map(async (c) => {
       let recordId: string | null = null
@@ -130,23 +180,7 @@ export async function submitGenerationBatch(batch: GenerationBatch) {
           | undefined
         if (c.invocation.kind === 'skill') {
           const invocation = c.invocation
-          let preparation = preparations.get(invocation.originalInput)
-          if (!preparation) {
-            preparation = prepareImageSkill({
-              skillId: invocation.skillId,
-              // Readings do not reach a storyboard (#635): the server checks
-              // this brief against the typed command byte for byte, and the
-              // plan takes its look from the references it is handed. Feeding
-              // a read role into the plan is its own change.
-              brief: invocation.brief,
-              originalInput: invocation.originalInput,
-              referenceIds: batch.referenceIds,
-              models: batch.selectedModels,
-              systemInstructions: batch.systemInstructions,
-            })
-            preparations.set(invocation.originalInput, preparation)
-          }
-          variant = (await preparation).find(
+          variant = (await prepare(invocation)).find(
             (v) =>
               v.skill.model === c.resolved &&
               v.skill.shotNumber === c.shotNumber,

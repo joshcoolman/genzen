@@ -9,19 +9,49 @@ anything one route renders lives with that route.
 
 `/storyboard` runs inside the shared Images/Canvas prompt field (#619). The
 client-safe registry owns command metadata; authenticated server dispatch plans
-from the brief and ordered library images. Default six 16:9 shots, override
-2–9 with prose or `--shots N`. Strict reference capacity and model sizing are
-checked before Claude. One plan per distinct brief/reference snapshot feeds all
+from the brief and ordered library images.
+
+**The plan decides, not the prompt file (#714).** The one thing assumed about
+the output is that it is a _set_: more than one image, belonging together.
+Count (2–9), aspect ratio, whether the set is `ordered`, and the one decision
+underneath all of it -- what is `held` across the set and what `varies` between
+its members -- all come from the brief. A storyboard is the case where the
+variable happens to be time; five character concepts and eight angles on a
+watch are the same primitive with a different axis, which is why `plan.md`
+enumerates no list of forms. `storyboardShotCount` returns **null** when the
+brief pins nothing, and null means the model chooses; `--shots N` and "five
+shots" still pin it authoritatively. The chosen ratio is a request: the layout
+resolver snaps to the nearest size the selected renderer actually offers.
+
+Strict reference capacity and model sizing are
+checked before Claude; the renderer _layouts_ are resolved after the plan,
+because the ratio they aim at is the plan's answer. One plan per distinct brief/reference snapshot feeds all
 requested shots and variants. Since #626 (v2), every shot renders as its own
 full-size image, using the shared continuity, original references and only that
 shot description. `shotNumber` identifies the output; the retained layout shape
 now describes a single full-size canvas. V1 contact-sheet metadata stays readable
 and its saved rendering request remains retryable. Counts and estimates multiply
-shots × selected models × variants. No group is created; the submit destination
+shots × selected models × variants. **An unpinned count is planned before the
+optimistic cards are drawn** -- the fan-out needs a number, and there isn't one
+until Claude answers, so that path alone trades away "cards before any provider
+call". Pinned counts and plain prompts keep it.
+
+**Populate** (`populate-storyboard.action.ts`) is the plan without the spend:
+one Claude call, no images, and the shots land in the panel's prompt list as
+ordinary editable strings with the held description folded into each. It
+consumes the command row, because leaving it would plan and render the set
+twice on the next Generate, and writes the plan's ratio back into the panel.
+`render-shot.md`'s sheet/grid boilerplate is deliberately not folded in: a
+populated prompt is an ordinary single-image prompt, and the list exists to be
+read. References stay panel-wide on that path -- the prompt list holds text
+only -- so a set that varies by _which_ reference names the subject in words
+instead. No group is created; the submit destination
 is captured before planning. Reference-sheet assembly is an optional separate tool.
 
 `submit-generation-batch.ts` captures each click and draws every optimistic card
-before planning or rendering. The composer remains available during background
+before rendering, and before planning too except on the one path named above
+(an unpinned storyboard count, which has no number to fan out on until the plan
+answers). The composer remains available during background
 work. Outcomes carry their own placeholder IDs; preparation failures keep a
 failed card with its prompt/references, and submission failures return their
 reserved row through `submit-generator-image.action.ts` for reconciliation.
