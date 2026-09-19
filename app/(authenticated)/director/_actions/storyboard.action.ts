@@ -591,10 +591,15 @@ export async function retryFrame(
  * what settles a take while you *are* watching -- and this is what makes its
  * absence survivable rather than permanent.
  *
- * Bounded by `MAX_SETTLE_PER_LOAD`: a finished take is a download and a poster
- * before the page can render, and a page that waits on eight of them is a page
- * that feels broken in a different way. The rest settle on the next load or on
- * the poll.
+ * **The page starts this and does not wait for it** (#707): every take is a
+ * 16MB download and a re-upload, and in front of the render that was four tabs
+ * paying for one tab's pictures. So a take settled here lands on the poll's
+ * next cycle, not on the render that asked.
+ *
+ * Bounded by `MAX_SETTLE_PER_LOAD` even so: this is bandwidth and bucket
+ * writes for a board nobody may be looking at, and eight at once on every load
+ * is a different kind of wrong. The rest settle on the next load or on the
+ * poll.
  *
  * **One at a time, and that is not caution for its own sake.** The first cut
  * ran them through `Promise.all`, and the first time two takes were ready
