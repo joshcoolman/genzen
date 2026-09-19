@@ -265,9 +265,10 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** -- nothing in flight, and Focus is empty: promote from Now. #714 is
-the one to open next: the storyboard command rewritten as a brief the model
-plans from, plus Populate to load the shots as editable prompts.
+**Focus** -- empty, so promote from Now. **#716** is the one to open next: an
+image staged as a reference survives the trash of its own row, so the panel
+keeps a dead id and the next press fails every generation with "Source image
+not found". Small, and it has already cost a run.
 
 **Respelling works** -- confirmed 2026-09-18, `day-KART` said correctly on a row
 that had been getting Descartes wrong. The spelling is the instruction and plain
@@ -286,6 +287,11 @@ attached** -- the deployed database still holds the old Director's rows.
 
 Recent highlights:
 
+- `/storyboard` plans the set from the brief rather than from a rulebook: what
+  is held and what varies, count, shape, ordered or not -- and a shot may take
+  its own aspect ratio, so "mostly square, two vertical" renders that way.
+  **Populate** loads the planned shots as editable prompts for one Claude call
+  and no image spend. Cards caption themselves with their own shot (#714).
 - Lighting is gone: the Images dock button, its dialog, the Lab page and the
   effect prompts. The Lighting reference role stays, since it is #635's, and
   its derive prompt moved out of the deleted folder (#710, #713).
@@ -302,9 +308,6 @@ Recent highlights:
 - A Storyboard tab on a Director session: one row per numbered script line,
   each drawn as the frame it opens on and the frame it ends on, from the
   sheets. No video -- a few dollars against $38 for one video pass (#695).
-- A Director session is a container for more than the run: Characters and
-  Locations tabs holding reference sheets extracted from its own clips, and a
-  Script tab holding the dialogue with each clip's duration (#690).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.
