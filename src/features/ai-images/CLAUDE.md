@@ -181,6 +181,16 @@ transport concern, and the library row keeps its full-resolution original.
   hides exactly where it is most likely to be tested. The ordering is `pushRef`
   in `ref-images.ts` -- pure, so it is unit-tested, because a silent eviction at
   the wrong end is invisible.
+- **"What prompt made this picture" has one answer, `display-prompt.ts`**
+  (#714). For an ordinary row that is `generation_metadata.prompt`; for a
+  storyboard shot it is the shot's own description, read out of the
+  `image_skill` the row carries. Every image in a set is submitted under the
+  same typed invocation, so before this all ten cards of a ten-shot brief
+  captioned themselves with the brief. Derived rather than written at submit,
+  so rows made earlier read correctly and `prompt` keeps meaning what the user
+  typed -- which is what `load-generation` restores and what `planRetry` falls
+  back to. Any surface showing a prompt calls this; there were four and they
+  would have drifted.
 - **"What went into this generation" has one answer, `generation-inputs.ts`**
   (#380). The split above is why: index 0 goes over the wire as
   `sourceImageId` and the rest as `referenceImageIds`, so the same fact lands
