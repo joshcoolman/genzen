@@ -28,7 +28,9 @@ const PROMPT = composeClipPrompt(
 
 const row = { description: PROMPT, duration: '12' }
 
-const generateVideo = vi.fn(() => Promise.resolve({ recordId: randomUUID() }))
+const generateVideo = vi.fn((_input: unknown) =>
+  Promise.resolve({ recordId: randomUUID() }),
+)
 
 vi.mock('#/lib/server/auth.server', () => ({
   resolveAuth: vi.fn(() => Promise.resolve({ userId: randomUUID() })),
