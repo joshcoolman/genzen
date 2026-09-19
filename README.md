@@ -265,26 +265,33 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — nothing in flight, and Focus is empty: promote from Now. The
-storyboard is shipped end to end and the day's review is merged (#703).
+**Focus** -- nothing in flight, and Focus is empty: promote from Now. #714 is
+the one to open next: the storyboard command rewritten as a brief the model
+plans from, plus Populate to load the shots as editable prompts.
 
-**Respelling works** — confirmed 2026-09-18, `day-KART` said correctly on a row
+**Respelling works** -- confirmed 2026-09-18, `day-KART` said correctly on a row
 that had been getting Descartes wrong. The spelling is the instruction and plain
 letters are enough, so nothing cleverer is needed.
 
 One question is still open, and generating answers it, not reading. **Does the
 voice hold between sections?** Generate two _adjacent_ rows and listen to the
 join; that also says whether the no-music rule is holding. Seedance is on the
-board for exactly this — it takes a seed where Kling takes none, and its
+board for exactly this -- it takes a seed where Kling takes none, and its
 `audio_urls` (reference audio, unused because genzen has no audio asset) is the
 real answer if drift turns out to be what ruins the film.
 
 Known and worked around: Kling refuses a line naming a trademarked work, which
 is what the editable line on each row is for. **#705 is the one with a deadline
-attached** — the deployed database still holds the old Director's rows.
+attached** -- the deployed database still holds the old Director's rows.
 
 Recent highlights:
 
+- Lighting is gone: the Images dock button, its dialog, the Lab page and the
+  effect prompts. The Lighting reference role stays, since it is #635's, and
+  its derive prompt moved out of the deleted folder (#710, #713).
+- A chat rerun is timed from its own line rather than the row it replaces
+  (#692); settling no longer blocks the page and a tab's panel no longer
+  outlives it (#707).
 - A storyboard row generates its own section, on Kling O3 Pro or Seedance 2.5:
   the approved opening frame is the clip's first frame where the model pins one,
   the sheets ride along, and takes add rather than replace. No music by
@@ -294,23 +301,10 @@ Recent highlights:
   naming a trademarked work gets made (#700).
 - A Storyboard tab on a Director session: one row per numbered script line,
   each drawn as the frame it opens on and the frame it ends on, from the
-  sheets. No video — a few dollars against $38 for one video pass (#695).
+  sheets. No video -- a few dollars against $38 for one video pass (#695).
 - A Director session is a container for more than the run: Characters and
   Locations tabs holding reference sheets extracted from its own clips, and a
-  Script tab holding the dialogue with each clip's duration. Drawn as Images
-  cards, isolated from Images the way the clips are from Video (#690).
-- Director chat answers are written as speech first, in the character's
-  voice, then cut into five-second bursts word for word (#683). The audience
-  is fifteen to adult whoever answers (#682).
-- Director is isolated from Video: a clip born in a session is stamped at
-  birth, shown only there, and trashed when it leaves the run, is re-rolled,
-  or the session is deleted. Add clips is gone (#679, backfill in 0021).
-- Chat questions queue and the box never locks; an answer landing mid-answer
-  is the next clip, not a jump (#678).
-- Chat anchors -- character once per session, scene once per answer -- are
-  prepended in code, and a chat's Script is its questions and answers (#677).
-- Chat bursts play in order as they land, once, with a Loop toggle; Sonnet 5
-  writes the answer (#675, #676).
+  Script tab holding the dialogue with each clip's duration (#690).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.
