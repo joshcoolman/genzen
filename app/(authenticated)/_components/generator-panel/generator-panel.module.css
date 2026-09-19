@@ -25,12 +25,6 @@
   margin-bottom: var(--panel-rhythm);
 }
 
-.row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-}
-
 /* Shape, count, go. All three on one row, because the first two size to their
    content -- neither wants to stretch, and splitting the row evenly used to
    pull `− 1 +` into a wide box of mostly empty space that read as a text

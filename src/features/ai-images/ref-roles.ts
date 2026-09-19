@@ -34,10 +34,6 @@ export function isReadRole(role: RefRole | undefined): role is ReadRole {
   return role !== undefined && role !== 'reference'
 }
 
-export function isRefRole(value: unknown): value is RefRole {
-  return REF_ROLES.some((r) => r.id === value)
-}
-
 /** One read role's result, as it travels to the submit and into the row. */
 export interface ReferenceReading {
   imageId: string

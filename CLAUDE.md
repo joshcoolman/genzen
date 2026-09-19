@@ -307,7 +307,9 @@ it is safe.
   thing that put an id there was the Cmd-F overlay, and both went in #348. If
   copy-here-paste-there returns, put the id on the clipboard, not the bytes --
   see #347
-- **A global overlay must take the keyboard, not share it**
-  (`src/lib/keyboard-capture.ts`). Canvas replaces hotkeys-js's default
-  text-field exemption with its own dialog check, so anything floating over a
-  route sets the capture flag or Backspace in its input reaches the canvas
+- **Canvas replaces hotkeys-js's default text-field exemption** with a check on
+  its own dialogs, so a floating thing that takes typing over the canvas has to
+  suppress the route's hotkeys itself. `keyboard-capture.ts` was the ambient
+  signal for that and is gone: the only thing that ever set it was the Cmd-F
+  overlay, which went in #348, leaving a flag that was permanently false and a
+  rule here telling the next session to honour it

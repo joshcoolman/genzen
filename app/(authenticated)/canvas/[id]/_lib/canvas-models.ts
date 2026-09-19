@@ -30,10 +30,6 @@ export const CANVAS_MODELS: Array<ModelEntry> = CURATED_CANVAS_MODEL_SLUGS.map(
   (slug) => IMAGE_MODELS.find((m) => m.slug === slug),
 ).filter((m): m is ModelEntry => !!m && m.withImages !== null)
 
-/** Allowlisted model ids, post-gate. Pass to `useModelSelector({ allowedIds })`. */
-export const CANVAS_MODEL_ALLOWED_IDS: Array<string> =
-  CANVAS_MODELS.map(pickerId)
-
 /** Default selected canvas model (first curated, gated entry). */
 export const CANVAS_DEFAULT_MODEL = CANVAS_MODELS[0]
   ? pickerId(CANVAS_MODELS[0])

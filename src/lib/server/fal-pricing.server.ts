@@ -1,5 +1,4 @@
 import { first, sql } from '#/lib/server/db.server'
-import { ALL_ENDPOINT_IDS } from '#/features/ai-images/models'
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
 
@@ -91,9 +90,4 @@ export async function getFalModelPrice(
   `
 
   return fresh
-}
-
-export async function warmFalPriceCache(): Promise<void> {
-  const allIds = [...ALL_ENDPOINT_IDS]
-  await Promise.allSettled(allIds.map((id) => getFalModelPrice(id)))
 }

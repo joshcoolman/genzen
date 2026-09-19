@@ -3,7 +3,6 @@
 import {
   createSession,
   deleteSession,
-  getSession,
   listSessions,
   renameSession,
   saveRun,
@@ -13,9 +12,6 @@ import { idSchema } from '../_lib/types'
 import type { SessionKind } from '../_lib/types'
 import { resolveAuth } from '#/lib/server/auth.server'
 
-export async function loadSession(id: string) {
-  return getSession((await resolveAuth()).userId, id)
-}
 export async function loadSessions() {
   return listSessions((await resolveAuth()).userId)
 }

@@ -5,8 +5,7 @@
    beside contained ones reads as a different kind of card rather than as one of
    them carrying something extra. */
 
-.menuIcon,
-.actionIcon {
+.menuIcon {
   width: 0.875rem;
   height: 0.875rem;
 }
@@ -104,8 +103,7 @@ button.swatches:hover .swatchEmpty {
    grid that lost its rhythm. That is also why the count is not in here -- there
    is no spare cell for it. */
 .swatch,
-.swatchEmpty,
-.swatchLoading {
+.swatchEmpty {
   aspect-ratio: 1;
   border-radius: var(--radius-sm);
   background-color: var(--surface-sunken);
@@ -119,24 +117,6 @@ button.swatches:hover .swatchEmpty {
    broken grid rather than as room for more. */
 .swatchEmpty {
   background-color: var(--slot-empty);
-}
-
-/* A slot in an expanded strip whose picture has not arrived yet. Breathing
-   rather than ghosted, because the space is held for something specific --
-   holding it is what stops the card growing twice. */
-.swatchLoading {
-  background-color: var(--slot-empty);
-  animation: slot-pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes slot-pulse {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.9;
-  }
 }
 
 /* Beside the name rather than in the swatch row. It was a fifth cell there,

@@ -1,24 +1,4 @@
-.clips {
-  display: flex;
-  gap: var(--space-8);
-  overflow-x: auto;
-  padding-bottom: var(--space-4);
-}
-
 .clip,
-.clipActive {
-  padding: 0;
-  border: 2px solid transparent;
-  border-radius: var(--radius-md);
-  background: none;
-  line-height: 0;
-  cursor: pointer;
-}
-
-.clipActive {
-  border-color: var(--accent);
-}
-
 .stage {
   display: flex;
   flex-direction: column;
