@@ -11,6 +11,14 @@ export default [
       'eslint.config.js',
       'eslint-rules/**/*',
       'prettier.config.js',
+      /* An agent worktree is a second checkout of this repo living inside it,
+         at `.claude/worktrees/<name>/`. Without this, lint walks into it and
+         reports the whole repo twice -- and worse, its `eslint-rules/*.js`
+         resolve against that checkout's tsconfig and fail to parse, so a clean
+         tree reports four errors that belong to nobody. `vitest.config.ts`
+         excludes the same path for the same reason. The three `check-*.mjs`
+         scripts already skip every dot-directory and need nothing. */
+      '.claude/**',
     ],
   },
   ...tanstackConfig,
