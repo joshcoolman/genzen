@@ -39,6 +39,14 @@ export default defineConfig({
   test: {
     environment: 'node',
     setupFiles: ['./vitest.setup.ts'],
-    exclude: ['**/node_modules/**', '**/.next/**'],
+    /* `.claude/**` because an agent worktree lives inside the repo.
+       A subagent given `isolation: "worktree"` gets a checkout at
+       `.claude/worktrees/agent-<id>/`, and vitest globbed the test files in it
+       -- so a run on one branch executed another branch's tests against this
+       branch's source and failed on imports that do not exist here. It looks
+       exactly like the branch under test being broken, which is the expensive
+       part: the report is wrong rather than merely noisy. The worktrees are
+       temporary, and this is what stops the next one costing the same hour. */
+    exclude: ['**/node_modules/**', '**/.next/**', '**/.claude/**'],
   },
 })
