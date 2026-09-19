@@ -382,13 +382,16 @@ export async function saveBoard(
   settings: { model?: string; seed?: number } = {},
 ): Promise<Session> {
   const session = await requireSession(owner, id)
+  const seed = settings.seed ?? session.board.seed
   const board = {
     version: 1 as const,
     scenes: scenes.map((scene) => boardSceneSchema.parse(scene)),
     model: settings.model ?? session.board.model,
-    ...((settings.seed ?? session.board.seed)
-      ? { seed: settings.seed ?? session.board.seed }
-      : {}),
+    /* Compared against undefined rather than tested for truth: zero is a valid
+       seed under the schema, and `randomInt(0, 2 ** 31)` returns it one time in
+       two billion. Dropping it would mean the board never pins a seed at all,
+       which is the same-noise-across-sections behaviour a seed is stored for. */
+    ...(seed === undefined ? {} : { seed }),
   }
   await sql`
     update director_sessions
@@ -430,5 +433,41 @@ export async function updateBoardScene(
     where id = ${id} and user_id = ${owner}
   `
   if (trash.length > 0) await trashSessionClips(owner, trash)
+  return requireSession(owner, id)
+}
+
+/**
+ * Change one field on many scenes, against the board as it is now (#703).
+ *
+ * **Read-modify-write inside the call, not around it.** `saveBoard` takes a
+ * whole scenes array, which is right for `createStoryboard` -- that replaces
+ * the board anyway -- and wrong for a pass meant to leave everything else
+ * alone. `pronounceBoard` read the scenes, awaited a Claude call for several
+ * seconds, and wrote its snapshot back; the drain writes `closingId`s
+ * unattended during exactly that window, and every one landed in the discarded
+ * copy. Worse than losing the edit: the dropped id leaves `boardImageIds`, so
+ * the generation it named is never drawn *and* never trashed with the session.
+ *
+ * So the board is re-read here, at the moment of writing, and only the named
+ * field of the named scenes is touched. A scene that vanished meanwhile is
+ * skipped rather than resurrected.
+ */
+export async function patchBoardScenes(
+  owner: string,
+  id: string,
+  changes: Map<string, Partial<Omit<BoardScene, 'id' | 'number'>>>,
+): Promise<Session> {
+  const session = await requireSession(owner, id)
+  if (changes.size === 0) return session
+  const scenes = session.board.scenes.map((scene) => {
+    const change = changes.get(scene.id)
+    return change ? boardSceneSchema.parse({ ...scene, ...change }) : scene
+  })
+  await sql`
+    update director_sessions
+    set board = ${jsonb({ ...session.board, version: 1 as const, scenes })},
+      revision = revision + 1, updated_at = now()
+    where id = ${id} and user_id = ${owner}
+  `
   return requireSession(owner, id)
 }

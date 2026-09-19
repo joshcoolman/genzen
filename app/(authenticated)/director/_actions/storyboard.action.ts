@@ -19,6 +19,7 @@ import {
 } from '../[id]/board'
 import { dialogueOf } from '../[id]/script'
 import {
+  patchBoardScenes,
   requireSession,
   saveBoard,
   trashSessionClips,
@@ -69,6 +70,14 @@ import { first, sql } from '#/lib/server/db.server'
  * frames chain no further than that on purpose: judge the cuts between scenes
  * first, and chain scene to scene once there is something to judge.
  */
+
+/** The scene, or the refusal. Seven copies of this find-and-throw had
+ *  accumulated, one per action, which is seven places for the message to drift
+ *  and seven to forget the guard in (#703). */
+function requireScene(session: Session, sceneId: string): BoardScene {
+  const scene = requireScene(session, sceneId)
+  return scene
+}
 
 /** The rows a storyboard has made -- both frames of every scene and every take
  *  of it -- read as they are now, so the tab draws pending, failed and finished
@@ -242,10 +251,7 @@ export async function closeScene(
 ): Promise<Session> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
-  const scene = session.board.scenes.find(
-    (s) => s.id === idSchema.parse(sceneId),
-  )
-  if (!scene) throw new Error('That scene is not in this session.')
+  const scene = requireScene(session, sceneId)
   /* Not an error: two tabs draining the same board is the ordinary case, and
      the second one has nothing to do rather than something to complain about. */
   if (scene.closingId || !scene.openingId) return session
@@ -258,7 +264,11 @@ export async function closeScene(
        frame of every scene sees the character and the place it is of, rather
        than inheriting them from a copy of a copy. */
     referenceImageIds: closingReferenceIds(scene, scene.openingId),
-    model: FRAME_MODEL_SLUG,
+    /* The hand that drew the opening draws the closing (#703). A re-run
+       chooses a model and records it; drawing the other half of that pair on
+       the board's default is the "row drawn by two hands" the field exists to
+       prevent, and `retryFrame` already honours it. */
+    model: scene.model ?? FRAME_MODEL_SLUG,
     label: 'Closing',
   })
   return updateBoardScene(userId, session.id, scene.id, { closingId })
@@ -284,10 +294,7 @@ export async function rerunScene(
 ): Promise<Session> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
-  const scene = session.board.scenes.find(
-    (s) => s.id === idSchema.parse(sceneId),
-  )
-  if (!scene) throw new Error('That scene is not in this session.')
+  const scene = requireScene(session, sceneId)
 
   const asked = words.trim().slice(0, 2000)
   if (!asked) throw new Error('Say what you want changed about this scene.')
@@ -379,10 +386,7 @@ export async function generateSectionVideo(
 ): Promise<Session> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
-  const scene = session.board.scenes.find(
-    (s) => s.id === idSchema.parse(sceneId),
-  )
-  if (!scene) throw new Error('That scene is not in this session.')
+  const scene = requireScene(session, sceneId)
   if (!scene.openingId)
     throw new Error('This scene has no opening frame to start from yet.')
 
@@ -499,24 +503,33 @@ export async function retryFrame(
 ): Promise<Session> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
-  const scene = session.board.scenes.find(
-    (s) => s.id === idSchema.parse(sceneId),
-  )
-  if (!scene) throw new Error('That scene is not in this session.')
+  const scene = requireScene(session, sceneId)
 
   const failedId = which === 'opening' ? scene.openingId : scene.closingId
-  if (!failedId) throw new Error('There is nothing to retry on that frame.')
+  /* **A null opening is a submit that threw, and it is retryable** (#703). The
+     row never existed, so there is nothing to check the status of and nothing
+     to trash -- but the scene is undrawn, and refusing here left it a spinner
+     no press could clear. A null *closing* is the ordinary waiting state: the
+     drain asks for it once the opening lands, and a retry would be a second
+     one. */
+  if (!failedId && which === 'closing')
+    throw new Error('There is nothing to retry on that frame.')
   /* Checked against the row rather than taken from the caller: a retry of a
-     frame that is merely slow would trash a generation still being paid for. */
-  const row = first(
-    await sql<Array<{ status: string }>>`
-      select status from user_images
-      where id = ${failedId} and user_id = ${userId}
-        and origin = 'director' and deleted_at is null
-    `,
-  )
-  if (!row || row.status !== 'failed')
-    throw new Error('That frame has not failed, so there is nothing to retry.')
+     frame that is merely slow would trash a generation still being paid for.
+     Skipped when there is no row, which is the never-submitted case above. */
+  if (failedId) {
+    const row = first(
+      await sql<Array<{ status: string }>>`
+        select status from user_images
+        where id = ${failedId} and user_id = ${userId}
+          and origin = 'director' and deleted_at is null
+      `,
+    )
+    if (!row || row.status !== 'failed')
+      throw new Error(
+        'That frame has not failed, so there is nothing to retry.',
+      )
+  }
 
   const model = scene.model ?? FRAME_MODEL_SLUG
   if (which === 'closing') {
@@ -530,9 +543,13 @@ export async function retryFrame(
       model,
       label: 'Closing',
     })
-    return updateBoardScene(userId, session.id, scene.id, { closingId }, [
-      failedId,
-    ])
+    return updateBoardScene(
+      userId,
+      session.id,
+      scene.id,
+      { closingId },
+      failedId ? [failedId] : [],
+    )
   }
 
   const openingId = await submitFrame({
@@ -549,9 +566,13 @@ export async function retryFrame(
      opening, so a scene whose opening failed has none -- and where one somehow
      exists it was drawn from a frame that worked, which this retry is not
      replacing. */
-  return updateBoardScene(userId, session.id, scene.id, { openingId }, [
-    failedId,
-  ])
+  return updateBoardScene(
+    userId,
+    session.id,
+    scene.id,
+    { openingId },
+    failedId ? [failedId] : [],
+  )
 }
 
 /**
@@ -712,10 +733,7 @@ export async function dropTake(
 ): Promise<Session> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
-  const scene = session.board.scenes.find(
-    (s) => s.id === idSchema.parse(sceneId),
-  )
-  if (!scene) throw new Error('That scene is not in this session.')
+  const scene = requireScene(session, sceneId)
   idSchema.parse(takeId)
   if (!scene.takes.some((take) => take.id === takeId))
     throw new Error('That take is not on this scene.')
@@ -756,16 +774,32 @@ export async function pronounceBoard(sessionId: string): Promise<Session> {
     })),
   )
 
-  const scenes = session.board.scenes.map((scene) => ({
-    ...scene,
-    /* A line the model did not answer for keeps whatever it had: silence is
-       not an instruction to throw away a respelling that was working. */
-    spokenLine: spoken.has(scene.number)
-      ? spokenOf(spoken.get(scene.number) ?? null, scene.line)
-      : scene.spokenLine,
-  }))
+  /* **Only the lines, and against the board as it is now.** Writing the whole
+     scenes array back would post a snapshot taken before a multi-second Claude
+     call, and the drain writes `closingId`s unattended during exactly that
+     window -- each one silently dropped, and orphaned with it, since an id that
+     leaves `boardImageIds` is never drawn and never trashed (#703). */
+  const changes = new Map(
+    session.board.scenes.flatMap((scene) =>
+      /* A line the model did not answer for is left alone: silence is not an
+         instruction to throw away a respelling that was working. */
+      spoken.has(scene.number)
+        ? [
+            [
+              scene.id,
+              {
+                spokenLine: spokenOf(
+                  spoken.get(scene.number) ?? null,
+                  scene.line,
+                ),
+              },
+            ] as const,
+          ]
+        : [],
+    ),
+  )
 
-  return saveBoard(userId, session.id, scenes)
+  return patchBoardScenes(userId, session.id, changes)
 }
 
 /**
@@ -788,10 +822,7 @@ export async function setSpokenLine(
 ): Promise<Session> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
-  const scene = session.board.scenes.find(
-    (s) => s.id === idSchema.parse(sceneId),
-  )
-  if (!scene) throw new Error('That scene is not in this session.')
+  const scene = requireScene(session, sceneId)
   if (!spoken.trim()) throw new Error('A scene has to say something.')
 
   return updateBoardScene(userId, session.id, scene.id, {
@@ -842,10 +873,7 @@ export async function swapFrames(
 ): Promise<Session> {
   const { userId } = await resolveAuth()
   const session = await requireSession(userId, idSchema.parse(sessionId))
-  const scene = session.board.scenes.find(
-    (s) => s.id === idSchema.parse(sceneId),
-  )
-  if (!scene) throw new Error('That scene is not in this session.')
+  const scene = requireScene(session, sceneId)
   if (!scene.openingId || !scene.closingId)
     throw new Error('This scene needs both frames before they can be swapped.')
 

@@ -230,6 +230,20 @@ export function frameState(
 }
 
 /**
+ * Has this scene's opening frame been asked for at all?
+ *
+ * **A submit that threw leaves no row**, so the scene keeps `openingId: null`
+ * and the tile reads as `'none'` -- which drew a skeleton, for ever, while
+ * Retry refused for want of a failed id and Generate video stayed disabled. The
+ * only escape was Draw again, which replaces the whole board. That is the dead
+ * end #699 closed for failed rows, one layer up at the submit (#703), and the
+ * row has to be able to say so.
+ */
+export function openingNeverSubmitted(scene: BoardScene): boolean {
+  return scene.openingId === null
+}
+
+/**
  * Which scenes are waiting for their closing frame.
  *
  * **The closing frame cannot be submitted with the opening one.** It is
@@ -287,6 +301,19 @@ export function sectionModel(slug: string): VideoModel {
   const model = videoModelBySlug(slug)
   if (!model) throw new Error(`Unknown video model: ${slug}`)
   return model
+}
+
+/**
+ * What to call a model on screen (#703).
+ *
+ * **Never throws**, unlike `sectionModel`, because a take stores its model as
+ * free text and this is read during render: a board holding a take from a model
+ * since renamed or retired would otherwise take the whole tab down rather than
+ * printing a slug nobody recognises. `rerunModelOptions` already degrades this
+ * way; this is the same rule where it is load-bearing.
+ */
+export function sectionModelLabel(slug: string): string {
+  return videoModelBySlug(slug)?.label ?? slug
 }
 
 /** Whether this model can be handed the closing frame as the clip's last

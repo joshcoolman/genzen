@@ -12,8 +12,9 @@ import { useState } from 'react'
 import {
   frameState,
   lineToSpeak,
+  openingNeverSubmitted,
   sectionCostCents,
-  sectionModel,
+  sectionModelLabel,
 } from '../../board'
 import styles from './scene-row.module.css'
 import type { FrameState } from '../../board'
@@ -162,10 +163,21 @@ export function SceneRow({
       <div className={styles.frames}>
         <Frame
           id={scene.openingId}
-          state={frameState(scene.openingId, status)}
+          /* A scene whose opening submit threw has no row at all, so it reads
+             as 'none' -- which drew a skeleton for ever. It is a failure and
+             the tile says so, with the retry that clears it (#703). */
+          state={
+            openingNeverSubmitted(scene)
+              ? 'failed'
+              : frameState(scene.openingId, status)
+          }
           label="Opens on"
           alt={`Scene ${scene.number}, opening frame`}
-          message={errorOf(frames, scene.openingId)}
+          message={
+            openingNeverSubmitted(scene)
+              ? 'This frame was never submitted, so nothing ran.'
+              : errorOf(frames, scene.openingId)
+          }
           retrying={retrying}
           onRetry={() => onRetry(scene, 'opening')}
         />
@@ -355,7 +367,7 @@ function Take({
       <p className={styles.caption}>
         <span>
           Take {number}
-          {model && ` · ${sectionModel(model).label}`}
+          {model && ` · ${sectionModelLabel(model)}`}
           {state === 'pending' && ' · working'}
         </span>
         <IconButton

@@ -85,6 +85,19 @@ export function StoryboardTab({
      go to Trash -- so the press asks first. Here rather than in the row: one
      dialog for the grid, not one per tile. */
   const { confirm, dialogProps } = useConfirm()
+  const askThenCreate = async () => {
+    if (takes > 0) {
+      const ok = await confirm({
+        title: `Redraw the board and delete ${takes} ${takes === 1 ? 'take' : 'takes'}?`,
+        message:
+          'Every frame and every take on this board is trashed and the script is planned again.',
+        confirmLabel: 'Redraw',
+      })
+      if (!ok) return
+    }
+    onCreate()
+  }
+
   const askThenDrop = async (scene: BoardScene, takeId: string) => {
     const ok = await confirm({
       title: 'Delete this take?',
@@ -161,7 +174,12 @@ export function StoryboardTab({
         <Button onClick={onPronounce} loading={pronouncing}>
           Fix pronunciation
         </Button>
-        <Button onClick={onCreate} loading={busy}>
+        {/* **It asks once there are takes**, because it trashes
+            `boardImageIds` -- which since #697 includes every take on the
+            board. One press beside Fix pronunciation would otherwise bin the
+            lot while the bar reads what they cost, when deleting a single take
+            asks first (#703). */}
+        <Button onClick={() => void askThenCreate()} loading={busy}>
           Draw again
         </Button>
       </div>
