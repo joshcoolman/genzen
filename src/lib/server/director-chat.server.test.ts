@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   clampAnswer,
   composeClipPrompt,
+  countWords,
   durationForWords,
+  spokenFromClipPrompt,
 } from './director-chat.server'
 
 const durations = [5, 6, 8, 10, 12, 15]
@@ -49,6 +51,26 @@ describe('director chat answers (#670)', () => {
         durations,
       ),
     ).toThrow('nothing to say')
+  })
+
+  /* Rerun has only the stored prompt to time against (#692) -- the turn keeps
+     the whole answer's line, not each burst's -- so reading the line back out
+     of the prompt is what stands between a re-roll and the old row's seconds. */
+  it('reads a burst line back out of the prompt it was composed into', () => {
+    const prompt = composeClipPrompt(
+      'Enzo, a fisherman.',
+      'On the dock.',
+      'He waves.',
+      '"Ciao, come stai oggi?"',
+    )
+    expect(spokenFromClipPrompt(prompt)).toBe('Ciao, come stai oggi?')
+    expect(countWords(spokenFromClipPrompt(prompt))).toBe(4)
+    // A silent burst: nothing to time against, and nothing invented.
+    expect(
+      spokenFromClipPrompt(composeClipPrompt('Enzo.', '', 'He waves.', '')),
+    ).toBe('')
+    // A prompt from before the anchors were prepended in code.
+    expect(spokenFromClipPrompt('Some older prompt shape.')).toBe('')
   })
 
   it('prepends the anchors and appends the line to every burst', () => {

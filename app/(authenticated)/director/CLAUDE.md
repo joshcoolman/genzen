@@ -91,7 +91,12 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   burst from the run and its turn and trashes it (the line stays in the
   transcript -- cutting a garbled clip does not unsay it), and **Rerun**
   makes the same burst again in place on a fresh seed for that clip only,
-  since the same words on the session's seed would be the same clip. The chat box sits under the player, so the stage is
+  since the same words on the session's seed would be the same clip. Its
+  length is timed from the line again rather than copied off the row it
+  replaces (#692) -- the stored seconds may be a pre-#685 number, and reading
+  it back carried those forward for good. The line comes out of the stored
+  prompt, since the turn keeps the answer's line and not each burst's, and the
+  pace is assumed `normal` because nothing records it. The chat box sits under the player, so the stage is
   capped at 45vh there (`stageMax`) to keep the box on screen.
 - **A chat opens unnamed.** New chat skips the name dialog and lands on an
   intro; the model returns a `title` with every answer and the first turn's
