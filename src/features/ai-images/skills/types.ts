@@ -18,6 +18,8 @@ export interface StoryboardPlan {
     number: number
     description: string
     referenceImages: Array<number>
+    /** Overrides the set's `shotAspectRatio` for this image alone. */
+    aspectRatio?: string
   }>
   shotAspectRatio: string
 }

@@ -37,12 +37,26 @@ export const storyboardPlanSchema = z.object({
         number: z.number().int().min(1).max(9),
         description: prose,
         referenceImages: z.array(z.number().int().min(1).max(16)).max(16),
+        /** This image's own shape, when it differs from the set's (#714).
+         *  Absent is the normal case and means "the same as everything
+         *  else"; a set only spells it out where the brief asked for a
+         *  mixture. */
+        aspectRatio: z.enum(STORYBOARD_ASPECT_RATIOS).optional(),
       }),
     )
     .min(2)
     .max(9),
+  /** The shape of the set. A shot may override it with its own. */
   shotAspectRatio: z.enum(STORYBOARD_ASPECT_RATIOS),
 })
+
+/** The shape this shot renders at: its own, or the set's. */
+export function shotRatio(
+  plan: Pick<StoryboardPlan, 'shotAspectRatio'>,
+  shot?: { aspectRatio?: string },
+) {
+  return shot?.aspectRatio ?? plan.shotAspectRatio
+}
 
 export function validateStoryboardPlan(
   value: unknown,

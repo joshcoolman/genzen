@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { validateSkillReferences, validateStoryboardPlan } from './validation'
+import {
+  shotRatio,
+  validateSkillReferences,
+  validateStoryboardPlan,
+} from './validation'
 
 const plan = {
   continuity:
@@ -96,4 +100,37 @@ describe('storyboard contract', () => {
       ),
     ).toThrow('distinct')
   })
+})
+
+describe('a set that is not all one shape', () => {
+  // "Most of them square, make two vertical" is one plan with two answers in
+  // it. Before #714's second pass there was one ratio field, so the model
+  // wrote the majority answer and the exceptions rendered square anyway.
+  it('lets a shot override the set with its own ratio', () => {
+    const mixed = {
+      ...plan,
+      shotAspectRatio: '1:1',
+      shots: [
+        plan.shots[0],
+        { ...plan.shots[1], aspectRatio: '9:16' as const },
+      ],
+    }
+    const parsed = validateStoryboardPlan(mixed, 2)
+    expect(shotRatio(parsed, parsed.shots[0])).toBe('1:1')
+    expect(shotRatio(parsed, parsed.shots[1])).toBe('9:16')
+  })
+
+  it('reads an absent override as the set itself', () =>
+    expect(shotRatio({ shotAspectRatio: '4:3' }, {})).toBe('4:3'))
+
+  it('rejects a ratio the renderers have no vocabulary for', () =>
+    expect(() =>
+      validateStoryboardPlan(
+        {
+          ...plan,
+          shots: [plan.shots[0], { ...plan.shots[1], aspectRatio: '7:13' }],
+        },
+        2,
+      ),
+    ).toThrow('invalid plan'))
 })

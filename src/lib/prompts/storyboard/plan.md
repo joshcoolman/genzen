@@ -27,6 +27,8 @@ Choose the number of images the brief wants, between 2 and 9. Let the brief deci
 
 Choose `shotAspectRatio` from `allowedAspectRatios` to suit the brief. Vertical for anything the user describes as vertical, phone, reel or portrait; wide for a filmed scene; square when nothing calls for either. Do not default to a wide ratio out of habit.
 
+A set does not have to be one shape. Where the brief asks for a mixture -- "mostly square, make two of them vertical", or a full-body figure among head-and-shoulders portraits -- set `shotAspectRatio` to the shape most of the set takes, and give the exceptions their own `aspectRatio`. Leave `aspectRatio` off every other shot; absent means it follows the set. Only set it where the brief actually calls for a different shape, or where the framing you chose plainly needs one. Do not give every shot its own.
+
 ## Each image
 
 Each entry in `shots` is one prompt for one image: self-contained, a few sentences, one readable instant. Not a novella, and not several successive actions compressed into one picture. Number them from 1.

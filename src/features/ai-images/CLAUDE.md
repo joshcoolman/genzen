@@ -20,7 +20,17 @@ variable happens to be time; five character concepts and eight angles on a
 watch are the same primitive with a different axis, which is why `plan.md`
 enumerates no list of forms. `storyboardShotCount` returns **null** when the
 brief pins nothing, and null means the model chooses; `--shots N` and "five
-shots" still pin it authoritatively. The chosen ratio is a request: the layout
+shots" still pin it authoritatively.
+
+**A set does not have to be one shape.** `shotAspectRatio` is the set's, and a
+shot may carry its own `aspectRatio` to override it -- "mostly square, make two
+vertical" is one plan with two answers in it, and there was one field to hold
+them until the plan wrote the majority answer and the exceptions rendered
+square anyway. Read it through `shotRatio(plan, shot)`, never off either field
+directly; absent means "follows the set", which is the normal case. Layouts are
+therefore resolved per renderer _and_ per shot, after the plan -- the schema
+fetch, which is the expensive half, still happens before any Claude spend.
+The chosen ratio is a request either way: the layout
 resolver snaps to the nearest size the selected renderer actually offers.
 
 Strict reference capacity and model sizing are

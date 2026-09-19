@@ -1,6 +1,7 @@
 'use server'
 
 import { parsePromptInvocation, storyboardShotCount } from '../skills/registry'
+import { shotRatio } from '../skills/validation'
 import { runStoryboardPlan } from './storyboard.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 
@@ -53,10 +54,18 @@ export async function populateStoryboard(data: {
     const used = shot.referenceImages
       .map((n) => `image ${n} (${roles.get(n) ?? 'reference'})`)
       .join(', ')
+    // A shot that wanted its own shape says so in words. The panel has one
+    // aspect ratio for the whole list, so this is the only way the plan's
+    // answer survives -- and saying it beats silently flattening a
+    // "mostly square, two vertical" set to one shape with nothing noting it.
+    const ratio = shotRatio(plan, shot)
     return [
       shot.description,
       `Consistent across this set: ${plan.continuity}`,
       used ? `This one is about ${used}.` : '',
+      ratio === plan.shotAspectRatio
+        ? ''
+        : `Intended shape: ${ratio} (the rest of the set is ${plan.shotAspectRatio}; set the panel's ratio before generating this one).`,
     ]
       .filter(Boolean)
       .join('\n\n')

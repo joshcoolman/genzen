@@ -9,6 +9,7 @@ import {
 } from '../skills/registry'
 import {
   STORYBOARD_ASPECT_RATIOS,
+  shotRatio,
   storyboardPlanSchema,
   validateSkillReferences,
   validateStoryboardPlan,
@@ -177,10 +178,12 @@ async function prepareStoryboard(
     }),
   )
   const { plan, preparation } = await runStoryboardPlan(data, userId, count)
-  // Now the ratio is known, so each renderer gets a canvas aimed at it.
-  const layouts = schemas.map((schema) =>
-    layoutForSchema(schema, plan.shotAspectRatio),
-  )
+  // A canvas per renderer *and* per shot, because a shot may ask for its own
+  // shape (#714). "Most of them square, make two vertical" is one plan with
+  // two answers in it, and the plan is the only thing that read the brief.
+  // `layoutForSchema` is pure and cheap, so this is resolved per pair rather
+  // than cached -- the schema fetch, which is the expensive half, already
+  // happened above.
   const preparationId = randomUUID()
   return Promise.all(
     models.flatMap((model, index) =>
@@ -195,7 +198,7 @@ async function prepareStoryboard(
           referenceIds: data.referenceIds,
           plan,
           model,
-          layout: layouts[index],
+          layout: layoutForSchema(schemas[index], shotRatio(plan, shot)),
           preparation,
         }
         return { skill, prompt: await assembleStoryboardPrompt(skill) }
@@ -258,7 +261,10 @@ export async function validatePreparedSkill(
   validateSkillReferences([model], referenceIds)
   const layout = await resolveStoryboardLayout(
     skill.model,
-    skill.plan.shotAspectRatio,
+    shotRatio(
+      skill.plan,
+      skill.plan.shots.find((s) => s.number === skill.shotNumber),
+    ),
   )
   if (JSON.stringify(layout) !== JSON.stringify(skill.layout))
     throw new Error(
