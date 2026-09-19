@@ -266,24 +266,23 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — nothing is in flight. The storyboard is shipped end to end: a board
-per script line, a Generate video button on each row, and a choice of Kling O3
-Pro or Seedance 2.5 to make it with.
+**Focus** — nothing in flight, and Focus is empty: promote from Now. The
+storyboard is shipped end to end and the day's review is merged (#703).
 
-**Respelling works** -- confirmed 2026-09-18, `day-KART` said correctly on a row
+**Respelling works** — confirmed 2026-09-18, `day-KART` said correctly on a row
 that had been getting Descartes wrong. The spelling is the instruction and plain
 letters are enough, so nothing cleverer is needed.
 
 One question is still open, and generating answers it, not reading. **Does the
 voice hold between sections?** Generate two _adjacent_ rows and listen to the
 join; that also says whether the no-music rule is holding. Seedance is on the
-board for exactly this -- it takes a seed where Kling takes none, and its
+board for exactly this — it takes a seed where Kling takes none, and its
 `audio_urls` (reference audio, unused because genzen has no audio asset) is the
 real answer if drift turns out to be what ruins the film.
 
-Known and worked around: Kling refuses a line naming a trademarked work. Scene 1
-of the Matrix board was refused and went through once the line was reworded,
-which is what the editable line on each row is for.
+Known and worked around: Kling refuses a line naming a trademarked work, which
+is what the editable line on each row is for. **#705 is the one with a deadline
+attached** — the deployed database still holds the old Director's rows.
 
 Recent highlights:
 
