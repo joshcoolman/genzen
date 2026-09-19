@@ -20,7 +20,7 @@ import { requireAiRole } from '#/lib/server/ai.server'
  * and cached on the thumbnail by the caller; the submit and Retry never call
  * this. Each role is an existing reader pointed at the strip:
  *
- * - `lighting` is Lighting's own derive with its gels filled in
+ * - `lighting` is `deriveLightingSetup` with its gels filled in
  * - `style` is the Style describe mode
  * - `subject` is the Reconstruct describe mode
  *

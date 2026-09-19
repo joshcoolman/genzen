@@ -25,16 +25,6 @@ interface UseModelSelectorOptions {
    * and Images both use 'generate') keep independent persisted selections.
    */
   storageScope?: string
-  /**
-   * Which model a caller with no stored selection starts on. Without it the
-   * default is the head of the lineup -- or of `allowedIds`, whose order is a
-   * curation. Lighting needs both: the list price-sorted like every other
-   * picker, and Grok Imagine selected, because that is the model its effects
-   * were judged on. Pinning it to the head of `allowedIds` would have made the
-   * one thing the column exists to show -- the cheap tier as a visible band --
-   * a lie in exactly one dialog.
-   */
-  defaultId?: string
 }
 
 function storageKey(
@@ -62,7 +52,6 @@ export function useModelSelector({
   mode,
   allowedIds,
   storageScope,
-  defaultId: defaultIdOverride,
 }: UseModelSelectorOptions) {
   const allModels = useMemo(() => {
     const base = getModelsByCapability(capability)
@@ -78,10 +67,9 @@ export function useModelSelector({
   const modelIds = useMemo(() => models.map((m) => m.id), [models])
 
   const defaultId =
-    defaultIdOverride ??
-    (allowedIds && allModels[0]
+    allowedIds && allModels[0]
       ? allModels[0].id
-      : getDefaultSelectedId(capability))
+      : getDefaultSelectedId(capability)
 
   const [selectedIds, setSelectedIds, selectedHydrated] = usePersistedState<
     Array<string>

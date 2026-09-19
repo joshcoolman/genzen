@@ -51,10 +51,9 @@ to assemble a downloadable composite.
 
 ## Develop a picture further
 
-**Shots** explores camera angles around a subject. **Lighting** applies named
-lighting setups to the reference images. Both use a reasoning model to inspect
-the actual subject and turn the chosen direction into rendering instructions.
-**Outpaint** reframes a finished image into other aspect ratios.
+**Shots** explores camera angles around a subject, using a reasoning model to
+inspect the actual subject and turn the chosen direction into rendering
+instructions. **Outpaint** reframes a finished image into other aspect ratios.
 
 These tools create new images, keeping the source available for another attempt.
 Download individual results, a group, or a selection as a ZIP.

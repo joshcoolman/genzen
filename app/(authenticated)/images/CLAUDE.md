@@ -91,8 +91,9 @@ list once when the seed comes back full, so the grid is never short.
 - **A staged reference carries a role, and every role but Reference is read,
   not sent** (#635). A select under each thumbnail: Reference (today's
   behaviour, the default), Lighting, Style, Subject. Choosing a read role
-  calls `readReference` at once -- Lighting's own derive with its gels filled
-  in, the Style describe mode, or Reconstruct -- and the text appears under
+  calls `readReference` at once -- the gaffer's read of the setup
+  (`derive-lighting.server.ts`), the Style describe mode, or Reconstruct -- and
+  the text appears under
   the strip, cached on the thumbnail, gone with it. At submit the picture is
   left out of the image list and its text goes under the typed prompt as a
   labelled block (`ref-roles.ts`, `promptWithReadings`); the ordinals, the
@@ -140,40 +141,14 @@ list once when the seed comes back full, so the grid is never short.
   drifting light -- the symptom that motivated the split). **Shots requires
   `ANTHROPIC_API_KEY`** and fails loudly without it rather than falling back
   (#365).
-  **Both dialogs close on the press, not on the run** (#563). Generate puts the
+  **The dialog closes on the press, not on the run** (#563). Generate puts the
   pending cards up and the dialog goes; the vision calls and the submits carry
   on behind it. Held open until the last one landed, a big press sat there for
   seconds looking like nothing had happened -- with the dialog covering the
-  grid, which is the one place the work is visible. So neither dialog has a
-  busy state: there is nothing to show after the press, because there is no
+  grid, which is the one place the work is visible. So the dialog has no busy
+  state: there is nothing to show after the press, because there is no
   dialog. A failure still speaks, taking its own card away and toasting from
   behind the closed one
-- **Lighting is Shots' surface on outpaint's mechanism** (#563). A `Lighting`
-  button beside `Shots` in the Ref images header, on the same condition, opening
-  the same shape of dialog: tick pictures, tick lights, every pair is its own
-  generation carrying exactly one reference. **No model writes the prompt** --
-  `buildLightingPrompt` joins `wrapper.md` to one effect and fills in its gels
-  -- so **Lighting needs no `ANTHROPIC_API_KEY`**, where Shots does.
-  **An effect is a lighting setup, never a description of a picture**: sources,
-  angles, gels, contrast, what the ground behind does. Nothing describes the
-  subject, because the model is looking at it. Getting that wrong is what two
-  vision passes were briefly built to paper over, and
-  `src/lib/prompts/lighting/index.ts` is the record of both. There is no
-  Instructions field: an effect is already a finished description of a light,
-  and a typed nudge beside it either says nothing or fights it. **The models are multi-selected, where Shots takes one**: a relight
-  is a single picture you compare, so one subject through four models is the
-  useful press, and the count is pictures x lights x models. It is the panel's
-  own `ModelSelector` -- the whole image-accepting lineup minus Z-Image Turbo,
-  which is denoise-with-strength and cannot take an instruction -- collapsed by
-  default, because the model is the only selection that survives an open. It
-  starts on Grok Imagine. **Nothing about an effect gates a model**: every
-  ticked model gets every ticked effect. A "Nano Banana only" note on the split
-  field's tile was removed once it was clear it recorded a prompt fault rather
-  than a model limit -- and it had never gated anything, being a label nothing
-  read. **The tiles are words, not thumbnails**:
-  a light has a name that already means something, and a picture of one would
-  be a render commissioned to illustrate itself until #562 can make an effect
-  from a reference picture that already exists
 
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt

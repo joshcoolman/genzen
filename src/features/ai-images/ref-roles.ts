@@ -11,8 +11,8 @@
  *
  * `reference` is today's behaviour and the default. The read roles:
  *
- * - `lighting` -- the setup as a gaffer would rebuild it, from the prose
- *   Lighting's own derive already writes (`lighting/derive.md`)
+ * - `lighting` -- the setup as a gaffer would rebuild it
+ *   (`derive-lighting.md`, via `derive-lighting.server.ts`)
  * - `style` -- medium, treatment, palette and grade (`describe/style.md`)
  * - `subject` -- what is in the picture and how it is composed
  *   (`describe/reconstruct.md`)

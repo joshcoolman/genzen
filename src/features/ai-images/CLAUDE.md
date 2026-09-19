@@ -90,8 +90,9 @@ transport concern, and the library row keeps its full-resolution original.
   `server/read-reference.action.ts` when the role is chosen and travel as
   labelled blocks under the prompt, assembled by `promptWithReadings` in the
   submit. The readers are the app's existing ones pointed at the strip --
-  `derive-lighting.server.ts` (moved out of the lab for this, since the app
-  may not import from `lab/`), and the Style and Reconstruct describe modes.
+  `derive-lighting.server.ts` (`derive-lighting.md`, the one piece of the
+  removed Lighting feature still doing a job, #710), and the Style and
+  Reconstruct describe modes.
   Reference-only ids reach `referenceIds`; readings ride separately and are
   recorded as `reference_readings`. The reasoning is with the Images route.
 - **`outpaint.ts` holds the one knob, the prompt assembly, and what the lab
@@ -116,23 +117,6 @@ transport concern, and the library row keeps its full-resolution original.
   the caller so the scene text cannot vary between shots. Its header records the
   two alternatives that were tried and deleted, and why a per-angle scene is the
   one thing not to reintroduce.
-- **`lighting.ts` is shots' surface on outpaint's mechanism** (#563): the same
-  cross of staged pictures against picked treatments, but the prompt is fixed
-  text -- `wrapper.md` plus one effect from `src/lib/prompts/lighting/` with its
-  `{GEL}` tokens filled from the registry, assembled by `buildLightingPrompt`
-  and never written by a model. No `ANTHROPIC_API_KEY`, where shots needs one.
-  Two vision passes existed here for a day and were deleted; that folder's
-  `index.ts` says why, and is what to read before editing an effect.
-  **Its models are multi-selected and are the panel's
-  own**, not a dialog-local list: `lightingModelIds()` is the `sidebar`
-  capability minus Z-Image Turbo, excluded for outpaint's reason, and
-  everything else that accepts an image is offered because whether a model can
-  hold an instruction this long is the open question. The default is Grok
-  Imagine and rides on `useModelSelector`'s `defaultId`, added for this --
-  pinning it to the head of `allowedIds` would have made the picker the one
-  place where the list is not price-sorted. The registry header records what the
-  proving run established about the prose -- sentence order, and the palette
-  being separable -- and is what to read before editing an effect.
 - **The hooks here are the ones both routes use.** Everything else this feature
   held moved to `app/(authenticated)/images/_hooks/` in #189 — Images was the
   only consumer, and `features/` is earned by two.

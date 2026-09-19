@@ -32,7 +32,7 @@ source for reference images and canvas placements.
 image. Three models, each with its own endpoints and costs.
 
 **Lab** — where a single step of the work is put on its own page and judged
-before it earns a place in the panel: Enhance, Frames, Sequence, Lighting.
+before it earns a place in the panel: Enhance and Frames.
 Prompt tools show the instruction file they send, so what the model was told
 is on screen with what it returned.
 

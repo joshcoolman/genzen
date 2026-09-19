@@ -32,8 +32,6 @@ interface GeneratorDockProps {
   uploadGroupId?: string | null
   /** Opens the Shots dialog for the staged references (#553). */
   onShots?: () => void
-  /** Opens the Lighting dialog for the staged references (#563). */
-  onLighting?: () => void
 }
 
 /**
@@ -55,7 +53,6 @@ export function GeneratorDock({
   userImages,
   uploadGroupId,
   onShots,
-  onLighting,
 }: GeneratorDockProps) {
   const panel = (
     <GeneratorPanel
@@ -64,7 +61,6 @@ export function GeneratorDock({
       userImages={userImages}
       uploadGroupId={uploadGroupId}
       onShots={onShots}
-      onLighting={onLighting}
       modelDisplay={isMobile ? 'dropdown' : undefined}
     />
   )

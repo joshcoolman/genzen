@@ -12,7 +12,6 @@ import { cx } from '#/lib/utils'
  * bar. Only `/lab` appears in the icon rail. */
 const SECTIONS = [
   { href: '/lab/enhance', label: 'Enhance' },
-  { href: '/lab/lighting', label: 'Lighting' },
   { href: '/lab/frames', label: 'Frames' },
 ]
 

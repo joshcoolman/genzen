@@ -55,9 +55,6 @@ interface GeneratorPanelProps {
    *  route owns the submits, not the panel: Images passes it, Canvas does not,
    *  and the button is absent rather than dead where nobody handles it. */
   onShots?: () => void
-  /** Opens the Lighting dialog for the staged set (#563). Optional on the same
-   *  reasoning as `onShots`, and passed by the same routes. */
-  onLighting?: () => void
 }
 
 /**
@@ -78,7 +75,6 @@ export function GeneratorPanel({
   modelDisplay = 'panel',
   uploadGroupId = null,
   onShots,
-  onLighting,
 }: GeneratorPanelProps) {
   const activePrompts = generator.prompts.filter((p) => p.trim())
   const readImages = generator.refImages.filter((img) => isReadRole(img.role))
@@ -213,20 +209,6 @@ export function GeneratorPanel({
               Shots
             </button>
           )}
-          {/* Lighting (#563): the same errand as Shots against the same staged
-              set -- one treatment applied to each picture separately -- so it
-              stands beside it rather than behind a menu of its own. */}
-          {onLighting &&
-            generator.refImages.length > 0 &&
-            !generator.loading && (
-              <button
-                type="button"
-                onClick={onLighting}
-                className={styles.refsClear}
-              >
-                Lighting
-              </button>
-            )}
           {generator.refImages.length > 0 && !generator.loading && (
             <button
               type="button"

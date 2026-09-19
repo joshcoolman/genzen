@@ -8,7 +8,7 @@ any other fact about the app.
 > think, and everything you started is captured and running behind you.
 
 The session it is built around: pick a model, paste a prompt, Generate; paste a
-different prompt, Generate; take three of the results into Lighting and fire
+different prompt, Generate; take three of the results into Shots and fire
 those off too. Screen full of work in play, feedback immediate, nothing waiting
 on anything else.
 

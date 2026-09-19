@@ -37,8 +37,8 @@ export function ImageInput({
   isLoading: boolean
   picked: Array<PickedImage>
   /**
-   * How many images this experiment takes. One by default -- Lighting asks a
-   * question about a single picture. Larger sets keep caller order, and the
+   * How many images this experiment takes. One by default -- most lab
+   * questions are about a single picture. Larger sets keep caller order, and the
    * rule Outpaint established before it shipped out of the lab (#441, #528)
    * still holds: where the settings are the settings and the images are the
    * input, there was never a reason for only one.
