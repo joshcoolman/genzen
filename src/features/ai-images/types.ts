@@ -1,3 +1,4 @@
+import type { PreparedImageSkill } from './skills/types'
 import type { ImageOrigin } from '#/lib/types/db'
 
 export interface SavedAiImage {
@@ -51,6 +52,9 @@ export interface SavedAiImage {
     elapsed?: number
     generation_type?: string
     storyboard_shot?: number
+    /** The whole prepared skill for a storyboard shot (#626), which is where
+     *  `displayPrompt` finds the description that produced this one image. */
+    image_skill?: PreparedImageSkill
     /** Pre-#367 rows only: the textarea contents back when `prompt` held the
      *  sent string. The two swapped roles, so nothing writes this any more. */
     typed_prompt?: string

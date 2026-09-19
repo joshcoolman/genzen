@@ -9,19 +9,66 @@ anything one route renders lives with that route.
 
 `/storyboard` runs inside the shared Images/Canvas prompt field (#619). The
 client-safe registry owns command metadata; authenticated server dispatch plans
-from the brief and ordered library images. Default six 16:9 shots, override
-2–9 with prose or `--shots N`. Strict reference capacity and model sizing are
-checked before Claude. One plan per distinct brief/reference snapshot feeds all
+from the brief and ordered library images.
+
+**The plan decides, not the prompt file (#714).** The one thing assumed about
+the output is that it is a _set_: more than one image, belonging together.
+Count (2–9), aspect ratio, whether the set is `ordered`, and the one decision
+underneath all of it -- what is `held` across the set and what `varies` between
+its members -- all come from the brief. A storyboard is the case where the
+variable happens to be time; five character concepts and eight angles on a
+watch are the same primitive with a different axis, which is why `plan.md`
+enumerates no list of forms. `storyboardShotCount` returns **null** when the
+brief pins nothing, and null means the model chooses; `--shots N` and "five
+shots" still pin it authoritatively.
+
+**A set does not have to be one shape.** `shotAspectRatio` is the set's, and a
+shot may carry its own `aspectRatio` to override it -- "mostly square, make two
+vertical" is one plan with two answers in it, and there was one field to hold
+them until the plan wrote the majority answer and the exceptions rendered
+square anyway. Read it through `shotRatio(plan, shot)`, never off either field
+directly; absent means "follows the set", which is the normal case. Layouts are
+therefore resolved per renderer _and_ per shot, after the plan -- the schema
+fetch, which is the expensive half, still happens before any Claude spend.
+The chosen ratio is a request either way: the layout
+resolver snaps to the nearest size the selected renderer actually offers.
+
+Strict reference capacity and model sizing are
+checked before Claude; the renderer _layouts_ are resolved after the plan,
+because the ratio they aim at is the plan's answer. One plan per distinct brief/reference snapshot feeds all
 requested shots and variants. Since #626 (v2), every shot renders as its own
 full-size image, using the shared continuity, original references and only that
 shot description. `shotNumber` identifies the output; the retained layout shape
 now describes a single full-size canvas. V1 contact-sheet metadata stays readable
 and its saved rendering request remains retryable. Counts and estimates multiply
-shots × selected models × variants. No group is created; the submit destination
+shots × selected models × variants. **An unpinned count draws its cards in two
+waves**: shot 1 on the click, the rest when the plan lands. The fan-out needs a
+number and there isn't one until Claude answers, but waiting for it left ~35
+seconds of dead screen after the press -- `handleGenerate` sets no loading
+state, because the composer stays usable during background work, so the
+optimistic cards are the _only_ thing saying a run is in flight. That silence
+cost a real batch: the wall looked idle, the previous set was tidied away, and
+it contained the image staged as the reference, so all nine shots failed with
+"Source image not found". `onSubmitStart` appends, which is what lets two waves
+work without the gallery learning anything new. Pinned counts and plain prompts
+still draw everything in the same synchronous turn as the click.
+
+**Populate** (`populate-storyboard.action.ts`) is the plan without the spend:
+one Claude call, no images, and the shots land in the panel's prompt list as
+ordinary editable strings with the held description folded into each. It
+consumes the command row, because leaving it would plan and render the set
+twice on the next Generate, and writes the plan's ratio back into the panel.
+`render-shot.md`'s sheet/grid boilerplate is deliberately not folded in: a
+populated prompt is an ordinary single-image prompt, and the list exists to be
+read. References stay panel-wide on that path -- the prompt list holds text
+only -- so a set that varies by _which_ reference names the subject in words
+instead. No group is created; the submit destination
 is captured before planning. Reference-sheet assembly is an optional separate tool.
 
-`submit-generation-batch.ts` captures each click and draws every optimistic card
-before planning or rendering. The composer remains available during background
+`submit-generation-batch.ts` captures each click and draws optimistic cards
+before planning or rendering -- every card, except on an unpinned storyboard,
+where it draws the first and appends the rest once the plan says how many
+there are. The composer remains available during background
 work. Outcomes carry their own placeholder IDs; preparation failures keep a
 failed card with its prompt/references, and submission failures return their
 reserved row through `submit-generator-image.action.ts` for reconciliation.
@@ -151,6 +198,16 @@ transport concern, and the library row keeps its full-resolution original.
   hides exactly where it is most likely to be tested. The ordering is `pushRef`
   in `ref-images.ts` -- pure, so it is unit-tested, because a silent eviction at
   the wrong end is invisible.
+- **"What prompt made this picture" has one answer, `display-prompt.ts`**
+  (#714). For an ordinary row that is `generation_metadata.prompt`; for a
+  storyboard shot it is the shot's own description, read out of the
+  `image_skill` the row carries. Every image in a set is submitted under the
+  same typed invocation, so before this all ten cards of a ten-shot brief
+  captioned themselves with the brief. Derived rather than written at submit,
+  so rows made earlier read correctly and `prompt` keeps meaning what the user
+  typed -- which is what `load-generation` restores and what `planRetry` falls
+  back to. Any surface showing a prompt calls this; there were four and they
+  would have drifted.
 - **"What went into this generation" has one answer, `generation-inputs.ts`**
   (#380). The split above is why: index 0 goes over the wire as
   `sourceImageId` and the rest as `referenceImageIds`, so the same fact lands

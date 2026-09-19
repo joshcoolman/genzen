@@ -4,6 +4,7 @@ import { endpointFor, modelTitleFor } from './models'
 import { parsePromptInvocation } from './skills/registry'
 import { prepareImageSkill } from './server/prepare-image-skill.action'
 import { submitGeneratorImage } from './server/submit-generator-image.action'
+import type { PromptInvocation } from './skills/registry'
 import type { ReferenceReading } from './ref-roles'
 import type { GenerationOrigin } from '#/lib/types/db'
 import { optimisticId } from '#/lib/optimistic-id'
@@ -85,41 +86,122 @@ export async function submitGenerationBatch(batch: GenerationBatch) {
   const prompts = active.length ? active : ['']
   // Invalid commands never create a job or make a provider call.
   const invocations = prompts.map(parsePromptInvocation)
-  const calls = invocations.flatMap((invocation) =>
+
+  // Promise sharing starts here rather than after the cards, because an
+  // unpinned storyboard has no shot count until its plan exists (#714) and the
+  // card fan-out is built from that number. One preparation per distinct
+  // brief, reused by every call below, so planning early costs no extra Claude.
+  const preparations = new Map<string, ReturnType<typeof prepareImageSkill>>()
+  const prepare = (
+    invocation: Extract<PromptInvocation, { kind: 'skill' }>,
+  ) => {
+    let preparation = preparations.get(invocation.originalInput)
+    if (!preparation) {
+      preparation = prepareImageSkill({
+        skillId: invocation.skillId,
+        // Readings do not reach a storyboard (#635): the server checks
+        // this brief against the typed command byte for byte, and the
+        // plan takes its look from the references it is handed. Feeding
+        // a read role into the plan is its own change.
+        brief: invocation.brief,
+        originalInput: invocation.originalInput,
+        referenceIds: batch.referenceIds,
+        models: batch.selectedModels,
+        systemInstructions: batch.systemInstructions,
+      })
+      preparations.set(invocation.originalInput, preparation)
+    }
+    return preparation
+  }
+
+  /**
+   * The cards this prompt draws, for a range of shot numbers.
+   *
+   * Split out because an unpinned storyboard draws its cards in two waves --
+   * see below.
+   */
+  const buildCalls = (invocation: PromptInvocation, from: number, to: number) =>
     batch.selectedModels.flatMap((model) =>
       Array.from({ length: batch.gensPerModel }, () =>
-        Array.from(
-          { length: invocation.kind === 'skill' ? invocation.shots : 1 },
-          (_, shotIndex) => ({
-            placeholderId: optimisticId(),
-            model,
-            resolved: endpointFor(model, !!sourceImageId),
-            invocation,
-            shotNumber: invocation.kind === 'skill' ? shotIndex + 1 : undefined,
-            typedPrompt:
-              invocation.kind === 'skill'
-                ? invocation.originalInput
-                : invocation.text,
-          }),
-        ),
+        Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => ({
+          placeholderId: optimisticId(),
+          model,
+          resolved: endpointFor(model, !!sourceImageId),
+          invocation,
+          shotNumber: invocation.kind === 'skill' ? from + i : undefined,
+          typedPrompt:
+            invocation.kind === 'skill'
+              ? invocation.originalInput
+              : invocation.text,
+        })),
       ).flat(),
-    ),
-  )
-  batch.onSubmitStart?.(
-    calls.map((c) => ({
-      placeholderId: c.placeholderId,
-      model: c.model,
-      title: modelTitleFor(c.resolved),
-      ...(c.shotNumber ? { storyboardShot: c.shotNumber } : {}),
-      prompt: c.typedPrompt.trim() ? c.typedPrompt : blocks,
-      ...(sourceImageId ? { sourceImageId } : {}),
-      ...(referenceImageIds.length ? { referenceImageIds } : {}),
-    })),
-  )
+    )
 
-  // Promise sharing starts after the cards exist. A slow storyboard does not
-  // hold up ordinary prompts, other briefs, or a later click on Generate.
-  const preparations = new Map<string, ReturnType<typeof prepareImageSkill>>()
+  type Call = ReturnType<typeof buildCalls>[number]
+
+  const draw = (wave: Array<Call>) => {
+    if (!wave.length) return
+    batch.onSubmitStart?.(
+      wave.map((c) => ({
+        placeholderId: c.placeholderId,
+        model: c.model,
+        title: modelTitleFor(c.resolved),
+        ...(c.shotNumber ? { storyboardShot: c.shotNumber } : {}),
+        prompt: c.typedPrompt.trim() ? c.typedPrompt : blocks,
+        ...(sourceImageId ? { sourceImageId } : {}),
+        ...(referenceImageIds.length ? { referenceImageIds } : {}),
+      })),
+    )
+  }
+
+  /**
+   * A pinned count and a plain prompt both answer without a round trip. An
+   * unpinned storyboard does not: the plan decides how many images the brief
+   * wants (#714), and until Claude answers there is no number to fan out on.
+   *
+   * **Draw shot 1 anyway, before asking.** The first shape of this waited for
+   * the plan and drew every card at once, which left ~35 seconds after the
+   * click with nothing whatsoever on screen -- `handleGenerate` sets no
+   * loading state, because the composer stays usable during background work,
+   * so the optimistic cards were the *only* signal a run was in flight.
+   * During that silence a real run was lost: the wall looked idle, the
+   * previous batch was tidied away, and it contained the image staged as the
+   * reference, so all nine shots failed with "Source image not found".
+   *
+   * So the click always draws something, and the rest of the set joins it
+   * when the plan lands. `onSubmitStart` appends, which is what makes two
+   * waves possible without the gallery learning anything new.
+   */
+  const pinned = (invocation: PromptInvocation) =>
+    invocation.kind === 'skill' ? invocation.shots : 1
+
+  const firstWave = invocations.flatMap((invocation) =>
+    buildCalls(invocation, 1, pinned(invocation) ?? 1),
+  )
+  draw(firstWave)
+
+  // Nothing unpinned means the whole fan-out was built in the same
+  // synchronous turn as the click, exactly as it always was -- so this must
+  // not await when every count is already known.
+  const needsPlan = invocations.some((i) => pinned(i) == null)
+  const laterWave = !needsPlan
+    ? []
+    : (
+        await Promise.all(
+          invocations.map(async (invocation) => {
+            if (pinned(invocation) != null) return []
+            const variants = await prepare(
+              invocation as Extract<PromptInvocation, { kind: 'skill' }>,
+            )
+            const planned = variants[0]?.skill.plan.shots.length ?? 1
+            return buildCalls(invocation, 2, planned)
+          }),
+        )
+      ).flat()
+  draw(laterWave)
+
+  const calls = [...firstWave, ...laterWave]
+
   const outcomes = await Promise.all(
     calls.map(async (c) => {
       let recordId: string | null = null
@@ -130,23 +212,7 @@ export async function submitGenerationBatch(batch: GenerationBatch) {
           | undefined
         if (c.invocation.kind === 'skill') {
           const invocation = c.invocation
-          let preparation = preparations.get(invocation.originalInput)
-          if (!preparation) {
-            preparation = prepareImageSkill({
-              skillId: invocation.skillId,
-              // Readings do not reach a storyboard (#635): the server checks
-              // this brief against the typed command byte for byte, and the
-              // plan takes its look from the references it is handed. Feeding
-              // a read role into the plan is its own change.
-              brief: invocation.brief,
-              originalInput: invocation.originalInput,
-              referenceIds: batch.referenceIds,
-              models: batch.selectedModels,
-              systemInstructions: batch.systemInstructions,
-            })
-            preparations.set(invocation.originalInput, preparation)
-          }
-          variant = (await preparation).find(
+          variant = (await prepare(invocation)).find(
             (v) =>
               v.skill.model === c.resolved &&
               v.skill.shotNumber === c.shotNumber,

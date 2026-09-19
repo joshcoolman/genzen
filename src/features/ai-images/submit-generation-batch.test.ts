@@ -24,14 +24,18 @@ const prepared = Array.from({ length: 6 }, (_, i) => ({
   prompt: `Prepared shot ${i + 1}`,
   skill: {
     model: 'openai/gpt-image-2.5/sunburst/edit',
-    originalInput: '/storyboard A chase',
+    originalInput: '/storyboard --shots 6 A chase',
     shotNumber: i + 1,
     layout: { sheetAspectRatio: '16:9' },
+    // The count the batch reads back when the brief pinned none (#714).
+    plan: {
+      shots: Array.from({ length: 6 }, (_ignored, j) => ({ number: j + 1 })),
+    },
   } as PreparedImageSkill,
 }))
 function batch() {
   return {
-    prompts: ['/storyboard A chase'],
+    prompts: ['/storyboard --shots 6 A chase'],
     referenceIds: ['reference-one', 'reference-two'],
     selectedModels: [model],
     gensPerModel: 1,
@@ -72,7 +76,7 @@ describe('background generation batches', () => {
     expect(mocks.generate).toHaveBeenCalledTimes(12)
     expect(mocks.generate.mock.calls[0][0]).toMatchObject({
       prompt: 'Prepared shot 1',
-      typedPrompt: '/storyboard A chase',
+      typedPrompt: '/storyboard --shots 6 A chase',
       sourceImageId: 'reference-one',
       referenceImageIds: ['reference-two'],
       aspectRatio: '16:9',
@@ -93,7 +97,7 @@ describe('background generation batches', () => {
     mocks.prepare.mockReturnValueOnce(plan.promise)
     const first = {
       ...batch(),
-      prompts: ['/storyboard A chase', 'A still life'],
+      prompts: ['/storyboard --shots 6 A chase', 'A still life'],
     }
     const firstRunning = submitGenerationBatch(first)
     const second = {
@@ -159,6 +163,43 @@ describe('background generation batches', () => {
     await submitGenerationBatch({ ...batch(), prompts: [originalInput] })
     expect(mocks.prepare.mock.calls[0][0].originalInput).toBe(originalInput)
     expect(mocks.generate.mock.calls[0][0].typedPrompt).toBe(originalInput)
+  })
+  /**
+   * The click always draws a card, even when the count is unknown (#714).
+   *
+   * Waiting for the plan left ~35 seconds of a silent screen after the press,
+   * and a real run was lost in that gap: the wall looked idle, the previous
+   * batch was tidied away, and it held the image staged as the reference, so
+   * every shot failed with "Source image not found". Shot 1 now appears on
+   * the press and the rest join it when the plan lands.
+   */
+  it('draws shot 1 on the click and the rest when the plan lands', async () => {
+    const plan = deferred<typeof prepared>()
+    const input = { ...batch(), prompts: ['/storyboard A chase'] }
+    mocks.prepare.mockImplementation(() => {
+      // The card is already up by the time anything is asked of the server.
+      expect(input.onSubmitStart).toHaveBeenCalledOnce()
+      expect(input.onSubmitStart.mock.calls[0][0]).toHaveLength(1)
+      expect(input.onSubmitStart.mock.calls[0][0][0]).toMatchObject({
+        storyboardShot: 1,
+      })
+      return plan.promise
+    })
+    const running = submitGenerationBatch(input)
+    expect(input.onSubmitStart).toHaveBeenCalledOnce()
+    expect(mocks.generate).not.toHaveBeenCalled()
+    plan.resolve(prepared)
+    await running
+    // Six planned: one drawn on the click, five when the plan came back.
+    expect(input.onSubmitStart).toHaveBeenCalledTimes(2)
+    expect(input.onSubmitStart.mock.calls[1][0]).toHaveLength(5)
+    expect(
+      input.onSubmitStart.mock.calls[1][0].map(
+        (c: { storyboardShot: number }) => c.storyboardShot,
+      ),
+    ).toEqual([2, 3, 4, 5, 6])
+    expect(mocks.prepare).toHaveBeenCalledOnce()
+    expect(mocks.generate).toHaveBeenCalledTimes(6)
   })
   it('rejects invalid commands before creating cards or requesting paid work', async () => {
     for (const prompt of [

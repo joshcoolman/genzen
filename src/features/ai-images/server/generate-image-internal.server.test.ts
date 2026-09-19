@@ -61,6 +61,9 @@ const skill: PreparedImageSkill = {
   model: 'openai/gpt-image-2.5/sunburst/edit',
   plan: {
     continuity: 'same two cars',
+    held: 'the two cars and the road',
+    varies: 'the moment of the chase',
+    ordered: true,
     references: [
       { image: 1, role: 'cars' },
       { image: 2, role: 'road' },

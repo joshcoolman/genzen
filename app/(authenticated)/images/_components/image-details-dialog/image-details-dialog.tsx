@@ -6,6 +6,7 @@ import type { SavedAiImage } from '#/features/ai-images/types'
 import { getModelName } from '#/features/ai-images/models'
 import { generationInputIds } from '#/features/ai-images/generation-inputs'
 import { imageUrl as referenceUrl } from '#/lib/image-url'
+import { displayPrompt } from '#/features/ai-images/display-prompt'
 import {
   ActionButton,
   Button,
@@ -74,7 +75,7 @@ function DetailsContent({
   const metadata = image.generation_metadata
   // Keep source links readable for crops saved before the extraction skill retired.
   const isExtraction = metadata?.generation_type === 'frame_extraction'
-  const prompt = metadata?.prompt ?? image.description ?? ''
+  const prompt = displayPrompt(metadata) ?? image.description ?? ''
   const description = isUpload
     ? (image.description ?? '')
     : (metadata?.image_description ?? '')

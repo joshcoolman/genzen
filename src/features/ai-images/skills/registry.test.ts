@@ -36,7 +36,7 @@ describe('image prompt commands', () => {
       skillId: 'storyboard',
       originalInput,
       brief: 'A car chase.',
-      shots: 6,
+      shots: null,
     })
   })
   it.each([
@@ -61,7 +61,14 @@ describe('image prompt commands', () => {
   it('does not confuse subjects with shot counts', () =>
     expect(
       storyboardShotCount('Two characters fight, image 3 is the environment'),
-    ).toBe(6))
+    ).toBeNull())
+  // Null is not "six" (#714). A brief that pins nothing leaves the count to
+  // the plan, and the difference is load-bearing: six was a default nobody
+  // chose, applied to briefs that wanted three images or nine.
+  it.each(['A chase', 'five characters for a game', 'some watch angles'])(
+    'leaves an unpinned count to the plan %j',
+    (brief) => expect(storyboardShotCount(brief)).toBeNull(),
+  )
 })
 
 it('counts storyboard outputs, plain prompts and incomplete commands for the composer', () => {
