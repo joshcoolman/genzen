@@ -13,7 +13,10 @@ import { chatTurnSchema, idSchema } from '../_lib/types'
 import {
   answerAsCharacter,
   composeClipPrompt,
+  countWords,
+  durationForWords,
 } from '#/lib/server/director-chat.server'
+import { spokenFromClipPrompt } from '#/lib/director-clip-prompt'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { sql } from '#/lib/server/db.server'
 
@@ -125,11 +128,23 @@ export async function dropChatClip(sessionId: string, clipId: string) {
 /**
  * Make one burst again (#688), for the odd one that came out garbled.
  *
- * Same prompt, same length, **a fresh seed for this burst only**: with the
- * session's seed pinned, the same words on the same seed are the same clip,
- * so a re-roll has to move the one thing that would change it. The rest of
- * the session keeps its seed. The new row takes the old one's place in the
- * run and the turn; the old row goes to Trash.
+ * Same prompt, **a fresh seed for this burst only**: with the session's seed
+ * pinned, the same words on the same seed are the same clip, so a re-roll has
+ * to move the one thing that would change it. The rest of the session keeps
+ * its seed. The new row takes the old one's place in the run and the turn; the
+ * old row goes to Trash.
+ *
+ * Not the same length, though (#692). Submitting the stored `duration_seconds`
+ * carried the replaced clip's number forward for good, and the oldest of those
+ * predate #685 -- dealt out of the lineup in ascending order by clip position,
+ * so a twenty-word line sat in twelve seconds and came back as the
+ * language-shaped noise #685 exists to stop. The line is timed again here, and
+ * it shortens as readily as it lengthens: a burst that drags is the common
+ * complaint, and it is only a re-roll of a clip nobody liked.
+ *
+ * `normal`, because nothing records the turn's pace -- the chat holds
+ * character, steer, seed and turns. It is the slower of the two on purpose:
+ * too long is that noise, while slightly short merely clips the tail.
  */
 export async function rerunChatClip(sessionId: string, clipId: string) {
   const { userId } = await resolveAuth()
@@ -146,7 +161,17 @@ export async function rerunChatClip(sessionId: string, clipId: string) {
   const row = rows.at(0)
   if (!row?.description) throw new Error('That clip has no prompt to rerun.')
   const model = genModel()
-  const duration = Number(row.duration) || model.defaultDuration
+  const spoken = spokenFromClipPrompt(row.description)
+  /* No spoken segment at all -- a silent burst -- keeps what it had: an empty
+     word count would buy it the shortest duration in the lineup and cut the
+     action short. `null`, not an empty string: the reader tells the two apart,
+     and a clip whose prompt predates #688 says "Speaking to camera:" without
+     ", in English" -- reading those as silent would leave exactly the oldest
+     clips, the ones carrying the durations #685 stopped, on their old number. */
+  const duration =
+    spoken === null
+      ? Number(row.duration) || model.defaultDuration
+      : durationForWords(countWords(spoken), model.durations, 'normal')
   const { recordId } = await generateVideo({
     prompt: row.description,
     duration,

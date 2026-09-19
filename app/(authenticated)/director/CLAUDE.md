@@ -91,7 +91,13 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   burst from the run and its turn and trashes it (the line stays in the
   transcript -- cutting a garbled clip does not unsay it), and **Rerun**
   makes the same burst again in place on a fresh seed for that clip only,
-  since the same words on the session's seed would be the same clip. The chat box sits under the player, so the stage is
+  since the same words on the session's seed would be the same clip. Its
+  length is timed from the line again rather than copied off the row it
+  replaces (#692) -- the stored seconds may be a pre-#685 number, and reading
+  it back carried those forward for good. The line comes out of the stored
+  prompt through the same reader Script uses, since the turn keeps the answer's
+  line and not each burst's, and the pace is assumed `normal` because nothing
+  records it. The chat box sits under the player, so the stage is
   capped at 45vh there (`stageMax`) to keep the box on screen.
 - **A chat opens unnamed.** New chat skips the name dialog and lands on an
   intro; the model returns a `title` with every answer and the first turn's
@@ -204,8 +210,12 @@ locations: [ids], frames: [ids] }`. The column is `refs` and not
   transcript** -- a turn's stored `line` is the whole answer as written, while
   the run is what survived being pared down, so a burst removed in the work
   area drops out here and renumbers the rest. The extraction is `dialogueOf`
-  in `[id]/script.ts`, matching the `Speaking to camera:` marker that
-  `composeClipPrompt` ends every chat prompt with -- reading back a structure
+  in `[id]/script.ts`, over `spokenFromClipPrompt` in
+  `src/lib/director-clip-prompt.ts` -- **the one reader of the
+  `Speaking to camera:` marker `composeClipPrompt` ends every chat prompt
+  with.** Rerun times a re-roll off the same parse (#692), and it is shared
+  rather than copied because a second copy is how one caller quietly stops
+  handling the pre-#688 spelling the other does. It reads back a structure
   the app wrote, which is why it is safe here and was **not** safe in
   `scriptOf`, whose first cut pulled quoted spans out of hand-typed run
   prompts and was wrong about which parts mattered. A clip with no line to

@@ -1,4 +1,5 @@
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
+import { spokenFromClipPrompt } from '#/lib/director-clip-prompt'
 
 /**
  * A run's prompts, verbatim, one after another.
@@ -44,17 +45,6 @@ export interface ScriptLine {
 }
 
 /**
- * Where a chat clip's prompt stops being setup and starts being speech.
- *
- * `composeClipPrompt` ends every clip prompt with this and the line in quotes,
- * so the marker is a fact about how the prompt was built rather than a guess
- * about its wording. Both spellings: "in English" was added to the front of
- * the prompt and beside the line in #688, and every clip made before that
- * carries the shorter one.
- */
-const SPOKEN = /Speaking to camera(?:, in English)?:\s*"([\s\S]*)"\s*$/
-
-/**
  * The dialogue of a chat session, in run order (#690).
  *
  * **Chat sessions only, and that restriction is the whole of why this is safe.**
@@ -76,13 +66,13 @@ export function dialogueOf(
   clips: Array<Pick<VideoRecord, 'id' | 'description' | 'generation_metadata'>>,
 ): Array<ScriptLine> {
   return clips.map((clip, index) => {
-    const match = SPOKEN.exec(clip.description?.trim() ?? '')
+    const spoken = spokenFromClipPrompt(clip.description ?? '')
     const seconds = (clip.generation_metadata ?? {}).duration_seconds
     return {
       clipId: clip.id,
       number: index + 1,
-      line: match ? match[1].trim() : '',
-      spoken: match !== null,
+      line: spoken?.trim() ?? '',
+      spoken: spoken !== null,
       seconds: typeof seconds === 'number' ? seconds : null,
     }
   })

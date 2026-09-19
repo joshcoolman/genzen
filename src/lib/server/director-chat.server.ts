@@ -92,6 +92,12 @@ export function composeClipPrompt(
     .join(' ')
 }
 
+/** What counts as a word, in the one place that decides it: timing depends on
+ *  the count, so the rerun path and the writing path must agree on it. */
+export function countWords(line: string): number {
+  return line.trim().split(/\s+/).filter(Boolean).length
+}
+
 /**
  * How long a burst runs, from how many words it has to say.
  *
@@ -149,7 +155,7 @@ export function clampAnswer(
     clips: clips.map((clip) => ({
       ...clip,
       duration: durationForWords(
-        clip.spoken.trim().split(/\s+/).filter(Boolean).length,
+        countWords(clip.spoken),
         durations,
         answer.pace,
       ),

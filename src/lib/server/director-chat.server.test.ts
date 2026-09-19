@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   clampAnswer,
   composeClipPrompt,
+  countWords,
   durationForWords,
 } from './director-chat.server'
 
@@ -49,6 +50,11 @@ describe('director chat answers (#670)', () => {
         durations,
       ),
     ).toThrow('nothing to say')
+  })
+
+  it('counts words the same way for a written burst and a re-run one', () => {
+    expect(countWords('  Ciao,  come stai   oggi? ')).toBe(4)
+    expect(countWords('   ')).toBe(0)
   })
 
   it('prepends the anchors and appends the line to every burst', () => {
