@@ -1,0 +1,17 @@
+{
+  // GenZen Cloud Agent environment. Boots from Cursor's default image and
+  // reconstructs everything from scratch, so it is portable and follows the
+  // branch it is checked out on -- no personal snapshot is baked in.
+  "name": "GenZen",
+  "user": "ubuntu",
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
+  "terminals": [
+    {
+      "name": "dev",
+      "command": "pnpm dev",
+      "description": "Next.js dev server on http://localhost:3000 (sign in with the credentials printed by the start step in .env.local)."
+    }
+  ],
+  "ports": [{ "name": "web", "port": 3000 }]
+}
