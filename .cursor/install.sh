@@ -22,7 +22,11 @@ if ! command -v docker >/dev/null 2>&1; then
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
     | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
   sudo apt-get update -qq
+  # --force-conf* keeps this non-interactive: some packages (fuse3) ship a
+  # conffile (/etc/fuse.conf) that already exists on the base image, and the
+  # default conffile prompt has no tty in a build, aborting dpkg.
   sudo apt-get install -y -qq \
+    -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold \
     docker-ce docker-ce-cli containerd.io \
     docker-buildx-plugin docker-compose-plugin fuse-overlayfs
 fi
