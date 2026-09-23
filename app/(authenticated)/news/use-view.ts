@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { getNews, regenHeroImage } from './_actions/news'
+import { deleteNewsPost, getNews, regenHeroImage } from './_actions/news'
 import type { NewsPost } from '#/lib/types/db'
 
 export function useView(initial: Array<NewsPost>) {
@@ -44,5 +44,26 @@ export function useView(initial: Array<NewsPost>) {
     }
   }, [])
 
-  return { posts, isFetching, error, fetchNews, regenIds, regenImage }
+  const deletePost = useCallback(async (postId: string) => {
+    // Optimistic, and it does not put the card back on failure: the only way
+    // this fails is the development-only guard in the action, which cannot
+    // fire in the build that draws the control.
+    setPosts((prev) => prev.filter((p) => p.id !== postId))
+    try {
+      await deleteNewsPost(postId)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not delete'
+      setError(msg)
+    }
+  }, [])
+
+  return {
+    posts,
+    isFetching,
+    error,
+    fetchNews,
+    regenIds,
+    regenImage,
+    deletePost,
+  }
 }

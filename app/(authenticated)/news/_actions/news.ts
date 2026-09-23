@@ -17,32 +17,20 @@ import heroSubjectSystem from '#/lib/prompts/news-hero-subject.md'
 import researchSystem from '#/lib/prompts/news-research.md'
 
 /**
- * The two ways a hero image gets made.
+ * The one endpoint that makes a hero image, for every path that makes one:
+ * the first pass, Retry, and New thumbnail.
  *
- * `full` is the first pass, where a batch of images is generated once and read
- * for a long time. `fast` is the retry, where someone is sitting on the card
- * waiting -- Flare at `quality: 'high'` is a ~140-second render, which is the
- * exact default that took GPT Image 2 out of the lineup in #389, and nobody
- * waits that long to re-roll a picture they already called good enough.
- *
- * Klein rather than Z-Image Turbo, which is faster still: Turbo takes no
- * negative prompt at all (see `guide-z-image-turbo.md`) and `news-hero-image.md`
- * ends in two negations, so Turbo would need its own style brief and retried
- * cards would stop matching the originals. Klein reads the brief as written.
- *
- * Neither sets `output_format`, so both return png and the `image/png` the
- * insert below records stays true.
+ * `quality: 'high'` is a ~140-second render and that is a deliberate trade, not
+ * an oversight -- the Flare entry in IMAGE_MODELS pins `low` for interactive
+ * generation, and #389 took GPT Image 2 out of the lineup over exactly this
+ * default. A branch moved the two interactive paths to FLUX.2 Klein 4B for a
+ * few-second render and the output was visibly worse against the originals, so
+ * it went. The feed is read for a long time and generated rarely; one endpoint
+ * at one quality also means a replaced thumbnail matches the ones beside it,
+ * which is the whole reason to have a wall of them.
  */
-const HERO_RENDERERS = {
-  full: {
-    endpoint: 'openai/gpt-image-2.5/flare/text-to-image',
-    input: { image_size: 'landscape_16_9', quality: 'high' },
-  },
-  fast: {
-    endpoint: 'fal-ai/flux-2/klein/4b',
-    input: { image_size: 'landscape_16_9' },
-  },
-} as const
+const HERO_ENDPOINT = 'openai/gpt-image-2.5/flare/text-to-image'
+const HERO_INPUT = { image_size: 'landscape_16_9', quality: 'high' } as const
 const GROUND_COLORS = ['mustard', 'navy', 'sage', 'coral', 'plum', 'cream']
 
 const postSchema = z.object({
@@ -72,14 +60,12 @@ async function generateHeroImage(
   userId: string,
   subject: string,
   color: string,
-  renderer: keyof typeof HERO_RENDERERS = 'full',
 ): Promise<string | null> {
   if (!process.env.FAL_KEY) return null
   try {
-    const { endpoint, input } = HERO_RENDERERS[renderer]
     const prompt = `${heroStyle.trim()} ${subject.trim()}, ${color} ground.`
-    const { data } = await fal.subscribe(endpoint, {
-      input: { ...input, prompt },
+    const { data } = await fal.subscribe(HERO_ENDPOINT, {
+      input: { ...HERO_INPUT, prompt },
     })
 
     const images = (data as { images?: Array<{ url?: string }> }).images
@@ -254,7 +240,7 @@ export async function regenHeroImage(postId: string): Promise<string | null> {
   const color = GROUND_COLORS[colorIndex]
 
   const subject = await heroSubjectFor(post)
-  const heroId = await generateHeroImage(userId, subject, color, 'fast')
+  const heroId = await generateHeroImage(userId, subject, color)
   if (!heroId) return null
 
   await sql`
@@ -263,4 +249,35 @@ export async function regenHeroImage(postId: string): Promise<string | null> {
     where id = ${postId} and user_id = ${userId}
   `
   return heroId
+}
+
+/**
+ * Remove one post from the feed. Development only, on purpose.
+ *
+ * It is a curation affordance, not a feature: the feed is generated in batches
+ * and a batch usually carries one story that is off-topic or duplicated, and
+ * the cheapest fix while building is to drop it. A deployed reader has no such
+ * job -- the feed is something to read, and a destructive verb on a card
+ * nobody curates is only a way to lose a post by mis-click.
+ *
+ * Guarded here as well as hidden in the UI, because hiding a control is not
+ * access control -- the action is reachable by anyone who can form a request
+ * (the same reasoning as `grabYouTubeFrame`).
+ *
+ * The hero image row is left alone. It is an ordinary `user_images` row that
+ * shows up in the library like any other, and `hero_image_id` is
+ * `on delete set null` in the other direction -- deleting a picture because the
+ * post quoting it went would be the surprising half of this.
+ */
+export async function deleteNewsPost(postId: string): Promise<void> {
+  const { userId } = await resolveAuth()
+
+  if (process.env.NODE_ENV !== 'development') {
+    throw new Error('Deleting a post is a development-only affordance.')
+  }
+
+  await sql`
+    delete from news_posts
+    where id = ${postId} and user_id = ${userId}
+  `
 }
