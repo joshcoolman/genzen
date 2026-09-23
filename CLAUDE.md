@@ -92,6 +92,7 @@ live with the one route that renders them:
 | Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                                                           |
 | Lab        | `app/(authenticated)/lab/` (has its CLAUDE.md) — one step of the work per page, judged before it earns a place in the panel |
 | Activity   | `app/(authenticated)/activity/` — the route; the log itself is a feature                                                    |
+| News       | `app/(authenticated)/news/` — illustrated feed of image/video generation news; post detail at `news/[id]/`                  |
 | Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                                                            |
 | Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — the route; the lineup is a feature                                       |
 | Director   | `app/(authenticated)/director/` — named sessions, each a run of library clips watched back to back                          |
