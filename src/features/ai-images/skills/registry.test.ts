@@ -47,16 +47,26 @@ describe('image prompt commands', () => {
   ])('accepts four-shot direction %j', (brief) =>
     expect(storyboardShotCount(brief)).toBe(4),
   )
+  // Nothing about a count refuses a brief. A paragraph of scene description
+  // used to be rejected outright over one token in it -- "maybe ten shots" is
+  // a passing thought, not an instruction, and it threw away the prompt.
   it.each([
-    '--shots 0 chase',
-    '--shots 10 chase',
+    ['--shots 10 chase', 9],
+    ['--shots 99 chase', 9],
+    ['12 panels of a chase', 9],
+    ['ten shots of three men running', 9],
+    ['--shots 0 chase', 2],
+    ['--shots 1 chase', 2],
+  ])('clamps an out-of-range count %j to %i', (brief, expected) =>
+    expect(storyboardShotCount(brief)).toBe(expected),
+  )
+  it.each([
     '--shots 2.5 chase',
     '--shots nope chase',
     'chase --shots',
     'chase --shots=',
-    '12 panels of a chase',
-  ])('rejects invalid counts %j', (brief) =>
-    expect(() => storyboardShotCount(brief)).toThrow('2–9'),
+  ])('leaves an unreadable count to the plan %j', (brief) =>
+    expect(storyboardShotCount(brief)).toBeNull(),
   )
   it('does not confuse subjects with shot counts', () =>
     expect(
@@ -77,5 +87,7 @@ it('counts storyboard outputs, plain prompts and incomplete commands for the com
   expect(promptImageCount('/storyboard')).toBe(6)
   expect(promptImageCount('A portrait')).toBe(1)
   expect(promptImageCount('')).toBe(0)
-  expect(promptImageCount('/storyboard --shots 99 A chase')).toBe(0)
+  // 9, not 0. A clamp the composer can see beats "this will generate
+  // nothing" about a prompt that was about to be rejected.
+  expect(promptImageCount('/storyboard --shots 99 A chase')).toBe(9)
 })

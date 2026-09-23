@@ -13,9 +13,24 @@ import { ai, requireAiRole } from '#/lib/server/ai.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, jsonb, sql } from '#/lib/server/db.server'
 import heroStyle from '#/lib/prompts/news-hero-image.md'
+import heroSubjectSystem from '#/lib/prompts/news-hero-subject.md'
 import researchSystem from '#/lib/prompts/news-research.md'
 
-const FLARE_ENDPOINT = 'openai/gpt-image-2.5/flare/text-to-image'
+/**
+ * The one endpoint that makes a hero image, for every path that makes one:
+ * the first pass, Retry, and New thumbnail.
+ *
+ * `quality: 'high'` is a ~140-second render and that is a deliberate trade, not
+ * an oversight -- the Flare entry in IMAGE_MODELS pins `low` for interactive
+ * generation, and #389 took GPT Image 2 out of the lineup over exactly this
+ * default. A branch moved the two interactive paths to FLUX.2 Klein 4B for a
+ * few-second render and the output was visibly worse against the originals, so
+ * it went. The feed is read for a long time and generated rarely; one endpoint
+ * at one quality also means a replaced thumbnail matches the ones beside it,
+ * which is the whole reason to have a wall of them.
+ */
+const HERO_ENDPOINT = 'openai/gpt-image-2.5/flare/text-to-image'
+const HERO_INPUT = { image_size: 'landscape_16_9', quality: 'high' } as const
 const GROUND_COLORS = ['mustard', 'navy', 'sage', 'coral', 'plum', 'cream']
 
 const postSchema = z.object({
@@ -49,12 +64,8 @@ async function generateHeroImage(
   if (!process.env.FAL_KEY) return null
   try {
     const prompt = `${heroStyle.trim()} ${subject.trim()}, ${color} ground.`
-    const { data } = await fal.subscribe(FLARE_ENDPOINT, {
-      input: {
-        prompt,
-        image_size: 'landscape_16_9',
-        quality: 'high',
-      },
+    const { data } = await fal.subscribe(HERO_ENDPOINT, {
+      input: { ...HERO_INPUT, prompt },
     })
 
     const images = (data as { images?: Array<{ url?: string }> }).images
@@ -179,6 +190,46 @@ export async function getNewsPost(id: string): Promise<NewsPost | null> {
   return first(rows) ?? null
 }
 
+/**
+ * A visual subject for a post that no longer has one.
+ *
+ * The research model writes a `hero_subject` per post and it is used once and
+ * dropped -- it is not a column, so a retry has only the row. Retrying on
+ * `post.title` was the old behaviour and it is the wrong input twice over: a
+ * title is a product name and a version number rather than a picture, and the
+ * cheaper the renderer the less able it is to find a picture in one.
+ *
+ * Haiku on the body instead. It is a second or so and a fraction of a cent,
+ * and News already requires an Anthropic key to have produced a post at all,
+ * so the retry depends on nothing new. Deriving it per press rather than
+ * storing it also makes the button a re-roll: a persisted subject would render
+ * the same prompt for the life of the post, which is not what a retry offers.
+ *
+ * Falls back to the title on any failure -- a worse picture beats no picture,
+ * and that was the behaviour before this existed.
+ */
+async function heroSubjectFor(post: NewsPost): Promise<string> {
+  try {
+    requireAiRole('fast')
+    const { text } = await generateText({
+      model: ai.fast,
+      system: heroSubjectSystem,
+      messages: [
+        {
+          role: 'user',
+          content: [post.title, post.what_happened, post.why_interesting].join(
+            '\n\n',
+          ),
+        },
+      ],
+    })
+    return text.trim() || post.title
+  } catch (err) {
+    console.error('[news] hero subject failed, falling back to title:', err)
+    return post.title
+  }
+}
+
 export async function regenHeroImage(postId: string): Promise<string | null> {
   const { userId } = await resolveAuth()
 
@@ -188,7 +239,8 @@ export async function regenHeroImage(postId: string): Promise<string | null> {
   const colorIndex = Math.floor(Math.random() * GROUND_COLORS.length)
   const color = GROUND_COLORS[colorIndex]
 
-  const heroId = await generateHeroImage(userId, post.title, color)
+  const subject = await heroSubjectFor(post)
+  const heroId = await generateHeroImage(userId, subject, color)
   if (!heroId) return null
 
   await sql`
@@ -197,4 +249,35 @@ export async function regenHeroImage(postId: string): Promise<string | null> {
     where id = ${postId} and user_id = ${userId}
   `
   return heroId
+}
+
+/**
+ * Remove one post from the feed. Development only, on purpose.
+ *
+ * It is a curation affordance, not a feature: the feed is generated in batches
+ * and a batch usually carries one story that is off-topic or duplicated, and
+ * the cheapest fix while building is to drop it. A deployed reader has no such
+ * job -- the feed is something to read, and a destructive verb on a card
+ * nobody curates is only a way to lose a post by mis-click.
+ *
+ * Guarded here as well as hidden in the UI, because hiding a control is not
+ * access control -- the action is reachable by anyone who can form a request
+ * (the same reasoning as `grabYouTubeFrame`).
+ *
+ * The hero image row is left alone. It is an ordinary `user_images` row that
+ * shows up in the library like any other, and `hero_image_id` is
+ * `on delete set null` in the other direction -- deleting a picture because the
+ * post quoting it went would be the surprising half of this.
+ */
+export async function deleteNewsPost(postId: string): Promise<void> {
+  const { userId } = await resolveAuth()
+
+  if (process.env.NODE_ENV !== 'development') {
+    throw new Error('Deleting a post is a development-only affordance.')
+  }
+
+  await sql`
+    delete from news_posts
+    where id = ${postId} and user_id = ${userId}
+  `
 }
