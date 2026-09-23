@@ -8,39 +8,53 @@ import type { NewsPost } from '#/lib/types/db'
 import { Button, Input, PageHeader, Stack } from '#/components'
 import { imageUrl } from '#/lib/image-url'
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
+function NewsCard({
+  post,
+  isRegen,
+  onRegen,
+}: {
+  post: NewsPost
+  isRegen: boolean
+  onRegen: (id: string) => void
+}) {
+  const coverSlot = isRegen ? (
+    <div className={styles.coverLoading} />
+  ) : post.hero_image_id ? (
+    <img
+      src={imageUrl(post.hero_image_id, 'thumb')}
+      alt=""
+      className={styles.cover}
+    />
+  ) : (
+    <div className={styles.retryWrap}>
+      <div className={styles.coverEmpty} />
+      <button
+        className={styles.retryBtn}
+        onClick={(e) => {
+          e.preventDefault()
+          onRegen(post.id)
+        }}
+        aria-label="Retry image generation"
+      >
+        <span className={styles.retryLabel}>Retry image</span>
+      </button>
+    </div>
+  )
 
-function NewsCard({ post }: { post: NewsPost }) {
   return (
     <Link href={`/news/${post.id}`} className={styles.card}>
-      <div className={styles.heroWrap}>
-        {post.hero_image_id ? (
-          <img
-            src={imageUrl(post.hero_image_id, 'thumb')}
-            alt=""
-            className={styles.hero}
-          />
-        ) : (
-          <div className={styles.heroPlaceholder} />
-        )}
-      </div>
-      <div className={styles.cardBody}>
+      {coverSlot}
+      <div className={styles.caption}>
         <h2 className={styles.cardTitle}>{post.title}</h2>
-        <p className={styles.cardLead}>{post.what_happened}</p>
-        <span className={styles.cardDate}>{formatDate(post.created_at)}</span>
+        <p className={styles.cardDesc}>{post.what_happened}</p>
       </div>
     </Link>
   )
 }
 
 export function View({ initial }: { initial: Array<NewsPost> }) {
-  const { posts, isFetching, error, fetchNews } = useView(initial)
+  const { posts, isFetching, error, fetchNews, regenIds, regenImage } =
+    useView(initial)
   const [guidance, setGuidance] = useState('')
 
   return (
@@ -59,7 +73,7 @@ export function View({ initial }: { initial: Array<NewsPost> }) {
           <Input
             className={styles.guidanceInput}
             type="text"
-            placeholder="Optional: paste a link, describe something seen on X, or steer the search"
+            placeholder="Optional: paste a link, describe something on X, or steer the search"
             value={guidance}
             onChange={(e) => setGuidance(e.target.value)}
             onKeyDown={(e) => {
@@ -86,7 +100,12 @@ export function View({ initial }: { initial: Array<NewsPost> }) {
       ) : (
         <div className={styles.feed}>
           {posts.map((post) => (
-            <NewsCard key={post.id} post={post} />
+            <NewsCard
+              key={post.id}
+              post={post}
+              isRegen={regenIds.has(post.id)}
+              onRegen={regenImage}
+            />
           ))}
         </div>
       )}

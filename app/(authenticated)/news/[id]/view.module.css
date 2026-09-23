@@ -4,33 +4,33 @@
   aspect-ratio: 16 / 9;
   object-fit: cover;
   display: block;
-  border-radius: 6px;
+  border-radius: var(--radius-lg);
 }
 
 .sections {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-24);
   max-width: 640px;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-8);
 }
 
 .sectionLabel {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   margin: 0;
 }
 
 .sectionBody {
-  font-size: 0.9375rem;
+  font-size: var(--text-sm);
   line-height: 1.65;
   margin: 0;
   white-space: pre-wrap;
@@ -39,21 +39,21 @@
 .sources {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-4);
 }
 
 .sourceLink {
-  font-size: 0.8125rem;
-  color: var(--color-accent);
+  font-size: var(--text-xs);
+  color: var(--accent);
   word-break: break-all;
 }
 
 .back {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
   text-decoration: none;
 }
 
 .back:hover {
-  color: var(--color-text);
+  color: var(--text);
 }

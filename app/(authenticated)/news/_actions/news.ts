@@ -178,3 +178,23 @@ export async function getNewsPost(id: string): Promise<NewsPost | null> {
   `
   return first(rows) ?? null
 }
+
+export async function regenHeroImage(postId: string): Promise<string | null> {
+  const { userId } = await resolveAuth()
+
+  const post = await getNewsPost(postId)
+  if (!post) return null
+
+  const colorIndex = Math.floor(Math.random() * GROUND_COLORS.length)
+  const color = GROUND_COLORS[colorIndex]
+
+  const heroId = await generateHeroImage(userId, post.title, color)
+  if (!heroId) return null
+
+  await sql`
+    update news_posts
+    set hero_image_id = ${heroId}
+    where id = ${postId} and user_id = ${userId}
+  `
+  return heroId
+}
