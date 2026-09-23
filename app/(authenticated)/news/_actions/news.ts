@@ -13,9 +13,36 @@ import { ai, requireAiRole } from '#/lib/server/ai.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, jsonb, sql } from '#/lib/server/db.server'
 import heroStyle from '#/lib/prompts/news-hero-image.md'
+import heroSubjectSystem from '#/lib/prompts/news-hero-subject.md'
 import researchSystem from '#/lib/prompts/news-research.md'
 
-const FLARE_ENDPOINT = 'openai/gpt-image-2.5/flare/text-to-image'
+/**
+ * The two ways a hero image gets made.
+ *
+ * `full` is the first pass, where a batch of images is generated once and read
+ * for a long time. `fast` is the retry, where someone is sitting on the card
+ * waiting -- Flare at `quality: 'high'` is a ~140-second render, which is the
+ * exact default that took GPT Image 2 out of the lineup in #389, and nobody
+ * waits that long to re-roll a picture they already called good enough.
+ *
+ * Klein rather than Z-Image Turbo, which is faster still: Turbo takes no
+ * negative prompt at all (see `guide-z-image-turbo.md`) and `news-hero-image.md`
+ * ends in two negations, so Turbo would need its own style brief and retried
+ * cards would stop matching the originals. Klein reads the brief as written.
+ *
+ * Neither sets `output_format`, so both return png and the `image/png` the
+ * insert below records stays true.
+ */
+const HERO_RENDERERS = {
+  full: {
+    endpoint: 'openai/gpt-image-2.5/flare/text-to-image',
+    input: { image_size: 'landscape_16_9', quality: 'high' },
+  },
+  fast: {
+    endpoint: 'fal-ai/flux-2/klein/4b',
+    input: { image_size: 'landscape_16_9' },
+  },
+} as const
 const GROUND_COLORS = ['mustard', 'navy', 'sage', 'coral', 'plum', 'cream']
 
 const postSchema = z.object({
@@ -45,16 +72,14 @@ async function generateHeroImage(
   userId: string,
   subject: string,
   color: string,
+  renderer: keyof typeof HERO_RENDERERS = 'full',
 ): Promise<string | null> {
   if (!process.env.FAL_KEY) return null
   try {
+    const { endpoint, input } = HERO_RENDERERS[renderer]
     const prompt = `${heroStyle.trim()} ${subject.trim()}, ${color} ground.`
-    const { data } = await fal.subscribe(FLARE_ENDPOINT, {
-      input: {
-        prompt,
-        image_size: 'landscape_16_9',
-        quality: 'high',
-      },
+    const { data } = await fal.subscribe(endpoint, {
+      input: { ...input, prompt },
     })
 
     const images = (data as { images?: Array<{ url?: string }> }).images
@@ -179,6 +204,46 @@ export async function getNewsPost(id: string): Promise<NewsPost | null> {
   return first(rows) ?? null
 }
 
+/**
+ * A visual subject for a post that no longer has one.
+ *
+ * The research model writes a `hero_subject` per post and it is used once and
+ * dropped -- it is not a column, so a retry has only the row. Retrying on
+ * `post.title` was the old behaviour and it is the wrong input twice over: a
+ * title is a product name and a version number rather than a picture, and the
+ * cheaper the renderer the less able it is to find a picture in one.
+ *
+ * Haiku on the body instead. It is a second or so and a fraction of a cent,
+ * and News already requires an Anthropic key to have produced a post at all,
+ * so the retry depends on nothing new. Deriving it per press rather than
+ * storing it also makes the button a re-roll: a persisted subject would render
+ * the same prompt for the life of the post, which is not what a retry offers.
+ *
+ * Falls back to the title on any failure -- a worse picture beats no picture,
+ * and that was the behaviour before this existed.
+ */
+async function heroSubjectFor(post: NewsPost): Promise<string> {
+  try {
+    requireAiRole('fast')
+    const { text } = await generateText({
+      model: ai.fast,
+      system: heroSubjectSystem,
+      messages: [
+        {
+          role: 'user',
+          content: [post.title, post.what_happened, post.why_interesting].join(
+            '\n\n',
+          ),
+        },
+      ],
+    })
+    return text.trim() || post.title
+  } catch (err) {
+    console.error('[news] hero subject failed, falling back to title:', err)
+    return post.title
+  }
+}
+
 export async function regenHeroImage(postId: string): Promise<string | null> {
   const { userId } = await resolveAuth()
 
@@ -188,7 +253,8 @@ export async function regenHeroImage(postId: string): Promise<string | null> {
   const colorIndex = Math.floor(Math.random() * GROUND_COLORS.length)
   const color = GROUND_COLORS[colorIndex]
 
-  const heroId = await generateHeroImage(userId, post.title, color)
+  const subject = await heroSubjectFor(post)
+  const heroId = await generateHeroImage(userId, subject, color, 'fast')
   if (!heroId) return null
 
   await sql`

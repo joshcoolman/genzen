@@ -1,8 +1,8 @@
 import Link from 'next/link'
+import { ChevronLeft } from 'lucide-react'
 import styles from './view.module.css'
 import type { NewsPost } from '#/lib/types/db'
 import { imageUrl } from '#/lib/image-url'
-import { PageHeader, Stack } from '#/components'
 
 interface Section {
   label: string
@@ -18,15 +18,16 @@ export function PostView({ post }: { post: NewsPost }) {
   ]
 
   return (
-    <Stack gap={24}>
-      <PageHeader
-        title={post.title}
-        aside={
-          <Link href="/news" className={styles.back}>
-            Back to News
-          </Link>
-        }
-      />
+    <div className={styles.page}>
+      {/* Not PageHeader: that pins its aside to the far edge of the content
+          area, and the way out belongs beside the title it leaves -- the same
+          shape as GroupHeading and BoardHeading, chevron first. */}
+      <div className={styles.heading}>
+        <Link href="/news" className={styles.backBtn} aria-label="Back to News">
+          <ChevronLeft className={styles.backIcon} />
+        </Link>
+        <h1 className={styles.title}>{post.title}</h1>
+      </div>
 
       {post.hero_image_id && (
         <img
@@ -63,6 +64,6 @@ export function PostView({ post }: { post: NewsPost }) {
           </div>
         )}
       </div>
-    </Stack>
+    </div>
   )
 }

@@ -1,6 +1,34 @@
+/* One centred column in the content area -- the article is prose, and prose
+   read across the full width of the shell is a different page. */
+.page {
+  --column: 680px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-24);
+  padding-bottom: var(--space-48);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  width: 100%;
+  max-width: var(--column);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  line-height: var(--leading-tight);
+  font-weight: var(--weight-semibold);
+  color: var(--text);
+}
+
 .hero {
   width: 100%;
-  max-width: 640px;
+  max-width: var(--column);
   aspect-ratio: 16 / 9;
   object-fit: cover;
   display: block;
@@ -11,7 +39,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-24);
-  max-width: 640px;
+  width: 100%;
+  max-width: var(--column);
 }
 
 .section {
@@ -48,12 +77,35 @@
   word-break: break-all;
 }
 
-.back {
-  font-size: var(--text-sm);
+/* Circle back button — sits in the PageHeader aside slot */
+.backBtn {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--field);
   color: var(--text-muted);
   text-decoration: none;
+  flex-shrink: 0;
+  transition:
+    color var(--duration-normal) var(--ease-out),
+    background-color var(--duration-normal) var(--ease-out);
 }
 
-.back:hover {
+.backBtn:hover {
+  background: var(--field-hover);
   color: var(--text);
+}
+
+.backBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.backIcon {
+  width: 1rem;
+  height: 1rem;
 }
