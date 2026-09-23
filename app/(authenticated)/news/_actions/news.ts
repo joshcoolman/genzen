@@ -46,9 +46,10 @@ async function generateHeroImage(
   subject: string,
   color: string,
 ): Promise<string | null> {
+  if (!process.env.FAL_KEY) return null
   try {
     const prompt = `${heroStyle.trim()} ${subject.trim()}, ${color} ground.`
-    const result = await fal.run(FLARE_ENDPOINT, {
+    const { data } = await fal.subscribe(FLARE_ENDPOINT, {
       input: {
         prompt,
         image_size: 'landscape_16_9',
@@ -56,7 +57,7 @@ async function generateHeroImage(
       },
     })
 
-    const images = (result as { images?: Array<{ url?: string }> }).images
+    const images = (data as { images?: Array<{ url?: string }> }).images
     const url = images?.[0]?.url
     if (!url) return null
 
@@ -73,7 +74,8 @@ async function generateHeroImage(
       returning id
     `
     return first(rows)?.id ?? null
-  } catch {
+  } catch (err) {
+    console.error('[news] hero image generation failed:', err)
     return null
   }
 }
