@@ -1,0 +1,1 @@
+Flat 2D editorial magazine illustration, the kind that runs beside a New Yorker column. Limited palette of three colours on a paper ground, subtle risograph print grain, one clear idea, generous negative space. No text, no logos.

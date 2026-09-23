@@ -79,3 +79,19 @@ export type UserImageRow = {
   /** timestamptz; selected as an ISO string. */
   updated_at: string
 }
+
+export type NewsPost = {
+  id: string
+  user_id: string
+  title: string
+  what_happened: string
+  why_interesting: string
+  the_details: string
+  for_genzen: string
+  hero_image_id: string | null
+  /** jsonb array of URL strings. */
+  source_links: Array<string>
+  run_id: string
+  /** timestamptz; selected as an ISO string. */
+  created_at: string
+}

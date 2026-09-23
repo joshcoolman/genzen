@@ -3,6 +3,7 @@ import {
   Film,
   FlaskConical,
   Logs,
+  Newspaper,
   Sparkles,
   Trash2,
   User,
@@ -53,6 +54,13 @@ export const navItems: Array<NavItem> = [
     label: 'Director',
     href: '/director',
     icon: Film,
+  },
+  {
+    id: 'news',
+    label: 'News',
+    href: '/news',
+    icon: Newspaper,
+    matchPaths: ['/news'],
   },
   {
     id: 'activity',
