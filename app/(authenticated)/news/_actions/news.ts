@@ -11,7 +11,7 @@ import { fal } from '#/lib/server/fal-client.server'
 import { downloadAndStoreImage } from '#/lib/server/image-storage.server'
 import { ai, requireAiRole } from '#/lib/server/ai.server'
 import { resolveAuth } from '#/lib/server/auth.server'
-import { first, sql } from '#/lib/server/db.server'
+import { first, jsonb, sql } from '#/lib/server/db.server'
 import heroStyle from '#/lib/prompts/news-hero-image.md'
 import researchSystem from '#/lib/prompts/news-research.md'
 
@@ -106,25 +106,24 @@ export async function getNews(guidance: string): Promise<Array<NewsPost>> {
 
   const runId = crypto.randomUUID()
 
-  const inserted = await sql<Array<NewsPost>>`
-    insert into news_posts
-      (user_id, title, what_happened, why_interesting, the_details,
-       for_genzen, source_links, run_id)
-    select
-      ${userId},
-      item.title,
-      item.what_happened,
-      item.why_interesting,
-      item.the_details,
-      item.for_genzen,
-      item.source_links,
-      ${runId}
-    from jsonb_to_recordset(${JSON.stringify(posts)}::jsonb) as item(
-      title text, what_happened text, why_interesting text,
-      the_details text, for_genzen text, source_links jsonb
+  const inserted: Array<NewsPost> = []
+  for (const post of posts) {
+    const row = first(
+      await sql<Array<NewsPost>>`
+        insert into news_posts
+          (user_id, title, what_happened, why_interesting, the_details,
+           for_genzen, source_links, run_id)
+        values
+          (${userId}, ${post.title}, ${post.what_happened}, ${post.why_interesting},
+           ${post.the_details}, ${post.for_genzen}, ${jsonb(post.source_links)}, ${runId})
+        returning
+          id, user_id, title, what_happened, why_interesting, the_details,
+          for_genzen, hero_image_id, source_links, run_id,
+          created_at::text as created_at
+      `,
     )
-    returning *
-  `
+    if (row) inserted.push(row)
+  }
 
   const heroResults = await Promise.allSettled(
     posts.map((p, i) =>
@@ -136,26 +135,18 @@ export async function getNews(guidance: string): Promise<Array<NewsPost>> {
     ),
   )
 
-  const updates = inserted
-    .map((row, i) => {
+  await Promise.all(
+    inserted.map((row, i) => {
       const r = heroResults[i]
       const heroId = r.status === 'fulfilled' ? r.value : null
-      return { id: row.id, heroId }
-    })
-    .filter((u) => u.heroId !== null)
-
-  if (updates.length > 0) {
-    await Promise.all(
-      updates.map(
-        (u) =>
-          sql`
-          update news_posts
-          set hero_image_id = ${u.heroId}
-          where id = ${u.id} and user_id = ${userId}
-        `,
-      ),
-    )
-  }
+      if (!heroId) return Promise.resolve()
+      return sql`
+        update news_posts
+        set hero_image_id = ${heroId}
+        where id = ${row.id} and user_id = ${userId}
+      `
+    }),
+  )
 
   return listNewsPosts()
 }
