@@ -63,7 +63,8 @@ export function Timeline({
   onRemove: (key: string) => void
   onMove: (from: number, to: number) => void
   onTrim: (key: string, span: { in: number; out: number }) => void
-  /** Play from `offset` seconds into this clip's kept span. */
+  /** Move the stage to `offset` seconds into this clip's kept span, staying
+   *  playing or paused as it was. */
   onPlayFrom: (index: number, offset?: number) => void
   onSeek: (seconds: number) => void
 }) {

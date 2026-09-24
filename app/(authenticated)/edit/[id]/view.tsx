@@ -1,6 +1,5 @@
 'use client'
 
-import { useRef } from 'react'
 import { Download } from 'lucide-react'
 import { EditHeading } from '../_components/edit-heading/edit-heading'
 import { CutPlayer } from './_components/cut-player/cut-player'
@@ -8,7 +7,6 @@ import { Timeline } from './_components/timeline/timeline'
 import { formatClock, locate } from './cut'
 import { useView } from './use-view'
 import styles from './view.module.css'
-import type { CutPlayerHandle } from './_components/cut-player/cut-player'
 import type { Edit } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { Button, ClipPicker } from '#/components'
@@ -29,10 +27,10 @@ export function View({
   clips: Array<VideoRecord>
 }) {
   const view = useView(edit, clips)
-  const player = useRef<CutPlayerHandle>(null)
+  const player = view.player
   const seek = (seconds: number) => {
     const at = locate(view.items, seconds)
-    if (at) player.current?.playFrom(at.index, at.offset)
+    if (at) player.current?.seekTo(at.index, at.offset)
   }
 
   return (
@@ -75,9 +73,7 @@ export function View({
           onRemove={view.remove}
           onMove={view.move}
           onTrim={view.trim}
-          onPlayFrom={(index, offset) =>
-            player.current?.playFrom(index, offset)
-          }
+          onPlayFrom={(index, offset) => player.current?.seekTo(index, offset)}
           onSeek={seek}
         />
       </div>
@@ -85,8 +81,10 @@ export function View({
         open={view.picking}
         onOpenChange={view.setPicking}
         clips={clips}
-        /* Nothing is greyed out: a clip already in the cut can go in again. */
+        /* Nothing is greyed out: a clip already in the cut can go in again.
+           The badge says where it already is. */
         pickedIds={new Set()}
+        positions={view.positions}
         onConfirm={view.add}
         max={50}
         matchRatio={view.runRatio}

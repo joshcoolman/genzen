@@ -63,7 +63,7 @@ export interface DialogContentProps {
    * paired with `MobileDialogHeader` and `showCloseButton={false}`.
    * @default 'default'
    */
-  size?: 'default' | 'wide' | 'fullscreen'
+  size?: 'default' | 'wide' | 'full' | 'fullscreen'
   /**
    * Where focus lands on open. Point it at the safe control when the dialog
    * can destroy something -- `ConfirmDialog` focuses Cancel for exactly that.

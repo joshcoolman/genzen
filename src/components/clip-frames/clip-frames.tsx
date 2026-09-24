@@ -39,6 +39,7 @@ export function ClipFrames({
   size,
   alt,
   pad = DEFAULT_PAD,
+  mid,
 }: {
   clip: ClipTile
   /** The edge of one frame. A pair is twice this wide. */
@@ -47,6 +48,13 @@ export function ClipFrames({
   /** The mat inside each frame, in px. Passed through to `MediaBox` and matched
    *  by the ending frame. */
   pad?: number
+  /**
+   * A third frame between the two, at this many seconds in. The picker asks
+   * for the clip's midpoint: a run of Continue clips all open on the frame
+   * the last one ended on, so their first and last frames match and only the
+   * middle says which is which. Three frames wide when given.
+   */
+  mid?: number
 }) {
   const box = { width: size, height: size, padding: pad }
 
@@ -60,6 +68,16 @@ export function ClipFrames({
         fit="contain"
         pad={pad}
       />
+      {mid !== undefined && mid > 0 && (
+        <MediaBox
+          kind="video"
+          src={`/img/${clip.id}#t=${mid}`}
+          alt=""
+          size={size}
+          fit="contain"
+          pad={pad}
+        />
+      )}
       {clip.has_end_frame ? (
         <img
           className={styles.end}

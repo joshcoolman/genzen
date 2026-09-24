@@ -31,6 +31,7 @@ import {
   ExpandableIconButton,
 } from '#/components'
 import { imageUrl } from '#/lib/image-url'
+import { useHoldToPlay } from '#/lib/use-hold-to-play'
 import { useModifierHeld } from '#/lib/use-modifier-held'
 import { cx } from '#/lib/utils'
 
@@ -56,7 +57,8 @@ function durationOf(video: VideoRecord): string | null {
   return typeof seconds === 'number' ? `${seconds}s` : null
 }
 
-/** A poster and end frames for scanning; playback opens the page dialog. */
+/** A poster and end frames for scanning; a click opens the page's player, and
+ *  a press held plays the clip on the card until it ends (#726). */
 export function VideoThumb({
   video,
   onPlay,
@@ -101,6 +103,7 @@ export function VideoThumb({
   const shape = aspectLabel(ratio)
   /* 16:9 when the row does not know its shape -- a poster that never decoded
      (#499), or a clip that has not been made yet. */
+  const hold = useHoldToPlay()
   const stage = ratio ? Math.min(Math.max(ratio, TALLEST), WIDEST) : 16 / 9
   const stageShape = { aspectRatio: String(stage) }
   /**
@@ -188,7 +191,12 @@ export function VideoThumb({
             <button
               type="button"
               className={styles.openPlayer}
-              onClick={() => onPlay(video.id)}
+              onClick={() => {
+                // The click that ends a hold is the hold ending, not a
+                // request for the dialog.
+                if (!hold.consumeHold()) onPlay(video.id)
+              }}
+              {...hold.handlersFor(video.id)}
               aria-label="Play this clip"
               aria-haspopup="dialog"
             >
@@ -199,9 +207,21 @@ export function VideoThumb({
                 alt=""
                 loading="lazy"
               />
-              <span className={styles.play} aria-hidden="true">
-                <Play size={20} />
-              </span>
+              {/* Over the poster in the poster's box, `cover` like it, gone
+                  on release. Sound on, as the dialog's is. */}
+              {hold.playingId === video.id ? (
+                <video
+                  className={styles.preview}
+                  src={imageUrl(video.id)}
+                  autoPlay
+                  loop
+                  playsInline
+                />
+              ) : (
+                <span className={styles.play} aria-hidden="true">
+                  <Play size={20} />
+                </span>
+              )}
             </button>
           ) : video.status === 'failed' ? (
             <div className={styles.state}>
