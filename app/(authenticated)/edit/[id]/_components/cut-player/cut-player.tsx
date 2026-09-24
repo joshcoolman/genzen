@@ -27,6 +27,10 @@ export interface PlayableItem {
 export interface CutPlayerHandle {
   /** Land on a clip and play it from `offset` seconds into its kept span. */
   playFrom: (index: number, offset?: number) => void
+  /** Land there and stay as you were: playing carries on from the new spot,
+   *  paused shows its frame. A tile click is a move, not a play button. */
+  seekTo: (index: number, offset?: number) => void
+  toggle: () => void
   isPlaying: () => boolean
 }
 
@@ -164,8 +168,13 @@ export function CutPlayer({
     const currentItem = items.at(index)
     if (current) {
       if (currentItem) {
-        if (!current.src.endsWith(srcFor(currentItem.clip)))
+        if (!current.src.endsWith(srcFor(currentItem.clip))) {
           load(active, current, currentItem, currentItem.in)
+          /* A new source resets the element to paused. This happens when the
+             clip that was playing is removed and the next one takes its place
+             -- the stage should carry on, not stop with Pause showing. */
+          if (isPlayingRef.current) void current.play().catch(() => {})
+        }
       } else blank(current)
     }
 
@@ -226,7 +235,7 @@ export function CutPlayer({
    * state alone cannot restart the clip already showing.
    */
   const jumpTo = useCallback(
-    (target: number, offset = 0) => {
+    (target: number, offset = 0, play = true) => {
       const first = a.current
       if (items.length === 0 || !first) return
       const next = Math.max(0, Math.min(target, items.length - 1))
@@ -239,8 +248,9 @@ export function CutPlayer({
 
       setActive(0)
       setIndex(next)
-      setIsPlaying(true)
+      setIsPlaying(play)
       onTimeRef.current?.(startOf(items, next) + (at - item.in))
+      if (!play) return
       void first.play().catch((err: unknown) => {
         if (err instanceof Error && err.name === 'NotAllowedError') {
           setIsPlaying(false)
@@ -248,14 +258,6 @@ export function CutPlayer({
       })
     },
     [items, load],
-  )
-
-  const isPlayingRef = useRef(isPlaying)
-  isPlayingRef.current = isPlaying
-  useImperativeHandle(
-    controls,
-    () => ({ playFrom: jumpTo, isPlaying: () => isPlayingRef.current }),
-    [jumpTo],
   )
 
   const toggle = useCallback(() => {
@@ -270,6 +272,19 @@ export function CutPlayer({
       setIsPlaying(true)
     }
   }, [active, items.length, isPlaying])
+
+  const isPlayingRef = useRef(isPlaying)
+  isPlayingRef.current = isPlaying
+  useImperativeHandle(
+    controls,
+    () => ({
+      playFrom: (target, offset) => jumpTo(target, offset, true),
+      seekTo: (target, offset) => jumpTo(target, offset, isPlayingRef.current),
+      toggle,
+      isPlaying: () => isPlayingRef.current,
+    }),
+    [jumpTo, toggle],
+  )
 
   useEffect(() => {
     if (index < items.length) return

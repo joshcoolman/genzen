@@ -61,6 +61,12 @@ route is that editor, so it takes all four, and Director stays as it is.
 - **Short tiles show frames and no words** (a container query under 180px).
   The pictures are what a cut is judged by; the title attribute keeps the
   facts.
+- **Space plays and pauses, Delete and Backspace remove the highlighted clip,
+  and a tile click is a move, not a play button** -- the stage stays playing
+  or paused as it was and lands on the clip. Window keydown like Video's
+  Escape, skipped over fields, buttons and the open picker. The stage is a
+  `<button>`, so Space with it focused is its own press and the listener
+  leaves it alone.
 - 40px per second, fixed. A zoom is one variable away and not taken until a
   cut is long enough to want it.
 

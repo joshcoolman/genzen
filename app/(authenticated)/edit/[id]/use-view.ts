@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { writeCut } from '../_actions/edits.action'
 import { exportToVideo } from '../_actions/export.action'
 import { totalSeconds } from './cut'
-import type { PlayableItem } from './_components/cut-player/cut-player'
+import type {
+  CutPlayerHandle,
+  PlayableItem,
+} from './_components/cut-player/cut-player'
 import type { Edit } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { aspectRatio } from '#/features/video/clip-facts'
@@ -119,6 +122,49 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
   const [playingIndex, setPlayingIndex] = useState<number | null>(null)
   const [time, setTime] = useState(0)
 
+  /* The strip drives the player and nothing drives the strip, so the calls
+     between them are imperative (Director's reasoning): a tile click has to
+     reach the `<video>` elements. Held here so the keys below can reach them
+     too. */
+  const player = useRef<CutPlayerHandle>(null)
+
+  /**
+   * Space plays and pauses; Delete and Backspace take out the highlighted
+   * clip. On the window, as Video's Escape is, and skipped when the key was
+   * meant for something else: a field, a button (the stage is one, and Space
+   * on a focused button is already a press), or the picker while it is open.
+   */
+  const removeIndex = useCallback((index: number) => {
+    setItems((current) => current.filter((_, i) => i !== index))
+  }, [])
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (picking || e.metaKey || e.ctrlKey || e.altKey) return
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        tag === 'BUTTON' ||
+        target?.isContentEditable
+      )
+        return
+      if (e.key === ' ') {
+        e.preventDefault()
+        player.current?.toggle()
+      } else if (
+        (e.key === 'Delete' || e.key === 'Backspace') &&
+        playingIndex !== null
+      ) {
+        e.preventDefault()
+        removeIndex(playingIndex)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [picking, playingIndex, removeIndex])
+
   /** The first clip's shape sets the stage's, as Director's does. */
   /**
    * Export: the cut as one clip on the Video wall. Awaited in place -- a
@@ -153,6 +199,7 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
   const total = useMemo(() => totalSeconds(items), [items])
 
   return {
+    player,
     items,
     durations,
     learnDuration,
