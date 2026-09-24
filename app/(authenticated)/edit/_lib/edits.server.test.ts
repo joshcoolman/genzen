@@ -75,10 +75,10 @@ describe('edits', () => {
     expect(named.name).toBe('Frames, renamed')
 
     const [live] = await sql<Array<{ id: string }>>`
-      insert into user_images (user_id, title, group_id)
-      values (${owner}, 'kept', ${group.id}) returning id`
-    await sql`insert into user_images (user_id, title, group_id, deleted_at)
-      values (${owner}, 'trashed', ${group.id}, now())`
+      insert into user_images (user_id, title, origin, group_id)
+      values (${owner}, 'kept', 'upload', ${group.id}) returning id`
+    await sql`insert into user_images (user_id, title, origin, group_id, deleted_at)
+      values (${owner}, 'trashed', 'upload', ${group.id}, now())`
     expect((await listEditFrames(owner, group.id)).map((f) => f.id)).toEqual([
       live.id,
     ])
