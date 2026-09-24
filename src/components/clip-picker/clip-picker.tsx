@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check } from 'lucide-react'
 import { ClipFrames } from '../clip-frames/clip-frames'
 import { Button } from '../button/button'
@@ -20,10 +20,19 @@ import {
   sameAspect,
 } from '#/features/video/clip-facts'
 
-/** The edge of one frame. A tile holds two, so `--tile` in the stylesheet --
- *  the grid's column width -- is twice this: a `MediaBox` is sized in px, not
- *  by its container. */
-const TILE = 132
+/** The edge of one frame. A tile holds three, so `--tile` in the stylesheet --
+ *  the grid's column width -- is three times this: a `MediaBox` is sized in
+ *  px, not by its container. */
+const TILE = 120
+
+/** How long a press has to last before it is a hold rather than a click. */
+const HOLD_MS = 180
+
+/** The clip's midpoint, off the row's requested length, or nothing. */
+function midpointOf(clip: ClipTile): number | undefined {
+  const seconds = (clip.generation_metadata ?? {}).duration_seconds
+  return typeof seconds === 'number' && seconds > 0 ? seconds / 2 : undefined
+}
 
 /**
  * Pick a clip out of the ones you have made.
@@ -56,7 +65,15 @@ const TILE = 132
  * a set and the caller takes an array, so picking several clips — to stitch, to
  * compare — is raising a number rather than rewriting this.
  *
- * **Both ends of each clip, the same as the run** (`ClipFrames`). It showed a
+ * **Three frames of each clip: both ends, as the run shows them, and the
+ * middle** (`ClipFrames`, #726). A run of Continue clips all open on the frame
+ * the previous one ended on, so first and last match across the whole set
+ * and only the midpoint says which is which. It is a seek further into the
+ * file, so it paints a beat after the ends do. **And a press held on a tile
+ * plays the clip in place**, sound on, until the press ends -- the clips are
+ * five to fifteen seconds, and watching one here is faster than anywhere else.
+ * The dialog is `size="full"` to make room for both.
+ * It showed a
  * first frame only, which meant the dialog you choose a clip in could not
  * answer the question you were choosing for: what a clip cuts into is decided
  * by the frame it *ends* on, and that frame was the one place it was never
@@ -110,6 +127,32 @@ export function ClipPicker<T extends ClipTile>({
   /** An escape hatch, not a preference: it resets with the dialog, below. */
   const [showAllRatios, setShowAllRatios] = useState(false)
 
+  /**
+   * Press and hold plays the clip in place; let go and the frames are back
+   * (#726). Three stills tell most clips apart, and the ones they do not are
+   * five to eight seconds long -- shorter than opening them anywhere else.
+   * The press is a hold once `HOLD_MS` has passed, and a hold is not a click:
+   * letting go after one leaves the selection as it was.
+   */
+  const [playingId, setPlayingId] = useState<string | null>(null)
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const held = useRef(false)
+  const startHold = (id: string) => {
+    held.current = false
+    holdTimer.current = setTimeout(() => {
+      held.current = true
+      setPlayingId(id)
+    }, HOLD_MS)
+  }
+  const endHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current)
+    holdTimer.current = null
+    setPlayingId(null)
+  }
+  useEffect(() => {
+    if (!open) endHold()
+  }, [open])
+
   /* A clip with no recorded shape is hidden by the filter rather than let
      through. Letting it through would put the one clip nobody can vouch for
      into the run the filter exists to keep consistent -- and "Show all" is
@@ -143,6 +186,11 @@ export function ClipPicker<T extends ClipTile>({
   }
 
   const toggle = (id: string) => {
+    // The click that ends a hold is the hold ending, not a choice.
+    if (held.current) {
+      held.current = false
+      return
+    }
     if (autoConfirm) {
       confirm([id])
       return
@@ -155,7 +203,7 @@ export function ClipPicker<T extends ClipTile>({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="wide" className={styles.popup}>
+      <DialogContent size="full" className={styles.popup}>
         <DialogHeader>
           <DialogTitle>Clips</DialogTitle>
           {matchRatio != null && (
@@ -206,6 +254,13 @@ export function ClipPicker<T extends ClipTile>({
                     type="button"
                     className={selected ? styles.tileSelected : styles.tile}
                     onClick={() => toggle(clip.id)}
+                    onPointerDown={(e) => {
+                      if (e.button === 0) startHold(clip.id)
+                    }}
+                    onPointerUp={endHold}
+                    onPointerLeave={endHold}
+                    onPointerCancel={endHold}
+                    onContextMenu={(e) => e.preventDefault()}
                     disabled={alreadyIn}
                     aria-pressed={selected}
                     /* The prompt, which is the only thing that tells two clips
@@ -226,7 +281,20 @@ export function ClipPicker<T extends ClipTile>({
                       size={TILE}
                       alt={clip.title}
                       pad={0}
+                      mid={midpointOf(clip)}
                     />
+                    {/* Over the three frames, the same box, gone on release.
+                        Sound on, as the stage's is: the sound is part of what
+                        is being judged. */}
+                    {playingId === clip.id && (
+                      <video
+                        className={styles.preview}
+                        src={`/img/${clip.id}`}
+                        autoPlay
+                        loop
+                        playsInline
+                      />
+                    )}
                     {/* The position in the run being built, not a tick: with
                         several clips the useful fact is *where* this one lands,
                         and a tick says only "yes". A tick still, where there is

@@ -109,6 +109,17 @@
   --dialog-max-height: 70vh;
 }
 
+/* `size="full"`. `wide` with the margins taken in: the clip picker (#726)
+   shows three frames per clip and plays one on a press, and at 66vw that is
+   two clips a row. The 24px of backdrop left on every side is still a target
+   for clicking off. */
+.full {
+  width: calc(100vw - var(--space-48));
+  --dialog-max-width: calc(100vw - var(--space-48));
+  --dialog-height: calc(100vh - var(--space-48));
+  --dialog-max-height: calc(100vh - var(--space-48));
+}
+
 .header {
   display: flex;
   flex-direction: column;

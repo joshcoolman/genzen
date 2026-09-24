@@ -15,9 +15,9 @@
 /* `auto-fill` at a fixed column rather than `minmax(x, 1fr)`: the frames are
    sized in px, so a stretching column would leave the picture behind. */
 .tiles {
-  /* Twice `TILE` in the component: a tile is a clip's first frame and its last
-     one side by side (`ClipFrames`), so the column is a pair wide. */
-  --tile: 264px;
+  /* Three times `TILE` in the component: a tile is a clip's first, middle and
+     last frame side by side (`ClipFrames`), so the column is three wide. */
+  --tile: 360px;
   display: grid;
   grid-template-columns: repeat(auto-fill, var(--tile));
   justify-content: start;
@@ -27,6 +27,8 @@
 .tile,
 .tileSelected {
   position: relative;
+  /* A held press must not start selecting the caption's text. */
+  user-select: none;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -50,6 +52,21 @@
 .tile:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* The clip playing over its own frames while the press is held: the frames'
+   exact box, so nothing moves when it appears or goes. Height is the frames'
+   -- the caption below stays put. */
+.preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(var(--tile) / 3);
+  object-fit: contain;
+  background: var(--image-backing);
+  border-radius: var(--radius-md);
+  pointer-events: none;
 }
 
 /* Holds a tick where one clip is wanted and a position where several are, so
