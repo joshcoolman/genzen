@@ -214,6 +214,16 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
     }
   }, [edit.id, exporting, items.length])
 
+  /** Where each clip sits in the cut, for the picker's badge: 1-based, one
+   *  entry per use. */
+  const positions = useMemo(() => {
+    const map = new Map<string, Array<number>>()
+    items.forEach((item, index) => {
+      map.set(item.clip.id, [...(map.get(item.clip.id) ?? []), index + 1])
+    })
+    return map
+  }, [items])
+
   const runRatio = useMemo(
     () => (items[0] ? aspectRatio(items[0].clip) : null),
     [items],
@@ -237,6 +247,7 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
     time,
     setTime,
     runRatio,
+    positions,
     total,
     exporting,
     exportCut,

@@ -99,6 +99,7 @@ export function ClipPicker<T extends ClipTile>({
   onConfirm,
   max = 1,
   matchRatio = null,
+  positions,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -108,6 +109,14 @@ export function ClipPicker<T extends ClipTile>({
   max?: number
   /** The shape the picked clips must share, or null for no constraint (#512). */
   matchRatio?: number | null
+  /**
+   * Where each clip already sits in what the caller is building, by id, one
+   * position per use (#726). Drawn as a badge on the tile -- "in cut 2, 5"
+   * -- so the dialog says what is already on the timeline and where, which
+   * is the one thing the timeline itself cannot show while this is open.
+   * Informational: the clip stays pickable, since a cut may reuse a shot.
+   */
+  positions?: ReadonlyMap<string, ReadonlyArray<number>>
 }) {
   /**
    * **An ordered list, not a set: the order you click in is the answer** (#497).
@@ -281,6 +290,14 @@ export function ClipPicker<T extends ClipTile>({
                         first frame does not tell them apart, and these are the
                         two facts already on the row. */}
                     <span className={styles.facts}>{clipFacts(clip)}</span>
+                    {positions?.get(clip.id)?.length ? (
+                      <span
+                        className={styles.inCut}
+                        title="Already on the timeline, at these positions"
+                      >
+                        in cut {positions.get(clip.id)!.join(', ')}
+                      </span>
+                    ) : null}
                   </button>
                 )
               })}

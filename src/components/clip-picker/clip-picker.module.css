@@ -95,6 +95,23 @@
   height: 0.75rem;
 }
 
+/* Where the clip already sits in the caller's cut. The opposite corner from
+   the selection badge, and quieter: a fact about the timeline, not the pick
+   being made. */
+.inCut {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--text-3xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
 .facts {
   overflow: hidden;
   color: var(--text-muted);

@@ -81,8 +81,10 @@ export function View({
         open={view.picking}
         onOpenChange={view.setPicking}
         clips={clips}
-        /* Nothing is greyed out: a clip already in the cut can go in again. */
+        /* Nothing is greyed out: a clip already in the cut can go in again.
+           The badge says where it already is. */
         pickedIds={new Set()}
+        positions={view.positions}
         onConfirm={view.add}
         max={50}
         matchRatio={view.runRatio}
