@@ -94,9 +94,11 @@ An edit is a timeline of clips off the Video wall. Add clips, drag them into
 order, and drag each tile's edges to set where it starts and stops -- the tiles
 are as wide as they are long, a ruler above them is the clock, and the cut
 plays straight through in the browser with nothing rendered. Space plays and
-pauses, Left and Right step a frame, and **F saves the frame on screen** to a
-group on Images named after the edit, shown under the timeline too. **Export
-to Video** cuts it into one clip on the Video wall.
+pauses, Left and Right step a frame, S splits at the playhead, and **F saves
+the frame on screen** to a group on Images named after the edit, shown under
+the timeline too. **Continue** makes the clip between the highlighted clip and
+the next, pinned at both frames, and holds its place on the strip while FAL
+works. **Export to Video** cuts it into one clip on the Video wall.
 
 ## Keep the context and the cost
 
@@ -282,9 +284,10 @@ from fal's API) and #684 (keep a character's voice the same across clips).
 
 Recent highlights:
 
-- **`/edit` (#726, #728, #729)** -- a timeline of Video wall clips with in and
-  out points, played gapless with nothing rendered; keys for play, step,
-  delete; F saves a frame to a group named after the edit; Export stitches.
+- **`/edit` (#726 to #731)** -- a timeline of Video wall clips with in and out
+  points, played gapless with nothing rendered; keys for play, step, split,
+  delete; F saves a frame to a group named after the edit; Continue fills the
+  gap between two clips pinned at both frames; Export stitches.
 - The Video wall's playback dialog walks the section with Left and Right,
   carries the play state, and Delete moves on (#728). A press held on a card
   or a picker tile plays the clip in place.

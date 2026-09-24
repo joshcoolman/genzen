@@ -1,7 +1,7 @@
 'use server'
 
-import fallback from '#/lib/prompts/edit-continue.md'
 import { generateVideo } from '../../video/_actions/generate-video.action'
+import fallback from '#/lib/prompts/edit-continue.md'
 
 /**
  * Make the clip between two frames (#731).
