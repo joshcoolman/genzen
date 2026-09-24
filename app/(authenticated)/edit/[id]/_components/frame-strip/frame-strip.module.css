@@ -6,19 +6,19 @@
 
 .head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-12);
   color: var(--text-muted);
   font-size: var(--text-xs);
 }
 
-.head a {
+.open {
   margin-left: auto;
   color: var(--accent);
   text-decoration: none;
 }
 
-.head a:hover {
+.open:hover {
   text-decoration: underline;
 }
 
@@ -35,6 +35,52 @@
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
   overflow: hidden;
+}
+
+/* Selected: the ring Images' picked card wears (#733). */
+.frameOn {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* The whole picture is the target; the tick in the corner says the state. */
+.pick {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.tick {
+  position: absolute;
+  bottom: var(--space-4);
+  left: var(--space-4);
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--scrim-chip);
+  backdrop-filter: blur(8px);
+  color: var(--text-muted);
+  opacity: 0;
+}
+
+.frame:hover .tick {
+  opacity: 1;
+}
+
+.frameOn .tick {
+  color: var(--accent);
+  opacity: 1;
+}
+
+/* A frame being made: the square it will fill, and a spinner. */
+.pending {
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
 }
 
 .trash {

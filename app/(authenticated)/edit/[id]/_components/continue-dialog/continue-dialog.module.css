@@ -61,6 +61,67 @@
   color: var(--danger);
 }
 
+/* The slot choosing off the strip (#733). */
+.slotPicking {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.pickButton {
+  position: absolute;
+  bottom: var(--space-4);
+  left: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface-sunken) 70%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.pickButton:hover,
+.pickButton[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+/* The strip's stills, under the slots, while a slot is choosing. */
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  max-height: 176px;
+  overflow-y: auto;
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.pickerTile {
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.pickerTile:hover {
+  border-color: var(--accent);
+}
+
+.pickerTile img {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
 .note {
   margin: 0;
   color: var(--text-muted);

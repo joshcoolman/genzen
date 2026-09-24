@@ -31,6 +31,9 @@ import {
 } from '#/features/video/models'
 import { findClipEndFrame } from '#/features/video/server/find-clip-end-frame.action'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
+import { RATIO_TO_SIZE } from '#/features/ai-images/constants'
+import { IMAGE_MODELS, imageCapacityFor } from '#/features/ai-images/models'
+import { generateImage } from '#/features/ai-images/server/generate-image.action'
 import { createImageGroup } from '#/features/groups/groups.action'
 import { imageUrl } from '#/lib/image-url'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
@@ -78,6 +81,21 @@ export interface ContinueDraft {
 /** Where the clip goes when the dialog opens. Cheap, and its endpoint takes
  *  both frames. */
 const DEFAULT_CONTINUE_MODEL = 'h3-max-turbo'
+
+/** What Generate frame is about to make (#733). Null while closed. */
+export interface FrameDraft {
+  /** The selected strip frames, as references, in strip order. */
+  referenceIds: Array<string>
+  prompt: string
+  aspectRatio: string
+  modelSlug: string
+}
+
+/** Where Generate frame opens. Takes more references than a strip will ever
+ *  hand it, and is the model Director extracts with. */
+const DEFAULT_FRAME_MODEL = 'nano-banana-2'
+/** The ratio names a frame may be asked in: the ones Images sizes. */
+const FRAME_RATIOS = Object.keys(RATIO_TO_SIZE)
 
 /** The named ratio closest to the run's shape -- Director's `nearestRatio`.
  *  H3's image endpoint ignores it and follows the frame; Kling's validates
@@ -180,13 +198,54 @@ export function useView(
     }
     setItems((current) => current.filter((i) => i.clip.status !== 'failed'))
   }, [items])
+  /**
+   * The frames saved out of this edit (#729): rows in the edit's image
+   * group, which Images also draws, so a trash on either side is the same
+   * write. Held as state so a save and a generation land on the strip before
+   * the server has been re-read; the effect below takes the server's rows
+   * whenever they change, keeping any this render has not fetched yet.
+   */
+  const [frames, setFrames] = useState(() =>
+    initialFrames.filter((f) => f.status !== 'failed'),
+  )
+  /* A failed frame is said once, then dropped (#733). Seeded with the failures
+     already in the group, which were said when they happened. */
+  const saidFailed = useRef(
+    new Set(
+      initialFrames.filter((f) => f.status === 'failed').map((f) => f.id),
+    ),
+  )
+  /* Trashed here, so a refresh that raced the delete does not bring it back. */
+  const trashedFrames = useRef(new Set<string>())
+  useEffect(() => {
+    setFrames((current) => {
+      const fresh = new Map(initialFrames.map((f) => [f.id, f]))
+      const kept = current.filter((f) => !fresh.has(f.id))
+      const next = [
+        ...kept,
+        ...initialFrames.filter(
+          (f) => f.status !== 'failed' && !trashedFrames.current.has(f.id),
+        ),
+      ]
+      for (const f of initialFrames) {
+        if (f.status !== 'failed' || saidFailed.current.has(f.id)) continue
+        saidFailed.current.add(f.id)
+        toast.error(f.generation_error ?? 'A frame could not be made')
+      }
+      const same =
+        next.length === current.length && next.every((f, i) => f === current[i])
+      return same ? current : next
+    })
+  }, [initialFrames])
   const pendingSince = useMemo(() => {
-    const times = items
-      .filter((i) => i.clip.status === 'pending')
-      .map((i) => i.clip.created_at)
-      .sort()
+    const times = [
+      ...items
+        .filter((i) => i.clip.status === 'pending')
+        .map((i) => i.clip.created_at),
+      ...frames.filter((f) => f.status === 'pending').map((f) => f.created_at),
+    ].sort()
     return times[0] ?? null
-  }, [items])
+  }, [items, frames])
   useGenerationPoll(pendingSince, () => router.refresh())
 
   /** The cut as the stage plays it: the ready rows, in order (#731). */
@@ -331,13 +390,8 @@ export function useView(
     })
   }, [head, playing, playable])
 
-  /**
-   * The frames saved out of this edit (#729): rows in the edit's image
-   * group, which Images also draws, so a trash on either side is the same
-   * write. The group is made on the first press of F, named after the edit,
-   * and its id is held here for the presses after.
-   */
-  const [frames, setFrames] = useState(initialFrames)
+  /** The group is made on the first press of F, named after the edit, and its
+   *  id is held here for the presses after. */
   const groupId = useRef(edit.group_id)
   const ensureGroup = useCallback(async () => {
     if (groupId.current) return groupId.current
@@ -371,7 +425,13 @@ export function useView(
         kind: 'scrub',
       }).catch(() => {})
       setFrames((current) => [
-        { id: image.id, title: image.title, created_at: image.created_at },
+        {
+          id: image.id,
+          title: image.title,
+          created_at: image.created_at,
+          status: 'completed',
+          generation_error: null,
+        },
         ...current,
       ])
       return image
@@ -616,11 +676,107 @@ export function useView(
     }
   }, [draft])
   const trashFrame = useCallback((id: string) => {
+    trashedFrames.current.add(id)
     setFrames((current) => current.filter((f) => f.id !== id))
+    setSelectedFrames((current) => {
+      if (!current.has(id)) return current
+      const next = new Set(current)
+      next.delete(id)
+      return next
+    })
     void softDeleteImage(id).catch(() =>
       toast.error('The frame could not be trashed'),
     )
   }, [])
+
+  /**
+   * Generate frame (#733): a new still from some of the strip's, into the
+   * same group.
+   *
+   * A click on a strip frame toggles it into the selection; with one or more
+   * selected the button appears. The dialog takes them as references, a
+   * prompt, a ratio read off the run's first clip (the nearest name Images
+   * sizes, changeable) and any image model with a reference endpoint. The
+   * result is an ordinary row in the frames group -- `origin = 'edit'` and
+   * nothing else marks it -- so it is on the strip, on Images, and pickable
+   * into a Continue slot like any still. Generate closes the dialog on the
+   * press; the row is reserved before FAL is contacted, so the id is back in
+   * about a second and a placeholder holds its place until the poll settles
+   * it.
+   */
+  const [selectedFrames, setSelectedFrames] = useState<Set<string>>(
+    () => new Set(),
+  )
+  const toggleFrame = useCallback((id: string) => {
+    setSelectedFrames((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+  const [frameDraft, setFrameDraft] = useState<FrameDraft | null>(null)
+  const openGenerateFrame = useCallback(() => {
+    const referenceIds = frames
+      .filter((f) => selectedFrames.has(f.id) && f.status === 'completed')
+      .map((f) => f.id)
+    if (referenceIds.length === 0) return
+    /* The default model has to hold the selection; if it cannot, the first
+       that can. */
+    const fits = (slug: string) => imageCapacityFor(slug) >= referenceIds.length
+    const modelSlug = fits(DEFAULT_FRAME_MODEL)
+      ? DEFAULT_FRAME_MODEL
+      : (IMAGE_MODELS.find((m) => m.withImages && fits(m.slug))?.slug ??
+        DEFAULT_FRAME_MODEL)
+    setFrameDraft({
+      referenceIds,
+      prompt: '',
+      aspectRatio: nearestRatio(FRAME_RATIOS, runRatioRef.current),
+      modelSlug,
+    })
+  }, [frames, selectedFrames])
+  const submitGenerateFrame = useCallback(async () => {
+    const d = frameDraft
+    if (!d || d.prompt.trim().length === 0) return
+    setFrameDraft(null)
+    try {
+      const group = await ensureGroup()
+      const { recordId, model } = await generateImage({
+        prompt: d.prompt.trim(),
+        model: d.modelSlug,
+        origin: 'edit',
+        aspectRatio: d.aspectRatio,
+        referenceImageIds: d.referenceIds,
+        groupId: group,
+      })
+      setFrames((current) => [
+        {
+          id: recordId,
+          title:
+            IMAGE_MODELS.find((m) => m.slug === d.modelSlug)?.name ?? model,
+          created_at: new Date().toISOString(),
+          status: 'pending',
+          generation_error: null,
+        },
+        ...current,
+      ])
+      setSelectedFrames(new Set())
+    } catch (cause) {
+      /* A submit that failed after the row was reserved has left a failed row
+         in the group; it is said here, once, not again when the refresh
+         brings it. */
+      const reserved =
+        cause && typeof cause === 'object' && 'recordId' in cause
+          ? cause.recordId
+          : null
+      if (typeof reserved === 'string') saidFailed.current.add(reserved)
+      toast.error(
+        cause instanceof Error
+          ? cause.message
+          : 'The frame could not be started.',
+      )
+    }
+  }, [frameDraft, ensureGroup])
 
   /**
    * Space plays and pauses; Left and Right step a frame while paused, five
@@ -650,7 +806,8 @@ export function useView(
   )
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (picking || draft || e.metaKey || e.ctrlKey || e.altKey) return
+      if (picking || draft || frameDraft || e.metaKey || e.ctrlKey || e.altKey)
+        return
       const target = e.target as HTMLElement | null
       const tag = target?.tagName
       if (
@@ -686,7 +843,16 @@ export function useView(
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [picking, draft, playingIndex, removeIndex, step, capture, split])
+  }, [
+    picking,
+    draft,
+    frameDraft,
+    playingIndex,
+    removeIndex,
+    step,
+    capture,
+    split,
+  ])
 
   /** The first clip's shape sets the stage's, as Director's does. */
   /**
@@ -740,6 +906,12 @@ export function useView(
     capturing,
     capture,
     trashFrame,
+    selectedFrames,
+    toggleFrame,
+    frameDraft,
+    setFrameDraft,
+    openGenerateFrame,
+    submitGenerateFrame,
     items,
     playable,
     playFromRow,
