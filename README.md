@@ -284,10 +284,12 @@ from fal's API) and #684 (keep a character's voice the same across clips).
 
 Recent highlights:
 
-- **`/edit` (#726 to #731)** -- a timeline of Video wall clips with in and out
+- **`/edit` (#726 to #733)** -- a timeline of Video wall clips with in and out
   points, played gapless with nothing rendered; keys for play, step, split,
-  delete; F saves a frame to a group named after the edit; Continue fills the
-  gap between two clips pinned at both frames; Export stitches.
+  delete; F saves a frame to a group named after the edit; Generate frame
+  makes a new still from selected frames into that group; Continue fills the
+  gap between two clips, pinned at both frames or at any still off the strip;
+  Export stitches.
 - The Video wall's playback dialog walks the section with Left and Right,
   carries the play state, and Delete moves on (#728). A press held on a card
   or a picker tile plays the clip in place.

@@ -100,7 +100,8 @@ export async function listEditFrames(
 ): Promise<Array<EditFrame>> {
   if (!groupId) return []
   return sql<Array<EditFrame>>`
-    select id, title, to_json(created_at)#>>'{}' as created_at
+    select id, title, status, generation_error,
+           to_json(created_at)#>>'{}' as created_at
     from user_images
     where user_id = ${owner} and group_id = ${groupId} and deleted_at is null
     order by created_at desc

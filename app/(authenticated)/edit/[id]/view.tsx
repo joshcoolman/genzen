@@ -10,6 +10,7 @@ import {
 import { EditHeading } from '../_components/edit-heading/edit-heading'
 import { ContinueDialog } from './_components/continue-dialog/continue-dialog'
 import { CutPlayer } from './_components/cut-player/cut-player'
+import { FrameDialog } from './_components/frame-dialog/frame-dialog'
 import { FrameStrip } from './_components/frame-strip/frame-strip'
 import { Timeline } from './_components/timeline/timeline'
 import { formatClock } from './cut'
@@ -139,14 +140,25 @@ export function View({
         <FrameStrip
           frames={view.frames}
           groupId={view.framesGroupId}
+          selected={view.selectedFrames}
+          onToggle={view.toggleFrame}
+          onGenerate={view.openGenerateFrame}
           onTrash={view.trashFrame}
         />
       </div>
       <ContinueDialog
         draft={view.draft}
+        frames={view.frames}
         onChange={view.setDraft}
         onClose={() => view.setDraft(null)}
         onSubmit={() => void view.submitContinue()}
+      />
+      {/* A new still from the selected ones, into the same group (#733). */}
+      <FrameDialog
+        draft={view.frameDraft}
+        onChange={view.setFrameDraft}
+        onClose={() => view.setFrameDraft(null)}
+        onSubmit={() => void view.submitGenerateFrame()}
       />
       <ClipPicker
         open={view.picking}

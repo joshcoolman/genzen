@@ -89,18 +89,39 @@ group's live rows, so a trash on either side is one write to one row and
 there is nothing to keep in step. Renaming the edit renames the group, one
 way. Deleting the edit leaves the group: stills outlive the cut.
 
+**Generate frame (#733) makes a new still from some of the strip's.** A
+click on a strip frame toggles it into a selection (ring plus tick); with
+one or more selected the button appears with the count and opens a dialog:
+the selection as references, a prompt, a ratio read off the run's first clip
+(the nearest name in `RATIO_TO_SIZE`, changeable) and any image model with a
+`withImages` endpoint -- one that cannot hold the selection is greyed, not
+hidden. It is `generateImage` with `origin = 'edit'` and the frames group as
+`groupId`, so the row is an ordinary member of the group with nothing marking
+it. Generate closes the dialog on the press; the row is reserved before FAL
+is contacted and a placeholder holds its place on the strip until the poll
+settles it. The strip's rows carry `status` for that reason, and `use-view`
+takes the server's rows whenever they change, keeping any this render has
+not fetched yet; a failed row is said once and dropped.
+
 ## Continue (#731)
 
 Always called Continue, whatever it fills. It acts on the highlighted clip
 while paused: the first frame is that clip at its `out`, the last is the next
 ready clip at its `in` -- so on the last clip it is a plain continuation and
-the slot is simply absent. Both frames are read off detached `<video>`s at
+the ending slot is empty. Both frames are read off detached `<video>`s at
 the kept seconds (`captureFrameAt`) and saved into the frames group, since
 they are the frames the join is judged on; an untrimmed ending reuses the
 stored end frame (`findClipEndFrame`, #542). The dialog is Director's gen
 form cut to this: models that take a last frame, a length, a resolution where
 offered, a prompt that may be blank when both frames are set -- the fallback
 line is `src/lib/prompts/edit-continue.md`, sent by `continue.action.ts`.
+
+**Either slot can take a frame off the strip instead** (#733): the picker
+under the slots lists the group's finished stills, and a pick swaps the
+derived frame for one of them. That is how a frame generated here is used
+here -- an ending made from the cut becomes the frame the next clip is
+pinned to -- and why the ending slot is always drawn, empty when nothing
+follows.
 
 **Rerun is the same dialog loaded as the highlighted clip was made** --
 frames, prompt, length, resolution and model off `generation_metadata`

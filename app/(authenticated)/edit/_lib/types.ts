@@ -52,11 +52,14 @@ export interface Edit {
   updated_at: string
 }
 
-/** A frame saved out of the edit: a library row in the edit's group. */
+/** A frame saved out of the edit: a library row in the edit's group. A
+ *  generated one (#733) is `pending` until the poll settles it. */
 export interface EditFrame {
   id: string
   title: string
   created_at: string
+  status: 'pending' | 'completed' | 'failed'
+  generation_error: string | null
 }
 
 export interface EditSummary {
