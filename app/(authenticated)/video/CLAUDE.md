@@ -9,6 +9,11 @@ source images; `use-view.ts` owns everything after the first paint.
 
 ## Quirks
 
+- **A press held on a card plays the clip on the card** (#726), sound on,
+  until the press ends; a click still opens the playback dialog. The hook is
+  `src/lib/use-hold-to-play.ts`, shared with the clip picker, and the click
+  that ends a hold is swallowed by asking `consumeHold` first.
+
 - **A clip's `title` is its name; the model it was made with reads from
   `generation_metadata.model_label`** (#657). Until then `title` was the label
   and nothing else ever wrote there, so a clip could not be called "scene two".

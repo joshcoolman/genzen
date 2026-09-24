@@ -427,9 +427,25 @@
 
 .openPlayer {
   display: block;
+  position: relative;
   width: 100%;
   padding: 0;
   border: 0;
   background: var(--image-backing);
   cursor: pointer;
+  /* A held press must not start a drag of the poster or select around it. */
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* The clip playing over its own poster while the press is held: the poster's
+   exact box, filled the same way, so nothing moves when it appears or goes. */
+.preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--image-backing);
+  pointer-events: none;
 }
