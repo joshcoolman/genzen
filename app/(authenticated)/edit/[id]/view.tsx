@@ -1,13 +1,14 @@
 'use client'
 
-import { Download } from 'lucide-react'
+import { Camera, Download } from 'lucide-react'
 import { EditHeading } from '../_components/edit-heading/edit-heading'
 import { CutPlayer } from './_components/cut-player/cut-player'
+import { FrameStrip } from './_components/frame-strip/frame-strip'
 import { Timeline } from './_components/timeline/timeline'
 import { formatClock, locate } from './cut'
 import { useView } from './use-view'
 import styles from './view.module.css'
-import type { Edit } from '../_lib/types'
+import type { Edit, EditFrame } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { Button, ClipPicker } from '#/components'
 
@@ -22,11 +23,14 @@ import { Button, ClipPicker } from '#/components'
 export function View({
   edit,
   clips,
+  frames,
 }: {
   edit: Edit
   clips: Array<VideoRecord>
+  /** The frames already saved out of it (#729). */
+  frames: Array<EditFrame>
 }) {
-  const view = useView(edit, clips)
+  const view = useView(edit, clips, frames)
   const player = view.player
   const seek = (seconds: number) => {
     const at = locate(view.items, seconds)
@@ -58,6 +62,16 @@ export function View({
             <Download size={14} />
             {view.exporting ? 'Exporting...' : 'Export to Video'}
           </Button>
+          {/* The frame on the stage, to the library (#729). F does the same. */}
+          <Button
+            size="sm"
+            disabled={view.items.length === 0 || view.capturing}
+            onClick={() => void view.capture()}
+            title="Save this frame (F)"
+          >
+            <Camera size={14} />
+            {view.capturing ? 'Saving...' : 'Save frame'}
+          </Button>
           {view.error && (
             <p role="alert" className={styles.error}>
               {view.error}
@@ -75,6 +89,13 @@ export function View({
           onTrim={view.trim}
           onPlayFrom={(index, offset) => player.current?.seekTo(index, offset)}
           onSeek={seek}
+        />
+        {/* Under the strip: the timeline is the work and the frames are what
+            came out of it. */}
+        <FrameStrip
+          frames={view.frames}
+          groupId={view.framesGroupId}
+          onTrash={view.trashFrame}
         />
       </div>
       <ClipPicker

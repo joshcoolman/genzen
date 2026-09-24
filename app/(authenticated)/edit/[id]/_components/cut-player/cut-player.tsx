@@ -10,8 +10,10 @@ import {
 import { Volume2, VolumeX } from 'lucide-react'
 import { startOf } from '../../cut'
 import styles from './cut-player.module.css'
+import type { CapturedFrame } from '#/features/video/frame-capture'
 import type { CSSProperties, ReactNode, RefObject } from 'react'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
+import { captureFrame } from '#/features/video/frame-capture'
 
 const srcFor = (clip: VideoRecord) => `/img/${clip.id}`
 
@@ -35,6 +37,13 @@ export interface CutPlayerHandle {
   /** One frame's length in seconds, as last observed while playing; 1/30
    *  until a clip has played. Arrow keys step by it. */
   frameSeconds: () => number
+  /** The frame on the stage, off the visible element (#729). Pauses first
+   *  if playing: a running clip has no single frame to mean. */
+  capture: () => Promise<{
+    frame: CapturedFrame
+    clip: VideoRecord
+    timeSeconds: number
+  }>
 }
 
 /** How close to `out` counts as reached. A frame at 60fps is 0.017s; half of
@@ -299,8 +308,22 @@ export function CutPlayer({
       toggle,
       isPlaying: () => isPlayingRef.current,
       frameSeconds: () => frameSeconds.current,
+      capture: async () => {
+        const el = els[active].current
+        const item = itemsRef.current.at(indexRef.current)
+        if (!el || !item) throw new Error('Nothing is on the stage')
+        if (!el.paused) {
+          el.pause()
+          setIsPlaying(false)
+        }
+        return {
+          frame: await captureFrame(el),
+          clip: item.clip,
+          timeSeconds: el.currentTime,
+        }
+      },
     }),
-    [jumpTo, toggle],
+    [jumpTo, toggle, active],
   )
 
   useEffect(() => {

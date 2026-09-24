@@ -4,8 +4,11 @@ import {
   createEdit,
   deleteEdit,
   getEdit,
+  listEditFrames,
   listEdits,
+  renameEdit,
   saveCut,
+  setEditGroup,
 } from './edits.server'
 import { sql } from '#/lib/server/db.server'
 
@@ -50,6 +53,36 @@ describe('edits', () => {
     expect(summary.count).toBe(3)
     expect(summary.seconds).toBe(7.5)
     expect(summary.thumbnails).toEqual([a, b, a])
+  })
+
+  it('names its frames group after itself, one way, and lists live members', async () => {
+    const id = randomUUID()
+    await createEdit(owner, 'Frames', id)
+    const [group] = await sql<Array<{ id: string }>>`
+      insert into image_groups (user_id, name, kind)
+      values (${owner}, 'Frames', 'image') returning id`
+    const [strangers] = await sql<Array<{ id: string }>>`
+      insert into image_groups (user_id, name, kind)
+      values (${stranger}, 'Not yours', 'image') returning id`
+    await expect(setEditGroup(owner, id, strangers.id)).rejects.toThrow()
+    await setEditGroup(owner, id, group.id)
+    expect((await getEdit(owner, id))?.group_id).toBe(group.id)
+
+    await renameEdit(owner, id, 'Frames, renamed')
+    const [named] = await sql<
+      Array<{ name: string }>
+    >`select name from image_groups where id = ${group.id}`
+    expect(named.name).toBe('Frames, renamed')
+
+    const [live] = await sql<Array<{ id: string }>>`
+      insert into user_images (user_id, title, group_id)
+      values (${owner}, 'kept', ${group.id}) returning id`
+    await sql`insert into user_images (user_id, title, group_id, deleted_at)
+      values (${owner}, 'trashed', ${group.id}, now())`
+    expect((await listEditFrames(owner, group.id)).map((f) => f.id)).toEqual([
+      live.id,
+    ])
+    expect(await listEditFrames(owner, null)).toEqual([])
   })
 
   it('refuses a stale revision and a span with no length', async () => {

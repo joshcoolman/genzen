@@ -1,0 +1,70 @@
+.strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-12);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.head a {
+  margin-left: auto;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.head a:hover {
+  text-decoration: underline;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.frame {
+  position: relative;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.trash {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface-sunken) 70%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.frame:hover .trash {
+  opacity: 1;
+}
+
+.trash:hover {
+  color: var(--danger);
+}
+
+.empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}

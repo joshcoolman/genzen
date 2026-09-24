@@ -46,7 +46,17 @@ export interface Edit {
    *  the same cut is rejected rather than silently overwriting. */
   revision: number
   cut: StoredCut
+  /** The image group its saved frames go in (#729), or null until F has
+   *  been pressed once. */
+  group_id: string | null
   updated_at: string
+}
+
+/** A frame saved out of the edit: a library row in the edit's group. */
+export interface EditFrame {
+  id: string
+  title: string
+  created_at: string
 }
 
 export interface EditSummary {

@@ -75,6 +75,18 @@ route is that editor, so it takes all four, and Director stays as it is.
 - 40px per second, fixed. A zoom is one variable away and not taken until a
   cut is long enough to want it.
 
+## Frames (#729)
+
+F, or Save frame, saves the frame on the stage to the library: the visible
+`<video>` through `captureFrame` (canvas, exact at a paused position; a
+playing stage is paused first), then `saveFileToLibrary` and a `scrub`
+stamp, the path Director's Add gen takes. **The edit owns one image group,
+named after it**, made on the first press and kept as `edits.group_id`. The
+strip under the timeline and the group's view on Images both draw the
+group's live rows, so a trash on either side is one write to one row and
+there is nothing to keep in step. Renaming the edit renames the group, one
+way. Deleting the edit leaves the group: stills outlive the cut.
+
 ## Export
 
 `_lib/export.server.ts` downloads each source once, runs
