@@ -719,8 +719,11 @@ Final Cut, Script, exports, stitching, the private media path
 (`director_media` and its routes), the pending/review protocol, Enhance, and the
 Lab import. All of it was built for a way of working nobody arrived at, and
 Sequence reached the same goal without any of it. Migration `0019` dropped the
-tables and `scripts/purge-director.mjs` deleted the content, including the
-export copies the old version of this file promised would survive.
+tables and a one-off script deleted the content, including the export copies
+the old version of this file promised would survive. That ran against the
+deployed database on 2026-09-24 -- three bucket objects, one published export
+row and one old session -- and the script went with it (#705); it existed for
+one run against one database and there is nothing left for it to read.
 
 If stitching is wanted again it starts from a run of library rows, which is a
 better starting point than the one that was deleted.

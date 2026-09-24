@@ -2,8 +2,9 @@
 --
 -- A session is now a name and an ordered list of `user_images` ids, so the
 -- private media path, the export machinery and the final-cut runner have no
--- rows left to hold. `scripts/purge-director.mjs` deletes the bucket objects
--- and the session rows first; this drops the tables behind them.
+-- rows left to hold. A one-off script (`scripts/purge-director.mjs`, deleted
+-- once it had run everywhere -- #705) removed the bucket objects and the
+-- session rows first; this drops the tables behind them.
 --
 -- `director_sessions` stays: `(id, user_id, name, revision, cut, ...)` is
 -- exactly what a named, versioned, ordered thing needs. `draft` goes with the
