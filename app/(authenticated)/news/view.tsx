@@ -175,7 +175,7 @@ export function View({ initial }: { initial: Array<NewsPost> }) {
             {isFetching ? 'Searching...' : 'Get news'}
           </Button>
         </div>
-        {error && <p className={styles.error}>{error}</p>}
+        {error && <p className={styles.error}>{error.message}</p>}
       </div>
 
       {posts.length === 0 ? (
