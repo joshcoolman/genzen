@@ -271,10 +271,14 @@ of its own row, so the panel keeps a dead id and the next press fails with
 
 Recent highlights:
 
-- **News (#718)** -- `/news` is a feed of illustrated posts about what is new in
-  image and video generation. Get news runs Claude with web search, reads
+- **News (#718, #719)** -- `/news` is a feed of illustrated posts about what is
+  new in image and video generation. Get news runs Claude with web search, reads
   genzen's own model registries for the baseline diff, and generates a FAL Flare
-  hero image for each post. Up to 9 posts per press, zero is a valid result.
+  hero image for each post. Up to 9 posts per press, zero is a valid result. A
+  card's `...` menu re-rolls its thumbnail; Haiku picks the subject from the post
+  body first. Delete is development-only.
+- `/storyboard` never refuses a brief over its shot count: out of range clamps
+  into 2-9, unreadable leaves the count to the plan (#719).
 - `/storyboard` plans the set from the brief: count, ratio, what is held and
   what varies. **Populate** loads planned shots as editable prompts for one
   Claude call, no image spend. Cards caption from their shot (#714).
