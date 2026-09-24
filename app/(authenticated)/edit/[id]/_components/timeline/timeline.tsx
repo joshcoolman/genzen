@@ -1,8 +1,8 @@
 'use client'
 
 import { Fragment, useRef, useState } from 'react'
-import { Plus, X } from 'lucide-react'
-import { formatClock, lengthOf, totalSeconds } from '../../cut'
+import { Loader, Plus, X } from 'lucide-react'
+import { formatClock, isReady, lengthOf, totalSeconds } from '../../cut'
 import styles from './timeline.module.css'
 import type { PlayableItem } from '../cut-player/cut-player'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
@@ -231,6 +231,25 @@ function Tile({
 
   const span = draft ?? item
   const width = lengthOf(span) * PX_PER_SECOND
+
+  /* A clip FAL has not finished (#731): holds its place at the length that
+     was asked for, cannot be dragged, trimmed or played. Director's rule --
+     a run rearranged around a picture nobody has seen is judged blind. */
+  if (!isReady(item)) {
+    return (
+      <div
+        className={cx(styles.tile, styles.tilePending)}
+        style={{ width }}
+        title="Being made"
+      >
+        <span className={styles.ordinal}>{index + 1}</span>
+        <div className={styles.making}>
+          <Loader size={14} />
+          <span>Making this</span>
+        </div>
+      </div>
+    )
+  }
   /* The out handle stops at the footage's end. Until the file's real length is
      known the row's requested length is the best guess, and the current out
      point is a floor on it: a clip cannot be shorter than what is kept. */
