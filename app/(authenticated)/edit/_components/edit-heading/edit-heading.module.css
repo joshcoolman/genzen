@@ -1,0 +1,35 @@
+.heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-width: 0;
+  border-bottom: var(--border-width) solid var(--border);
+  margin-bottom: var(--space-20);
+
+  > a {
+    display: inline-flex;
+    align-items: center;
+    color: var(--text-muted);
+  }
+  > a:hover {
+    color: var(--text);
+  }
+  h1 {
+    font-size: var(--text-lg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-block: var(--space-8);
+  }
+  p {
+    color: var(--danger);
+  }
+}
+
+/* Tabs, when the session has them: the end of the same line. */
+.end {
+  margin-left: auto;
+  align-self: stretch;
+  display: flex;
+  align-items: stretch;
+}

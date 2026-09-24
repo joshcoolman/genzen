@@ -4,6 +4,7 @@ import {
   FlaskConical,
   Logs,
   Newspaper,
+  Scissors,
   Sparkles,
   Trash2,
   User,
@@ -54,6 +55,12 @@ export const navItems: Array<NavItem> = [
     label: 'Director',
     href: '/director',
     icon: Film,
+  },
+  {
+    id: 'edit',
+    label: 'Edit',
+    href: '/edit',
+    icon: Scissors,
   },
   {
     id: 'news',

@@ -1,0 +1,65 @@
+.card {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  padding: 0;
+  background: var(--image-backing);
+  cursor: pointer;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+.menu {
+  position: absolute;
+  top: var(--space-8);
+  left: var(--space-8);
+}
+.caption {
+  padding: var(--space-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  > button {
+    border: 0;
+    padding: 0;
+    background: none;
+    color: var(--text);
+    text-align: left;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+  }
+  > p,
+  > time {
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+  }
+}
+.strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 3rem));
+  gap: var(--space-4);
+  > span {
+    aspect-ratio: 1;
+    background: var(--slot-empty);
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+  }
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
