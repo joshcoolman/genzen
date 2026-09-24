@@ -265,12 +265,19 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** -- open #716 next: an image staged as a reference survives the trash
-of its own row, so the panel keeps a dead id and the next press fails with
-"Source image not found". Small, already cost a run.
+**Focus is empty.** Promote from Now and open that issue -- it is the spec.
+Top of Now is **#585** (describe an image automatically on upload, and store
+the result); behind it #723 (H3 Max Turbo's cost estimate cannot be confirmed
+from fal's API) and #684 (keep a character's voice the same across clips).
 
 Recent highlights:
 
+- Trashing an image that was staged as a reference now takes it out of the
+  generator panel and says so, on every trash path on /images (#716). It used
+  to keep the thumbnail and a dead id, and the next press failed every card
+  with "Source image not found".
+- The old Director's rows and bucket objects are gone from the deployed
+  database, and the one-off script that did it is deleted (#705).
 - **News (#718, #719)** -- `/news` is a feed of illustrated posts about what is
   new in image and video generation. Get news runs Claude with web search, reads
   genzen's own model registries for the baseline diff, and generates a FAL Flare
@@ -283,9 +290,6 @@ Recent highlights:
   what varies. **Populate** loads planned shots as editable prompts for one
   Claude call, no image spend. Cards caption from their shot (#714).
 - Lighting removed: dock button, dialog, Lab page, effect prompts (#713).
-- A storyboard row generates its section on Kling O3 Pro or Seedance 2.5;
-  no music by instruction (#697, #702).
-- A scene's spoken line can be respelled or reworded beside the script (#700).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.
