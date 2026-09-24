@@ -46,6 +46,26 @@ export function locate(
   return { index: last, offset: lengthOf(spans[last]) }
 }
 
+/** The shortest span a split may leave on either side. */
+export const MIN_SPLIT = 0.2
+
+/**
+ * Cut one span in two at `offset` seconds into it. Null when the cut would
+ * leave nothing worth keeping on a side: a split at the very edge is a
+ * no-op with a phantom clip, not an edit.
+ */
+export function splitSpan<T extends Span>(
+  span: T,
+  offset: number,
+): [T, T] | null {
+  if (offset < MIN_SPLIT || lengthOf(span) - offset < MIN_SPLIT) return null
+  const at = span.in + offset
+  return [
+    { ...span, out: at },
+    { ...span, in: at },
+  ]
+}
+
 /** `0:07.3` -- tenths, because a trim is judged at that grain. */
 export function formatClock(seconds: number): string {
   const safe = Math.max(0, seconds)

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getEdit } from '../_lib/edits.server'
+import { getEdit, listEditFrames } from '../_lib/edits.server'
 import { listVideos } from '../../video/_actions/generate-video.action'
 import { View } from './view'
 import { resolveAuth } from '#/lib/server/auth.server'
@@ -16,6 +16,10 @@ export default async function EditWorkspacePage({
   const { userId } = await resolveAuth()
   const edit = await getEdit(userId, (await params).id)
   if (!edit) notFound()
-  const clips = (await listVideos()).filter((c) => c.status === 'completed')
-  return <View key={edit.id} edit={edit} clips={clips} />
+  const [videos, frames] = await Promise.all([
+    listVideos(),
+    listEditFrames(userId, edit.group_id),
+  ])
+  const clips = videos.filter((c) => c.status === 'completed')
+  return <View key={edit.id} edit={edit} clips={clips} frames={frames} />
 }

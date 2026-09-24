@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatClock, locate, startOf, totalSeconds } from './cut'
+import { formatClock, locate, splitSpan, startOf, totalSeconds } from './cut'
 
 const spans = [
   { in: 0, out: 5 },
@@ -25,6 +25,15 @@ describe('cut arithmetic', () => {
   it('lands past the end on the last clip, and nowhere on an empty run', () => {
     expect(locate(spans, 99)).toEqual({ index: 2, offset: 3.5 })
     expect(locate([], 1)).toBeNull()
+  })
+
+  it('splits a span in two, and refuses a split at the edge', () => {
+    expect(splitSpan({ in: 1, out: 4 }, 1.5)).toEqual([
+      { in: 1, out: 2.5 },
+      { in: 2.5, out: 4 },
+    ])
+    expect(splitSpan({ in: 1, out: 4 }, 0.1)).toBeNull()
+    expect(splitSpan({ in: 1, out: 4 }, 2.95)).toBeNull()
   })
 
   it('formats the clock to tenths', () => {

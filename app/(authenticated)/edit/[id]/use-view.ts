@@ -1,16 +1,21 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { writeCut } from '../_actions/edits.action'
+import { attachFramesGroup, writeCut } from '../_actions/edits.action'
 import { exportToVideo } from '../_actions/export.action'
-import { locate, totalSeconds } from './cut'
+import { locate, splitSpan, totalSeconds } from './cut'
 import type {
   CutPlayerHandle,
   PlayableItem,
 } from './_components/cut-player/cut-player'
-import type { Edit } from '../_lib/types'
+import type { Edit, EditFrame } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
-import { aspectRatio } from '#/features/video/clip-facts'
+import { aspectRatio, clipModel, clipName } from '#/features/video/clip-facts'
+import { createImageGroup } from '#/features/groups/groups.action'
+import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
+import { softDeleteImage } from '#/features/user-images/server/images.action'
+import { stampFrameSource } from '#/features/video/server/stamp-frame.action'
+import { useAuth } from '#/lib/auth'
 import { toast } from '#/components'
 
 /** The row's requested length, or a guess a metadata load will correct. */
@@ -30,7 +35,12 @@ function requestedSeconds(clip: VideoRecord): number {
  * Saved on every change against the revision, one write at a time, on
  * Director's reasoning; a failed save is said, not rolled back.
  */
-export function useView(edit: Edit, clips: Array<VideoRecord>) {
+export function useView(
+  edit: Edit,
+  clips: Array<VideoRecord>,
+  initialFrames: Array<EditFrame>,
+) {
+  const { user } = useAuth()
   const [items, setItems] = useState<Array<PlayableItem>>(() => {
     const byId = new Map(clips.map((c) => [c.id, c]))
     return edit.cut.clips.flatMap((stored) => {
@@ -121,6 +131,35 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
 
   const [playingIndex, setPlayingIndex] = useState<number | null>(null)
   const [time, setTime] = useState(0)
+  const [playing, setPlaying] = useState(false)
+
+  /**
+   * Split the clip under the playhead in two, there (#729). Paused only: a
+   * running clip has no single frame to cut on, which is the same reason F
+   * pauses first. The left piece keeps its key, so it stays where it was; the
+   * right one is new and starts at the playhead, which is where the stage is
+   * -- nothing moves on screen except a seam appearing.
+   */
+  const head = useMemo(() => locate(items, time), [items, time])
+  const canSplit =
+    !playing &&
+    head !== null &&
+    splitSpan(items[head.index], head.offset) !== null
+  const split = useCallback(() => {
+    if (!head || playing) return
+    setItems((current) => {
+      const item = current[head.index]
+      const halves = splitSpan(item, head.offset)
+      if (!halves) return current
+      const [left, right] = halves
+      return [
+        ...current.slice(0, head.index),
+        left,
+        { ...right, key: crypto.randomUUID() },
+        ...current.slice(head.index + 1),
+      ]
+    })
+  }, [head, playing])
 
   /* The strip drives the player and nothing drives the strip, so the calls
      between them are imperative (Director's reasoning): a tile click has to
@@ -129,24 +168,87 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
   const player = useRef<CutPlayerHandle>(null)
 
   /**
+   * The frames saved out of this edit (#729): rows in the edit's image
+   * group, which Images also draws, so a trash on either side is the same
+   * write. The group is made on the first press of F, named after the edit,
+   * and its id is held here for the presses after.
+   */
+  const [frames, setFrames] = useState(initialFrames)
+  const groupId = useRef(edit.group_id)
+  const [capturing, setCapturing] = useState(false)
+  const capture = useCallback(async () => {
+    const handle = player.current
+    if (!handle || capturing) return
+    setCapturing(true)
+    try {
+      const { frame: shot, clip, timeSeconds } = await handle.capture()
+      if (!groupId.current) {
+        const made = await createImageGroup(edit.name, [], 'image')
+        const id = made.groups[0]?.id
+        if (!id) throw new Error('The frames group could not be made.')
+        await attachFramesGroup(edit.id, id)
+        groupId.current = id
+      }
+      const at = timeSeconds.toFixed(2)
+      const image = await saveFileToLibrary({
+        userId: user.id,
+        file: new File([shot.blob], `frame-${clip.id}-${at}.png`, {
+          type: 'image/png',
+        }),
+        title: `Frame · ${clipName(clip) ?? clipModel(clip)} · ${at}s`,
+        description: clip.description,
+        groupId: groupId.current,
+      })
+      // Best effort, as Director has it: a frame whose origin failed to stamp
+      // is still a frame.
+      void stampFrameSource({
+        imageId: image.id,
+        clipId: clip.id,
+        timeSeconds,
+        kind: 'scrub',
+      }).catch(() => {})
+      setFrames((current) => [
+        { id: image.id, title: image.title, created_at: image.created_at },
+        ...current,
+      ])
+      toast.success('Frame saved')
+    } catch (cause) {
+      toast.error(
+        cause instanceof Error
+          ? cause.message
+          : 'The frame could not be saved.',
+      )
+    } finally {
+      setCapturing(false)
+    }
+  }, [capturing, edit.id, edit.name, user.id])
+  const trashFrame = useCallback((id: string) => {
+    setFrames((current) => current.filter((f) => f.id !== id))
+    void softDeleteImage(id).catch(() =>
+      toast.error('The frame could not be trashed'),
+    )
+  }, [])
+
+  /**
    * Space plays and pauses; Left and Right step a frame while paused, five
-   * with Shift; Delete and Backspace take out the highlighted clip. On the window, as Video's Escape is, and skipped when the key was
+   * with Shift; F saves the frame on screen; S splits the clip at the
+   * playhead; Delete and Backspace take out the highlighted clip. On the window, as Video's Escape is, and skipped when the key was
    * meant for something else: a field, a button (the stage is one, and Space
    * on a focused button is already a press), or the picker while it is open.
    */
   const removeIndex = useCallback((index: number) => {
     setItems((current) => current.filter((_, i) => i !== index))
   }, [])
-  /** Move the paused stage by `frames`, across a join if that is where the
-   *  next frame is. On the run's clock, so a step back from a clip's first
-   *  frame lands on the previous clip's last. */
+  /** Move the paused stage by `count` frames, across a join if that is where
+   *  the next frame is. On the run's clock, so a step back from a clip's
+   *  first frame lands on the previous clip's last. */
   const step = useCallback(
-    (frames: number) => {
+    (count: number) => {
       const handle = player.current
       if (!handle || handle.isPlaying()) return
       const target = Math.max(
         0,
-        Math.min(time + frames * handle.frameSeconds(), totalSeconds(items)),
+        Math.min(time + count * handle.frameSeconds(), totalSeconds(items)),
       )
       const at = locate(items, target)
       if (at) handle.seekTo(at.index, at.offset)
@@ -169,6 +271,12 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
       if (e.key === ' ') {
         e.preventDefault()
         player.current?.toggle()
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault()
+        void capture()
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault()
+        split()
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         // Frame by frame while paused, five at a time with Shift. Nothing
         // while playing: a nudge under a running clip is not a thing you see.
@@ -185,7 +293,7 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [picking, playingIndex, removeIndex, step])
+  }, [picking, playingIndex, removeIndex, step, capture, split])
 
   /** The first clip's shape sets the stage's, as Director's does. */
   /**
@@ -232,6 +340,11 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
 
   return {
     player,
+    frames,
+    framesGroupId: groupId.current,
+    capturing,
+    capture,
+    trashFrame,
     items,
     durations,
     learnDuration,
@@ -244,6 +357,10 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
     trim,
     playingIndex,
     setPlayingIndex,
+    playing,
+    setPlaying,
+    canSplit,
+    split,
     time,
     setTime,
     runRatio,

@@ -7,7 +7,7 @@ import {
   parseCut,
   storedCutSchema,
 } from './types'
-import type { CutClip, Edit, EditSummary } from './types'
+import type { CutClip, Edit, EditFrame, EditSummary } from './types'
 import { first, jsonb, sql } from '#/lib/server/db.server'
 
 /**
@@ -19,7 +19,7 @@ export async function getEdit(owner: string, id: string): Promise<Edit | null> {
   if (!idSchema.safeParse(id).success) return null
   const row = first(
     await sql<Array<Edit>>`
-    select id, name, revision, cut, to_json(updated_at)#>>'{}' as updated_at
+    select id, name, revision, cut, group_id, to_json(updated_at)#>>'{}' as updated_at
     from edits where id = ${id} and user_id = ${owner}
   `,
   )
@@ -65,11 +65,46 @@ export async function createEdit(
   return requireEdit(owner, id)
 }
 
+/** Renames the frames group with it, one way (#729): the group is named
+ *  after the edit, and a group renamed on Images leaves the edit alone. */
 export async function renameEdit(owner: string, id: string, name: string) {
   name = nameSchema.parse(name)
-  await requireEdit(owner, id)
+  const edit = await requireEdit(owner, id)
   await sql`update edits set name = ${name}, updated_at = now()
     where id = ${id} and user_id = ${owner}`
+  if (edit.group_id) {
+    await sql`update image_groups set name = ${name}
+      where id = ${edit.group_id} and user_id = ${owner}`
+  }
+}
+
+/** Point the edit at the group its frames go in. Written once, by the first
+ *  press of F; a later press finds it on the row. */
+export async function setEditGroup(owner: string, id: string, groupId: string) {
+  await requireEdit(owner, id)
+  const rows = await sql`
+    update edits set group_id = ${groupId}
+    where id = ${id} and user_id = ${owner}
+      and exists (select 1 from image_groups
+                  where id = ${groupId} and user_id = ${owner})
+    returning id
+  `
+  if (!rows.length) throw new Error('That group is not yours.')
+}
+
+/** The frames saved out of the edit, newest first: the live members of its
+ *  group. Trashing loses `group_id`, so a trashed frame is simply not here. */
+export async function listEditFrames(
+  owner: string,
+  groupId: string | null,
+): Promise<Array<EditFrame>> {
+  if (!groupId) return []
+  return sql<Array<EditFrame>>`
+    select id, title, to_json(created_at)#>>'{}' as created_at
+    from user_images
+    where user_id = ${owner} and group_id = ${groupId} and deleted_at is null
+    order by created_at desc
+  `
 }
 
 /**

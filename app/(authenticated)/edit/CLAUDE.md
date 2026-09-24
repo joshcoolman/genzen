@@ -62,8 +62,10 @@ route is that editor, so it takes all four, and Director stays as it is.
   The pictures are what a cut is judged by; the title attribute keeps the
   facts.
 - **Space plays and pauses, Left and Right step a frame while paused (five
-  with Shift), Delete and Backspace remove the highlighted clip, and a tile
-  click is a move, not a play button** -- the stage stays playing
+  with Shift), S splits the clip under the playhead (`splitSpan` in
+  `cut.ts`; the button shows only while paused, since that is the one state
+  in which the playhead is a frame), Delete and Backspace remove the
+  highlighted clip, and a tile click is a move, not a play button** -- the stage stays playing
   or paused as it was and lands on the clip. Window keydown like Video's
   Escape, skipped over fields, buttons and the open picker. The stage is a
   `<button>`, so Space with it focused is its own press and the listener
@@ -74,6 +76,18 @@ route is that editor, so it takes all four, and Director stays as it is.
   lands on the previous clip's last.
 - 40px per second, fixed. A zoom is one variable away and not taken until a
   cut is long enough to want it.
+
+## Frames (#729)
+
+F, or Save frame, saves the frame on the stage to the library: the visible
+`<video>` through `captureFrame` (canvas, exact at a paused position; a
+playing stage is paused first), then `saveFileToLibrary` and a `scrub`
+stamp, the path Director's Add gen takes. **The edit owns one image group,
+named after it**, made on the first press and kept as `edits.group_id`. The
+strip under the timeline and the group's view on Images both draw the
+group's live rows, so a trash on either side is one write to one row and
+there is nothing to keep in step. Renaming the edit renames the group, one
+way. Deleting the edit leaves the group: stills outlive the cut.
 
 ## Export
 
