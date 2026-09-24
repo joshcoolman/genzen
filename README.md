@@ -272,6 +272,10 @@ from fal's API) and #684 (keep a character's voice the same across clips).
 
 Recent highlights:
 
+- **News runs on Effect (#721)**, and nothing else does -- a lint rule holds
+  the border. Typed error family, services as Layers named for the job rather
+  than the vendor, retry gated on the tag, and actions that return
+  `{ ok, value } | { ok, error }`. `docs/reference/effect.md`.
 - Trashing an image that was staged as a reference now takes it out of the
   generator panel and says so, on every trash path on /images (#716). It used
   to keep the thumbnail and a dead id, and the next press failed every card
@@ -289,7 +293,6 @@ Recent highlights:
 - `/storyboard` plans the set from the brief: count, ratio, what is held and
   what varies. **Populate** loads planned shots as editable prompts for one
   Claude call, no image spend. Cards caption from their shot (#714).
-- Lighting removed: dock button, dialog, Lab page, effect prompts (#713).
 
 The work board is at `localhost:3210/kanban/genzen`. Issues and their labels hold
 what is in progress and what comes next; this README describes what is available.

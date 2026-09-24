@@ -1,6 +1,7 @@
 //  @ts-check
 
 import { tanstackConfig } from '@tanstack/eslint-config'
+import effectAllowlist from './eslint-rules/effect-allowlist.js'
 import serverSuffix from './eslint-rules/server-suffix.js'
 import sqlScoping from './eslint-rules/sql-user-scoping.js'
 
@@ -38,5 +39,12 @@ export default [
     files: ['**/*.ts'],
     plugins: { genzenSuffix: serverSuffix },
     rules: { 'genzenSuffix/server-suffix': 'error' },
+  },
+  {
+    // Effect lives in src/lib/effect/ and News, and spreads on purpose rather
+    // than by import (#721). The rule's own comment holds the reasoning.
+    files: ['**/*.ts', '**/*.tsx'],
+    plugins: { genzenEffect: effectAllowlist },
+    rules: { 'genzenEffect/effect-allowlist': 'error' },
   },
 ]
