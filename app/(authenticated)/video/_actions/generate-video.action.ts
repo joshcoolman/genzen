@@ -40,7 +40,7 @@ export interface GenerateVideoInput {
    * born in a session is shown only there, hidden from the Video wall by the
    * listing below, and trashed with the run or the session.
    */
-  origin?: 'images' | 'director'
+  origin?: 'images' | 'director' | 'edit'
   /** Pins the generation's starting noise, on endpoints that take one. */
   seed?: number
 }

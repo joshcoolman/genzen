@@ -8,7 +8,6 @@ import {
   useState,
 } from 'react'
 import { Volume2, VolumeX } from 'lucide-react'
-import { startOf } from '../../cut'
 import styles from './cut-player.module.css'
 import type { CapturedFrame } from '#/features/video/frame-capture'
 import type { CSSProperties, ReactNode, RefObject } from 'react'
@@ -84,7 +83,7 @@ export function CutPlayer({
   controls,
   onIndexChange,
   onPlayingChange,
-  onTimeChange,
+  onPositionChange,
   onDuration,
   placeholder = 'Add clips below to start the cut.',
   stageMax,
@@ -97,9 +96,10 @@ export function CutPlayer({
   /** Whether the stage is running, so a caller can offer what only makes
    *  sense while it is not (#729's Split). */
   onPlayingChange?: (playing: boolean) => void
-  /** Seconds on the run's clock, once per presented frame while playing and
-   *  once per seek while not. */
-  onTimeChange?: (seconds: number) => void
+  /** Where the stage is: which of `items` and how far into its kept span,
+   *  once per presented frame while playing and once per seek while not. The
+   *  caller turns that into a clock, since it knows what else is on the strip. */
+  onPositionChange?: (index: number, offset: number) => void
   /** A clip's real length, learned from its metadata. The row's
    *  `duration_seconds` is what was requested; this is what came back. */
   onDuration?: (clipId: string, seconds: number) => void
@@ -132,8 +132,8 @@ export function CutPlayer({
   /** Which clip each element is loaded with, so its metadata is credited to
    *  the right row whether it is the one playing or the one waiting. */
   const holding = useRef<[string | null, string | null]>([null, null])
-  const onTimeRef = useRef(onTimeChange)
-  onTimeRef.current = onTimeChange
+  const onPositionRef = useRef(onPositionChange)
+  onPositionRef.current = onPositionChange
   const onDurationRef = useRef(onDuration)
   onDurationRef.current = onDuration
   /* Learned, not declared: a `<video>` does not say its frame rate. Each
@@ -237,9 +237,7 @@ export function CutPlayer({
       const item = itemsRef.current.at(indexRef.current)
       if (!item) return
       const t = el.currentTime
-      onTimeRef.current?.(
-        startOf(itemsRef.current, indexRef.current) + Math.max(0, t - item.in),
-      )
+      onPositionRef.current?.(indexRef.current, Math.max(0, t - item.in))
       if (t >= item.out - OUT_EPSILON) handleEnded(active)
     }
     let handle = 0
@@ -278,7 +276,7 @@ export function CutPlayer({
       setActive(0)
       setIndex(next)
       setIsPlaying(play)
-      onTimeRef.current?.(startOf(items, next) + (at - item.in))
+      onPositionRef.current?.(next, at - item.in)
       if (!play) return
       void first.play().catch((err: unknown) => {
         if (err instanceof Error && err.name === 'NotAllowedError') {

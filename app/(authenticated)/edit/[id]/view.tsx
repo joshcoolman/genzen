@@ -1,11 +1,18 @@
 'use client'
 
-import { Camera, Download, Scissors } from 'lucide-react'
+import {
+  Camera,
+  Download,
+  RefreshCw,
+  Scissors,
+  StepForward,
+} from 'lucide-react'
 import { EditHeading } from '../_components/edit-heading/edit-heading'
+import { ContinueDialog } from './_components/continue-dialog/continue-dialog'
 import { CutPlayer } from './_components/cut-player/cut-player'
 import { FrameStrip } from './_components/frame-strip/frame-strip'
 import { Timeline } from './_components/timeline/timeline'
-import { formatClock, locate } from './cut'
+import { formatClock } from './cut'
 import { useView } from './use-view'
 import styles from './view.module.css'
 import type { Edit, EditFrame } from '../_lib/types'
@@ -31,23 +38,20 @@ export function View({
   frames: Array<EditFrame>
 }) {
   const view = useView(edit, clips, frames)
-  const player = view.player
-  const seek = (seconds: number) => {
-    const at = locate(view.items, seconds)
-    if (at) player.current?.seekTo(at.index, at.offset)
-  }
 
   return (
     <>
       <EditHeading id={edit.id} name={edit.name} />
       <div className={styles.stack}>
         <CutPlayer
-          items={view.items}
+          /* The ready rows only (#731): a clip being made holds its place on
+             the strip and is not something the stage can play. */
+          items={view.playable}
           ratio={view.runRatio}
-          controls={player}
-          onIndexChange={view.setPlayingIndex}
+          controls={view.player}
+          onIndexChange={view.setPlayableIndex}
           onPlayingChange={view.setPlaying}
-          onTimeChange={view.setTime}
+          onPositionChange={view.setPositionFrom}
           onDuration={view.learnDuration}
         >
           <span className={styles.clock}>
@@ -86,6 +90,32 @@ export function View({
               Split
             </Button>
           )}
+          {/* The clip between the highlighted clip and the next (#731).
+              Paused only, like Split: it acts on the lit tile. */}
+          {!view.playing && (
+            <Button
+              size="sm"
+              disabled={view.playingIndex === null}
+              onClick={view.openContinue}
+              title="Make the clip that follows the highlighted one"
+            >
+              <StepForward size={14} />
+              Continue
+            </Button>
+          )}
+          {/* The same dialog, loaded as the highlighted clip was made; the
+              new take replaces it (#731). */}
+          {!view.playing && (
+            <Button
+              size="sm"
+              disabled={!view.canRerun}
+              onClick={view.openRerun}
+              title="Make this clip again, with the same frames and settings"
+            >
+              <RefreshCw size={14} />
+              Rerun
+            </Button>
+          )}
           {view.error && (
             <p role="alert" className={styles.error}>
               {view.error}
@@ -96,13 +126,13 @@ export function View({
           items={view.items}
           durations={view.durations}
           playingIndex={view.playingIndex}
-          time={view.time}
+          time={view.stripSeconds}
           onAdd={() => view.setPicking(true)}
           onRemove={view.remove}
           onMove={view.move}
           onTrim={view.trim}
-          onPlayFrom={(index, offset) => player.current?.seekTo(index, offset)}
-          onSeek={seek}
+          onPlayFrom={view.playFromRow}
+          onSeek={view.seekStrip}
         />
         {/* Under the strip: the timeline is the work and the frames are what
             came out of it. */}
@@ -112,10 +142,17 @@ export function View({
           onTrash={view.trashFrame}
         />
       </div>
+      <ContinueDialog
+        draft={view.draft}
+        onChange={view.setDraft}
+        onClose={() => view.setDraft(null)}
+        onSubmit={() => void view.submitContinue()}
+      />
       <ClipPicker
         open={view.picking}
         onOpenChange={view.setPicking}
-        clips={clips}
+        /* Finished clips only: a pending one has nothing to trim. */
+        clips={clips.filter((c) => c.status === 'completed')}
         /* Nothing is greyed out: a clip already in the cut can go in again.
            The badge says where it already is. */
         pickedIds={new Set()}

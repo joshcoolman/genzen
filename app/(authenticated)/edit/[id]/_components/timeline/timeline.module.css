@@ -114,6 +114,22 @@
   cursor: grabbing;
 }
 
+.tilePending {
+  cursor: default;
+  border-style: dashed;
+}
+
+.making {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+}
+
 .tilePlaying {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);

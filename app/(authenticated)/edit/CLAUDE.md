@@ -89,6 +89,39 @@ group's live rows, so a trash on either side is one write to one row and
 there is nothing to keep in step. Renaming the edit renames the group, one
 way. Deleting the edit leaves the group: stills outlive the cut.
 
+## Continue (#731)
+
+Always called Continue, whatever it fills. It acts on the highlighted clip
+while paused: the first frame is that clip at its `out`, the last is the next
+ready clip at its `in` -- so on the last clip it is a plain continuation and
+the slot is simply absent. Both frames are read off detached `<video>`s at
+the kept seconds (`captureFrameAt`) and saved into the frames group, since
+they are the frames the join is judged on; an untrimmed ending reuses the
+stored end frame (`findClipEndFrame`, #542). The dialog is Director's gen
+form cut to this: models that take a last frame, a length, a resolution where
+offered, a prompt that may be blank when both frames are set -- the fallback
+line is `src/lib/prompts/edit-continue.md`, sent by `continue.action.ts`.
+
+**Rerun is the same dialog loaded as the highlighted clip was made** --
+frames, prompt, length, resolution and model off `generation_metadata`
+(the model by its stored label; the slug is not on the row). Only a clip
+made from a first frame; the new take replaces the row and the old clip
+goes to Trash, as Director's re-roll does.
+
+**Generate closes the dialog on the press.** The row is reserved before FAL
+is contacted, so the id is back in about a second and a placeholder the
+length asked for takes its place after the highlighted clip. From there it is
+Director's mechanism: `useGenerationPoll` on the oldest pending row,
+`router.refresh()`, a reconcile that swaps the server's row in by id, a
+failed row leaving with a toast.
+
+**Two clocks, because a pending row holds width the stage skips.** The
+player is given `playable` -- the ready rows -- and reports an index into it
+plus an offset; `time` (the readout, the keys, Split) runs over those, and
+`stripSeconds` (the playhead) over every row through `toRowIndex`. A tile
+click maps back through `toPlayableIndex`; a ruler press on a pending row
+lands on the next ready one. All in `cut.ts`, tested.
+
 ## Export
 
 `_lib/export.server.ts` downloads each source once, runs

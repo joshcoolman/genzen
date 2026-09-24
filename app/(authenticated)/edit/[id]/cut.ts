@@ -74,3 +74,39 @@ export function formatClock(seconds: number): string {
   const [whole, tenth] = rest.toFixed(1).split('.')
   return `${minutes}:${whole.padStart(2, '0')}.${tenth}`
 }
+
+/** A row of the cut the player can hold: a finished clip. A pending one
+ *  keeps its place on the strip and is skipped by the stage (#731). */
+export interface Row extends Span {
+  clip: { status: string }
+}
+
+export const isReady = (row: Row) => row.clip.status === 'completed'
+
+/** The cut as the player plays it: the ready rows, in order. */
+export function playableOf<T extends Row>(rows: Array<T>): Array<T> {
+  return rows.filter(isReady)
+}
+
+/** A strip position as a player position, or -1 for a row the player does
+ *  not hold. Director's `toPlayableIndex`, for rows with spans. */
+export function toPlayableIndex(rows: Array<Row>, rowIndex: number): number {
+  const row = rows.at(rowIndex)
+  if (!row || rowIndex < 0 || !isReady(row)) return -1
+  let index = -1
+  for (let i = 0; i <= rowIndex; i++) if (isReady(rows[i])) index++
+  return index
+}
+
+/** And back, so the strip can light the tile the player is on. */
+export function toRowIndex(
+  rows: Array<Row>,
+  playableIndex: number | null,
+): number | null {
+  if (playableIndex === null || playableIndex < 0) return null
+  let seen = -1
+  for (const [i, row] of rows.entries()) {
+    if (isReady(row) && ++seen === playableIndex) return i
+  }
+  return null
+}

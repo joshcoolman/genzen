@@ -142,3 +142,42 @@ export async function captureLastFrame(
     video.load()
   }
 }
+
+/**
+ * The frame at `seconds` into a clip, from its URL (#731).
+ *
+ * `captureLastFrame` with the seek named by the caller: an edit's clips are
+ * trimmed, so the frame a join is pinned on is at the kept `out` or `in`
+ * rather than at the file's ends. Same detached element, same cleanup.
+ * `timeSeconds` is where the seek landed.
+ */
+export async function captureFrameAt(
+  src: string,
+  seconds: number,
+): Promise<CapturedFrame & { timeSeconds: number }> {
+  const video = document.createElement('video')
+  video.preload = 'auto'
+  video.muted = true
+  video.playsInline = true
+  video.src = src
+
+  try {
+    await once(video, 'loadedmetadata', 'The clip took too long to load')
+    const { duration } = video
+    if (!Number.isFinite(duration) || duration <= 0) {
+      throw new Error('The clip does not report a duration')
+    }
+    // Inside the clip, and off its very end for the reason `captureLastFrame`
+    // gives: a seek to the last instant may decode nothing.
+    video.currentTime = Math.min(
+      Math.max(0.001, seconds),
+      Math.max(0, duration - END_EPSILON_SECONDS),
+    )
+    await once(video, 'seeked', 'The clip took too long to seek')
+    const frame = captureFrame(video)
+    return { ...(await frame), timeSeconds: video.currentTime }
+  } finally {
+    video.removeAttribute('src')
+    video.load()
+  }
+}
