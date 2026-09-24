@@ -36,6 +36,7 @@ import { imageUrl } from '#/lib/image-url'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { takePanelHandoff } from '#/lib/panel-handoff'
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
+import { stagedAmong } from '#/features/ai-images/ref-images'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { useSelection } from '#/lib/use-selection'
 import { getRatioOptions, toast } from '#/components'
@@ -274,6 +275,42 @@ export function useView(initial: Array<SavedAiImage>) {
   })
 
   /**
+   * A trashed image cannot be a reference, so it must not stay staged (#716).
+   *
+   * `uploadLibraryImageToFal` returns null for a soft-deleted row and the
+   * submit refuses, so the strip went on showing a thumbnail that failed every
+   * card in the next press with `Source image not found` -- a whole
+   * `/storyboard` set at once, after the plan had been paid for.
+   *
+   * It says so rather than dropping it quietly: silently changing what the
+   * next press sends, with nothing on screen having said it, is the same
+   * failure in the other direction. A restore does not put it back for the
+   * same reason -- re-staging is one click.
+   */
+  const unstageTrashed = useCallback(
+    (ids: Array<string>) => {
+      const staged = stagedAmong(generator.refImages, ids)
+      if (staged.length === 0) return
+      for (const ref of staged) generator.removeRefImage(ref.id)
+      toast(
+        staged.length === 1
+          ? 'That was staged as a reference. Removed from the panel.'
+          : `${staged.length} staged references removed from the panel.`,
+      )
+    },
+    [generator],
+  )
+
+  /** Every single-image Trash on this route: the card's menu and the viewer. */
+  const trashImage = useCallback(
+    async (img: SavedAiImage) => {
+      unstageTrashed([img.id])
+      await gallery.deleteImage(img)
+    },
+    [gallery, unstageTrashed],
+  )
+
+  /**
    * A handoff waiting from another page, applied once (#433).
    *
    * Activity sends past generations to the panel through this handoff. Read and cleared in the
@@ -506,7 +543,7 @@ export function useView(initial: Array<SavedAiImage>) {
      leaves this list, which is the same shrink a delete causes. */
   const viewer = useImageViewer(
     viewerImages,
-    gallery.deleteImage,
+    trashImage,
     (img) => void visibility.hide([img.id]),
   )
 
@@ -612,6 +649,7 @@ export function useView(initial: Array<SavedAiImage>) {
 
   const deleteSelected = useCallback(async () => {
     const targets = images.filter((img) => selection.selectedIds.has(img.id))
+    unstageTrashed(targets.map((img) => img.id))
     setIsBatchDeleting(true)
     try {
       // One call for the set (#329). This was a loop of one action per image,
@@ -624,7 +662,7 @@ export function useView(initial: Array<SavedAiImage>) {
     } finally {
       setIsBatchDeleting(false)
     }
-  }, [images, selection, gallery])
+  }, [images, selection, gallery, unstageTrashed])
 
   // ---------------------------------------------------------------------
   // Groups (#319)
@@ -697,9 +735,12 @@ export function useView(initial: Array<SavedAiImage>) {
       if (write.moved) {
         gallery.patchImages(write.moved.ids, { group_id: write.moved.groupId })
       }
-      if (write.trashed.length > 0) gallery.forgetImages(write.trashed)
+      if (write.trashed.length > 0) {
+        unstageTrashed(write.trashed)
+        gallery.forgetImages(write.trashed)
+      }
     },
-    [gallery],
+    [gallery, unstageTrashed],
   )
 
   /**
@@ -1333,6 +1374,7 @@ export function useView(initial: Array<SavedAiImage>) {
     hideSelected,
     isBatchDeleting,
     deleteSelected,
+    trashImage,
     viewer,
     addReference,
     usePromptText,

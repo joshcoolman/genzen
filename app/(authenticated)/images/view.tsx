@@ -46,6 +46,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     hideSelected,
     isBatchDeleting,
     deleteSelected,
+    trashImage,
     viewer,
     addReference,
     usePromptText,
@@ -200,7 +201,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           loadingGallery={gallery.loadingGallery}
           showInfo={prefs.showInfo}
           thumbZoom={prefs.thumbZoom}
-          onDelete={gallery.deleteImage}
+          onDelete={trashImage}
           onHide={(img) => void visibility.hide([img.id])}
           onRetry={gallery.retryImage}
           onDownload={download.start}

@@ -171,6 +171,16 @@ list once when the seed comes back full, so the grid is never short.
   which uploads from disk since #489. A paste on this route used to push the
   image onto the front of the set as well as uploading it (#491); it stopped in
   #550, because an unnoticed reference is a generation you paid for
+- **A Trash takes the image out of the strip, and says so (#716).** Every trash
+  path on this route -- the card menu, the viewer, the selection drawer, a group
+  trash -- goes through `unstageTrashed` in `use-view.ts` first. A soft-deleted
+  row has no bytes to send (`uploadLibraryImageToFal` returns null) so the
+  submit refuses, and the strip went on showing the thumbnail: a `/storyboard`
+  press came back nine failed cards reading `Source image not found`, after the
+  plan had been paid for. The toast is half the fix -- dropping it silently
+  changes what the next press sends with nothing on screen having said it. A
+  **restore does not re-stage**, for the same reason. Hiding is untouched: the
+  row is still live, so the generation still works
 - **Nothing caps the set (#341).** Stage as many images as you like against any
   selection; each model takes what its endpoint holds, `buildFalInput` drops the
   rest, and `images_used`/`images_requested` on the row make the card say "1 of

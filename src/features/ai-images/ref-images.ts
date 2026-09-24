@@ -40,3 +40,20 @@ export function imageLabelPrefix(count: number): string {
   const labels = Array.from({ length: count }, (_, i) => `Image ${i + 1}`)
   return `[${labels.join(', ')}]\n\n`
 }
+
+/**
+ * Which of these ids are staged in the strip, in strip order (#716).
+ *
+ * A trash and the reference strip are two lists that had no reason to know
+ * about each other until a soft-deleted row started failing every card in the
+ * next press. This is the intersection the route acts on; it is separate and
+ * pure because the bug was invisible -- the thumbnail stayed on screen and
+ * looked right, so nothing about the wrong answer would have shown.
+ */
+export function stagedAmong(
+  refImages: Array<RefImage>,
+  ids: Array<string>,
+): Array<RefImage> {
+  const set = new Set(ids)
+  return refImages.filter((ref) => set.has(ref.id))
+}

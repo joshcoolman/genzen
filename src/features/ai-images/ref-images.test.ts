@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { imageLabelPrefix, pushRef } from './ref-images'
+import { imageLabelPrefix, pushRef, stagedAmong } from './ref-images'
 import type { RefImage } from './hooks/use-generator'
 
 const ref = (id: string): RefImage => ({ id, url: `/img/${id}`, title: id })
@@ -38,5 +38,20 @@ describe('imageLabelPrefix', () => {
   it('says nothing about a set of one, or none', () => {
     expect(imageLabelPrefix(1)).toBe('')
     expect(imageLabelPrefix(0)).toBe('')
+  })
+})
+
+describe('stagedAmong', () => {
+  it('finds the staged references a trash removed, in strip order', () => {
+    const strip = [ref('a'), ref('b'), ref('c')]
+    expect(stagedAmong(strip, ['c', 'a', 'z']).map((r) => r.id)).toEqual([
+      'a',
+      'c',
+    ])
+  })
+
+  it('is empty when the trash touched nothing staged', () => {
+    expect(stagedAmong([ref('a')], ['b'])).toEqual([])
+    expect(stagedAmong([], ['a'])).toEqual([])
   })
 })
