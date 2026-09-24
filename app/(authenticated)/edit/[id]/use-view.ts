@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { attachFramesGroup, writeCut } from '../_actions/edits.action'
 import { exportToVideo } from '../_actions/export.action'
-import { locate, totalSeconds } from './cut'
+import { locate, splitSpan, totalSeconds } from './cut'
 import type {
   CutPlayerHandle,
   PlayableItem,
@@ -131,6 +131,35 @@ export function useView(
 
   const [playingIndex, setPlayingIndex] = useState<number | null>(null)
   const [time, setTime] = useState(0)
+  const [playing, setPlaying] = useState(false)
+
+  /**
+   * Split the clip under the playhead in two, there (#729). Paused only: a
+   * running clip has no single frame to cut on, which is the same reason F
+   * pauses first. The left piece keeps its key, so it stays where it was; the
+   * right one is new and starts at the playhead, which is where the stage is
+   * -- nothing moves on screen except a seam appearing.
+   */
+  const head = useMemo(() => locate(items, time), [items, time])
+  const canSplit =
+    !playing &&
+    head !== null &&
+    splitSpan(items[head.index], head.offset) !== null
+  const split = useCallback(() => {
+    if (!head || playing) return
+    setItems((current) => {
+      const item = current[head.index]
+      const halves = splitSpan(item, head.offset)
+      if (!halves) return current
+      const [left, right] = halves
+      return [
+        ...current.slice(0, head.index),
+        left,
+        { ...right, key: crypto.randomUUID() },
+        ...current.slice(head.index + 1),
+      ]
+    })
+  }, [head, playing])
 
   /* The strip drives the player and nothing drives the strip, so the calls
      between them are imperative (Director's reasoning): a tile click has to
@@ -202,8 +231,8 @@ export function useView(
 
   /**
    * Space plays and pauses; Left and Right step a frame while paused, five
-   * with Shift; F saves the frame on screen; Delete and Backspace take out
-   * the highlighted clip. On the window, as Video's Escape is, and skipped when the key was
+   * with Shift; F saves the frame on screen; S splits the clip at the
+   * playhead; Delete and Backspace take out the highlighted clip. On the window, as Video's Escape is, and skipped when the key was
    * meant for something else: a field, a button (the stage is one, and Space
    * on a focused button is already a press), or the picker while it is open.
    */
@@ -245,6 +274,9 @@ export function useView(
       } else if (e.key === 'f' || e.key === 'F') {
         e.preventDefault()
         void capture()
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault()
+        split()
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         // Frame by frame while paused, five at a time with Shift. Nothing
         // while playing: a nudge under a running clip is not a thing you see.
@@ -261,7 +293,7 @@ export function useView(
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [picking, playingIndex, removeIndex, step, capture])
+  }, [picking, playingIndex, removeIndex, step, capture, split])
 
   /** The first clip's shape sets the stage's, as Director's does. */
   /**
@@ -325,6 +357,10 @@ export function useView(
     trim,
     playingIndex,
     setPlayingIndex,
+    playing,
+    setPlaying,
+    canSplit,
+    split,
     time,
     setTime,
     runRatio,

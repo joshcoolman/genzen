@@ -83,6 +83,7 @@ export function CutPlayer({
   ratio,
   controls,
   onIndexChange,
+  onPlayingChange,
   onTimeChange,
   onDuration,
   placeholder = 'Add clips below to start the cut.',
@@ -93,6 +94,9 @@ export function CutPlayer({
   ratio?: number | null
   controls?: RefObject<CutPlayerHandle | null>
   onIndexChange?: (index: number) => void
+  /** Whether the stage is running, so a caller can offer what only makes
+   *  sense while it is not (#729's Split). */
+  onPlayingChange?: (playing: boolean) => void
   /** Seconds on the run's clock, once per presented frame while playing and
    *  once per seek while not. */
   onTimeChange?: (seconds: number) => void
@@ -343,6 +347,10 @@ export function CutPlayer({
   useEffect(() => {
     onIndexChange?.(index)
   }, [index, onIndexChange])
+
+  useEffect(() => {
+    onPlayingChange?.(isPlaying)
+  }, [isPlaying, onPlayingChange])
 
   const empty = items.length === 0
 

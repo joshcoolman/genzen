@@ -1,6 +1,6 @@
 'use client'
 
-import { Camera, Download } from 'lucide-react'
+import { Camera, Download, Scissors } from 'lucide-react'
 import { EditHeading } from '../_components/edit-heading/edit-heading'
 import { CutPlayer } from './_components/cut-player/cut-player'
 import { FrameStrip } from './_components/frame-strip/frame-strip'
@@ -46,6 +46,7 @@ export function View({
           ratio={view.runRatio}
           controls={player}
           onIndexChange={view.setPlayingIndex}
+          onPlayingChange={view.setPlaying}
           onTimeChange={view.setTime}
           onDuration={view.learnDuration}
         >
@@ -72,6 +73,19 @@ export function View({
             <Camera size={14} />
             {view.capturing ? 'Saving...' : 'Save frame'}
           </Button>
+          {/* Cut the clip under the playhead in two, there. Only while paused:
+              that is the one state in which the playhead is a frame. */}
+          {!view.playing && (
+            <Button
+              size="sm"
+              disabled={!view.canSplit}
+              onClick={view.split}
+              title="Split at the playhead (S)"
+            >
+              <Scissors size={14} />
+              Split
+            </Button>
+          )}
           {view.error && (
             <p role="alert" className={styles.error}>
               {view.error}
