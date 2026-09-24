@@ -86,19 +86,20 @@ earned; see `docs/DELTAS.md`.
 **Route-owned surfaces** — these had a `features/` folder until #181 and now
 live with the one route that renders them:
 
-| Surface    | Where                                                                                                                       |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Canvas     | `app/(authenticated)/canvas/` — index; a board is `canvas/[id]/`. One CLAUDE.md at `canvas/` covers both                    |
-| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                                                           |
-| Lab        | `app/(authenticated)/lab/` (has its CLAUDE.md) — one step of the work per page, judged before it earns a place in the panel |
-| Activity   | `app/(authenticated)/activity/` — the route; the log itself is a feature                                                    |
-| News       | `app/(authenticated)/news/` — illustrated feed of image/video generation news; post detail at `news/[id]/`                  |
-| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                                                            |
-| Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — the route; the lineup is a feature                                       |
-| Director   | `app/(authenticated)/director/` — named sessions, each a run of library clips watched back to back                          |
-| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav                                                     |
-| Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else                                                  |
-| Account    | `app/(authenticated)/account/` — the settings area: its own nav and sub-pages                                               |
+| Surface    | Where                                                                                                                                    |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Canvas     | `app/(authenticated)/canvas/` — index; a board is `canvas/[id]/`. One CLAUDE.md at `canvas/` covers both                                 |
+| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                                                                        |
+| Lab        | `app/(authenticated)/lab/` (has its CLAUDE.md) — one step of the work per page, judged before it earns a place in the panel              |
+| Activity   | `app/(authenticated)/activity/` — the route; the log itself is a feature                                                                 |
+| News       | `app/(authenticated)/news/` — illustrated feed of image/video generation news; post detail at `news/[id]/`                               |
+| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                                                                         |
+| Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — the route; the lineup is a feature                                                    |
+| Director   | `app/(authenticated)/director/` — named sessions, each a run of library clips watched back to back                                       |
+| Edit       | `app/(authenticated)/edit/` (has its CLAUDE.md) — a timeline of trimmed Video wall clips, played without rendering; Export stitches them |
+| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav                                                                  |
+| Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else                                                               |
+| Account    | `app/(authenticated)/account/` — the settings area: its own nav and sub-pages                                                            |
 
 **Account is a section, not a page.** `account/layout.tsx` draws a nav beside
 `Overview`, `Style` (the six colors that theme the app, `src/features/theme`)

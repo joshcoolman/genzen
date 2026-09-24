@@ -725,5 +725,7 @@ deployed database on 2026-09-24 -- three bucket objects, one published export
 row and one old session -- and the script went with it (#705); it existed for
 one run against one database and there is nothing left for it to read.
 
-If stitching is wanted again it starts from a run of library rows, which is a
-better starting point than the one that was deleted.
+Stitching came back that way as `/edit` (#726): a run of library rows with in
+and out points, played in the browser and exported through the
+`stitchTimeline` module the old Director left behind. It is its own route --
+this page still declines trims and a scrubber, and the reasons above stand.

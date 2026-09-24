@@ -1,0 +1,84 @@
+.player {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* Director's stage (see `sequence-player.module.css` there): both elements in
+   one grid cell so a join is an opacity flip, the box the run's own shape, and
+   a `<button>` because the stage is play/pause. */
+.stage {
+  --stage-ratio: 16 / 9;
+  --stage-max: 50vh;
+
+  display: grid;
+  place-items: center;
+  width: min(100%, calc(var(--stage-max) * var(--stage-ratio)));
+  margin-inline: auto;
+  padding: 0;
+  aspect-ratio: var(--stage-ratio);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.stage:disabled {
+  cursor: default;
+}
+
+.video,
+.videoActive {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Hidden with opacity: `visibility` and `display` both let a browser stop
+   decoding, and the idle element is decoding on purpose. */
+.video {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.videoActive {
+  opacity: 1;
+}
+
+.placeholder {
+  grid-area: 1 / 1;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  flex-wrap: wrap;
+}
+
+.transport {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-16);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.transport:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+}
+
+.transport:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}

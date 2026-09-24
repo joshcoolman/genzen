@@ -1,0 +1,303 @@
+/* One line that scrolls, because a timeline is a line: the ruler above it is
+   the run's clock and the tiles are as wide as they are long. Director's row
+   wraps, and says why; the reason there is arrangement, and the reason here is
+   pacing, which a wrap cannot show. */
+.timeline {
+  --pps: 40px;
+  --height: 84px;
+  --frame: 56px;
+  --handle: 10px;
+
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+/* As wide as the run plus the add button, so the playhead has somewhere to be
+   past the last clip and the scroll reaches the end. */
+.content {
+  position: relative;
+  min-width: 100%;
+  width: max-content;
+  padding: var(--space-8) var(--space-16);
+}
+
+/* The clock. A tick each second, a number every five; a press seeks and a
+   drag scrubs. */
+.ruler {
+  position: relative;
+  height: 20px;
+  margin-bottom: var(--space-4);
+  cursor: ew-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+.tick {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  height: 5px;
+  background: var(--border);
+}
+
+.tickMajor {
+  composes: tick;
+  height: 9px;
+  background: var(--text-muted);
+}
+
+.tickLabel {
+  position: absolute;
+  bottom: 9px;
+  transform: translateX(-50%);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  display: flex;
+  align-items: stretch;
+  height: var(--height);
+}
+
+/* Through the ruler and the track both. `pointer-events: none`, so it never
+   sits between the pointer and a handle. */
+.playhead {
+  position: absolute;
+  top: var(--space-8);
+  bottom: var(--space-8);
+  z-index: 3;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.playhead::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -5px;
+  width: 12px;
+  height: 8px;
+  background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.tile {
+  container-type: inline-size;
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: grab;
+}
+
+.tile + .tile,
+.tile + .slot,
+.slot + .tile {
+  margin-left: 2px;
+}
+
+.tile:active {
+  cursor: grabbing;
+}
+
+.tilePlaying {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.tileLifted {
+  display: none;
+}
+
+.slot {
+  flex: none;
+  box-sizing: border-box;
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--accent) 8%, transparent);
+}
+
+/* The frame the kept span opens on and the one it ends on, at the two ends of
+   the tile -- the cut is between this tile's ending and the next one's
+   beginning, so those are the two that sit next to each other. */
+.frame {
+  flex: none;
+  width: var(--frame);
+  height: 100%;
+  object-fit: cover;
+  background: var(--image-backing);
+  pointer-events: none;
+}
+
+.frameEnd {
+  composes: frame;
+  margin-left: auto;
+}
+
+/* Between the two frames, over whatever the tile has room for. */
+.label {
+  position: absolute;
+  top: var(--space-4);
+  left: calc(var(--frame) + var(--space-6));
+  right: calc(var(--frame) + var(--space-6));
+  z-index: 1;
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.facts {
+  position: absolute;
+  bottom: var(--space-4);
+  left: calc(var(--frame) + var(--space-6));
+  right: calc(var(--frame) + var(--space-6));
+  z-index: 1;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ordinal {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 2;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface-sunken) 70%, transparent);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+}
+
+.remove {
+  position: absolute;
+  top: var(--space-4);
+  right: calc(var(--space-4) + var(--handle));
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface-sunken) 70%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.tile:hover .remove {
+  opacity: 1;
+}
+
+.remove:hover {
+  color: var(--danger);
+}
+
+/* The trim handles: the tile's two edges. Wide enough to hit, drawn as a bar
+   so they read as edges you can take hold of. */
+.handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: var(--handle);
+  background: color-mix(in oklab, var(--text) 10%, transparent);
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 1px;
+  background: var(--text-muted);
+}
+
+.handle:hover,
+.handleActive {
+  background: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+
+.handleIn {
+  composes: handle;
+  left: 0;
+}
+
+.handleOut {
+  composes: handle;
+  right: 0;
+}
+
+/* What the handle is doing, while it is doing it: the seconds it is at. */
+.readout {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  transform: translateY(-50%);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-3xs);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.add {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  margin-left: var(--space-8);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  cursor: pointer;
+}
+
+.add:hover {
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+  color: var(--text);
+}
+
+/* A short clip has room for its two frames and nothing between them: the
+   words go rather than the pictures, since the pictures are what a cut is
+   judged by. The tile's title still carries the facts. */
+@container (max-width: 180px) {
+  .label,
+  .facts {
+    display: none;
+  }
+}

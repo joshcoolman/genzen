@@ -1,0 +1,10 @@
+.root {
+  min-width: 0;
+  padding-top: var(--space-48);
+}
+
+@media (min-width: 48rem) {
+  .root {
+    padding-top: 0;
+  }
+}

@@ -23,7 +23,8 @@
  * Lives here rather than beside the insert so client code can name it without
  * importing a `.server` module.
  */
-export type ImageOrigin = 'upload' | 'images' | 'canvas' | 'director'
+export type ImageOrigin = 'upload' | 'images' | 'canvas' | 'director' | 'edit'
+// `edit` is an exported cut (#726): a Video wall row assembled from others.
 
 /** The origins a *generation* can have: an upload is never generated. */
 export type GenerationOrigin = Exclude<ImageOrigin, 'upload'>
