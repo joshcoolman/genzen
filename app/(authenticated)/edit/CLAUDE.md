@@ -102,6 +102,12 @@ form cut to this: models that take a last frame, a length, a resolution where
 offered, a prompt that may be blank when both frames are set -- the fallback
 line is `src/lib/prompts/edit-continue.md`, sent by `continue.action.ts`.
 
+**Rerun is the same dialog loaded as the highlighted clip was made** --
+frames, prompt, length, resolution and model off `generation_metadata`
+(the model by its stored label; the slug is not on the row). Only a clip
+made from a first frame; the new take replaces the row and the old clip
+goes to Trash, as Director's re-roll does.
+
 **Generate closes the dialog on the press.** The row is reserved before FAL
 is contacted, so the id is back in about a second and a placeholder the
 length asked for takes its place after the highlighted clip. From there it is

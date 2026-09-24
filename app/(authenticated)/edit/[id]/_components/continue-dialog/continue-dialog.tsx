@@ -72,7 +72,9 @@ export function ContinueDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Continue</DialogTitle>
+          <DialogTitle>
+            {draft?.mode === 'rerun' ? 'Rerun' : 'Continue'}
+          </DialogTitle>
         </DialogHeader>
         {draft && model && (
           <div className={styles.form}>
@@ -99,9 +101,11 @@ export function ContinueDialog({
             <p className={styles.note}>
               {draft.error
                 ? draft.error
-                : draft.last
-                  ? 'Pinned at both ends: the clip opens where this one stops and closes where the next begins. Leave the prompt blank to let the model find its way between them.'
-                  : 'Carries on from where the highlighted clip stops.'}
+                : draft.mode === 'rerun'
+                  ? 'Loaded as this clip was made. Change what you like; the new take replaces this one and the old goes to Trash.'
+                  : draft.last
+                    ? 'Pinned at both ends: the clip opens where this one stops and closes where the next begins. Leave the prompt blank to let the model find its way between them.'
+                    : 'Carries on from where the highlighted clip stops.'}
             </p>
 
             <div className={styles.group}>
@@ -204,7 +208,7 @@ export function ContinueDialog({
                   (!draft.last && draft.prompt.trim().length === 0)
                 }
               >
-                Generate
+                {draft.mode === 'rerun' ? 'Rerun' : 'Generate'}
               </Button>
               <CostNote cents={cost} />
             </div>

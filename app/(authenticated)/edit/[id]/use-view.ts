@@ -23,7 +23,12 @@ import type { Edit, EditFrame } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { aspectRatio, clipModel, clipName } from '#/features/video/clip-facts'
 import { captureFrameAt } from '#/features/video/frame-capture'
-import { endpointFor, videoModelBySlug } from '#/features/video/models'
+import {
+  VIDEO_MODELS,
+  endpointFor,
+  resolutionsFor,
+  videoModelBySlug,
+} from '#/features/video/models'
 import { findClipEndFrame } from '#/features/video/server/find-clip-end-frame.action'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
 import { createImageGroup } from '#/features/groups/groups.action'
@@ -49,8 +54,11 @@ export interface JoinFrame {
 
 /** What Continue is about to make (#731). Null while the dialog is closed. */
 export interface ContinueDraft {
-  /** The row it goes after, by key: a re-order while the dialog is open still
-   *  lands it after the clip it was opened on. */
+  /** Continue puts the clip after the row; Rerun puts it in the row's place
+   *  and trashes what was there (#731). */
+  mode: 'continue' | 'rerun'
+  /** The row it goes after, or replaces, by key: a re-order while the dialog
+   *  is open still lands it where it was opened. */
   afterKey: string
   /** The highlighted clip's frame at its out point. Null while reading, or
    *  on a failure the dialog says. */
@@ -432,6 +440,7 @@ export function useView(
     const following = items.slice(playingIndex + 1).find(isReady) ?? null
     const model = videoModelBySlug(DEFAULT_CONTINUE_MODEL)
     setDraft({
+      mode: 'continue',
       afterKey: row.key,
       first: null,
       firstLoading: true,
@@ -479,6 +488,68 @@ export function useView(
     }
   }, [playing, playingIndex, items, frameOf])
   /**
+   * Rerun (#731): the same dialog, loaded as the highlighted clip was made.
+   *
+   * Nothing new is stored for it -- `generation_metadata` carries the frames,
+   * the prompt, the length, the resolution and the model's label, so the form
+   * is refilled from the row and the frames are already library rows. Only a
+   * clip made from a first frame can be rerun here; one made from text alone
+   * has no frame to pin, and the button says so by being disabled. Generate
+   * replaces the clip in place and trashes the one it replaced, as Director's
+   * re-roll does. Trash restores it.
+   */
+  const rerunOf = useCallback((clip: VideoRecord) => {
+    const meta = clip.generation_metadata ?? {}
+    const first = meta.source_image_id
+    if (typeof first !== 'string') return null
+    const model =
+      VIDEO_MODELS.find((m) => m.label === meta.model_label) ??
+      videoModelBySlug(DEFAULT_CONTINUE_MODEL)
+    if (!model) return null
+    const last =
+      typeof meta.end_image_id === 'string' ? meta.end_image_id : null
+    const seconds = meta.duration_seconds
+    const resolution =
+      typeof meta.resolution === 'string' &&
+      resolutionsFor(model).some((r) => r.id === meta.resolution)
+        ? meta.resolution
+        : undefined
+    return { first, last, model, seconds, resolution }
+  }, [])
+  const canRerun =
+    !playing &&
+    playingIndex !== null &&
+    rerunOf(items[playingIndex].clip) !== null
+  const openRerun = useCallback(() => {
+    if (playing || playingIndex === null) return
+    const row = items[playingIndex]
+    const was = rerunOf(row.clip)
+    if (!was) return
+    const frame = (id: string, title: string): JoinFrame => ({
+      id,
+      url: imageUrl(id, 'thumb'),
+      title,
+    })
+    setDraft({
+      mode: 'rerun',
+      afterKey: row.key,
+      first: frame(was.first, 'Starting frame'),
+      firstLoading: false,
+      last: was.last ? frame(was.last, 'Ending frame') : null,
+      lastLoading: false,
+      error: null,
+      modelSlug: was.model.slug,
+      duration:
+        typeof was.seconds === 'number' &&
+        was.model.durations.includes(was.seconds)
+          ? was.seconds
+          : was.model.defaultDuration,
+      resolution: was.resolution,
+      prompt: row.clip.description ?? '',
+    })
+  }, [playing, playingIndex, items, rerunOf])
+
+  /**
    * Submit, and put the clip in the cut before it exists. The dialog closes
    * on the press: the row is reserved server-side before FAL is contacted,
    * so `recordId` comes back in about a second and a placeholder the length
@@ -524,9 +595,17 @@ export function useView(
           in: 0,
           out: d.duration,
         }
-        return at < 0
-          ? [...current, item]
-          : [...current.slice(0, at + 1), item, ...current.slice(at + 1)]
+        if (at < 0) return [...current, item]
+        if (d.mode === 'rerun') {
+          /* The take that dropped out goes to Trash (Director's #679 rule):
+             a re-roll you did not keep is not a clip you want on the wall.
+             Restorable from Trash. */
+          void softDeleteImage(current[at].clip.id).catch(() =>
+            toast.error('The replaced clip could not be trashed'),
+          )
+          return [...current.slice(0, at), item, ...current.slice(at + 1)]
+        }
+        return [...current.slice(0, at + 1), item, ...current.slice(at + 1)]
       })
     } catch (cause) {
       toast.error(
@@ -669,6 +748,8 @@ export function useView(
     draft,
     setDraft,
     openContinue,
+    canRerun,
+    openRerun,
     submitContinue,
     durations,
     learnDuration,

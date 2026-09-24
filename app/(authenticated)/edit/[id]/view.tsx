@@ -1,6 +1,12 @@
 'use client'
 
-import { Camera, Download, Scissors, StepForward } from 'lucide-react'
+import {
+  Camera,
+  Download,
+  RefreshCw,
+  Scissors,
+  StepForward,
+} from 'lucide-react'
 import { EditHeading } from '../_components/edit-heading/edit-heading'
 import { ContinueDialog } from './_components/continue-dialog/continue-dialog'
 import { CutPlayer } from './_components/cut-player/cut-player'
@@ -95,6 +101,19 @@ export function View({
             >
               <StepForward size={14} />
               Continue
+            </Button>
+          )}
+          {/* The same dialog, loaded as the highlighted clip was made; the
+              new take replaces it (#731). */}
+          {!view.playing && (
+            <Button
+              size="sm"
+              disabled={!view.canRerun}
+              onClick={view.openRerun}
+              title="Make this clip again, with the same frames and settings"
+            >
+              <RefreshCw size={14} />
+              Rerun
             </Button>
           )}
           {view.error && (
