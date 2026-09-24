@@ -787,6 +787,19 @@ export function useView(initialVideos: Array<VideoRecord>) {
     if (selectMode) setPlayingId(null)
   }, [selectMode])
 
+  /** What the dialog's Left and Right walk: the section's finished clips, in
+   *  the order the wall draws them (#726). Off `cells` rather than
+   *  `shownVideos` so the order is the one on screen. */
+  const playlist = useMemo(
+    () =>
+      cells.flatMap((cell) =>
+        cell.kind === 'clip' && cell.video.status === 'completed'
+          ? [cell.video]
+          : [],
+      ),
+    [cells],
+  )
+
   /* The contact sheet of stills (#647). The clip itself rather than its id,
      because the dialog wants its title and prompt for the rows it writes, and
      a clip that leaves the wall mid-sheet should not empty the surface being
@@ -997,6 +1010,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
     isBatchDeleting,
     deleteSelected,
     playingVideo,
+    playlist,
     setPlayingId,
     framesClip,
     setFramesClip,

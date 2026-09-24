@@ -24,6 +24,13 @@ source images; `use-view.ts` owns everything after the first paint.
   model label is no name, so the card prints nothing rather than the same words
   twice. Naming is done from Lab/Sequence, through `updateImageMeta` -- the
   action Images renames stills with.
+- **The playback dialog walks the section** (#726): Left and Right, or the
+  chevrons beside the clip, move through the wall's finished clips in the
+  wall's order, carrying the play state -- a playing clip hands over playing
+  from the first frame, a paused one paused. Space plays and pauses. Delete
+  and Backspace trash the clip and move on, the last wrapping to the first,
+  the only one closing the dialog. Keys are read on capture, whatever has
+  focus; only a name being typed keeps them.
 - **The playback dialog is where a clip is judged, so Delete is in it** (#658).
   Clips out of one prompt separate the moment they run, not on the wall. It
   moves to Trash -- `deleteGalleryImage`, the card menu's own call -- and closes

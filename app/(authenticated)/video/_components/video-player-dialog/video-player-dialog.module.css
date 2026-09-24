@@ -7,9 +7,53 @@
 .player {
   display: block;
   width: 100%;
+  min-width: 0;
   max-height: calc(92dvh - 7rem);
   object-fit: contain;
   background: var(--image-backing);
+}
+
+/* The clip between its two steps. The chevrons sit outside the picture, not
+   over it: the native controls own the bottom of the frame and a button on
+   the footage would cover the thing being judged. */
+.stage {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 4rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.step:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+}
+
+.step:disabled {
+  color: var(--text-muted);
+  cursor: default;
+  opacity: 0.4;
+}
+
+/* Where in the section this clip is, at the start of the actions row. */
+.position {
+  margin-right: auto;
+  align-self: center;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Under the clip, right-aligned -- away from the native player's own controls,

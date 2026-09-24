@@ -1,7 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { Check, Pencil, Trash2, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Trash2,
+  X,
+} from 'lucide-react'
 import styles from './video-player-dialog.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
 import { Button, Dialog, DialogContent, DialogTitle, Input } from '#/components'
@@ -27,20 +34,106 @@ import { imageUrl } from '#/lib/image-url'
  * prompt here would be the only place in the app that asks before a
  * recoverable act, and it doubles the clicks in the one loop that is all
  * clicks.
+ *
+ * **It walks the section** (#726). Left and Right, or the chevrons either
+ * side of the clip, move to the previous or next clip on the wall in the
+ * wall's own order; the cull loop is open one, judge, next, and closing to
+ * click the next card was most of it. **The play state carries across.** A
+ * clip you were watching hands over to the next one playing from its first
+ * frame; one you had paused hands over paused. Space plays and pauses,
+ * unless the native player has focus and does it itself. **The keys are
+ * read first, on capture, whatever has focus** -- the loop is watch, key,
+ * watch, and a focus manager deciding whether a key counts is exactly the
+ * interruption it should not have. Only a name being typed keeps its keys. A clip that ran to
+ * its end still counts as playing -- it stopped because it ran out, not
+ * because you stopped it.
+ *
+ * **Delete moves on, it does not close.** Most generations do not make the
+ * cut, so the loop is watch, delete, watch the next -- and a dialog that
+ * closed on every delete would put a card click between each pair. Delete
+ * and Backspace do it from the keyboard; the last clip wraps to the first;
+ * the only clip closes the dialog, since there is nothing to move on to.
  */
 export function VideoPlayerDialog({
   video,
+  videos,
+  onNavigate,
   onClose,
   onDelete,
   onRename,
 }: {
   video: VideoRecord | null
+  /** The section's playable clips in the wall's order: what Left and Right
+   *  walk. */
+  videos: Array<VideoRecord>
+  onNavigate: (id: string) => void
   onClose: () => void
-  /** Move this clip to Trash. The dialog closes; the wall drops the card. */
+  /** Move this clip to Trash. The wall drops the card; the dialog moves on. */
   onDelete: (id: string) => void
   /** Name this clip, from the header. */
   onRename: (video: VideoRecord, title: string) => void
 }) {
+  const index = video ? videos.findIndex((v) => v.id === video.id) : -1
+  const prev = index > 0 ? videos[index - 1] : null
+  const next =
+    index >= 0 && index < videos.length - 1 ? videos[index + 1] : null
+
+  /* Whether the next clip should start on its own. Set by what the person
+     did to this one, read by the one that replaces it. A ref, not state: the
+     player is remounted per clip and reads it once, at mount. */
+  const wantPlaying = useRef(true)
+  const player = useRef<HTMLVideoElement | null>(null)
+  useEffect(() => {
+    if (!video) wantPlaying.current = true
+  }, [video])
+
+  const go = useCallback(
+    (target: VideoRecord | null) => {
+      if (target) onNavigate(target.id)
+    },
+    [onNavigate],
+  )
+
+  /** Trash this clip and land on the next one, or the first from the last,
+   *  or nowhere when it was the only one. Same play state either way. */
+  const remove = useCallback(() => {
+    if (!video) return
+    onDelete(video.id)
+    const after = next ?? (index > 0 ? videos[0] : null)
+    if (after) onNavigate(after.id)
+    else onClose()
+  }, [video, next, index, videos, onDelete, onNavigate, onClose])
+
+  useEffect(() => {
+    if (!video) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const target = e.target as HTMLElement | null
+      if (target?.tagName === 'INPUT') return
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        // Taken before the native player, whose arrows seek five seconds.
+        e.preventDefault()
+        go(e.key === 'ArrowLeft' ? prev : next)
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault()
+        remove()
+      } else if (e.key === ' ' && target !== player.current) {
+        // With the player focused, Space is its own play/pause already.
+        e.preventDefault()
+        const el = player.current
+        if (!el) return
+        if (el.paused) void el.play().catch(() => {})
+        else el.pause()
+      }
+    }
+    /* Capture, not bubble: something inside the popup stops arrow keys on
+       their way up (Space arrives, Left and Right do not), and the native
+       player's own arrows seek five seconds when it has focus. First in line
+       is the only place both are certain. */
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [video, prev, next, go, remove])
+
   return (
     <Dialog
       open={!!video}
@@ -61,16 +154,59 @@ export function VideoPlayerDialog({
         ) : (
           <DialogTitle>Video playback</DialogTitle>
         )}
-        {video && <Player key={`player-${video.id}`} video={video} />}
+        {video && (
+          <div className={styles.stage}>
+            <button
+              type="button"
+              className={styles.step}
+              onClick={() => go(prev)}
+              // Never keeps focus: a click here followed by Space is play
+              // or pause, not this button again.
+              onMouseDown={(e) => e.preventDefault()}
+              tabIndex={-1}
+              disabled={!prev}
+              aria-label="Previous clip"
+              title="Previous clip (Left)"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <Player
+              key={`player-${video.id}`}
+              video={video}
+              autoPlay={wantPlaying.current}
+              playerRef={player}
+              onPlayingChange={(playing) => {
+                wantPlaying.current = playing
+              }}
+            />
+            <button
+              type="button"
+              className={styles.step}
+              onClick={() => go(next)}
+              // Never keeps focus: a click here followed by Space is play
+              // or pause, not this button again.
+              onMouseDown={(e) => e.preventDefault()}
+              tabIndex={-1}
+              disabled={!next}
+              aria-label="Next clip"
+              title="Next clip (Right)"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
         {video && (
           <div className={styles.actions}>
+            {videos.length > 1 && index >= 0 && (
+              <span className={styles.position}>
+                {index + 1} / {videos.length}
+              </span>
+            )}
             <Button
               variant="danger"
               size="sm"
-              onClick={() => {
-                onDelete(video.id)
-                onClose()
-              }}
+              onClick={remove}
+              title="Delete (Delete or Backspace)"
             >
               <Trash2 size={14} />
               Delete this video
@@ -184,17 +320,33 @@ function TitleRow({
   )
 }
 
-function Player({ video }: { video: VideoRecord }) {
+function Player({
+  video,
+  autoPlay,
+  playerRef,
+  onPlayingChange,
+}: {
+  video: VideoRecord
+  autoPlay: boolean
+  playerRef: React.MutableRefObject<HTMLVideoElement | null>
+  /** What the person did: a pause is a pause, a run to the end is not. */
+  onPlayingChange: (playing: boolean) => void
+}) {
   const [failed, setFailed] = useState(false)
   return (
     <>
       <video
+        ref={playerRef}
         className={styles.player}
         src={imageUrl(video.id)}
         poster={imageUrl(video.id, 'thumb')}
         controls
-        autoPlay
+        autoPlay={autoPlay}
         playsInline
+        onPlay={() => onPlayingChange(true)}
+        onPause={(e) => {
+          if (!e.currentTarget.ended) onPlayingChange(false)
+        }}
         onError={() => setFailed(true)}
         aria-label={video.description || 'Generated video'}
       />

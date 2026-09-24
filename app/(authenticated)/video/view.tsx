@@ -71,6 +71,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     isBatchDeleting,
     deleteSelected,
     playingVideo,
+    playlist,
     setPlayingId,
     framesClip,
     setFramesClip,
@@ -128,6 +129,8 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
 
       <VideoPlayerDialog
         video={playingVideo}
+        videos={playlist}
+        onNavigate={setPlayingId}
         onClose={() => setPlayingId(null)}
         onDelete={(id) => void deleteVideo(id)}
         onRename={(clip, title) => void renameClip(clip, title)}
