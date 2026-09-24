@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { writeCut } from '../_actions/edits.action'
 import { exportToVideo } from '../_actions/export.action'
-import { totalSeconds } from './cut'
+import { locate, totalSeconds } from './cut'
 import type {
   CutPlayerHandle,
   PlayableItem,
@@ -129,14 +129,30 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
   const player = useRef<CutPlayerHandle>(null)
 
   /**
-   * Space plays and pauses; Delete and Backspace take out the highlighted
-   * clip. On the window, as Video's Escape is, and skipped when the key was
+   * Space plays and pauses; Left and Right step a frame while paused, five
+   * with Shift; Delete and Backspace take out the highlighted clip. On the window, as Video's Escape is, and skipped when the key was
    * meant for something else: a field, a button (the stage is one, and Space
    * on a focused button is already a press), or the picker while it is open.
    */
   const removeIndex = useCallback((index: number) => {
     setItems((current) => current.filter((_, i) => i !== index))
   }, [])
+  /** Move the paused stage by `frames`, across a join if that is where the
+   *  next frame is. On the run's clock, so a step back from a clip's first
+   *  frame lands on the previous clip's last. */
+  const step = useCallback(
+    (frames: number) => {
+      const handle = player.current
+      if (!handle || handle.isPlaying()) return
+      const target = Math.max(
+        0,
+        Math.min(time + frames * handle.frameSeconds(), totalSeconds(items)),
+      )
+      const at = locate(items, target)
+      if (at) handle.seekTo(at.index, at.offset)
+    },
+    [items, time],
+  )
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (picking || e.metaKey || e.ctrlKey || e.altKey) return
@@ -153,6 +169,12 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
       if (e.key === ' ') {
         e.preventDefault()
         player.current?.toggle()
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        // Frame by frame while paused, five at a time with Shift. Nothing
+        // while playing: a nudge under a running clip is not a thing you see.
+        if (player.current?.isPlaying()) return
+        e.preventDefault()
+        step((e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 5 : 1))
       } else if (
         (e.key === 'Delete' || e.key === 'Backspace') &&
         playingIndex !== null
@@ -163,7 +185,7 @@ export function useView(edit: Edit, clips: Array<VideoRecord>) {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [picking, playingIndex, removeIndex])
+  }, [picking, playingIndex, removeIndex, step])
 
   /** The first clip's shape sets the stage's, as Director's does. */
   /**

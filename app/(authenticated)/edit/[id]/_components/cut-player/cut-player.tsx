@@ -32,6 +32,9 @@ export interface CutPlayerHandle {
   seekTo: (index: number, offset?: number) => void
   toggle: () => void
   isPlaying: () => boolean
+  /** One frame's length in seconds, as last observed while playing; 1/30
+   *  until a clip has played. Arrow keys step by it. */
+  frameSeconds: () => number
 }
 
 /** How close to `out` counts as reached. A frame at 60fps is 0.017s; half of
@@ -120,6 +123,12 @@ export function CutPlayer({
   onTimeRef.current = onTimeChange
   const onDurationRef = useRef(onDuration)
   onDurationRef.current = onDuration
+  /* Learned, not declared: a `<video>` does not say its frame rate. Each
+     presented frame reports its media time, and the gap between two of them
+     is the frame length -- the lineup mixes 24, 25 and 30fps, so a fixed
+     number would step wrong on two of the three. */
+  const frameSeconds = useRef(1 / 30)
+  const lastMediaTime = useRef<number | null>(null)
 
   /** Point an element at a clip and a moment in it. A same-source element
    *  seeks in place; a new source seeks when its metadata arrives. */
@@ -221,10 +230,17 @@ export function CutPlayer({
       if (t >= item.out - OUT_EPSILON) handleEnded(active)
     }
     let handle = 0
-    const loop = () => {
+    const loop = (_now: number, meta: VideoFrameCallbackMetadata) => {
+      const last = lastMediaTime.current
+      const gap = last === null ? 0 : meta.mediaTime - last
+      // Between a 60fps frame and a 10fps one; anything else is a seek or a
+      // dropped frame rather than a frame length.
+      if (gap > 1 / 70 && gap < 1 / 8) frameSeconds.current = gap
+      lastMediaTime.current = meta.mediaTime
       tick()
       handle = el.requestVideoFrameCallback(loop)
     }
+    lastMediaTime.current = null
     handle = el.requestVideoFrameCallback(loop)
     return () => el.cancelVideoFrameCallback(handle)
   }, [active, isPlaying, handleEnded])
@@ -282,6 +298,7 @@ export function CutPlayer({
       seekTo: (target, offset) => jumpTo(target, offset, isPlayingRef.current),
       toggle,
       isPlaying: () => isPlayingRef.current,
+      frameSeconds: () => frameSeconds.current,
     }),
     [jumpTo, toggle],
   )
