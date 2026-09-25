@@ -99,12 +99,14 @@ the model invents answers it in up to six 9:16 clips. A toy, on purpose.
   line and not each burst's, and the pace is assumed `normal` because nothing
   records it. The chat box sits under the player, so the stage is
   capped at 45vh there (`stageMax`) to keep the box on screen.
-- **An answer ends on a hook.** The toy is asking, so the character closes
-  most answers on a thread it mentioned but held back -- a detail, a story,
-  a twist -- that invites the next question, never a question about the
+- **An answer ends on a last beat** that leaves something to pick up -- a
+  tease, an offer, a fork, a provocation -- because the toy is asking, and a
+  tidy wrap-up gives the person nothing to ask. Never a question about the
   person: the first cut asked "what's your current opening?" and turned the
-  asker into the one answering. Spoken in the last burst, skipped on a
-  sign-off, read back through the transcript; no suggestion chips, by choice.
+  asker into the one answering. It has its own section in the prompt and says
+  it holds whatever the transcript did, because a long session of wrap-up
+  endings out-pulled a single bullet. Skipped on a sign-off; no suggestion
+  chips, by choice.
 - **A chat opens unnamed.** New chat skips the name dialog and lands on an
   intro; the model returns a `title` with every answer and the first turn's
   is written as the session name (`appendChatTurn`). The heading's pencil
