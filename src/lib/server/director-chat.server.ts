@@ -165,8 +165,8 @@ export function clampAnswer(
 
 /**
  * One Claude call per turn (#670): the question, the transcript so far and the
- * character if there is one; back come the character and one to three clip
- * prompts. Opus at low effort, because the output is three short prompts and
+ * character if there is one; back come the character and up to six clip
+ * prompts. Sonnet 5 at low effort, because the output is a few short prompts and
  * the wait that matters is the clip's. Web search is on a short
  * leash -- the prompt says once, first good result -- so an answer that needs
  * a fact costs seconds rather than a research session.

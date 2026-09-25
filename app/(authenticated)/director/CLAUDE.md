@@ -32,7 +32,7 @@ References below; the run is still the whole of the work area.
 ## Chat sessions (#670)
 
 A session started as a chat instead of a run: type a question, a character
-the model invents answers it in one to three 9:16 clips. A toy, on purpose.
+the model invents answers it in up to six 9:16 clips. A toy, on purpose.
 
 - **The kind is a column.** `director_sessions.chat` is null for a run and
   `{ version: 1, character, turns }` for a chat; nothing turns one into the
@@ -40,7 +40,7 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   and Script read a chat exactly as they read a run -- the turns only say
   which clips answer which question.
 - **One Claude call per turn** (`src/lib/server/director-chat.server.ts`,
-  prompt in `src/lib/prompts/director-chat.md`): Opus at low effort, adaptive
+  prompt in `src/lib/prompts/director-chat.md`): Sonnet 5 at low effort, adaptive
   thinking, structured output, web search capped at two uses. The character
   is invented on the first turn from the question's cue -- a sports question
   summons someone from that world -- and pinned from then on. **The anchors
@@ -99,6 +99,14 @@ the model invents answers it in one to three 9:16 clips. A toy, on purpose.
   line and not each burst's, and the pace is assumed `normal` because nothing
   records it. The chat box sits under the player, so the stage is
   capped at 45vh there (`stageMax`) to keep the box on screen.
+- **An answer ends on a last beat** that leaves something to pick up -- a
+  tease, an offer, a fork, a provocation -- because the toy is asking, and a
+  tidy wrap-up gives the person nothing to ask. Never a question about the
+  person: the first cut asked "what's your current opening?" and turned the
+  asker into the one answering. It has its own section in the prompt and says
+  it holds whatever the transcript did, because a long session of wrap-up
+  endings out-pulled a single bullet. Skipped on a sign-off; no suggestion
+  chips, by choice.
 - **A chat opens unnamed.** New chat skips the name dialog and lands on an
   intro; the model returns a `title` with every answer and the first turn's
   is written as the session name (`appendChatTurn`). The heading's pencil
