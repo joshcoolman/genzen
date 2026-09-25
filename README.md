@@ -283,6 +283,9 @@ The board at `localhost:3210/kanban/genzen` has the rest.
 
 Recent highlights:
 
+- **Director chat answers end on a last beat (#740, #741)** -- a tease, an
+  offer, a fork or a provocation that invites the next question, never a
+  question about the person and never a tidy wrap-up. Its own prompt section.
 - **News progress overlay (#725, #738)** -- a Rive animation (authored as RML
   with the Rive CLI, `rive/news-progress/`, `pnpm rive:build`) in an overlay in
   the app shell: expanded or minimized, survives navigation. Get news shows it
@@ -305,7 +308,3 @@ Recent highlights:
   the border. Typed error family, services as Layers named for the job rather
   than the vendor, retry gated on the tag, and actions that return
   `{ ok, value } | { ok, error }`. `docs/reference/effect.md`.
-- Trashing an image that was staged as a reference now takes it out of the
-  generator panel and says so, on every trash path on /images (#716). It used
-  to keep the thumbnail and a dead id, and the next press failed every card
-  with "Source image not found".
