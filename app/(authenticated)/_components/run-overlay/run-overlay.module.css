@@ -1,0 +1,209 @@
+/* Bottom centre, above the page and below dialogs. Expanded is a card you
+   notice; minimized is a strip you can work beside. Same element either way --
+   width, height and padding transition, the animation box shrinks in place. */
+.root {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-24);
+  z-index: var(--z-overlay);
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(30rem, calc(100vw - var(--space-32)));
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'title controls'
+    'anim anim'
+    'body body';
+  gap: var(--space-12);
+  padding: var(--space-20);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-2xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-overlay);
+  transition:
+    width var(--duration-slow) var(--ease-out),
+    padding var(--duration-slow) var(--ease-out),
+    border-radius var(--duration-slow) var(--ease-out);
+}
+
+.minimized {
+  width: min(26rem, calc(100vw - var(--space-32)));
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: 'anim body controls';
+  align-items: center;
+  gap: var(--space-10);
+  padding: var(--space-6) var(--space-8) var(--space-6) var(--space-6);
+  border-radius: var(--radius-full);
+}
+
+.animationBox {
+  grid-area: anim;
+  justify-self: center;
+  width: 10rem;
+  height: 10rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  transition:
+    width var(--duration-slow) var(--ease-out),
+    height var(--duration-slow) var(--ease-out);
+}
+
+.minimized .animationBox {
+  width: 2.5rem;
+  height: 2.5rem;
+  cursor: pointer;
+}
+
+.body {
+  grid-area: body;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.title {
+  grid-area: title;
+  align-self: center;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.activity {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  font-size: var(--text-base);
+  line-height: var(--text-base-leading);
+  font-weight: var(--weight-medium);
+  color: var(--text);
+}
+
+.minimized .activity {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+.count {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-normal);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.view {
+  font-size: var(--text-sm);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.view:hover {
+  text-decoration: underline;
+}
+
+.snippets {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.snippet {
+  margin: 0;
+  display: flex;
+  gap: var(--space-8);
+  min-width: 0;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Older snippets recede rather than scroll. */
+.snippets .snippet:nth-child(2) {
+  opacity: 0.7;
+}
+.snippets .snippet:nth-child(3) {
+  opacity: 0.45;
+}
+.snippets .snippet:nth-child(4) {
+  opacity: 0.25;
+}
+
+.minimized .snippet {
+  display: block;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+.snippetLabel {
+  flex: none;
+  margin-right: var(--space-8);
+  color: var(--accent);
+}
+
+.arrive {
+  animation: arrive var(--duration-slow) var(--ease-out) both;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+}
+
+.controls {
+  grid-area: controls;
+  align-self: start;
+  display: flex;
+  gap: var(--space-4);
+}
+
+.minimized .controls {
+  align-self: center;
+}
+
+.control {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.control:hover {
+  background: var(--row-hover);
+  color: var(--text);
+}
+
+.controlIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root,
+  .animationBox {
+    transition: none;
+  }
+  .arrive {
+    animation: none;
+  }
+}

@@ -1,0 +1,16 @@
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Stand-in when the .riv will not load: a quiet dot in the accent. */
+.fallback {
+  display: block;
+  width: 40%;
+  height: 40%;
+  margin: 30%;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  opacity: 0.6;
+}

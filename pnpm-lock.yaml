@@ -26,6 +26,9 @@ importers:
       '@floating-ui/react-dom':
         specifier: ^2.1.8
         version: 2.1.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@rive-app/react-canvas':
+        specifier: ^4.34.3
+        version: 4.34.3(react@19.2.4)
       '@tanstack/react-hotkeys':
         specifier: ^0.3.0
         version: 0.3.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -861,6 +864,14 @@ packages:
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
     engines: {node: '>=8.0.0'}
+
+  '@rive-app/canvas@2.42.2':
+    resolution: {integrity: sha512-NlSngaccl6L0XambU8XuK+0MT9cIbQBQrBod+/tWPLIjL/G82cXs7c6hj6wdrfk9YSVj8ZNuXcUEKoEo6YABYg==}
+
+  '@rive-app/react-canvas@4.34.3':
+    resolution: {integrity: sha512-imxE0KGOQ45dZq84rBzWu/IFsabra71rwcpJi/dVw7o/WzOwhL+ueQ44545ODS2zUzw3E5e30ogQMf5VLXzi8w==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0
 
   '@rollup/rollup-android-arm-eabi@4.57.1':
     resolution: {integrity: sha512-A6ehUVSiSaaliTxai040ZpZ2zTevHYbvu/lDoeAteHI8QnaosIzm4qwtezfRg1jOYaUmnzLX1AOD6Z+UJjtifg==}
@@ -3675,6 +3686,13 @@ snapshots:
     optional: true
 
   '@opentelemetry/api@1.9.0': {}
+
+  '@rive-app/canvas@2.42.2': {}
+
+  '@rive-app/react-canvas@4.34.3(react@19.2.4)':
+    dependencies:
+      '@rive-app/canvas': 2.42.2
+      react: 19.2.4
 
   '@rollup/rollup-android-arm-eabi@4.57.1':
     optional: true

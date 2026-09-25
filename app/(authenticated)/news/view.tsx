@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { ImageIcon, MoreHorizontal, Trash2 } from 'lucide-react'
+import { fakeNewsRun } from '../_components/run-overlay/fake-news-run'
+import { useRunOverlay } from '../_components/run-overlay/run-overlay-provider'
 import { useView } from './use-view'
 import styles from './view.module.css'
 import type { NewsPost } from '#/lib/types/db'
@@ -141,6 +143,7 @@ export function View({ initial }: { initial: Array<NewsPost> }) {
     deletePost,
   } = useView(initial)
   const [guidance, setGuidance] = useState('')
+  const runOverlay = useRunOverlay()
 
   return (
     <Stack gap={24}>
@@ -174,6 +177,18 @@ export function View({ initial }: { initial: Array<NewsPost> }) {
           >
             {isFetching ? 'Searching...' : 'Get news'}
           </Button>
+          {/* A paced, scripted run for judging the progress overlay without
+              paying for a real one (#725). Development only. */}
+          {process.env.NODE_ENV === 'development' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => runOverlay.start('News', fakeNewsRun)}
+              disabled={runOverlay.active}
+            >
+              Preview progress
+            </Button>
+          )}
         </div>
         {error && <p className={styles.error}>{error.message}</p>}
       </div>
