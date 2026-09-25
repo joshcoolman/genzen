@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
+import { useRunOverlay } from '../_components/run-overlay/run-overlay-provider'
 import { deleteNewsPost, getNews, regenHeroImage } from './_actions/news'
 import type { NewsPost } from '#/lib/types/db'
 import type { WireError } from '#/lib/effect/result'
@@ -19,14 +20,54 @@ export function useView(initial: Array<NewsPost>) {
   const [error, setError] = useState<WireError | null>(null)
   const [regenIds, setRegenIds] = useState<Set<string>>(new Set())
 
-  const fetchNews = useCallback(async (guidance: string) => {
-    setIsFetching(true)
-    setError(null)
-    const result = await getNews(guidance)
-    if (result.ok) setPosts(result.value)
-    else setError(result.error)
-    setIsFetching(false)
-  }, [])
+  const runOverlay = useRunOverlay()
+  const known = useRef(new Set(initial.map((p) => p.id)))
+  known.current = new Set(posts.map((p) => p.id))
+
+  /**
+   * The overlay shows only what is true today (#725): one activity for the
+   * whole call, then the real outcome. Research, writing and heroes are one
+   * server action that reports nothing until it returns, so there are no
+   * snippets and no slots until #737 makes the run observable.
+   */
+  const fetchNews = useCallback(
+    (guidance: string) => {
+      setIsFetching(true)
+      setError(null)
+      runOverlay.start('News', (emit) => {
+        emit({ kind: 'activity', text: 'Researching and writing' })
+        void getNews(guidance).then((result) => {
+          if (result.ok) {
+            const added = result.value.filter(
+              (p) => !known.current.has(p.id),
+            ).length
+            setPosts(result.value)
+            emit(
+              added > 0
+                ? {
+                    kind: 'end',
+                    outcome: 'success',
+                    text: `${added} new ${added === 1 ? 'article' : 'articles'} ready`,
+                    href: '/news',
+                  }
+                : {
+                    kind: 'end',
+                    outcome: 'empty',
+                    text: 'Nothing new this time',
+                  },
+            )
+          } else {
+            setError(result.error)
+            emit({ kind: 'end', outcome: 'failed', text: result.error.message })
+          }
+          setIsFetching(false)
+        })
+        // Not cancellable: the server action runs to completion either way.
+        return () => {}
+      })
+    },
+    [runOverlay],
+  )
 
   const regenImage = useCallback(async (postId: string) => {
     setRegenIds((s) => new Set(s).add(postId))

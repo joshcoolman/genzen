@@ -1,0 +1,1248 @@
+<Rive version="1" kind="fragment">
+<Artboard defaultStateMachineId="0:4" styleId="0:3" viewModelId="0:10" viewModelInstanceId="0:11" width="400" height="400" name="Progress" id="0:2">
+<LayoutComponentStyle name="Artboard Style" id="0:3"/>
+<Shape x="200" y="200" opacity="0" name="Ripple" id="0:101">
+    <Ellipse width="84" height="84" name="Path"/>
+    <Stroke thickness="3" cap="round" name="Stroke" id="0:102"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Stroke>
+</Shape>
+<Node x="200" y="200" name="CoreFlash" id="0:103">
+    <Node name="CoreBreath" id="0:104">
+        <Shape name="CoreHighlight" opacity="0.9" id="0:105">
+            <Ellipse width="30.2" height="30.2" name="Path"/>
+            <Fill name="Fill"><SolidColor colorValue="FF1C2020" name="C"/></Fill>
+        </Shape>
+        <Shape name="CoreAccent" id="0:106">
+            <Ellipse width="84" height="84" name="Path"/>
+            <Fill name="Fill"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Fill>
+        </Shape>
+        <Shape name="CoreMuted" id="0:107">
+            <Ellipse width="84" height="84" name="Path"/>
+            <Fill name="Fill"><SolidColor colorValue="FF8F8F8F" name="C"/></Fill>
+        </Shape>
+        <Shape name="Glow" opacity="0.35" id="0:108">
+            <Ellipse width="92" height="92" name="Path"/>
+            <Stroke thickness="34" name="Glow"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor><Feather strength="30" name="Feather"/></Stroke>
+        </Shape>
+    </Node>
+</Node>
+<Shape x="200" y="200" name="Comet" id="0:109">
+    <Ellipse width="200" height="200" name="Path"/>
+    <Stroke thickness="9" cap="round" name="CometGlow"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor>
+        <Feather strength="10" name="Feather"/>
+        <TrimPath start="0" end="0.16" name="Trim" id="0:110"/>
+    </Stroke>
+    <Stroke thickness="4" cap="round" name="CometCrisp"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor>
+        <TrimPath start="0" end="0.16" name="Trim" id="0:111"/>
+    </Stroke>
+</Shape>
+<Shape x="200" y="200" name="InnerTrack">
+    <Ellipse width="200" height="200" name="Path"/>
+    <Stroke thickness="2" name="Stroke"><SolidColor colorValue="FF2B2B2B" name="C"/></Stroke>
+</Shape>
+<Node name="Slots">
+    <Node x="200" y="200" name="Arm1" id="0:115">
+        <DataBindContext sourcePathIds="0:10-0:16" propertyKey="15" converterId="0:114"/>
+        <Node y="-150" scaleX="0.4" scaleY="0.4" opacity="0" name="Vis1" id="0:116">
+            <Node scaleX="0" scaleY="0" opacity="0" name="LitSlot1" id="0:117">
+                <Shape opacity="0" name="Halo1" id="0:118">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="2.5" name="Stroke"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Stroke>
+                </Shape>
+                <Shape name="LitAccent1" id="0:119">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="6" name="Glow"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor><Feather strength="8" name="Feather"/></Stroke>
+                    <Fill name="Fill"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Fill>
+                </Shape>
+                <Shape name="LitMuted1">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Fill name="Fill"><SolidColor colorValue="FF8F8F8F" name="C"/></Fill>
+                </Shape>
+            </Node>
+            <Shape name="Slot1">
+                <Ellipse width="26" height="26" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="408F8F8F" name="C"/></Fill>
+                <Stroke thickness="1.5" name="Stroke"><SolidColor colorValue="408F8F8F" name="C"/></Stroke>
+            </Shape>
+        </Node>
+    </Node>
+    <Node x="200" y="200" name="Arm2" id="0:123">
+        <DataBindContext sourcePathIds="0:10-0:16" propertyKey="15" converterId="0:122"/>
+        <Node y="-150" scaleX="0.4" scaleY="0.4" opacity="0" name="Vis2" id="0:124">
+            <Node scaleX="0" scaleY="0" opacity="0" name="LitSlot2" id="0:125">
+                <Shape opacity="0" name="Halo2" id="0:126">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="2.5" name="Stroke"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Stroke>
+                </Shape>
+                <Shape name="LitAccent2" id="0:127">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="6" name="Glow"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor><Feather strength="8" name="Feather"/></Stroke>
+                    <Fill name="Fill"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Fill>
+                </Shape>
+                <Shape name="LitMuted2">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Fill name="Fill"><SolidColor colorValue="FF8F8F8F" name="C"/></Fill>
+                </Shape>
+            </Node>
+            <Shape name="Slot2">
+                <Ellipse width="26" height="26" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="408F8F8F" name="C"/></Fill>
+                <Stroke thickness="1.5" name="Stroke"><SolidColor colorValue="408F8F8F" name="C"/></Stroke>
+            </Shape>
+        </Node>
+    </Node>
+    <Node x="200" y="200" name="Arm3" id="0:131">
+        <DataBindContext sourcePathIds="0:10-0:16" propertyKey="15" converterId="0:130"/>
+        <Node y="-150" scaleX="0.4" scaleY="0.4" opacity="0" name="Vis3" id="0:132">
+            <Node scaleX="0" scaleY="0" opacity="0" name="LitSlot3" id="0:133">
+                <Shape opacity="0" name="Halo3" id="0:134">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="2.5" name="Stroke"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Stroke>
+                </Shape>
+                <Shape name="LitAccent3" id="0:135">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="6" name="Glow"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor><Feather strength="8" name="Feather"/></Stroke>
+                    <Fill name="Fill"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Fill>
+                </Shape>
+                <Shape name="LitMuted3">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Fill name="Fill"><SolidColor colorValue="FF8F8F8F" name="C"/></Fill>
+                </Shape>
+            </Node>
+            <Shape name="Slot3">
+                <Ellipse width="26" height="26" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="408F8F8F" name="C"/></Fill>
+                <Stroke thickness="1.5" name="Stroke"><SolidColor colorValue="408F8F8F" name="C"/></Stroke>
+            </Shape>
+        </Node>
+    </Node>
+    <Node x="200" y="200" name="Arm4" id="0:139">
+        <DataBindContext sourcePathIds="0:10-0:16" propertyKey="15" converterId="0:138"/>
+        <Node y="-150" scaleX="0.4" scaleY="0.4" opacity="0" name="Vis4" id="0:140">
+            <Node scaleX="0" scaleY="0" opacity="0" name="LitSlot4" id="0:141">
+                <Shape opacity="0" name="Halo4" id="0:142">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="2.5" name="Stroke"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Stroke>
+                </Shape>
+                <Shape name="LitAccent4" id="0:143">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="6" name="Glow"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor><Feather strength="8" name="Feather"/></Stroke>
+                    <Fill name="Fill"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Fill>
+                </Shape>
+                <Shape name="LitMuted4">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Fill name="Fill"><SolidColor colorValue="FF8F8F8F" name="C"/></Fill>
+                </Shape>
+            </Node>
+            <Shape name="Slot4">
+                <Ellipse width="26" height="26" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="408F8F8F" name="C"/></Fill>
+                <Stroke thickness="1.5" name="Stroke"><SolidColor colorValue="408F8F8F" name="C"/></Stroke>
+            </Shape>
+        </Node>
+    </Node>
+    <Node x="200" y="200" name="Arm5" id="0:147">
+        <DataBindContext sourcePathIds="0:10-0:16" propertyKey="15" converterId="0:146"/>
+        <Node y="-150" scaleX="0.4" scaleY="0.4" opacity="0" name="Vis5" id="0:148">
+            <Node scaleX="0" scaleY="0" opacity="0" name="LitSlot5" id="0:149">
+                <Shape opacity="0" name="Halo5" id="0:150">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="2.5" name="Stroke"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Stroke>
+                </Shape>
+                <Shape name="LitAccent5" id="0:151">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="6" name="Glow"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor><Feather strength="8" name="Feather"/></Stroke>
+                    <Fill name="Fill"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Fill>
+                </Shape>
+                <Shape name="LitMuted5">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Fill name="Fill"><SolidColor colorValue="FF8F8F8F" name="C"/></Fill>
+                </Shape>
+            </Node>
+            <Shape name="Slot5">
+                <Ellipse width="26" height="26" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="408F8F8F" name="C"/></Fill>
+                <Stroke thickness="1.5" name="Stroke"><SolidColor colorValue="408F8F8F" name="C"/></Stroke>
+            </Shape>
+        </Node>
+    </Node>
+    <Node x="200" y="200" name="Arm6" id="0:155">
+        <DataBindContext sourcePathIds="0:10-0:16" propertyKey="15" converterId="0:154"/>
+        <Node y="-150" scaleX="0.4" scaleY="0.4" opacity="0" name="Vis6" id="0:156">
+            <Node scaleX="0" scaleY="0" opacity="0" name="LitSlot6" id="0:157">
+                <Shape opacity="0" name="Halo6" id="0:158">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="2.5" name="Stroke"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Stroke>
+                </Shape>
+                <Shape name="LitAccent6" id="0:159">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="6" name="Glow"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor><Feather strength="8" name="Feather"/></Stroke>
+                    <Fill name="Fill"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Fill>
+                </Shape>
+                <Shape name="LitMuted6">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Fill name="Fill"><SolidColor colorValue="FF8F8F8F" name="C"/></Fill>
+                </Shape>
+            </Node>
+            <Shape name="Slot6">
+                <Ellipse width="26" height="26" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="408F8F8F" name="C"/></Fill>
+                <Stroke thickness="1.5" name="Stroke"><SolidColor colorValue="408F8F8F" name="C"/></Stroke>
+            </Shape>
+        </Node>
+    </Node>
+    <Node x="200" y="200" name="Arm7" id="0:163">
+        <DataBindContext sourcePathIds="0:10-0:16" propertyKey="15" converterId="0:162"/>
+        <Node y="-150" scaleX="0.4" scaleY="0.4" opacity="0" name="Vis7" id="0:164">
+            <Node scaleX="0" scaleY="0" opacity="0" name="LitSlot7" id="0:165">
+                <Shape opacity="0" name="Halo7" id="0:166">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="2.5" name="Stroke"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Stroke>
+                </Shape>
+                <Shape name="LitAccent7" id="0:167">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="6" name="Glow"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor><Feather strength="8" name="Feather"/></Stroke>
+                    <Fill name="Fill"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Fill>
+                </Shape>
+                <Shape name="LitMuted7">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Fill name="Fill"><SolidColor colorValue="FF8F8F8F" name="C"/></Fill>
+                </Shape>
+            </Node>
+            <Shape name="Slot7">
+                <Ellipse width="26" height="26" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="408F8F8F" name="C"/></Fill>
+                <Stroke thickness="1.5" name="Stroke"><SolidColor colorValue="408F8F8F" name="C"/></Stroke>
+            </Shape>
+        </Node>
+    </Node>
+    <Node x="200" y="200" name="Arm8" id="0:171">
+        <DataBindContext sourcePathIds="0:10-0:16" propertyKey="15" converterId="0:170"/>
+        <Node y="-150" scaleX="0.4" scaleY="0.4" opacity="0" name="Vis8" id="0:172">
+            <Node scaleX="0" scaleY="0" opacity="0" name="LitSlot8" id="0:173">
+                <Shape opacity="0" name="Halo8" id="0:174">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="2.5" name="Stroke"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Stroke>
+                </Shape>
+                <Shape name="LitAccent8" id="0:175">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="6" name="Glow"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor><Feather strength="8" name="Feather"/></Stroke>
+                    <Fill name="Fill"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Fill>
+                </Shape>
+                <Shape name="LitMuted8">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Fill name="Fill"><SolidColor colorValue="FF8F8F8F" name="C"/></Fill>
+                </Shape>
+            </Node>
+            <Shape name="Slot8">
+                <Ellipse width="26" height="26" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="408F8F8F" name="C"/></Fill>
+                <Stroke thickness="1.5" name="Stroke"><SolidColor colorValue="408F8F8F" name="C"/></Stroke>
+            </Shape>
+        </Node>
+    </Node>
+    <Node x="200" y="200" name="Arm9" id="0:179">
+        <DataBindContext sourcePathIds="0:10-0:16" propertyKey="15" converterId="0:178"/>
+        <Node y="-150" scaleX="0.4" scaleY="0.4" opacity="0" name="Vis9" id="0:180">
+            <Node scaleX="0" scaleY="0" opacity="0" name="LitSlot9" id="0:181">
+                <Shape opacity="0" name="Halo9" id="0:182">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="2.5" name="Stroke"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Stroke>
+                </Shape>
+                <Shape name="LitAccent9" id="0:183">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="6" name="Glow"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor><Feather strength="8" name="Feather"/></Stroke>
+                    <Fill name="Fill"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor></Fill>
+                </Shape>
+                <Shape name="LitMuted9">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Fill name="Fill"><SolidColor colorValue="FF8F8F8F" name="C"/></Fill>
+                </Shape>
+            </Node>
+            <Shape name="Slot9">
+                <Ellipse width="26" height="26" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="408F8F8F" name="C"/></Fill>
+                <Stroke thickness="1.5" name="Stroke"><SolidColor colorValue="408F8F8F" name="C"/></Stroke>
+            </Shape>
+        </Node>
+    </Node>
+</Node>
+<Shape x="200" y="200" opacity="0" name="CompleteRing" id="0:184">
+    <Ellipse width="300" height="300" name="Path"/>
+    <Stroke thickness="10" name="Glow"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor><Feather strength="14" name="Feather"/>
+        <TrimPath start="0" end="0" name="Trim" id="0:185"/>
+    </Stroke>
+    <Stroke thickness="2.5" name="Crisp"><SolidColor colorValue="FF4ADE80" name="Accent"><DataBindContext sourcePathIds="0:10-0:15" propertyKey="37"/></SolidColor>
+        <TrimPath start="0" end="0" name="Trim" id="0:186"/>
+    </Stroke>
+</Shape>
+<Shape x="200" y="200" opacity="0" name="SlotTrack" id="0:187">
+    <Ellipse width="300" height="300" name="Path"/>
+    <Stroke thickness="2" name="Stroke"><SolidColor colorValue="FF2B2B2B" name="C"/></Stroke>
+</Shape>
+<LinearAnimation loopValue="loop" duration="360" name="Working" id="0:188">
+    <KeyedObject objectId="0:109"><KeyedProperty propertyKey="15"><KeyFrameDouble frame="0" value="0" interpolationType="linear"/><KeyFrameDouble frame="360" value="12.566371" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:111"><KeyedProperty propertyKey="115"><KeyFrameDouble frame="0" value="0.12" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="90" value="0.22" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="180" value="0.12" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="270" value="0.22" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="360" value="0.12" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:110"><KeyedProperty propertyKey="115"><KeyFrameDouble frame="0" value="0.12" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="90" value="0.22" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="180" value="0.12" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="270" value="0.22" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="360" value="0.12" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:104"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="90" value="1.06" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="180" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="270" value="1.06" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="360" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="90" value="1.06" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="180" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="270" value="1.06" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="360" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:108"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0.25" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="90" value="0.5" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="180" value="0.25" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="270" value="0.5" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="360" value="0.25" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:106"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:184"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:186"><KeyedProperty propertyKey="115"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:185"><KeyedProperty propertyKey="115"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:119"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:127"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:135"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:143"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:151"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:159"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:167"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:175"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:183"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="78" name="SuccessIn" id="0:189">
+    <KeyedObject objectId="0:109"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="24" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:184"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="10" value="0.8" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:186"><KeyedProperty propertyKey="115"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="56" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:185"><KeyedProperty propertyKey="115"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="56" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:104"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1.2" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="78" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1.2" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="78" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:108"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="0.95" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="78" value="0.55" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:106"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:119"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:127"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:135"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:143"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:151"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:159"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:167"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:175"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:183"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="loop" duration="300" name="SuccessRest" id="0:190">
+    <KeyedObject objectId="0:109"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:184"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0.8" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="150" value="0.5" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="300" value="0.8" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:186"><KeyedProperty propertyKey="115"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:185"><KeyedProperty propertyKey="115"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:104"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="150" value="1.035" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="300" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="150" value="1.035" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="300" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:108"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0.55" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="150" value="0.75" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="300" value="0.55" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:106"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:119"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:127"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:135"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:143"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:151"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:159"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:167"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:175"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:183"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="72" name="FailedIn" id="0:191">
+    <KeyedObject objectId="0:109"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="50" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:184"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:104"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="72" value="0.9" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="72" value="0.9" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:108"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="60" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:106"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="72" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:119"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="72" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:127"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="72" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:135"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="72" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:143"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="72" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:151"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="72" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:159"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="72" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:167"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="72" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:175"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="72" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:183"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="72" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="loop" duration="480" name="FailedRest" id="0:192">
+    <KeyedObject objectId="0:109"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:184"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:104"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.9" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="240" value="0.93" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="480" value="0.9" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.9" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="240" value="0.93" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="480" value="0.9" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:108"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:106"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:119"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:127"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:135"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:143"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:151"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:159"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:167"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:175"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:183"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="PulseIdle" id="0:193">
+
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="84" name="Ripple" id="0:194">
+    <KeyedObject objectId="0:101"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.25" y1="0.55" x2="0.4" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="84" value="3.55" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.25" y1="0.55" x2="0.4" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="84" value="3.55" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0.85" interpolationType="cubic"><CubicEaseInterpolator x1="0.25" y1="0.55" x2="0.4" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="84" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:102"><KeyedProperty propertyKey="47"><KeyFrameDouble frame="0" value="4" interpolationType="cubic"><CubicEaseInterpolator x1="0.25" y1="0.55" x2="0.4" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="84" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:103"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="8" value="1.12" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="36" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="8" value="1.12" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="36" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot1Off" id="0:195">
+    <KeyedObject objectId="0:117"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:118"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="48" name="Slot1Arrive" id="0:196">
+    <KeyedObject objectId="0:117"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="8" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:118"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="linear"/><KeyFrameDouble frame="4" value="0.9" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot1On" id="0:197">
+    <KeyedObject objectId="0:117"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:118"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot2Off" id="0:198">
+    <KeyedObject objectId="0:125"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:126"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="48" name="Slot2Arrive" id="0:199">
+    <KeyedObject objectId="0:125"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="8" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:126"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="linear"/><KeyFrameDouble frame="4" value="0.9" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot2On" id="0:200">
+    <KeyedObject objectId="0:125"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:126"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot3Off" id="0:201">
+    <KeyedObject objectId="0:133"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:134"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="48" name="Slot3Arrive" id="0:202">
+    <KeyedObject objectId="0:133"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="8" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:134"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="linear"/><KeyFrameDouble frame="4" value="0.9" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot3On" id="0:203">
+    <KeyedObject objectId="0:133"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:134"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot4Off" id="0:204">
+    <KeyedObject objectId="0:141"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:142"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="48" name="Slot4Arrive" id="0:205">
+    <KeyedObject objectId="0:141"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="8" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:142"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="linear"/><KeyFrameDouble frame="4" value="0.9" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot4On" id="0:206">
+    <KeyedObject objectId="0:141"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:142"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot5Off" id="0:207">
+    <KeyedObject objectId="0:149"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:150"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="48" name="Slot5Arrive" id="0:208">
+    <KeyedObject objectId="0:149"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="8" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:150"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="linear"/><KeyFrameDouble frame="4" value="0.9" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot5On" id="0:209">
+    <KeyedObject objectId="0:149"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:150"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot6Off" id="0:210">
+    <KeyedObject objectId="0:157"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:158"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="48" name="Slot6Arrive" id="0:211">
+    <KeyedObject objectId="0:157"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="8" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:158"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="linear"/><KeyFrameDouble frame="4" value="0.9" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot6On" id="0:212">
+    <KeyedObject objectId="0:157"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:158"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot7Off" id="0:213">
+    <KeyedObject objectId="0:165"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:166"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="48" name="Slot7Arrive" id="0:214">
+    <KeyedObject objectId="0:165"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="8" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:166"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="linear"/><KeyFrameDouble frame="4" value="0.9" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot7On" id="0:215">
+    <KeyedObject objectId="0:165"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:166"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot8Off" id="0:216">
+    <KeyedObject objectId="0:173"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:174"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="48" name="Slot8Arrive" id="0:217">
+    <KeyedObject objectId="0:173"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="8" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:174"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="linear"/><KeyFrameDouble frame="4" value="0.9" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot8On" id="0:218">
+    <KeyedObject objectId="0:173"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:174"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot9Off" id="0:219">
+    <KeyedObject objectId="0:181"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:182"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="48" name="Slot9Arrive" id="0:220">
+    <KeyedObject objectId="0:181"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="16" value="1.3" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="34" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="8" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:182"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="2.3" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="linear"/><KeyFrameDouble frame="4" value="0.9" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="0" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot9On" id="0:221">
+    <KeyedObject objectId="0:181"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:182"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot1Hidden" id="0:222">
+    <KeyedObject objectId="0:116"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="36" name="Slot1Appear" id="0:223">
+    <KeyedObject objectId="0:116"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="0" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="36" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="0" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="36" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/><KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="24" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot1Shown" id="0:224">
+    <KeyedObject objectId="0:116"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot2Hidden" id="0:225">
+    <KeyedObject objectId="0:124"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="40" name="Slot2Appear" id="0:226">
+    <KeyedObject objectId="0:124"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="4" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="40" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="4" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="40" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/><KeyFrameDouble frame="4" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="28" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot2Shown" id="0:227">
+    <KeyedObject objectId="0:124"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot3Hidden" id="0:228">
+    <KeyedObject objectId="0:132"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="44" name="Slot3Appear" id="0:229">
+    <KeyedObject objectId="0:132"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="8" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="44" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="8" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="44" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/><KeyFrameDouble frame="8" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="32" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot3Shown" id="0:230">
+    <KeyedObject objectId="0:132"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot4Hidden" id="0:231">
+    <KeyedObject objectId="0:140"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="48" name="Slot4Appear" id="0:232">
+    <KeyedObject objectId="0:140"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="12" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="12" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/><KeyFrameDouble frame="12" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="36" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot4Shown" id="0:233">
+    <KeyedObject objectId="0:140"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot5Hidden" id="0:234">
+    <KeyedObject objectId="0:148"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="52" name="Slot5Appear" id="0:235">
+    <KeyedObject objectId="0:148"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="16" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="52" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="16" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="52" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/><KeyFrameDouble frame="16" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="40" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot5Shown" id="0:236">
+    <KeyedObject objectId="0:148"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot6Hidden" id="0:237">
+    <KeyedObject objectId="0:156"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="56" name="Slot6Appear" id="0:238">
+    <KeyedObject objectId="0:156"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="20" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="56" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="20" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="56" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/><KeyFrameDouble frame="20" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="44" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot6Shown" id="0:239">
+    <KeyedObject objectId="0:156"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot7Hidden" id="0:240">
+    <KeyedObject objectId="0:164"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="60" name="Slot7Appear" id="0:241">
+    <KeyedObject objectId="0:164"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="24" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="60" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="24" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="60" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/><KeyFrameDouble frame="24" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="48" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot7Shown" id="0:242">
+    <KeyedObject objectId="0:164"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot8Hidden" id="0:243">
+    <KeyedObject objectId="0:172"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="64" name="Slot8Appear" id="0:244">
+    <KeyedObject objectId="0:172"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="28" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="64" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="28" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="64" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/><KeyFrameDouble frame="28" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="52" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot8Shown" id="0:245">
+    <KeyedObject objectId="0:172"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot9Hidden" id="0:246">
+    <KeyedObject objectId="0:180"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="68" name="Slot9Appear" id="0:247">
+    <KeyedObject objectId="0:180"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="32" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="68" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="0.4" interpolationType="hold"/><KeyFrameDouble frame="32" value="0.4" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="68" value="1" interpolationType="linear"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/><KeyFrameDouble frame="32" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.16" y1="1" x2="0.3" y2="1"/></KeyFrameDouble><KeyFrameDouble frame="56" value="1" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="Slot9Shown" id="0:248">
+    <KeyedObject objectId="0:180"><KeyedProperty propertyKey="16"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="TrackHidden" id="0:249">
+    <KeyedObject objectId="0:187"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<LinearAnimation loopValue="oneShot" duration="1" name="TrackShown" id="0:250">
+    <KeyedObject objectId="0:187"><KeyedProperty propertyKey="18"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
+<StateMachine name="Progress" id="0:4">
+<StateMachineLayer name="Phase" id="0:256">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:251" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:188" id="0:251"><StateTransition stateToId="0:252" duration="350"><TransitionViewModelCondition opValue="equal">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:14" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="1"/>
+</TransitionViewModelCondition></StateTransition><StateTransition stateToId="0:254" duration="450"><TransitionViewModelCondition opValue="equal">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:14" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="2"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:189" reset="true" id="0:252"><StateTransition stateToId="0:253" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:251" duration="500"><TransitionViewModelCondition opValue="equal">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:14" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="0"/>
+</TransitionViewModelCondition></StateTransition><StateTransition stateToId="0:254" duration="450"><TransitionViewModelCondition opValue="equal">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:14" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="2"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="-80" animationId="0:190" id="0:253"><StateTransition stateToId="0:251" duration="500"><TransitionViewModelCondition opValue="equal">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:14" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="0"/>
+</TransitionViewModelCondition></StateTransition><StateTransition stateToId="0:254" duration="450"><TransitionViewModelCondition opValue="equal">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:14" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="2"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="80" animationId="0:191" reset="true" id="0:254"><StateTransition stateToId="0:255" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:251" duration="500"><TransitionViewModelCondition opValue="equal">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:14" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="0"/>
+</TransitionViewModelCondition></StateTransition><StateTransition stateToId="0:252" duration="350"><TransitionViewModelCondition opValue="equal">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:14" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="1"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="80" animationId="0:192" id="0:255"><StateTransition stateToId="0:251" duration="500"><TransitionViewModelCondition opValue="equal">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:14" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="0"/>
+</TransitionViewModelCondition></StateTransition><StateTransition stateToId="0:252" duration="350"><TransitionViewModelCondition opValue="equal">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:14" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="1"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Pulse" id="0:260">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:257" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:193" id="0:257"><StateTransition stateToId="0:258" duration="0"><TransitionViewModelCondition>
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyTrigger><DataBindContext sourcePathIds="0:10-0:12" propertyKey="686"/></BindablePropertyTrigger>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueTriggerComparator/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:194" reset="true" id="0:258"><StateTransition stateToId="0:259" duration="0"><TransitionViewModelCondition>
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyTrigger><DataBindContext sourcePathIds="0:10-0:12" propertyKey="686"/></BindablePropertyTrigger>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueTriggerComparator/>
+</TransitionViewModelCondition></StateTransition><StateTransition stateToId="0:257" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition></AnimationState>
+<AnimationState x="400" y="80" animationId="0:194" reset="true" id="0:259"><StateTransition stateToId="0:258" duration="0"><TransitionViewModelCondition>
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyTrigger><DataBindContext sourcePathIds="0:10-0:12" propertyKey="686"/></BindablePropertyTrigger>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueTriggerComparator/>
+</TransitionViewModelCondition></StateTransition><StateTransition stateToId="0:257" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Slot1" id="0:264">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:261" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:195" id="0:261"><StateTransition stateToId="0:262" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="0.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:196" reset="true" id="0:262"><StateTransition stateToId="0:263" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:261" duration="250"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="0.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:197" id="0:263"><StateTransition stateToId="0:261" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="0.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Slot2" id="0:268">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:265" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:198" id="0:265"><StateTransition stateToId="0:266" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="1.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:199" reset="true" id="0:266"><StateTransition stateToId="0:267" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:265" duration="250"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="1.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:200" id="0:267"><StateTransition stateToId="0:265" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="1.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Slot3" id="0:272">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:269" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:201" id="0:269"><StateTransition stateToId="0:270" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="2.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:202" reset="true" id="0:270"><StateTransition stateToId="0:271" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:269" duration="250"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="2.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:203" id="0:271"><StateTransition stateToId="0:269" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="2.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Slot4" id="0:276">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:273" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:204" id="0:273"><StateTransition stateToId="0:274" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="3.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:205" reset="true" id="0:274"><StateTransition stateToId="0:275" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:273" duration="250"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="3.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:206" id="0:275"><StateTransition stateToId="0:273" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="3.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Slot5" id="0:280">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:277" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:207" id="0:277"><StateTransition stateToId="0:278" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="4.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:208" reset="true" id="0:278"><StateTransition stateToId="0:279" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:277" duration="250"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="4.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:209" id="0:279"><StateTransition stateToId="0:277" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="4.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Slot6" id="0:284">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:281" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:210" id="0:281"><StateTransition stateToId="0:282" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="5.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:211" reset="true" id="0:282"><StateTransition stateToId="0:283" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:281" duration="250"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="5.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:212" id="0:283"><StateTransition stateToId="0:281" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="5.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Slot7" id="0:288">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:285" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:213" id="0:285"><StateTransition stateToId="0:286" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="6.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:214" reset="true" id="0:286"><StateTransition stateToId="0:287" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:285" duration="250"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="6.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:215" id="0:287"><StateTransition stateToId="0:285" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="6.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Slot8" id="0:292">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:289" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:216" id="0:289"><StateTransition stateToId="0:290" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="7.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:217" reset="true" id="0:290"><StateTransition stateToId="0:291" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:289" duration="250"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="7.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:218" id="0:291"><StateTransition stateToId="0:289" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="7.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Slot9" id="0:296">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:293" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:219" id="0:293"><StateTransition stateToId="0:294" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="8.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:220" reset="true" id="0:294"><StateTransition stateToId="0:295" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:293" duration="250"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="8.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:221" id="0:295"><StateTransition stateToId="0:293" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:13" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="8.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Track" id="0:299">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:297" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:249" id="0:297"><StateTransition stateToId="0:298" duration="500"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="0.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="0" animationId="0:250" id="0:298"><StateTransition stateToId="0:297" duration="400"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="0.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Show1" id="0:303">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:300" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:222" id="0:300"><StateTransition stateToId="0:301" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="0.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:223" reset="true" id="0:301"><StateTransition stateToId="0:302" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:300" duration="300"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="0.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:224" id="0:302"><StateTransition stateToId="0:300" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="0.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Show2" id="0:307">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:304" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:225" id="0:304"><StateTransition stateToId="0:305" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="1.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:226" reset="true" id="0:305"><StateTransition stateToId="0:306" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:304" duration="300"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="1.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:227" id="0:306"><StateTransition stateToId="0:304" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="1.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Show3" id="0:311">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:308" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:228" id="0:308"><StateTransition stateToId="0:309" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="2.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:229" reset="true" id="0:309"><StateTransition stateToId="0:310" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:308" duration="300"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="2.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:230" id="0:310"><StateTransition stateToId="0:308" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="2.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Show4" id="0:315">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:312" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:231" id="0:312"><StateTransition stateToId="0:313" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="3.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:232" reset="true" id="0:313"><StateTransition stateToId="0:314" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:312" duration="300"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="3.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:233" id="0:314"><StateTransition stateToId="0:312" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="3.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Show5" id="0:319">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:316" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:234" id="0:316"><StateTransition stateToId="0:317" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="4.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:235" reset="true" id="0:317"><StateTransition stateToId="0:318" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:316" duration="300"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="4.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:236" id="0:318"><StateTransition stateToId="0:316" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="4.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Show6" id="0:323">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:320" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:237" id="0:320"><StateTransition stateToId="0:321" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="5.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:238" reset="true" id="0:321"><StateTransition stateToId="0:322" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:320" duration="300"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="5.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:239" id="0:322"><StateTransition stateToId="0:320" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="5.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Show7" id="0:327">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:324" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:240" id="0:324"><StateTransition stateToId="0:325" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="6.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:241" reset="true" id="0:325"><StateTransition stateToId="0:326" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:324" duration="300"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="6.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:242" id="0:326"><StateTransition stateToId="0:324" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="6.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Show8" id="0:331">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:328" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:243" id="0:328"><StateTransition stateToId="0:329" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="7.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:244" reset="true" id="0:329"><StateTransition stateToId="0:330" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:328" duration="300"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="7.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:245" id="0:330"><StateTransition stateToId="0:328" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="7.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+<StateMachineLayer name="Show9" id="0:335">
+    <AnyState x="0" y="-160"/>
+    <ExitState x="700" y="-160"/>
+    <EntryState x="0" y="0"><StateTransition stateToId="0:332" duration="0"></StateTransition></EntryState>
+<AnimationState x="200" y="0" animationId="0:246" id="0:332"><StateTransition stateToId="0:333" duration="0"><TransitionViewModelCondition opValue="greaterThanOrEqual">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="8.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="400" y="-80" animationId="0:247" reset="true" id="0:333"><StateTransition stateToId="0:334" duration="0" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"></StateTransition><StateTransition stateToId="0:332" duration="300"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="8.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+<AnimationState x="600" y="0" animationId="0:248" id="0:334"><StateTransition stateToId="0:332" duration="350"><TransitionViewModelCondition opValue="lessThan">
+    <TransitionPropertyViewModelComparator>
+        <BindablePropertyNumber><DataBindContext sourcePathIds="0:10-0:16" propertyKey="636"/></BindablePropertyNumber>
+    </TransitionPropertyViewModelComparator>
+    <TransitionValueNumberComparator value="8.5"/>
+</TransitionViewModelCondition></StateTransition></AnimationState>
+</StateMachineLayer>
+</StateMachine>
+</Artboard>
+<DataConverterFormula name="Slot1Angle" id="0:112">
+    <FormulaTokenValue operationValue="0.000000"/>
+    <FormulaTokenOperation operationType="divide"/>
+    <FormulaTokenFunction functionType="max"/>
+    <FormulaTokenInput/>
+    <FormulaTokenArgumentSeparator/>
+    <FormulaTokenValue operationValue="1"/>
+    <FormulaTokenParenthesisClose/>
+</DataConverterFormula>
+<DataConverterInterpolator interpolationType="cubic" duration="0.8" name="Slot1Ease" id="0:113">
+    <CubicEaseInterpolator x1="0.42" y1="0" x2="0.3" y2="1"/>
+</DataConverterInterpolator>
+<DataConverterGroup name="Slot1Rotation" id="0:114">
+    <DataConverterGroupItem converterId="0:112"/>
+    <DataConverterGroupItem converterId="0:113"/>
+</DataConverterGroup>
+<DataConverterFormula name="Slot2Angle" id="0:120">
+    <FormulaTokenValue operationValue="6.283186"/>
+    <FormulaTokenOperation operationType="divide"/>
+    <FormulaTokenFunction functionType="max"/>
+    <FormulaTokenInput/>
+    <FormulaTokenArgumentSeparator/>
+    <FormulaTokenValue operationValue="2"/>
+    <FormulaTokenParenthesisClose/>
+</DataConverterFormula>
+<DataConverterInterpolator interpolationType="cubic" duration="0.8" name="Slot2Ease" id="0:121">
+    <CubicEaseInterpolator x1="0.42" y1="0" x2="0.3" y2="1"/>
+</DataConverterInterpolator>
+<DataConverterGroup name="Slot2Rotation" id="0:122">
+    <DataConverterGroupItem converterId="0:120"/>
+    <DataConverterGroupItem converterId="0:121"/>
+</DataConverterGroup>
+<DataConverterFormula name="Slot3Angle" id="0:128">
+    <FormulaTokenValue operationValue="12.566371"/>
+    <FormulaTokenOperation operationType="divide"/>
+    <FormulaTokenFunction functionType="max"/>
+    <FormulaTokenInput/>
+    <FormulaTokenArgumentSeparator/>
+    <FormulaTokenValue operationValue="3"/>
+    <FormulaTokenParenthesisClose/>
+</DataConverterFormula>
+<DataConverterInterpolator interpolationType="cubic" duration="0.8" name="Slot3Ease" id="0:129">
+    <CubicEaseInterpolator x1="0.42" y1="0" x2="0.3" y2="1"/>
+</DataConverterInterpolator>
+<DataConverterGroup name="Slot3Rotation" id="0:130">
+    <DataConverterGroupItem converterId="0:128"/>
+    <DataConverterGroupItem converterId="0:129"/>
+</DataConverterGroup>
+<DataConverterFormula name="Slot4Angle" id="0:136">
+    <FormulaTokenValue operationValue="18.849556"/>
+    <FormulaTokenOperation operationType="divide"/>
+    <FormulaTokenFunction functionType="max"/>
+    <FormulaTokenInput/>
+    <FormulaTokenArgumentSeparator/>
+    <FormulaTokenValue operationValue="4"/>
+    <FormulaTokenParenthesisClose/>
+</DataConverterFormula>
+<DataConverterInterpolator interpolationType="cubic" duration="0.8" name="Slot4Ease" id="0:137">
+    <CubicEaseInterpolator x1="0.42" y1="0" x2="0.3" y2="1"/>
+</DataConverterInterpolator>
+<DataConverterGroup name="Slot4Rotation" id="0:138">
+    <DataConverterGroupItem converterId="0:136"/>
+    <DataConverterGroupItem converterId="0:137"/>
+</DataConverterGroup>
+<DataConverterFormula name="Slot5Angle" id="0:144">
+    <FormulaTokenValue operationValue="25.132742"/>
+    <FormulaTokenOperation operationType="divide"/>
+    <FormulaTokenFunction functionType="max"/>
+    <FormulaTokenInput/>
+    <FormulaTokenArgumentSeparator/>
+    <FormulaTokenValue operationValue="5"/>
+    <FormulaTokenParenthesisClose/>
+</DataConverterFormula>
+<DataConverterInterpolator interpolationType="cubic" duration="0.8" name="Slot5Ease" id="0:145">
+    <CubicEaseInterpolator x1="0.42" y1="0" x2="0.3" y2="1"/>
+</DataConverterInterpolator>
+<DataConverterGroup name="Slot5Rotation" id="0:146">
+    <DataConverterGroupItem converterId="0:144"/>
+    <DataConverterGroupItem converterId="0:145"/>
+</DataConverterGroup>
+<DataConverterFormula name="Slot6Angle" id="0:152">
+    <FormulaTokenValue operationValue="31.415928"/>
+    <FormulaTokenOperation operationType="divide"/>
+    <FormulaTokenFunction functionType="max"/>
+    <FormulaTokenInput/>
+    <FormulaTokenArgumentSeparator/>
+    <FormulaTokenValue operationValue="6"/>
+    <FormulaTokenParenthesisClose/>
+</DataConverterFormula>
+<DataConverterInterpolator interpolationType="cubic" duration="0.8" name="Slot6Ease" id="0:153">
+    <CubicEaseInterpolator x1="0.42" y1="0" x2="0.3" y2="1"/>
+</DataConverterInterpolator>
+<DataConverterGroup name="Slot6Rotation" id="0:154">
+    <DataConverterGroupItem converterId="0:152"/>
+    <DataConverterGroupItem converterId="0:153"/>
+</DataConverterGroup>
+<DataConverterFormula name="Slot7Angle" id="0:160">
+    <FormulaTokenValue operationValue="37.699113"/>
+    <FormulaTokenOperation operationType="divide"/>
+    <FormulaTokenFunction functionType="max"/>
+    <FormulaTokenInput/>
+    <FormulaTokenArgumentSeparator/>
+    <FormulaTokenValue operationValue="7"/>
+    <FormulaTokenParenthesisClose/>
+</DataConverterFormula>
+<DataConverterInterpolator interpolationType="cubic" duration="0.8" name="Slot7Ease" id="0:161">
+    <CubicEaseInterpolator x1="0.42" y1="0" x2="0.3" y2="1"/>
+</DataConverterInterpolator>
+<DataConverterGroup name="Slot7Rotation" id="0:162">
+    <DataConverterGroupItem converterId="0:160"/>
+    <DataConverterGroupItem converterId="0:161"/>
+</DataConverterGroup>
+<DataConverterFormula name="Slot8Angle" id="0:168">
+    <FormulaTokenValue operationValue="43.982298"/>
+    <FormulaTokenOperation operationType="divide"/>
+    <FormulaTokenFunction functionType="max"/>
+    <FormulaTokenInput/>
+    <FormulaTokenArgumentSeparator/>
+    <FormulaTokenValue operationValue="8"/>
+    <FormulaTokenParenthesisClose/>
+</DataConverterFormula>
+<DataConverterInterpolator interpolationType="cubic" duration="0.8" name="Slot8Ease" id="0:169">
+    <CubicEaseInterpolator x1="0.42" y1="0" x2="0.3" y2="1"/>
+</DataConverterInterpolator>
+<DataConverterGroup name="Slot8Rotation" id="0:170">
+    <DataConverterGroupItem converterId="0:168"/>
+    <DataConverterGroupItem converterId="0:169"/>
+</DataConverterGroup>
+<DataConverterFormula name="Slot9Angle" id="0:176">
+    <FormulaTokenValue operationValue="50.265484"/>
+    <FormulaTokenOperation operationType="divide"/>
+    <FormulaTokenFunction functionType="max"/>
+    <FormulaTokenInput/>
+    <FormulaTokenArgumentSeparator/>
+    <FormulaTokenValue operationValue="9"/>
+    <FormulaTokenParenthesisClose/>
+</DataConverterFormula>
+<DataConverterInterpolator interpolationType="cubic" duration="0.8" name="Slot9Ease" id="0:177">
+    <CubicEaseInterpolator x1="0.42" y1="0" x2="0.3" y2="1"/>
+</DataConverterInterpolator>
+<DataConverterGroup name="Slot9Rotation" id="0:178">
+    <DataConverterGroupItem converterId="0:176"/>
+    <DataConverterGroupItem converterId="0:177"/>
+</DataConverterGroup>
+<ViewModel defaultInstanceId="0:11" name="Progress" id="0:10">
+    <ViewModelPropertyTrigger name="pulse" id="0:12"/>
+    <ViewModelPropertyNumber name="count" id="0:13"/>
+    <ViewModelPropertyNumber name="phase" id="0:14"/>
+    <ViewModelPropertyColor name="accent" id="0:15"/>
+    <ViewModelPropertyNumber name="total" id="0:16"/>
+    <ViewModelInstance exports="true" name="Default" id="0:11">
+        <ViewModelInstanceTrigger viewModelPropertyId="0:12"/>
+        <ViewModelInstanceNumber propertyValue="0" viewModelPropertyId="0:13"/>
+        <ViewModelInstanceNumber propertyValue="0" viewModelPropertyId="0:14"/>
+        <ViewModelInstanceColor propertyValue="FF4ADE80" viewModelPropertyId="0:15"/>
+        <ViewModelInstanceNumber propertyValue="0" viewModelPropertyId="0:16"/>
+    </ViewModelInstance>
+</ViewModel>
+</Rive>
