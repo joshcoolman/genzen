@@ -32,10 +32,10 @@ export interface ViewerItem {
    *  made the picture -- the panel then says so rather than inventing a
    *  caption out of a filename. */
   prompt?: string
-  /** An upload, whose prompt *is* its stored description -- so the panel can
-   *  offer to write one (#585). A generation's panel reads its own prompt,
-   *  which describing would not change. */
-  describable?: boolean
+  /** What Describe wrote about the picture (#585) -- an upload's
+   *  `description`, a generation's `image_description`. Shown under the
+   *  prompt, not instead of it: a generation keeps what made it. */
+  description?: string
 }
 
 /** One key, so the panel is the same on every image and in every session. */
@@ -55,7 +55,7 @@ interface ImageViewerProps {
    *  same gesture the card's caption carries. */
   onUsePrompt?: (text: string) => void
   /** Describe the image and store the result over any existing description.
-   *  Offered only on a `describable` item; absent, the panel has no button. */
+   *  Absent, the panel has no button. */
   onDescribe?: (id: string) => void
   describeStates?: Partial<Record<string, { busy: boolean; error?: string }>>
 }
@@ -164,8 +164,7 @@ export function ImageViewer({
      be typed into. */
   useHotkey('P', () => setShowPrompt((on) => !on))
 
-  const describe =
-    item?.describable && onDescribe ? () => onDescribe(item.id) : undefined
+  const describe = item && onDescribe ? () => onDescribe(item.id) : undefined
   const describeState = item ? describeStates?.[item.id] : undefined
   /* Same reasoning as `H`. Works with the panel off too: the result lands on
      the card either way. */
@@ -310,7 +309,7 @@ export function ImageViewer({
           aria-label="Prompt"
         >
           <span className={styles.panelTitle}>{item.title}</span>
-          {item.prompt ? (
+          {item.prompt && (
             /* The card's contract, unchanged: click copies, Cmd-click loads it
                into the generator. `key` so a tick left standing never reads as
                a claim about the image you have just paged to. */
@@ -323,10 +322,25 @@ export function ImageViewer({
               className={styles.panelPrompt}
               textClassName={styles.panelPromptText}
             />
-          ) : (
-            <p className={styles.panelEmpty}>
-              No prompt -- this image was uploaded.
-            </p>
+          )}
+          {item.description && (
+            <>
+              {item.prompt && (
+                <span className={styles.panelTitle}>Description</span>
+              )}
+              <CopyText
+                key={`${item.id}:description`}
+                text={item.description}
+                label="Copy"
+                onModifierClick={onUsePrompt}
+                modifierLabel="Load into the panel"
+                className={styles.panelPrompt}
+                textClassName={styles.panelPromptText}
+              />
+            </>
+          )}
+          {!item.prompt && !item.description && (
+            <p className={styles.panelEmpty}>No prompt recorded.</p>
           )}
           {describe && (
             <div className={styles.panelActions}>
@@ -341,7 +355,7 @@ export function ImageViewer({
               >
                 {describeState?.busy
                   ? 'Describing...'
-                  : item.prompt
+                  : item.description
                     ? 'Describe again'
                     : 'Describe'}
               </MiniButton>

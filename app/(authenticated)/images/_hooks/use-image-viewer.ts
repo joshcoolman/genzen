@@ -55,19 +55,22 @@ export function useImageViewer(
     const urls: Record<string, string> = {}
 
     for (const img of images) {
-      // `description` wins where one was written, the way it does on the card.
-      // An upload falls through to nothing rather than to its filename: the
-      // panel says "no prompt", which is true, where a filename in a prompt
-      // column would read as one.
-      const prompt =
-        img.origin === 'upload'
-          ? img.description
-          : (displayPrompt(img.generation_metadata) ?? img.description)
+      // An upload has no prompt; its `description` is what Describe wrote
+      // (#585), and a filename in the prompt column would read as one. A
+      // generation's `description` is a caption or a copy of its prompt, and
+      // Describe's output lives in `image_description` beside it.
+      const upload = img.origin === 'upload'
+      const prompt = upload
+        ? undefined
+        : (displayPrompt(img.generation_metadata) ?? img.description)
+      const description = upload
+        ? img.description
+        : img.generation_metadata?.image_description
       list.push({
         id: img.id,
         title: img.title,
         prompt: prompt ?? undefined,
-        describable: img.origin === 'upload',
+        description: description ?? undefined,
       })
       if (img.storage_path) urls[img.id] = imageUrl(img.id)
     }

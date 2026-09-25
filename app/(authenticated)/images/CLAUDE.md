@@ -549,8 +549,9 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   time. A failure (no `ANTHROPIC_API_KEY`, say) never touches the upload; it is
   only an error on that card's details dialog. Other routes' uploads, which are
   mostly video frames, are not described. The viewer's prompt panel offers
-  Describe (`D`) on an upload, and it always overwrites -- it is how you ask
-  again
+  Describe (`D`) on every image and always overwrites -- it is how you ask
+  again. The panel shows the prompt, then the description beneath it: an
+  upload's `description`, a generation's `image_description`
 - **The toolbar's Upload button is back, scoped** (#550). It appears while
   scoped to Uploads, or inside a group -- both states about managing the library
   rather than feeding a generation -- and nowhere else. #491's objection was "a

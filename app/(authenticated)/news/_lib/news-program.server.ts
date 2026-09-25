@@ -98,10 +98,11 @@ const heroImage = Effect.fn('news.heroImage')(function* (
     (c) => c`
     insert into user_images
       (user_id, title, storage_path, file_name, file_hash, file_size,
-       mime_type, source, origin)
+       mime_type, source, origin, generation_metadata)
     values
       (${userId}, ${'News hero image'}, ${asset.storagePath}, ${asset.fileName},
-       ${asset.fileHash}, ${asset.fileSize}, ${'image/png'}, ${'ai_generated'}, ${'images'})
+       ${asset.fileHash}, ${asset.fileSize}, ${'image/png'}, ${'ai_generated'}, ${'images'},
+       ${c.json({ prompt, model: HERO_ENDPOINT })})
     returning id
   `,
   )
