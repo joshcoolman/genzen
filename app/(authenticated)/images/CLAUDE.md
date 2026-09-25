@@ -542,6 +542,13 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   it -- an unwanted reference is not clutter you click away, it is a real
   generation with real spend once it goes unnoticed. All a paste tells us is
   that you want the images in the system
+- **Every upload on this route is described in the background** (#585) --
+  `reconstruct` mode, stored in `description`, so the card arrives with a
+  runnable prompt for another image like it. It is the details dialog's own
+  `describeImage`, called through `useUploads`' `onUploaded`, at most four at a
+  time. A failure (no `ANTHROPIC_API_KEY`, say) never touches the upload; it is
+  only an error on that card's details dialog. Other routes' uploads, which are
+  mostly video frames, are not described
 - **The toolbar's Upload button is back, scoped** (#550). It appears while
   scoped to Uploads, or inside a group -- both states about managing the library
   rather than feeding a generation -- and nowhere else. #491's objection was "a
