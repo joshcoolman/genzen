@@ -29,7 +29,7 @@ function reduce(snap: RunSnapshot, event: RunEvent, seq: number): RunSnapshot {
       return {
         ...next,
         snippets: [
-          { id: seq, label: event.label, text: event.text },
+          { id: seq, label: event.label, text: event.text, tone: event.tone },
           ...snap.snippets,
         ].slice(0, MAX_SNIPPETS),
       }

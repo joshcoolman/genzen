@@ -66,7 +66,12 @@ export function RunOverlay({
         aria-label={minimized ? 'Expand progress' : undefined}
         aria-hidden={!minimized}
       >
-        <ProgressAnimation beat={snap.beat} count={snap.done} phase={phase} />
+        <ProgressAnimation
+          beat={snap.beat}
+          count={snap.done}
+          total={snap.total ?? 0}
+          phase={phase}
+        />
       </button>
 
       <div className={styles.body}>
@@ -90,7 +95,14 @@ export function RunOverlay({
           ? latest &&
             !snap.end && (
               <p key={latest.id} className={cx(styles.snippet, styles.arrive)}>
-                <span className={styles.snippetLabel}>{latest.label}</span>
+                <span
+                  className={cx(
+                    styles.snippetLabel,
+                    latest.tone === 'failed' && styles.failed,
+                  )}
+                >
+                  {latest.label}
+                </span>
                 {latest.text}
               </p>
             )
@@ -98,7 +110,14 @@ export function RunOverlay({
               <ul className={styles.snippets}>
                 {snap.snippets.map((s) => (
                   <li key={s.id} className={cx(styles.snippet, styles.arrive)}>
-                    <span className={styles.snippetLabel}>{s.label}</span>
+                    <span
+                      className={cx(
+                        styles.snippetLabel,
+                        s.tone === 'failed' && styles.failed,
+                      )}
+                    >
+                      {s.label}
+                    </span>
                     {s.text}
                   </li>
                 ))}

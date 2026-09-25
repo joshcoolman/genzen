@@ -153,6 +153,10 @@
   color: var(--accent);
 }
 
+.snippetLabel.failed {
+  color: var(--danger);
+}
+
 .arrive {
   animation: arrive var(--duration-slow) var(--ease-out) both;
 }

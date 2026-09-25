@@ -20,7 +20,7 @@ N = 9
 # ---------- ids ----------
 AB, AB_STYLE, SM = "0:2", "0:3", "0:4"
 VM, VM_INST = "0:10", "0:11"
-P_PULSE, P_COUNT, P_PHASE, P_ACCENT = "0:12", "0:13", "0:14", "0:15"
+P_PULSE, P_COUNT, P_PHASE, P_ACCENT, P_TOTAL = "0:12", "0:13", "0:14", "0:15", "0:16"
 
 def accent_bind():
     return f'<DataBindContext sourcePathIds="{VM}-{P_ACCENT}" propertyKey="37"/>'
@@ -36,11 +36,6 @@ ids = {}
 def reg(key):
     ids[key] = nid()
     return ids[key]
-
-slots = []
-for i in range(N):
-    a = -math.pi / 2 + i * TAU / N
-    slots.append((CX + SLOT_R * math.cos(a), CY + SLOT_R * math.sin(a)))
 
 shapes = []
 S = shapes.append
@@ -90,37 +85,60 @@ S(f'''<Shape x="{CX}" y="{CY}" name="InnerTrack">
     <Stroke thickness="2" name="Stroke"><SolidColor colorValue="{BORDER}" name="C"/></Stroke>
 </Shape>''')
 
-# Lit slots (above unlit)
-lit = []
-for i, (x, y) in enumerate(slots):
-    lit.append(f'''<Node x="{x:.3f}" y="{y:.3f}" scaleX="0" scaleY="0" opacity="0" name="LitSlot{i+1}" id="{reg(f'lit{i}')}">
-        <Shape opacity="0" name="Halo{i+1}" id="{reg(f'halo{i}')}">
-            <Ellipse width="26" height="26" name="Path"/>
-            <Stroke thickness="2.5" name="Stroke">{accent_color()}</Stroke>
-        </Shape>
-        <Shape name="LitAccent{i+1}" id="{reg(f'litAccent{i}')}">
-            <Ellipse width="26" height="26" name="Path"/>
-            <Stroke thickness="6" name="Glow">{accent_color()}<Feather strength="8" name="Feather"/></Stroke>
-            <Fill name="Fill">{accent_color()}</Fill>
-        </Shape>
-        <Shape name="LitMuted{i+1}">
-            <Ellipse width="26" height="26" name="Path"/>
-            <Fill name="Fill"><SolidColor colorValue="{MUTED}" name="C"/></Fill>
-        </Shape>
+# Slots. Each slot hangs off an Arm node at the centre whose rotation is bound to
+# `total` through a formula, so visible slots are spread evenly for any total:
+#   angle_k = (k-1) * TAU / max(total, k)
+# (max(total, k) parks hidden slots just left of 12 o'clock, so when total grows
+# they fan out a short way instead of spinning). An interpolator converter eases
+# the rotation so a change in total glides rather than jumps.
+arms = []
+converters = []
+for i in range(N):
+    k = i + 1
+    f_id, e_id, g_id = nid(), nid(), nid()
+    converters.append(f'''<DataConverterFormula name="Slot{k}Angle" id="{f_id}">
+    <FormulaTokenValue operationValue="{(k-1)*TAU:.6f}"/>
+    <FormulaTokenOperation operationType="divide"/>
+    <FormulaTokenFunction functionType="max"/>
+    <FormulaTokenInput/>
+    <FormulaTokenArgumentSeparator/>
+    <FormulaTokenValue operationValue="{k}"/>
+    <FormulaTokenParenthesisClose/>
+</DataConverterFormula>
+<DataConverterInterpolator interpolationType="cubic" duration="0.8" name="Slot{k}Ease" id="{e_id}">
+    <CubicEaseInterpolator x1="0.42" y1="0" x2="0.3" y2="1"/>
+</DataConverterInterpolator>
+<DataConverterGroup name="Slot{k}Rotation" id="{g_id}">
+    <DataConverterGroupItem converterId="{f_id}"/>
+    <DataConverterGroupItem converterId="{e_id}"/>
+</DataConverterGroup>''')
+    arms.append(f'''<Node x="{CX}" y="{CY}" name="Arm{k}" id="{reg(f'arm{i}')}">
+        <DataBindContext sourcePathIds="{VM}-{P_TOTAL}" propertyKey="15" converterId="{g_id}"/>
+        <Node y="{-SLOT_R}" scaleX="0.4" scaleY="0.4" opacity="0" name="Vis{k}" id="{reg(f'vis{i}')}">
+            <Node scaleX="0" scaleY="0" opacity="0" name="LitSlot{k}" id="{reg(f'lit{i}')}">
+                <Shape opacity="0" name="Halo{k}" id="{reg(f'halo{i}')}">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="2.5" name="Stroke">{accent_color()}</Stroke>
+                </Shape>
+                <Shape name="LitAccent{k}" id="{reg(f'litAccent{i}')}">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Stroke thickness="6" name="Glow">{accent_color()}<Feather strength="8" name="Feather"/></Stroke>
+                    <Fill name="Fill">{accent_color()}</Fill>
+                </Shape>
+                <Shape name="LitMuted{k}">
+                    <Ellipse width="26" height="26" name="Path"/>
+                    <Fill name="Fill"><SolidColor colorValue="{MUTED}" name="C"/></Fill>
+                </Shape>
+            </Node>
+            <Shape name="Slot{k}">
+                <Ellipse width="26" height="26" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="408F8F8F" name="C"/></Fill>
+                <Stroke thickness="1.5" name="Stroke"><SolidColor colorValue="408F8F8F" name="C"/></Stroke>
+            </Shape>
+        </Node>
     </Node>''')
-S(f'''<Node name="Lit" id="{reg('litGroup')}">
-    ''' + "\n    ".join(lit) + '''
-</Node>''')
-
-unlit = []
-for i, (x, y) in enumerate(slots):
-    unlit.append(f'''<Shape x="{x:.3f}" y="{y:.3f}" name="Slot{i+1}">
-        <Ellipse width="26" height="26" name="Path"/>
-        <Fill name="Fill"><SolidColor colorValue="408F8F8F" name="C"/></Fill>
-        <Stroke thickness="1.5" name="Stroke"><SolidColor colorValue="408F8F8F" name="C"/></Stroke>
-    </Shape>''')
 S('''<Node name="Slots">
-    ''' + "\n    ".join(unlit) + '''
+    ''' + "\n    ".join(arms) + '''
 </Node>''')
 
 # Completion ring over slot track (success)
@@ -133,7 +151,7 @@ S(f'''<Shape x="{CX}" y="{CY}" opacity="0" name="CompleteRing" id="{reg('complet
         <TrimPath start="0" end="0" name="Trim" id="{reg('completeTrim')}"/>
     </Stroke>
 </Shape>''')
-S(f'''<Shape x="{CX}" y="{CY}" name="SlotTrack">
+S(f'''<Shape x="{CX}" y="{CY}" opacity="0" name="SlotTrack" id="{reg('track')}">
     <Ellipse width="{SLOT_R*2}" height="{SLOT_R*2}" name="Path"/>
     <Stroke thickness="2" name="Stroke"><SolidColor colorValue="{BORDER}" name="C"/></Stroke>
 </Shape>''')
@@ -279,6 +297,26 @@ for i in range(N):
     }))
     slot_anims.append((off, arr, on))
 
+# Visibility of slots (follows `total`) and of the outer track
+show_anims = []
+for i in range(N):
+    hid, app, shown = nid(), nid(), nid()
+    d = i * 4  # gentle stagger, clockwise from 12 o'clock
+    anims.append(anim(f"Slot{i+1}Hidden", hid, 1, {
+        f'vis{i}': {**scale([kf(0, 0.4, "hold")]), OP: [kf(0, 0, "hold")]},
+    }))
+    anims.append(anim(f"Slot{i+1}Appear", app, d + 36, {
+        f'vis{i}': {**scale([kf(0, 0.4, "hold"), kf(d, 0.4, "out"), kf(d + 36, 1)]),
+                    OP: [kf(0, 0, "hold"), kf(d, 0, "out"), kf(d + 24, 1)]},
+    }))
+    anims.append(anim(f"Slot{i+1}Shown", shown, 1, {
+        f'vis{i}': {**scale([kf(0, 1, "hold")]), OP: [kf(0, 1, "hold")]},
+    }))
+    show_anims.append((hid, app, shown))
+A_THID, A_TSHOW = nid(), nid()
+anims.append(anim("TrackHidden", A_THID, 1, {'track': {OP: [kf(0, 0, "hold")]}}))
+anims.append(anim("TrackShown", A_TSHOW, 1, {'track': {OP: [kf(0, 1, "hold")]}}))
+
 # ---------- state machine ----------
 def num_cond(value, op):
     return f'''<TransitionViewModelCondition opValue="{op}">
@@ -287,6 +325,9 @@ def num_cond(value, op):
     </TransitionPropertyViewModelComparator>
     <TransitionValueNumberComparator value="{value}"/>
 </TransitionViewModelCondition>'''
+
+def total_cmp(v, op):
+    return num_cond(v, op).replace("{P}", P_TOTAL)
 
 def phase_is(v):
     return num_cond(v, "equal").replace("{P}", P_PHASE)
@@ -352,6 +393,22 @@ for i, (off, arr, on) in enumerate(slot_anims):
         f'<AnimationState x="600" y="0" animationId="{on}" id="{sn}">' + trans(so, 350, count_cmp(k - 0.5, "lessThan")) + '</AnimationState>',
     ]))
 
+# Visibility layers: slot k exists only while total >= k
+th, ts = nid(), nid()
+layers.append(layer("Track", th, [
+    f'<AnimationState x="200" y="0" animationId="{A_THID}" id="{th}">' + trans(ts, 500, total_cmp(0.5, "greaterThanOrEqual")) + '</AnimationState>',
+    f'<AnimationState x="400" y="0" animationId="{A_TSHOW}" id="{ts}">' + trans(th, 400, total_cmp(0.5, "lessThan")) + '</AnimationState>',
+]))
+for i, (hid, app, shown) in enumerate(show_anims):
+    k = i + 1
+    sh, sa, ss = nid(), nid(), nid()
+    layers.append(layer(f"Show{k}", sh, [
+        f'<AnimationState x="200" y="0" animationId="{hid}" id="{sh}">' + trans(sa, 0, total_cmp(k - 0.5, "greaterThanOrEqual")) + '</AnimationState>',
+        f'<AnimationState x="400" y="-80" animationId="{app}" reset="true" id="{sa}">' +
+        trans(ss, 0, exit_full=True) + trans(sh, 300, total_cmp(k - 0.5, "lessThan")) + '</AnimationState>',
+        f'<AnimationState x="600" y="0" animationId="{shown}" id="{ss}">' + trans(sh, 350, total_cmp(k - 0.5, "lessThan")) + '</AnimationState>',
+    ]))
+
 # ---------- emit ----------
 w('<Rive version="1" kind="fragment">')
 w(f'<Artboard defaultStateMachineId="{SM}" styleId="{AB_STYLE}" viewModelId="{VM}" viewModelInstanceId="{VM_INST}" width="400" height="400" name="Progress" id="{AB}">')
@@ -365,16 +422,20 @@ for l in layers:
     w(l)
 w('</StateMachine>')
 w('</Artboard>')
+for c in converters:
+    w(c)
 w(f'''<ViewModel defaultInstanceId="{VM_INST}" name="Progress" id="{VM}">
     <ViewModelPropertyTrigger name="pulse" id="{P_PULSE}"/>
     <ViewModelPropertyNumber name="count" id="{P_COUNT}"/>
     <ViewModelPropertyNumber name="phase" id="{P_PHASE}"/>
     <ViewModelPropertyColor name="accent" id="{P_ACCENT}"/>
+    <ViewModelPropertyNumber name="total" id="{P_TOTAL}"/>
     <ViewModelInstance exports="true" name="Default" id="{VM_INST}">
         <ViewModelInstanceTrigger viewModelPropertyId="{P_PULSE}"/>
         <ViewModelInstanceNumber propertyValue="0" viewModelPropertyId="{P_COUNT}"/>
         <ViewModelInstanceNumber propertyValue="0" viewModelPropertyId="{P_PHASE}"/>
         <ViewModelInstanceColor propertyValue="{ACCENT}" viewModelPropertyId="{P_ACCENT}"/>
+        <ViewModelInstanceNumber propertyValue="0" viewModelPropertyId="{P_TOTAL}"/>
     </ViewModelInstance>
 </ViewModel>''')
 w('</Rive>')

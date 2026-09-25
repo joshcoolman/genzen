@@ -8,7 +8,7 @@ import styles from './progress-animation.module.css'
  * Built from `rive/news-progress/` (`pnpm rive:build`). The names here are
  * that file's contract: artboard and state machine `Progress`, and a view
  * model bound to the artboard with `pulse` (trigger), `count` (0-9), `phase`
- * and `accent` (color). There are no state machine inputs -- the CLI
+ * `total` (slots drawn, 0 = not known yet) and `accent` (color). There are no state machine inputs -- the CLI
  * deprecates them, so `useStateMachineInput` finds nothing in this file.
  */
 const SRC = '/rive/news-progress.riv'
@@ -21,6 +21,8 @@ interface ProgressAnimationProps {
   /** Changes on every real event; each change is one pulse. */
   beat: number
   count: number
+  /** How many slots to draw. 0 while it is not known yet. */
+  total: number
   /** 0 working, 1 success, 2 failed. */
   phase: number
 }
@@ -40,6 +42,7 @@ function usePrefersReducedMotion() {
 export function ProgressAnimation({
   beat,
   count,
+  total,
   phase,
 }: ProgressAnimationProps) {
   const [failed, setFailed] = useState(false)
@@ -82,6 +85,11 @@ export function ProgressAnimation({
     holdTimer.current = setTimeout(() => rive.pause(), REDUCED_PLAY_MS)
     return () => clearTimeout(holdTimer.current)
   }, [rive, reduced, count, phase])
+
+  useEffect(() => {
+    const prop = vm?.number('total')
+    if (prop) prop.value = total
+  }, [vm, total])
 
   useEffect(() => {
     const prop = vm?.number('count')

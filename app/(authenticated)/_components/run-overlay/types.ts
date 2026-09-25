@@ -11,7 +11,7 @@ export type RunEvent =
   /** What the job is doing now. Replaces the previous activity. */
   | { kind: 'activity'; text: string }
   /** A real artifact surfacing: a source, a headline, an illustration concept. */
-  | { kind: 'snippet'; label: string; text: string }
+  | { kind: 'snippet'; label: string; text: string; tone?: 'failed' }
   /** One unit of output settled. `total` once known. */
   | { kind: 'item'; done: number; total?: number; text?: string }
   | {
@@ -27,7 +27,12 @@ export interface RunSnapshot {
   title: string
   activity: string
   /** Newest first, capped. */
-  snippets: Array<{ id: number; label: string; text: string }>
+  snippets: Array<{
+    id: number
+    label: string
+    text: string
+    tone?: 'failed'
+  }>
   done: number
   total?: number
   end?: Extract<RunEvent, { kind: 'end' }>

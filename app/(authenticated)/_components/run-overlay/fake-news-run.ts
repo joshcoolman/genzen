@@ -108,6 +108,7 @@ const SCRIPT: Array<[number, RunEvent]> = [
       kind: 'snippet',
       label: 'Image failed',
       text: 'Topaz post -- retry from its card',
+      tone: 'failed',
     },
   ],
   [64200, { kind: 'item', done: 4, total: 4 }],
