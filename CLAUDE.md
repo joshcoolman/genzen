@@ -213,9 +213,10 @@ Three things worth knowing, all of which have cost a sort:
   nothing and reports success on the add, leaving an issue in two groups. Check
   `gh label list` rather than trusting this paragraph — it has been wrong once.
 - **Nudge after any change.** After editing an issue's labels, title, body or
-  state, run `curl -s -X POST localhost:3210/api/nudge` so any open upnext tab
-  repaints immediately — it answers `{"nudged":n}`, and `n` is how many tabs
-  heard it, so `0` means nothing was listening rather than nothing happened. A
+  state, run `~/repos/dotfiles/upnext-nudge.sh` so any open upnext tab
+  repaints immediately. It starts the board first if it is down (a bare curl
+  failed silently whenever it was), then answers `{"nudged":n}` — `n` is how
+  many tabs heard it, so `0` means no tab was open, not that nothing happened. A
   push, not a poll, on purpose: polling re-spawns `gh` for every issue on a
   schedule forever, including on a tab left open all weekend.
 
