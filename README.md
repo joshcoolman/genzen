@@ -277,19 +277,21 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus: open #725** (News: Rive progress overlay) -- it is the spec. Build
-the overlay against a fake run stream first; the durable run it needs for
-real data is #737, in Next. The board at `localhost:3210/kanban/genzen` has
-the rest.
+**Focus is empty.** The natural next card is **#737** (News runs survive
+navigation and refresh, and feed the overlay real progress) -- it is the spec.
+The board at `localhost:3210/kanban/genzen` has the rest.
 
 Recent highlights:
 
+- **News progress overlay (#725, #738)** -- a Rive animation (authored as RML
+  with the Rive CLI, `rive/news-progress/`, `pnpm rive:build`) in an overlay in
+  the app shell: expanded or minimized, survives navigation. Get news shows it
+  with activity and outcome; `Preview progress` (dev) plays a paced fake run.
 - **Auto-describe (#585)** -- every upload on `/images` is described in
   `reconstruct` mode in the background and stored, so each card carries a
   runnable prompt. The viewer's prompt panel has Describe (`D`, always
   overwrites) on every image, and shows prompt and description apart. New
   News heroes store the prompt that made them.
-
 - **`/edit` (#726 to #733)** -- a timeline of Video wall clips with in and out
   points, played gapless with nothing rendered; keys for play, step, split,
   delete; F saves a frame to a group named after the edit; Generate frame
@@ -307,9 +309,3 @@ Recent highlights:
   generator panel and says so, on every trash path on /images (#716). It used
   to keep the thumbnail and a dead id, and the next press failed every card
   with "Source image not found".
-- **News (#718, #719)** -- `/news` is a feed of illustrated posts about what is
-  new in image and video generation. Get news runs Claude with web search, reads
-  genzen's own model registries for the baseline diff, and generates a FAL Flare
-  hero image for each post. Up to 9 posts per press, zero is a valid result. A
-  card's `...` menu re-rolls its thumbnail; Haiku picks the subject from the post
-  body first. Delete is development-only.
