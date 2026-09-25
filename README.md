@@ -277,12 +277,18 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus is empty.** Promote from Now and open that issue -- it is the spec.
-Top of Now is **#585** (describe an image automatically on upload, and store
-the result); behind it #723 (H3 Max Turbo's cost estimate cannot be confirmed
-from fal's API) and #684 (keep a character's voice the same across clips).
+**Focus: open #725** (News: Rive progress overlay) -- it is the spec. Build
+the overlay against a fake run stream first; the durable run it needs for
+real data is #737, in Next. The board at `localhost:3210/kanban/genzen` has
+the rest.
 
 Recent highlights:
+
+- **Auto-describe (#585)** -- every upload on `/images` is described in
+  `reconstruct` mode in the background and stored, so each card carries a
+  runnable prompt. The viewer's prompt panel has Describe (`D`, always
+  overwrites) on every image, and shows prompt and description apart. New
+  News heroes store the prompt that made them.
 
 - **`/edit` (#726 to #733)** -- a timeline of Video wall clips with in and out
   points, played gapless with nothing rendered; keys for play, step, split,
@@ -301,8 +307,6 @@ Recent highlights:
   generator panel and says so, on every trash path on /images (#716). It used
   to keep the thumbnail and a dead id, and the next press failed every card
   with "Source image not found".
-- The old Director's rows and bucket objects are gone from the deployed
-  database, and the one-off script that did it is deleted (#705).
 - **News (#718, #719)** -- `/news` is a feed of illustrated posts about what is
   new in image and video generation. Get news runs Claude with web search, reads
   genzen's own model registries for the baseline diff, and generates a FAL Flare
