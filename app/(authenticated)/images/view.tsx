@@ -57,6 +57,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     setImageDetailsId,
     descriptionStates,
     describeImage,
+    describeImageById,
     cancelOutpaint,
     outpainting,
     runOutpaint,
@@ -300,6 +301,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onDelete={viewer.deleteAndAdvance}
           onHide={viewer.hideAndAdvance}
           onUsePrompt={usePromptText}
+          onDescribe={describeImageById}
+          describeStates={descriptionStates}
         />
       )}
 

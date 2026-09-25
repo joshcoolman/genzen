@@ -877,6 +877,14 @@ export function useView(initial: Array<SavedAiImage>) {
     },
     [gallery],
   )
+  /** The viewer knows ids, not rows. */
+  const describeImageById = useCallback(
+    (id: string) => {
+      const img = gallery.images.find((i) => i.id === id)
+      if (img) void describeImage(img)
+    },
+    [gallery.images, describeImage],
+  )
 
   /**
    * **A paste uploads and stops there** (#550) -- it no longer also makes the
@@ -1389,6 +1397,7 @@ export function useView(initial: Array<SavedAiImage>) {
     setImageDetailsId,
     descriptionStates,
     describeImage,
+    describeImageById,
     outpaintTarget,
     startOutpaint: setOutpaintTarget,
     cancelOutpaint: useCallback(() => setOutpaintTarget(null), []),

@@ -276,6 +276,21 @@
   white-space: pre-wrap;
 }
 
+.panelActions {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-8);
+}
+
+.panelError {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--danger);
+}
+
 .panelEmpty {
   margin: 0;
   font-size: var(--text-sm);

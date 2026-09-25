@@ -2,8 +2,16 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { ChevronLeft, ChevronRight, EyeOff, Trash2, X } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  EyeOff,
+  ScanText,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { CopyText } from '../copy-text/copy-text'
+import { MiniButton } from '../mini-button/mini-button'
 import styles from './image-viewer.module.css'
 import { cx } from '#/lib/utils'
 import { usePersistedState } from '#/lib/use-persisted-state'
@@ -24,6 +32,10 @@ export interface ViewerItem {
    *  made the picture -- the panel then says so rather than inventing a
    *  caption out of a filename. */
   prompt?: string
+  /** An upload, whose prompt *is* its stored description -- so the panel can
+   *  offer to write one (#585). A generation's panel reads its own prompt,
+   *  which describing would not change. */
+  describable?: boolean
 }
 
 /** One key, so the panel is the same on every image and in every session. */
@@ -42,6 +54,10 @@ interface ImageViewerProps {
   /** Cmd/Ctrl-click on the panel's prompt loads it into the generator, the
    *  same gesture the card's caption carries. */
   onUsePrompt?: (text: string) => void
+  /** Describe the image and store the result over any existing description.
+   *  Offered only on a `describable` item; absent, the panel has no button. */
+  onDescribe?: (id: string) => void
+  describeStates?: Partial<Record<string, { busy: boolean; error?: string }>>
 }
 
 /**
@@ -80,6 +96,8 @@ export function ImageViewer({
   onDelete,
   onHide,
   onUsePrompt,
+  onDescribe,
+  describeStates,
 }: ImageViewerProps) {
   const [showPrompt, setShowPrompt, hydrated] = usePersistedState(
     () => window.localStorage.getItem(PROMPT_PANEL_KEY) !== 'off',
@@ -145,6 +163,15 @@ export function ImageViewer({
   /* Same reasoning as `H`: a bare letter is safe because nothing in here can
      be typed into. */
   useHotkey('P', () => setShowPrompt((on) => !on))
+
+  const describe =
+    item?.describable && onDescribe ? () => onDescribe(item.id) : undefined
+  const describeState = item ? describeStates?.[item.id] : undefined
+  /* Same reasoning as `H`. Works with the panel off too: the result lands on
+     the card either way. */
+  useHotkey('D', () => {
+    if (!describeState?.busy) describe?.()
+  })
 
   if (!item) return null
 
@@ -300,6 +327,28 @@ export function ImageViewer({
             <p className={styles.panelEmpty}>
               No prompt -- this image was uploaded.
             </p>
+          )}
+          {describe && (
+            <div className={styles.panelActions}>
+              {/* Always overwrites: the button is how you ask again, so a
+                  description already there is not a reason to refuse. */}
+              <MiniButton
+                icon={<ScanText />}
+                spinning={describeState?.busy}
+                disabled={describeState?.busy}
+                onClick={describe}
+                title="Describe (D)"
+              >
+                {describeState?.busy
+                  ? 'Describing...'
+                  : item.prompt
+                    ? 'Describe again'
+                    : 'Describe'}
+              </MiniButton>
+              {describeState?.error && (
+                <p className={styles.panelError}>{describeState.error}</p>
+              )}
+            </div>
           )}
         </aside>
       )}

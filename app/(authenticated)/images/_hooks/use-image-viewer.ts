@@ -63,7 +63,12 @@ export function useImageViewer(
         img.origin === 'upload'
           ? img.description
           : (displayPrompt(img.generation_metadata) ?? img.description)
-      list.push({ id: img.id, title: img.title, prompt: prompt ?? undefined })
+      list.push({
+        id: img.id,
+        title: img.title,
+        prompt: prompt ?? undefined,
+        describable: img.origin === 'upload',
+      })
       if (img.storage_path) urls[img.id] = imageUrl(img.id)
     }
 
