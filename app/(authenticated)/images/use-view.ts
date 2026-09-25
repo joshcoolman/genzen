@@ -826,6 +826,66 @@ export function useView(initial: Array<SavedAiImage>) {
     [generator, dock],
   )
 
+  const describingIds = useRef(new Set<string>())
+  const [descriptionStates, setDescriptionStates] = useState<
+    Partial<Record<string, { busy: boolean; error?: string }>>
+  >({})
+
+  /** Describe in `reconstruct` mode and store it, from the details dialog or
+   *  automatically on upload (#585): the stored text is a runnable prompt for
+   *  another image like this one. A failure is only an error state on that
+   *  card's dialog -- never the upload's. */
+  const describeImage = useCallback(
+    async (img: SavedAiImage) => {
+      if (img.status !== 'completed' || describingIds.current.has(img.id))
+        return
+      describingIds.current.add(img.id)
+      setDescriptionStates((states) => ({
+        ...states,
+        [img.id]: { busy: true },
+      }))
+      try {
+        const { caption, generationMetadata } = await captionImage({
+          imageId: img.id,
+          mode: 'reconstruct',
+          persist: true,
+        })
+        gallery.patchImages(
+          [img.id],
+          img.origin === 'upload'
+            ? { description: caption }
+            : { generation_metadata: generationMetadata },
+        )
+        setDescriptionStates((states) => ({
+          ...states,
+          [img.id]: { busy: false },
+        }))
+      } catch (err) {
+        setDescriptionStates((states) => ({
+          ...states,
+          [img.id]: {
+            busy: false,
+            error:
+              err instanceof Error
+                ? err.message
+                : 'Could not describe that image',
+          },
+        }))
+      } finally {
+        describingIds.current.delete(img.id)
+      }
+    },
+    [gallery],
+  )
+  /** The viewer knows ids, not rows. */
+  const describeImageById = useCallback(
+    (id: string) => {
+      const img = gallery.images.find((i) => i.id === id)
+      if (img) void describeImage(img)
+    },
+    [gallery.images, describeImage],
+  )
+
   /**
    * **A paste uploads and stops there** (#550) -- it no longer also makes the
    * image the reference. The panel's library picker is the deliberate route to
@@ -841,6 +901,7 @@ export function useView(initial: Array<SavedAiImage>) {
     // Same rule as a generation: an upload while scoped to Generations would
     // land somewhere the grid is not showing.
     onStart: prefs.revealAll,
+    onUploaded: describeImage,
   })
 
   /**
@@ -1210,53 +1271,6 @@ export function useView(initial: Array<SavedAiImage>) {
   const [imageDetailsId, setImageDetailsId] = useState<string | null>(null)
   const imageDetails =
     gallery.images.find((img) => img.id === imageDetailsId) ?? null
-  const describingIds = useRef(new Set<string>())
-  const [descriptionStates, setDescriptionStates] = useState<
-    Partial<Record<string, { busy: boolean; error?: string }>>
-  >({})
-
-  const describeImage = useCallback(
-    async (img: SavedAiImage) => {
-      if (img.status !== 'completed' || describingIds.current.has(img.id))
-        return
-      describingIds.current.add(img.id)
-      setDescriptionStates((states) => ({
-        ...states,
-        [img.id]: { busy: true },
-      }))
-      try {
-        const { caption, generationMetadata } = await captionImage({
-          imageId: img.id,
-          mode: 'reconstruct',
-          persist: true,
-        })
-        gallery.patchImages(
-          [img.id],
-          img.origin === 'upload'
-            ? { description: caption }
-            : { generation_metadata: generationMetadata },
-        )
-        setDescriptionStates((states) => ({
-          ...states,
-          [img.id]: { busy: false },
-        }))
-      } catch (err) {
-        setDescriptionStates((states) => ({
-          ...states,
-          [img.id]: {
-            busy: false,
-            error:
-              err instanceof Error
-                ? err.message
-                : 'Could not describe that image',
-          },
-        }))
-      } finally {
-        describingIds.current.delete(img.id)
-      }
-    },
-    [gallery],
-  )
 
   const [outpaintTarget, setOutpaintTarget] = useState<SavedAiImage | null>(
     null,
@@ -1383,6 +1397,7 @@ export function useView(initial: Array<SavedAiImage>) {
     setImageDetailsId,
     descriptionStates,
     describeImage,
+    describeImageById,
     outpaintTarget,
     startOutpaint: setOutpaintTarget,
     cancelOutpaint: useCallback(() => setOutpaintTarget(null), []),

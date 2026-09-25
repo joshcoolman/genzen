@@ -8,6 +8,9 @@ import { toast } from '#/components'
 import { imageUrl } from '#/lib/image-url'
 import { optimisticId } from '#/lib/optimistic-id'
 
+/** A 14-file drop is otherwise 14 simultaneous vision calls (#585). */
+const AFTER_UPLOAD_CONCURRENCY = 4
+
 /** The placeholder a card shows while its bytes are still in flight. */
 function skeletonCard(
   id: string,
@@ -68,12 +71,41 @@ export function useUploads(
   activeGroupId: string | null,
   {
     onStart,
+    onUploaded,
   }: {
     /** Before the optimistic card appears, so the grid is showing the bucket
      *  the card is about to land in. */
     onStart: () => void
+    /** After the row exists -- the route describes it (#585). Run at most
+     *  `AFTER_UPLOAD_CONCURRENCY` at once; must not throw. */
+    onUploaded: (image: SavedAiImage) => Promise<void>
   },
 ) {
+  // Held in a ref so the listener binds once per gallery, not once per render:
+  // the callback is not stable, and re-attaching a document handler on every
+  // keystroke elsewhere on the page is work for nothing.
+  const handlers = useRef({ onStart, onUploaded })
+  handlers.current = { onStart, onUploaded }
+
+  const afterUpload = useRef({ running: 0, queue: [] as Array<SavedAiImage> })
+  const runAfterUpload = useCallback((image: SavedAiImage) => {
+    const q = afterUpload.current
+    q.queue.push(image)
+    const next = () => {
+      const img = q.queue.shift()
+      if (!img) return
+      q.running++
+      void handlers.current
+        .onUploaded(img)
+        .catch(() => {})
+        .finally(() => {
+          q.running--
+          next()
+        })
+    }
+    while (q.running < AFTER_UPLOAD_CONCURRENCY && q.queue.length) next()
+  }, [])
+
   const ingest = useCallback(
     async (file: File, groupId: string | null) => {
       if (!userId) return null
@@ -100,6 +132,7 @@ export function useUploads(
           created.storage_path ? imageUrl(created.id, 'thumb') : previewUrl,
         )
         void gallery.refresh({ silent: true })
+        runAfterUpload(skeletonCard(created.id, created.title, groupId))
         return created
       } catch (err) {
         gallery.removeOptimisticCard(tempId)
@@ -116,14 +149,8 @@ export function useUploads(
         return null
       }
     },
-    [userId, gallery],
+    [userId, gallery, runAfterUpload],
   )
-
-  // Held in a ref so the listener binds once per gallery, not once per render:
-  // the callback is not stable, and re-attaching a document handler on every
-  // keystroke elsewhere on the page is work for nothing.
-  const handlers = useRef({ onStart })
-  handlers.current = { onStart }
 
   /** The same ingest the paste uses, for the Upload button (#550). Sequential
    *  rather than parallel: a batch of large files all in flight at once is the

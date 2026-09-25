@@ -2,8 +2,16 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { ChevronLeft, ChevronRight, EyeOff, Trash2, X } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  EyeOff,
+  ScanText,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { CopyText } from '../copy-text/copy-text'
+import { MiniButton } from '../mini-button/mini-button'
 import styles from './image-viewer.module.css'
 import { cx } from '#/lib/utils'
 import { usePersistedState } from '#/lib/use-persisted-state'
@@ -24,6 +32,10 @@ export interface ViewerItem {
    *  made the picture -- the panel then says so rather than inventing a
    *  caption out of a filename. */
   prompt?: string
+  /** What Describe wrote about the picture (#585) -- an upload's
+   *  `description`, a generation's `image_description`. Shown under the
+   *  prompt, not instead of it: a generation keeps what made it. */
+  description?: string
 }
 
 /** One key, so the panel is the same on every image and in every session. */
@@ -42,6 +54,10 @@ interface ImageViewerProps {
   /** Cmd/Ctrl-click on the panel's prompt loads it into the generator, the
    *  same gesture the card's caption carries. */
   onUsePrompt?: (text: string) => void
+  /** Describe the image and store the result over any existing description.
+   *  Absent, the panel has no button. */
+  onDescribe?: (id: string) => void
+  describeStates?: Partial<Record<string, { busy: boolean; error?: string }>>
 }
 
 /**
@@ -80,6 +96,8 @@ export function ImageViewer({
   onDelete,
   onHide,
   onUsePrompt,
+  onDescribe,
+  describeStates,
 }: ImageViewerProps) {
   const [showPrompt, setShowPrompt, hydrated] = usePersistedState(
     () => window.localStorage.getItem(PROMPT_PANEL_KEY) !== 'off',
@@ -145,6 +163,14 @@ export function ImageViewer({
   /* Same reasoning as `H`: a bare letter is safe because nothing in here can
      be typed into. */
   useHotkey('P', () => setShowPrompt((on) => !on))
+
+  const describe = item && onDescribe ? () => onDescribe(item.id) : undefined
+  const describeState = item ? describeStates?.[item.id] : undefined
+  /* Same reasoning as `H`. Works with the panel off too: the result lands on
+     the card either way. */
+  useHotkey('D', () => {
+    if (!describeState?.busy) describe?.()
+  })
 
   if (!item) return null
 
@@ -283,7 +309,7 @@ export function ImageViewer({
           aria-label="Prompt"
         >
           <span className={styles.panelTitle}>{item.title}</span>
-          {item.prompt ? (
+          {item.prompt && (
             /* The card's contract, unchanged: click copies, Cmd-click loads it
                into the generator. `key` so a tick left standing never reads as
                a claim about the image you have just paged to. */
@@ -296,10 +322,47 @@ export function ImageViewer({
               className={styles.panelPrompt}
               textClassName={styles.panelPromptText}
             />
-          ) : (
-            <p className={styles.panelEmpty}>
-              No prompt -- this image was uploaded.
-            </p>
+          )}
+          {item.description && (
+            <>
+              {item.prompt && (
+                <span className={styles.panelTitle}>Description</span>
+              )}
+              <CopyText
+                key={`${item.id}:description`}
+                text={item.description}
+                label="Copy"
+                onModifierClick={onUsePrompt}
+                modifierLabel="Load into the panel"
+                className={styles.panelPrompt}
+                textClassName={styles.panelPromptText}
+              />
+            </>
+          )}
+          {!item.prompt && !item.description && (
+            <p className={styles.panelEmpty}>No prompt recorded.</p>
+          )}
+          {describe && (
+            <div className={styles.panelActions}>
+              {/* Always overwrites: the button is how you ask again, so a
+                  description already there is not a reason to refuse. */}
+              <MiniButton
+                icon={<ScanText />}
+                spinning={describeState?.busy}
+                disabled={describeState?.busy}
+                onClick={describe}
+                title="Describe (D)"
+              >
+                {describeState?.busy
+                  ? 'Describing...'
+                  : item.description
+                    ? 'Describe again'
+                    : 'Describe'}
+              </MiniButton>
+              {describeState?.error && (
+                <p className={styles.panelError}>{describeState.error}</p>
+              )}
+            </div>
           )}
         </aside>
       )}
