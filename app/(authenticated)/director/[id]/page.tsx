@@ -57,7 +57,9 @@ export default async function SessionPage({
   ])
   return (
     <View
-      key={session.id}
+      /* Keyed on the open cut too (#744): opening another remounts the
+         workspace on its run rather than carrying one cut's state into it. */
+      key={`${session.id}:${session.cut.id}`}
       session={session}
       clips={clips}
       refs={refs}

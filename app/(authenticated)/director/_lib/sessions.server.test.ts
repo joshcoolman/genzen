@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  addCut,
   addSessionRefs,
   createSession,
+  deleteCut,
   deleteSession,
   getSession,
   listSessions,
+  openCut,
   patchBoardScenes,
   refKindOf,
   removeSessionRef,
@@ -56,26 +59,97 @@ describe('Director sessions', () => {
   it('stores the run in order and rejects a stale write', async () => {
     const session = await createSession(owner, 'A run')
     const clipIds = [randomUUID(), randomUUID(), randomUUID()]
-    const saved = await saveRun(owner, session.id, session.revision, clipIds)
+    const cutId = session.cut.id
+    const saved = await saveRun(
+      owner,
+      session.id,
+      session.revision,
+      clipIds,
+      cutId,
+    )
     expect(saved.revision).toBe(1)
-    expect(saved.cut).toEqual({ version: 2, clipIds })
+    expect(saved.cut).toEqual({ id: session.id, name: 'Cut 1', clipIds })
 
     await expect(
-      saveRun(owner, session.id, session.revision, clipIds.slice(0, 1)),
+      saveRun(owner, session.id, session.revision, clipIds.slice(0, 1), cutId),
     ).rejects.toThrow('another tab')
     expect((await getSession(owner, session.id))?.cut.clipIds).toEqual(clipIds)
 
     const reordered = [clipIds[2], clipIds[0], clipIds[1]]
     expect(
-      (await saveRun(owner, session.id, saved.revision, reordered)).cut.clipIds,
+      (await saveRun(owner, session.id, saved.revision, reordered, cutId)).cut
+        .clipIds,
     ).toEqual(reordered)
+  })
+
+  /* A session written before #744 held one bare run; it must open as Cut 1
+     with its clips, and keep the same cut id on every read or `active` would
+     point at nothing. */
+  it('reads a pre-#744 run as Cut 1', async () => {
+    const session = await createSession(owner, 'Legacy')
+    const clipIds = [randomUUID(), randomUUID()]
+    await sql`update director_sessions
+      set cut = ${sql.json({ version: 2, clipIds })}
+      where id = ${session.id} and user_id = ${owner}`
+    const read = await getSession(owner, session.id)
+    expect(read?.cuts.cuts).toEqual([
+      { id: session.id, name: 'Cut 1', clipIds },
+    ])
+    expect(read?.cut.id).toBe(session.id)
+  })
+
+  /* Cuts: a save lands on the cut it names, not the open one; deleting a cut
+     trashes only its clips and opens a neighbour; the last cannot go. */
+  it('keeps cuts apart, and never deletes the last', async () => {
+    const session = await createSession(owner, 'Cuts')
+    const first = session.cut.id
+    const firstClips = [randomUUID()]
+    let current = await saveRun(
+      owner,
+      session.id,
+      session.revision,
+      firstClips,
+      first,
+    )
+    current = await addCut(owner, session.id)
+    const second = current.cut.id
+    expect(second).not.toBe(first)
+    expect(current.cut.name).toBe('Cut 2')
+    expect(current.cut.clipIds).toEqual([])
+
+    current = await openCut(owner, session.id, first)
+    const secondClips = [randomUUID(), randomUUID()]
+    current = await saveRun(
+      owner,
+      session.id,
+      current.revision,
+      secondClips,
+      second,
+    )
+    expect(current.cut.id).toBe(first)
+    expect(current.cut.clipIds).toEqual(firstClips)
+    expect(current.cuts.cuts[1].clipIds).toEqual(secondClips)
+
+    current = await deleteCut(owner, session.id, first)
+    expect(current.cuts.cuts.map((cut) => cut.id)).toEqual([second])
+    expect(current.cut.id).toBe(second)
+    await expect(deleteCut(owner, session.id, second)).rejects.toThrow(
+      'last cut',
+    )
+    expect((await addCut(owner, session.id)).cut.name).toBe('Cut 3')
   })
 
   /* A session is a name and an order, so deleting one deletes a row. The clips
      are library rows and are not this route's to destroy (#662). */
   it('deletes the session and nothing else', async () => {
     const session = await createSession(owner, 'Delete me')
-    await saveRun(owner, session.id, session.revision, [randomUUID()])
+    await saveRun(
+      owner,
+      session.id,
+      session.revision,
+      [randomUUID()],
+      session.cut.id,
+    )
     await deleteSession(stranger, session.id)
     expect(await getSession(owner, session.id)).not.toBeNull()
     await deleteSession(owner, session.id)
