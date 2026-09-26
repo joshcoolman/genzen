@@ -40,6 +40,42 @@ name, clipIds }] }` -- written against `revision`, which rejects a second
 - Deleting a session trashes everything it made -- clips, sheets and the
   stills behind them -- then deletes the row.
 
+## New cut from script (#744)
+
+Directing clip by clip is how a story is found, and why it drifts: each clip is
+made knowing nothing of what follows. **New cut from script** makes the open cut
+again as a new cut beside it, the way a chat answer is made -- one fast pass.
+
+- **Three steps** (`_actions/rerun.action.ts`): a prose cast from one vision
+  call over the source cut's stills (`director-rerun-cast.md`); one planning
+  call that extracts the story and cuts it into shots
+  (`director-rerun.md`); every shot submitted at once on H3 Max Turbo
+  text-to-video at 16:9 with one seed. About 25s of model calls, then the film
+  lands in about one clip's time.
+- **The anchors are prepended in code** (`_lib/rerun.ts`), the chat's rule: the
+  cast (look plus each member as `name: description`) and the scene go in front
+  of every shot, and the model writes only action, speaker and line. **Shots
+  name people exactly as the cast does** -- the first run had the cast say "the
+  barista" and every shot say "Enzo Bramante" off the source prompts, which is
+  two anchors for one face. The look never states the frame's shape: a source
+  cut can be 9:16 and the new one is 16:9.
+- **A line is timed from its words, a silent beat is the shortest clip**
+  (`shotDuration`) -- never by the model (#685).
+- **Prose continuity only, no Kling.** No references, no drawn frames -- the fast
+  cousin of Storyboard. Kling took 158s on one clip and refused another.
+- **The story carries across cuts; the shot list does not.** A planned cut
+  stores `story` (beats and verbatim dialogue), `cast`, `seed` and `from`. A
+  later cut is planned from that story plus the prompts of clips improvised onto
+  the cut since -- never from the planner's own prompts, a copy of a copy. An
+  untouched planned cut reuses its stored cast rather than describing its own
+  stills again.
+- **Every planned clip is stamped at birth**: `generation_metadata.director_plan
+= { cut_id, shot }`. Nothing reads it yet; it is what the incremental rerun
+  (#745) builds on -- a re-roll is a new row, so "untouched" is "still the row
+  the planner made". Completion merges metadata, so the stamp survives.
+- The stills the cast call cuts are recorded in `refs.frames`, so they are
+  trashed with the session like an extraction's.
+
 ## Chat sessions (#670)
 
 A session started as a chat instead of a run: type a question, a character

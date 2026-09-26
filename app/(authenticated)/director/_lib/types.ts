@@ -16,6 +16,18 @@ export const storedCutSchema = z.object({
   id: idSchema,
   name: nameSchema,
   clipIds: z.array(idSchema).max(200),
+  /**
+   * A cut made from script (#744) keeps what it was made from. `story` is the
+   * beats and the dialogue in plain form, as the planner extracted them, and
+   * is what a later cut is planned from -- rather than re-extracting from this
+   * cut's own polished prompts, because a copy of a copy drifts. `cast` is the
+   * prose prepended to every shot, `seed` the one seed every shot shared, and
+   * `from` the cut it was made out of. All absent on a cut built by hand.
+   */
+  story: z.string().max(20000).optional(),
+  cast: z.string().max(8000).optional(),
+  seed: z.number().int().nonnegative().optional(),
+  from: idSchema.optional(),
 })
 export type StoredCut = z.infer<typeof storedCutSchema>
 

@@ -173,8 +173,10 @@ export function View({
               cuts={cuts.cuts}
               active={cuts.active}
               busy={cuts.busy}
+              writing={cuts.writing}
               onOpen={(cutId) => void cuts.open(cutId)}
               onAdd={() => void cuts.add()}
+              onFromScript={() => void cuts.fromScript()}
               onDelete={(cutId) => void cuts.remove(cutId)}
             />
           )}

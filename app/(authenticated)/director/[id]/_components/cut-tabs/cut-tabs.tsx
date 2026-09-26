@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, X } from 'lucide-react'
+import { Loader, Plus, ScrollText, X } from 'lucide-react'
 import styles from './cut-tabs.module.css'
 import type { StoredCut } from '../../../_lib/types'
 import { cx } from '#/lib/utils'
@@ -13,22 +13,31 @@ import { ConfirmDialog, useConfirm } from '#/components'
  * of the run, while Characters, Locations and Storyboard are session-wide --
  * the cast is the same in every cut. Deleting a cut trashes its clips, so it
  * asks; the last cut offers no delete at all.
+ *
+ * New cut from script reads the cut you are looking at, so it needs one with
+ * clips in it.
  */
 export function CutTabs({
   cuts,
   active,
   busy,
+  writing,
   onOpen,
   onAdd,
+  onFromScript,
   onDelete,
 }: {
   cuts: Array<StoredCut>
   active: string
   busy: boolean
+  /** A cut is being written from script. */
+  writing: boolean
   onOpen: (cutId: string) => void
   onAdd: () => void
+  onFromScript: () => void
   onDelete: (cutId: string) => void
 }) {
+  const open = cuts.find((cut) => cut.id === active)
   const { confirm, dialogProps } = useConfirm()
   const askThenDelete = async (cut: StoredCut) => {
     const count = cut.clipIds.length
@@ -80,6 +89,20 @@ export function CutTabs({
       >
         <Plus size={14} />
         New cut
+      </button>
+      <button
+        type="button"
+        className={styles.add}
+        disabled={busy || !open?.clipIds.length}
+        onClick={onFromScript}
+        title={`A new cut made from ${open?.name ?? 'this cut'}'s story, every shot at once`}
+      >
+        {writing ? (
+          <Loader size={14} className={styles.spin} />
+        ) : (
+          <ScrollText size={14} />
+        )}
+        {writing ? 'Writing the cut...' : 'New cut from script'}
       </button>
       <ConfirmDialog {...dialogProps} />
     </nav>

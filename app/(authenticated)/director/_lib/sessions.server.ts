@@ -15,6 +15,7 @@ import {
   parseChat,
   parseCuts,
   parseRefs,
+  storedCutSchema,
 } from './types'
 import type {
   BoardScene,
@@ -23,6 +24,7 @@ import type {
   Session,
   SessionKind,
   SessionSummary,
+  StoredCut,
   StoredCuts,
 } from './types'
 import { first, jsonb, sql } from '#/lib/server/db.server'
@@ -517,6 +519,44 @@ export async function addCut(owner: string, id: string): Promise<Session> {
     cuts: [...session.cuts.cuts, cut],
   }
   await writeCuts(owner, id, cuts)
+  return requireSession(owner, id)
+}
+
+/**
+ * Add a cut made from script and open it (#744), with every clip stamped as
+ * planned: its cut and its shot number, in `generation_metadata.director_plan`.
+ *
+ * Nothing reads the stamp yet. It is what makes the incremental rerun (#745)
+ * possible without tracking edits: a re-roll already makes a new row, so
+ * "untouched" is just "this is still the row the planner made". Completion
+ * merges into `generation_metadata` rather than replacing it, so the stamp
+ * survives the clip landing.
+ */
+export async function addPlannedCut(
+  owner: string,
+  id: string,
+  planned: Omit<StoredCut, 'id' | 'name'> & { shots: Array<number> },
+): Promise<Session> {
+  const session = await requireSession(owner, id)
+  const { shots, ...fields } = planned
+  const cut = storedCutSchema.parse({
+    ...fields,
+    id: randomUUID(),
+    name: nextCutName(session.cuts),
+  })
+  await writeCuts(owner, id, {
+    ...session.cuts,
+    active: cut.id,
+    cuts: [...session.cuts.cuts, cut],
+  })
+  for (const [index, clipId] of cut.clipIds.entries()) {
+    await sql`
+      update user_images
+      set generation_metadata = coalesce(generation_metadata, '{}'::jsonb) ||
+        ${sql.json({ director_plan: { cut_id: cut.id, shot: shots[index] } })}::jsonb
+      where id = ${clipId} and user_id = ${owner} and origin = 'director'
+    `
+  }
   return requireSession(owner, id)
 }
 

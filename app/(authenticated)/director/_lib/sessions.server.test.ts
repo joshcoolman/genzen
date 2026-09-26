@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   addCut,
+  addPlannedCut,
   addSessionRefs,
   createSession,
   deleteCut,
@@ -137,6 +138,38 @@ describe('Director sessions', () => {
       'last cut',
     )
     expect((await addCut(owner, session.id)).cut.name).toBe('Cut 3')
+  })
+
+  /* The provenance stamp is what #745 builds on: every clip a rerun makes
+     says which cut and shot it was planned as. */
+  it('stores a planned cut with its story and stamps its clips', async () => {
+    const session = await createSession(owner, 'Planned')
+    const clipIds = [randomUUID(), randomUUID()]
+    for (const id of clipIds)
+      await sql`insert into user_images (id, user_id, title, source, origin, status)
+        values (${id}, ${owner}, 'clip', 'ai_video', 'director', 'pending')`
+    const made = await addPlannedCut(owner, session.id, {
+      clipIds,
+      shots: [1, 3],
+      story: 'The genie says "What is your wish?"',
+      cast: 'the genie: blue.',
+      seed: 0,
+      from: session.cut.id,
+    })
+    expect(made.cut).toMatchObject({
+      name: 'Cut 2',
+      clipIds,
+      story: 'The genie says "What is your wish?"',
+      seed: 0,
+      from: session.id,
+    })
+    const stamps = await sql<Array<{ plan: { cut_id: string; shot: number } }>>`
+      select generation_metadata->'director_plan' as plan from user_images
+      where id in ${sql(clipIds)} and user_id = ${owner} order by (generation_metadata->'director_plan'->>'shot')::int`
+    expect(stamps.map((row) => row.plan)).toEqual([
+      { cut_id: made.cut.id, shot: 1 },
+      { cut_id: made.cut.id, shot: 3 },
+    ])
   })
 
   /* A session is a name and an order, so deleting one deletes a row. The clips
