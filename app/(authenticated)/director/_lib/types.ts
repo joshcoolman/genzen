@@ -4,14 +4,7 @@ export const idSchema = z.string().uuid()
 export const nameSchema = z.string().trim().min(1).max(120)
 
 /**
- * A session is a name and an ordered list of clip ids (#662).
- *
- * **Version 2, and there is no version 1 left to read.** The first shape held a
- * whole cut -- clips with prompts, durations, private media ids, a pending
- * request, a review hold, archived exports -- and every row carrying one was
- * deleted with the rest of Director rather than migrated. `parseRun` below
- * falls back to an empty run rather than throwing, so a row that somehow
- * survived opens empty instead of 500ing the page.
+ * One cut: a name and an ordered list of clip ids (#662, #744).
  *
  * **Ids, not rows.** The clips are ordinary `user_images` rows made by
  * `generateVideo`, so everything about one -- its name, its poster, whether it
@@ -19,19 +12,85 @@ export const nameSchema = z.string().trim().min(1).max(120)
  * would show the name a clip had when it was added, and naming clips is half of
  * what a session is for.
  */
-export const storedRunSchema = z.object({
+export const storedCutSchema = z.object({
+  id: idSchema,
+  name: nameSchema,
+  clipIds: z.array(idSchema).max(200),
+})
+export type StoredCut = z.infer<typeof storedCutSchema>
+
+/**
+ * A session's cuts (#744): several runs of the same story, shown as tabs.
+ *
+ * **Version 3, and version 2 reads as one cut.** Version 2 was a single
+ * `{ clipIds }`, which is exactly one cut with no name; `parseCuts` lifts it
+ * into Cut 1 on the way in, so no SQL migration was needed and a session
+ * written before #744 opens with its run intact. The lifted cut's id is the
+ * session's own id -- it has to be the same on every read, or `active` would
+ * point at a cut that no longer exists the next time the row is parsed.
+ *
+ * **Which cut is open is stored, not held by the page**, so every server path
+ * that reads "the run" -- extraction, the chat, the storyboard -- reads the
+ * one being looked at without being told, and three machines agree.
+ *
+ * There is always at least one cut: the last one cannot be deleted.
+ */
+export const storedCutsSchema = z.object({
+  version: z.literal(3),
+  active: idSchema,
+  cuts: z.array(storedCutSchema).min(1).max(20),
+})
+export type StoredCuts = z.infer<typeof storedCutsSchema>
+
+const legacyRunSchema = z.object({
   version: z.literal(2),
   clipIds: z.array(idSchema).max(200),
 })
-export type StoredRun = z.infer<typeof storedRunSchema>
 
-export function emptyRun(): StoredRun {
-  return { version: 2, clipIds: [] }
+export function emptyCuts(sessionId: string): StoredCuts {
+  return {
+    version: 3,
+    active: sessionId,
+    cuts: [{ id: sessionId, name: 'Cut 1', clipIds: [] }],
+  }
 }
 
-export function parseRun(value: unknown): StoredRun {
-  const parsed = storedRunSchema.safeParse(value)
-  return parsed.success ? parsed.data : emptyRun()
+/** An unreadable value opens as one empty cut rather than 500ing the page. An
+ *  `active` naming no cut falls back to the first, on the same reasoning. */
+export function parseCuts(value: unknown, sessionId: string): StoredCuts {
+  const legacy = legacyRunSchema.safeParse(value)
+  if (legacy.success)
+    return {
+      version: 3,
+      active: sessionId,
+      cuts: [{ id: sessionId, name: 'Cut 1', clipIds: legacy.data.clipIds }],
+    }
+  const parsed = storedCutsSchema.safeParse(value)
+  if (!parsed.success) return emptyCuts(sessionId)
+  const { cuts, active } = parsed.data
+  return cuts.some((cut) => cut.id === active)
+    ? parsed.data
+    : { ...parsed.data, active: cuts[0].id }
+}
+
+/** The cut the session is open on. */
+export function activeCut(cuts: StoredCuts): StoredCut {
+  return cuts.cuts.find((cut) => cut.id === cuts.active) ?? cuts.cuts[0]
+}
+
+/** The next free "Cut N": one past the highest number in use, so deleting
+ *  Cut 2 never makes the next one a second Cut 3. */
+export function nextCutName(cuts: StoredCuts): string {
+  const numbers = cuts.cuts.map((cut) => {
+    const match = /^Cut (\d+)$/.exec(cut.name)
+    return match ? Number(match[1]) : 0
+  })
+  return `Cut ${Math.max(cuts.cuts.length, ...numbers) + 1}`
+}
+
+/** Every clip in every cut, for the trash that follows a session. */
+export function allCutClipIds(cuts: StoredCuts): Array<string> {
+  return cuts.cuts.flatMap((cut) => cut.clipIds)
 }
 
 /**
@@ -73,7 +132,7 @@ export function emptyChat(): StoredChat {
 }
 
 /** Null is a run session; an unreadable value opens as an empty chat rather
- *  than 500ing the page, on the same reasoning as `parseRun`. */
+ *  than 500ing the page, on the same reasoning as `parseCuts`. */
 export function parseChat(value: unknown): StoredChat | null {
   if (value === null || value === undefined) return null
   const parsed = storedChatSchema.safeParse(value)
@@ -88,7 +147,10 @@ export interface Session {
   /** Bumped by every write and checked by the next one: a second tab editing
    *  the same session is rejected rather than silently overwriting. */
   revision: number
-  cut: StoredRun
+  /** Every cut, and which one is open (#744). */
+  cuts: StoredCuts
+  /** The open cut -- what every reader of "the run" means. */
+  cut: StoredCut
   /** Null for a run session. */
   chat: StoredChat | null
   /** The reference sheets extracted from its clips (#690). */
@@ -119,7 +181,7 @@ export interface SessionSummary {
  * have something to hand the image model, shown on no tab and kept only so
  * they are trashed with the session.
  *
- * Ids, not rows, on `StoredRun`'s reasoning. An id that resolves to nothing --
+ * Ids, not rows, on `StoredCut`'s reasoning. An id that resolves to nothing --
  * a sheet trashed from somewhere else -- simply drops out of the tab.
  */
 export const storedRefsSchema = z.object({
@@ -141,7 +203,7 @@ export function emptyRefs(): StoredRefs {
 }
 
 /** Null on every session made before #690, and an unreadable value opens empty
- *  rather than 500ing the page -- `parseRun`'s rule. */
+ *  rather than 500ing the page -- `parseCuts`'s rule. */
 export function parseRefs(value: unknown): StoredRefs {
   const parsed = storedRefsSchema.safeParse(value)
   return parsed.success ? parsed.data : emptyRefs()
@@ -304,7 +366,7 @@ export function emptyBoard(): StoredBoard {
 }
 
 /** Null on every session made before #695, and an unreadable value opens empty
- *  rather than 500ing the page -- `parseRun`'s rule. */
+ *  rather than 500ing the page -- `parseCuts`'s rule. */
 export function parseBoard(value: unknown): StoredBoard {
   const parsed = storedBoardSchema.safeParse(value)
   return parsed.success ? parsed.data : emptyBoard()

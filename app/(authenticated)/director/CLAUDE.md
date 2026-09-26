@@ -1,6 +1,7 @@
 # Director
 
-A session is a **name and an ordered list of clip ids** (#662), and since #690
+A session is a **name and an ordered list of clip ids** (#662) -- several
+since #744, one per cut -- and since #690
 the reference sheets extracted from them, and since #695 the storyboard planned
 from those. Nothing else -- and "nothing else" was literally true until
 References below; the run is still the whole of the work area.
@@ -19,10 +20,20 @@ References below; the run is still the whole of the work area.
   replaced, and deleting the session trashes every clip it made. Trash
   restores any of them. The guard is the origin, not the id, so a session
   from before isolation that still holds a Video clip leaves it alone.
-- Storage is `director_sessions.cut` -- `{ version: 2, clipIds: [...] }` --
-  written against `revision`, which rejects a second tab's stale order. The run
-  is saved on every change, one write at a time (`use-view`), and a failed save
-  is said out loud rather than rolled back.
+- Storage is `director_sessions.cut` -- `{ version: 3, active, cuts: [{ id,
+name, clipIds }] }` -- written against `revision`, which rejects a second
+  tab's stale order. The run is saved on every change, one write at a time
+  (`use-view`), and a failed save is said out loud rather than rolled back.
+- **A session holds several cuts, shown as tabs over a run's work area**
+  (#744). Each is a run in its own right. `session.cut` is the open one and is
+  what every reader of "the run" means -- extraction, chat, storyboard -- so
+  `active` is stored rather than held by the page. A save names its cut by id,
+  so one queued before a switch lands where it was made. Characters, Locations
+  and Storyboard stay session-wide. Deleting a cut trashes its clips; the last
+  cannot go. A version 2 row reads as Cut 1 with the session's own id as the
+  cut id -- no migration, and stable across reads. A chat has one cut and no
+  tabs: its turns order it. The page is keyed on the open cut, so switching
+  remounts the workspace rather than carrying one cut's state into another.
 - Ids are stored unchecked. A clip generated inside the session is in the run
   before its row is visible to the request, and an id that resolves to nothing
   drops out when the session is next opened.

@@ -110,7 +110,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     queue.current = queue.current.then(async () => {
       try {
         revision.current = (
-          await writeRun(session.id, revision.current, ids)
+          await writeRun(session.id, revision.current, ids, session.cut.id)
         ).revision
         setError(null)
       } catch (cause) {
@@ -121,7 +121,26 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
         )
       }
     })
-  }, [picked, session.id])
+  }, [picked, session.id, session.cut.id])
+
+  /**
+   * A session write that has to wait its turn behind the run's saves (#744):
+   * adding, opening or deleting a cut. Behind them so a reorder made a moment
+   * before a tab switch lands first, and carrying the revision forward so the
+   * save after it is not refused as a stale tab.
+   */
+  const afterSaves = useCallback((write: () => Promise<Session>) => {
+    const next = queue.current.then(async () => {
+      const updated = await write()
+      revision.current = updated.revision
+      return updated
+    })
+    queue.current = next.then(
+      () => undefined,
+      () => undefined,
+    )
+    return next
+  }, [])
 
   /**
    * Take the run's rows from the server's, whenever the server's change (#660).
@@ -859,6 +878,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     transcript,
     transcriptOpen,
     setTranscriptOpen,
+    afterSaves,
     picked,
     playable,
     toPlayableIndex: playableIndexOf,

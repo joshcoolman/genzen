@@ -12,6 +12,7 @@ import { StoryboardTab } from './_components/storyboard-tab/storyboard-tab'
 import { ScriptTab } from './_components/script-tab/script-tab'
 import { SessionTabs } from './_components/session-tabs/session-tabs'
 import { ClipRow } from './_components/clip-row/clip-row'
+import { CutTabs } from './_components/cut-tabs/cut-tabs'
 import {
   AddGenDialog,
   EditClipDialog,
@@ -20,6 +21,7 @@ import { ScriptDialog } from './_components/script-dialog/script-dialog'
 import { SequencePlayer } from './_components/sequence-player/sequence-player'
 import { dialogueOf } from './script'
 import { visibleTab } from './tabs'
+import { useCuts } from './use-cuts'
 import { useReferences } from './use-references'
 import { useStoryboard } from './use-storyboard'
 import { useView } from './use-view'
@@ -56,6 +58,7 @@ export function View({
   frames: Record<string, RefAsset>
 }) {
   const view = useView(session, clips)
+  const cuts = useCuts(session, view.afterSaves)
   const references = useReferences(session.id, refs)
   const storyboard = useStoryboard(session.id, session.board, frames)
   /* A storyboard is planned from a script and drawn from the sheets, so all
@@ -100,8 +103,10 @@ export function View({
   return (
     <>
       <SessionHeading id={session.id} name={session.name}>
-        {/* Only once there is something to extract from (#690). */}
-        {view.picked.length > 0 && (
+        {/* Only once there is something to extract from (#690) -- in any cut,
+            since the sheets are the session's and an empty new cut does not
+            take them away (#744). Extraction reads the open cut. */}
+        {session.cuts.cuts.some((cut) => cut.clipIds.length > 0) && (
           <SessionTabs
             tab={tab}
             onChange={references.setTab}
@@ -160,72 +165,86 @@ export function View({
           onOpen={references.openViewer}
         />
       ) : (
-        <div className={styles.stack}>
-          {/* Only the clips that exist. A pending one keeps its place in the row
+        <>
+          {/* A run's cuts (#744). A chat has one, and its turns are what order
+            it, so it gets no tabs. */}
+          {!view.chat && (
+            <CutTabs
+              cuts={cuts.cuts}
+              active={cuts.active}
+              busy={cuts.busy}
+              onOpen={(cutId) => void cuts.open(cutId)}
+              onAdd={() => void cuts.add()}
+              onDelete={(cutId) => void cuts.remove(cutId)}
+            />
+          )}
+          <div className={styles.stack}>
+            {/* Only the clips that exist. A pending one keeps its place in the row
             and is not something the stage can play, which is why the two are
             indexed separately -- see `toPlayableIndex` in `use-view`. */}
-          <div className={styles.player}>
-            <SequencePlayer
-              clips={view.playable}
-              /* A chat is vertical before its first clip exists (#670), so the
+            <div className={styles.player}>
+              <SequencePlayer
+                clips={view.playable}
+                /* A chat is vertical before its first clip exists (#670), so the
                empty stage is already the shape the answer will be. */
-              ratio={view.runRatio ?? (view.chat ? 9 / 16 : null)}
-              /* The transcript and the question box share the sticky column
+                ratio={view.runRatio ?? (view.chat ? 9 / 16 : null)}
+                /* The transcript and the question box share the sticky column
                with the stage, so a 9:16 stage at 70vh put the box off screen.
                Half the viewport leaves room for both, and the clip is still
                large enough to be a face. */
-              stageMax={view.chat ? '45vh' : undefined}
-              /* A conversation: an answer plays once and stops, unless Loop is
+                stageMax={view.chat ? '45vh' : undefined}
+                /* A conversation: an answer plays once and stops, unless Loop is
                pressed. A run always loops and gets no button. */
-              loop={view.chat ? view.loop : true}
-              onLoopChange={view.chat ? view.setLoop : undefined}
-              controls={player}
-              onIndexChange={view.setPlayingIndex}
-              placeholder={
-                view.chat
-                  ? 'The answer plays here.'
-                  : 'Add clips below to start the run.'
-              }
-            />
-            {view.chat && (
-              <ChatPanel
-                turns={view.chat.turns}
-                inFlight={view.inFlight}
-                queued={view.queued}
-                answering={view.answering}
-                onAsk={(question, steer) => void view.ask(question, steer)}
+                loop={view.chat ? view.loop : true}
+                onLoopChange={view.chat ? view.setLoop : undefined}
+                controls={player}
+                onIndexChange={view.setPlayingIndex}
+                placeholder={
+                  view.chat
+                    ? 'The answer plays here.'
+                    : 'Add clips below to start the run.'
+                }
               />
-            )}
-          </div>
+              {view.chat && (
+                <ChatPanel
+                  turns={view.chat.turns}
+                  inFlight={view.inFlight}
+                  queued={view.queued}
+                  answering={view.answering}
+                  onAsk={(question, steer) => void view.ask(question, steer)}
+                />
+              )}
+            </div>
 
-          <div>
-            <ClipRow
-              clips={view.picked}
-              mode={view.chat ? 'chat' : 'run'}
-              playingIndex={view.toRowIndex(view.playingIndex)}
-              onAddGen={view.openAdd}
-              /* A chat's script is the questions and answers, not the clip
+            <div>
+              <ClipRow
+                clips={view.picked}
+                mode={view.chat ? 'chat' : 'run'}
+                playingIndex={view.toRowIndex(view.playingIndex)}
+                onAddGen={view.openAdd}
+                /* A chat's script is the questions and answers, not the clip
                prompts: those are anchors plus an action, assembled in code,
                and the words that matter are the ones said. */
-              onScript={() =>
-                view.chat
-                  ? view.setTranscriptOpen(true)
-                  : view.setScriptOpen(true)
-              }
-              onRemove={view.removeClip}
-              onRerun={
-                view.chat ? (clip) => void view.rerunClip(clip) : undefined
-              }
-              onMove={view.move}
-              onPlayFrom={(index) => {
-                const target = view.toPlayableIndex(index)
-                if (target >= 0) player.current?.playFrom(target)
-              }}
-              onRename={view.openEdit}
-            />
-            {view.error && <p role="alert">{view.error}</p>}
+                onScript={() =>
+                  view.chat
+                    ? view.setTranscriptOpen(true)
+                    : view.setScriptOpen(true)
+                }
+                onRemove={view.removeClip}
+                onRerun={
+                  view.chat ? (clip) => void view.rerunClip(clip) : undefined
+                }
+                onMove={view.move}
+                onPlayFrom={(index) => {
+                  const target = view.toPlayableIndex(index)
+                  if (target >= 0) player.current?.playFrom(target)
+                }}
+                onRename={view.openEdit}
+              />
+              {view.error && <p role="alert">{view.error}</p>}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* The pencil: a name, or another take of the same position (#657, #660).

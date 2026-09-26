@@ -1,17 +1,20 @@
 import 'server-only'
 import { randomUUID } from 'node:crypto'
 import {
+  activeCut,
+  allCutClipIds,
   boardImageIds,
   boardSceneSchema,
   chatTurnSchema,
   emptyChat,
-  emptyRun,
+  emptyCuts,
   idSchema,
   nameSchema,
+  nextCutName,
   parseBoard,
   parseChat,
+  parseCuts,
   parseRefs,
-  parseRun,
 } from './types'
 import type {
   BoardScene,
@@ -20,6 +23,7 @@ import type {
   Session,
   SessionKind,
   SessionSummary,
+  StoredCuts,
 } from './types'
 import { first, jsonb, sql } from '#/lib/server/db.server'
 
@@ -37,20 +41,21 @@ export async function getSession(
 ): Promise<Session | null> {
   if (!idSchema.safeParse(id).success) return null
   const row = first(
-    await sql<Array<Session>>`
+    await sql<Array<Omit<Session, 'cuts'>>>`
     select id, name, revision, cut, chat, refs, board, to_json(updated_at)#>>'{}' as updated_at
     from director_sessions where id = ${id} and user_id = ${owner}
   `,
   )
-  return row
-    ? {
-        ...row,
-        cut: parseRun(row.cut),
-        chat: parseChat(row.chat),
-        refs: parseRefs(row.refs),
-        board: parseBoard(row.board),
-      }
-    : null
+  if (!row) return null
+  const cuts = parseCuts(row.cut, row.id)
+  return {
+    ...row,
+    cuts,
+    cut: activeCut(cuts),
+    chat: parseChat(row.chat),
+    refs: parseRefs(row.refs),
+    board: parseBoard(row.board),
+  }
 }
 
 export async function requireSession(owner: string, id: string) {
@@ -62,12 +67,12 @@ export async function requireSession(owner: string, id: string) {
 export async function listSessions(
   owner: string,
 ): Promise<Array<SessionSummary>> {
-  const rows = await sql<Array<Session>>`
+  const rows = await sql<Array<Omit<Session, 'cuts'>>>`
     select id, name, cut, chat, to_json(updated_at)#>>'{}' as updated_at
     from director_sessions where user_id = ${owner} order by updated_at desc
   `
   return rows.map((row) => {
-    const run = parseRun(row.cut)
+    const run = activeCut(parseCuts(row.cut, row.id))
     return {
       id: row.id,
       name: row.name,
@@ -92,7 +97,7 @@ export async function createSession(
   const chat = kind === 'chat' ? jsonb(emptyChat()) : null
   await sql`
     insert into director_sessions (id, user_id, name, cut, chat)
-    values (${id}, ${owner}, ${name}, ${jsonb(emptyRun())}, ${chat})
+    values (${id}, ${owner}, ${name}, ${jsonb(emptyCuts(id))}, ${chat})
     on conflict (id) do nothing
   `
   return requireSession(owner, id)
@@ -105,8 +110,31 @@ export async function renameSession(owner: string, id: string, name: string) {
     where id = ${id} and user_id = ${owner}`
 }
 
+/** The session's cuts with one cut's clips replaced. Throws on a cut the
+ *  session does not hold, rather than writing to whichever one is open: a
+ *  write aimed at a cut deleted meanwhile must not land on another. */
+function withCutClips(
+  cuts: StoredCuts,
+  cutId: string,
+  change: (clipIds: Array<string>) => Array<string>,
+): StoredCuts {
+  if (!cuts.cuts.some((cut) => cut.id === cutId))
+    throw new Error('That cut is not in this session.')
+  return {
+    ...cuts,
+    cuts: cuts.cuts.map((cut) =>
+      cut.id === cutId ? { ...cut, clipIds: change(cut.clipIds) } : cut,
+    ),
+  }
+}
+
 /**
- * Write the run, if nothing else has since it was read.
+ * Write one cut's run, if nothing else has since it was read.
+ *
+ * Aimed at a cut by id rather than at whichever is open: a save queued before
+ * a tab switch lands on the cut it was made in (#744). Read, changed and
+ * written against `revision`, so a cut added or deleted in between fails this
+ * write rather than being overwritten by it.
  *
  * The ids are stored as given and are not checked against the library: a clip
  * generated from inside the session is in the run before its row is visible to
@@ -118,22 +146,21 @@ export async function saveRun(
   id: string,
   revision: number,
   clipIds: Array<string>,
+  cutId: string,
 ): Promise<Session> {
-  const cut = {
-    version: 2 as const,
-    clipIds: clipIds.map((clipId) => idSchema.parse(clipId)),
-  }
+  const stale = new Error(
+    'This session changed in another tab. Reload before editing.',
+  )
+  const session = await requireSession(owner, id)
+  if (session.revision !== revision) throw stale
+  const ids = clipIds.map((clipId) => idSchema.parse(clipId))
+  const cuts = withCutClips(session.cuts, idSchema.parse(cutId), () => ids)
   const rows = await sql`
-    update director_sessions set cut = ${jsonb(cut)}, revision = revision + 1, updated_at = now()
+    update director_sessions set cut = ${jsonb(cuts)}, revision = revision + 1, updated_at = now()
     where id = ${id} and user_id = ${owner} and revision = ${revision}
     returning id
   `
-  if (!rows.length) {
-    await requireSession(owner, id)
-    throw new Error(
-      'This session changed in another tab. Reload before editing.',
-    )
-  }
+  if (!rows.length) throw stale
   return requireSession(owner, id)
 }
 
@@ -172,10 +199,10 @@ export async function appendChatTurn(
     ...(session.chat.seed === undefined && seed !== undefined ? { seed } : {}),
     turns: [...session.chat.turns, parsed],
   }
-  const cut = {
-    version: 2 as const,
-    clipIds: [...session.cut.clipIds, ...parsed.clipIds],
-  }
+  const cut = withCutClips(session.cuts, session.cut.id, (clipIds) => [
+    ...clipIds,
+    ...parsed.clipIds,
+  ])
   const title =
     session.chat.turns.length === 0 && name
       ? nameSchema.parse(name)
@@ -210,10 +237,9 @@ export async function removeChatClip(
       clipIds: turn.clipIds.filter((c) => c !== clipId),
     })),
   }
-  const cut = {
-    version: 2 as const,
-    clipIds: session.cut.clipIds.filter((c) => c !== clipId),
-  }
+  const cut = withCutClips(session.cuts, session.cut.id, (clipIds) =>
+    clipIds.filter((c) => c !== clipId),
+  )
   await sql`
     update director_sessions
     set chat = ${jsonb(chat)}, cut = ${jsonb(cut)}, revision = revision + 1, updated_at = now()
@@ -245,7 +271,9 @@ export async function replaceChatClip(
       clipIds: turn.clipIds.map(swap),
     })),
   }
-  const cut = { version: 2 as const, clipIds: session.cut.clipIds.map(swap) }
+  const cut = withCutClips(session.cuts, session.cut.id, (clipIds) =>
+    clipIds.map(swap),
+  )
   await sql`
     update director_sessions
     set chat = ${jsonb(chat)}, cut = ${jsonb(cut)}, revision = revision + 1, updated_at = now()
@@ -356,7 +384,7 @@ export async function deleteSession(owner: string, id: string) {
   const session = await getSession(owner, id)
   if (!session) return
   await trashSessionClips(owner, [
-    ...session.cut.clipIds,
+    ...allCutClipIds(session.cuts),
     ...session.refs.characters,
     ...session.refs.locations,
     ...session.refs.frames,
@@ -470,4 +498,72 @@ export async function patchBoardScenes(
     where id = ${id} and user_id = ${owner}
   `
   return requireSession(owner, id)
+}
+
+/**
+ * Add an empty cut after the last and open it (#744).
+ *
+ * Unchecked revision, on `appendChatTurn`'s reasoning: it changes no cut that
+ * exists. It bumps it, so a stale tab's next reorder is refused rather than
+ * writing a cuts list that is missing this one.
+ */
+export async function addCut(owner: string, id: string): Promise<Session> {
+  const session = await requireSession(owner, id)
+  if (session.chat) throw new Error('A chat has one cut.')
+  const cut = { id: randomUUID(), name: nextCutName(session.cuts), clipIds: [] }
+  const cuts = {
+    ...session.cuts,
+    active: cut.id,
+    cuts: [...session.cuts.cuts, cut],
+  }
+  await writeCuts(owner, id, cuts)
+  return requireSession(owner, id)
+}
+
+/** Open another cut. Stored, so every server path reading "the run" reads it. */
+export async function openCut(
+  owner: string,
+  id: string,
+  cutId: string,
+): Promise<Session> {
+  const session = await requireSession(owner, id)
+  idSchema.parse(cutId)
+  if (!session.cuts.cuts.some((cut) => cut.id === cutId))
+    throw new Error('That cut is not in this session.')
+  await writeCuts(owner, id, { ...session.cuts, active: cutId })
+  return requireSession(owner, id)
+}
+
+/**
+ * Delete a cut and trash its clips -- the rule a deleted session follows, one
+ * level down. The last cut cannot go: a session is always open on one. When
+ * the open cut goes, its left neighbour opens (the right one, for the first).
+ */
+export async function deleteCut(
+  owner: string,
+  id: string,
+  cutId: string,
+): Promise<Session> {
+  const session = await requireSession(owner, id)
+  idSchema.parse(cutId)
+  const index = session.cuts.cuts.findIndex((cut) => cut.id === cutId)
+  if (index < 0) throw new Error('That cut is not in this session.')
+  if (session.cuts.cuts.length === 1)
+    throw new Error('The last cut cannot be deleted.')
+  const remaining = session.cuts.cuts.filter((cut) => cut.id !== cutId)
+  const active =
+    session.cuts.active === cutId
+      ? remaining[Math.max(0, index - 1)].id
+      : session.cuts.active
+  await writeCuts(owner, id, { ...session.cuts, active, cuts: remaining })
+  await trashSessionClips(owner, session.cuts.cuts[index].clipIds)
+  return requireSession(owner, id)
+}
+
+async function writeCuts(owner: string, id: string, cuts: StoredCuts) {
+  await sql`
+    update director_sessions
+    set cut = ${jsonb(cuts)}, revision = revision + 1, updated_at = now()
+    where id = ${id} and user_id = ${owner}
+  `
 }
