@@ -283,6 +283,10 @@ The board at `localhost:3210/kanban/genzen` has the rest.
 
 Recent highlights:
 
+- **Director cuts (#744, #746, #747)** -- a run session holds several cuts as
+  tabs. **New cut from script** remakes the open cut in one pass: prose cast,
+  one planning call, every shot at once on H3 Max Turbo; the story is stored
+  on the cut and carries to the next.
 - **Director chat answers end on a last beat (#740, #741)** -- a tease, an
   offer, a fork or a provocation that invites the next question, never a
   question about the person and never a tidy wrap-up. Its own prompt section.
@@ -304,7 +308,3 @@ Recent highlights:
 - The Video wall's playback dialog walks the section with Left and Right,
   carries the play state, and Delete moves on (#728). A press held on a card
   or a picker tile plays the clip in place.
-- **News runs on Effect (#721)**, and nothing else does -- a lint rule holds
-  the border. Typed error family, services as Layers named for the job rather
-  than the vendor, retry gated on the tag, and actions that return
-  `{ ok, value } | { ok, error }`. `docs/reference/effect.md`.
