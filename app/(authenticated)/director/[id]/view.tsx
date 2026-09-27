@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { SessionHeading } from '../_components/session-heading/session-heading'
+import { cutProgressLabel } from '../_lib/cut-job'
 import { ChatPanel } from './_components/chat-panel/chat-panel'
 import { DeriveDialog } from './_components/derive-dialog/derive-dialog'
 import { ReferenceTab } from './_components/reference-tab/reference-tab'
@@ -12,6 +13,8 @@ import { StoryboardTab } from './_components/storyboard-tab/storyboard-tab'
 import { ScriptTab } from './_components/script-tab/script-tab'
 import { SessionTabs } from './_components/session-tabs/session-tabs'
 import { ClipRow } from './_components/clip-row/clip-row'
+import { CutDialog } from './_components/cut-dialog/cut-dialog'
+import { CutProgress } from './_components/cut-progress/cut-progress'
 import { CutTabs } from './_components/cut-tabs/cut-tabs'
 import {
   AddGenDialog,
@@ -176,7 +179,10 @@ export function View({
               writing={cuts.writing}
               onOpen={(cutId) => void cuts.open(cutId)}
               onAdd={() => void cuts.add()}
-              onFromScript={() => void cuts.fromScript()}
+              onFromScript={() => cuts.setDialogOpen(true)}
+              canGenerate={
+                !session.generation || session.generation.status === 'completed'
+              }
               onDelete={(cutId) => void cuts.remove(cutId)}
             />
           )}
@@ -197,14 +203,16 @@ export function View({
                 stageMax={view.chat ? '45vh' : undefined}
                 /* A conversation: an answer plays once and stops, unless Loop is
                pressed. A run always loops and gets no button. */
-                loop={view.chat ? view.loop : true}
+                loop={view.chat ? view.loop : !session.generation}
                 onLoopChange={view.chat ? view.setLoop : undefined}
                 controls={player}
                 onIndexChange={view.setPlayingIndex}
                 placeholder={
                   view.chat
                     ? 'The answer plays here.'
-                    : 'Add clips below to start the run.'
+                    : session.generation
+                      ? cutProgressLabel(session.generation)
+                      : 'Add clips below to start the run.'
                 }
               />
               {view.chat && (
@@ -219,7 +227,17 @@ export function View({
             </div>
 
             <div>
+              {session.generation && (
+                <CutProgress
+                  job={session.generation}
+                  sessionId={session.id}
+                  busy={cuts.busy}
+                  onCancel={() => void cuts.cancel()}
+                  onRetry={() => void cuts.retry()}
+                />
+              )}
               <ClipRow
+                generation={session.generation}
                 clips={view.picked}
                 mode={view.chat ? 'chat' : 'run'}
                 playingIndex={view.toRowIndex(view.playingIndex)}
@@ -251,6 +269,14 @@ export function View({
 
       {/* The pencil: a name, or another take of the same position (#657, #660).
           The run keeps playing behind it. */}
+      <CutDialog
+        open={cuts.dialogOpen}
+        direction={cuts.direction}
+        busy={cuts.busy}
+        onOpenChange={cuts.setDialogOpen}
+        onDirectionChange={cuts.setDirection}
+        onSubmit={() => void cuts.fromScript()}
+      />
       <EditClipDialog
         open={view.editing !== null}
         onOpenChange={(open) => {

@@ -277,15 +277,13 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus is empty.** The natural next card is **#737** (News runs survive
-navigation and refresh, and feed the overlay real progress) -- it is the spec.
-The board at `localhost:3210/kanban/genzen` has the rest.
+**Focus: #749 — Director script cuts with sequential frame handoffs and visible progress.**
 
 Recent highlights:
 
 - **Director cuts (#744, #746, #747)** -- a run session holds several cuts as
   tabs. **New cut from script** remakes the open cut in one pass: prose cast,
-  one planning call, every shot at once on H3 Max Turbo; the story is stored
+  one planning call, H3 Max Turbo clips; the story is stored
   on the cut and carries to the next.
 - **Director chat answers end on a last beat (#740, #741)** -- a tease, an
   offer, a fork or a provocation that invites the next question, never a

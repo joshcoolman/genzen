@@ -1,136 +1,91 @@
 'use server'
 
-import { randomInt } from 'node:crypto'
-import { generateVideo } from '../../video/_actions/generate-video.action'
-import { genModel } from '../[id]/gen'
-import { composeCast, composeShotPrompt, shotDuration } from '../_lib/rerun'
-import { planCut, writeCast } from '../_lib/rerun.server'
-import { collectSessionFrames } from '../_lib/references.server'
 import {
-  addPlannedCut,
-  addSessionRefs,
-  requireSession,
-} from '../_lib/sessions.server'
+  cancelCutJob,
+  checkpoint,
+  createCutJob,
+  readCutJob,
+  retryCutJob,
+} from '../_lib/cut-job.server'
+import { requireSession } from '../_lib/sessions.server'
 import { idSchema } from '../_lib/types'
-import type { Session } from '../_lib/types'
+import { first, sql } from '#/lib/server/db.server'
 import { resolveAuth } from '#/lib/server/auth.server'
-import { sql } from '#/lib/server/db.server'
 
-/** Runs are 16:9, and a cut from script is a run. */
-const CUT_RATIO = '16:9'
+export async function cutFromScript(sessionId: string, direction = '') {
+  return createCutJob(
+    (await resolveAuth()).userId,
+    idSchema.parse(sessionId),
+    direction,
+  )
+}
 
-/**
- * New cut from script (#744): the open cut made again, properly, in one fast
- * pass, as a new cut beside it.
- *
- * Directing clip by clip is how a story is found and also why it drifts --
- * each clip is made knowing nothing of what follows. Once the story exists it
- * can be made the way a chat answer is: a prose cast, one planning call that
- * cuts the story into shots, every shot submitted at once on H3 Max Turbo with
- * one seed, so the film lands in about one clip's time. Prose continuity only:
- * no references and no drawn frames, which is what keeps it on the fast model.
- *
- * **The source is the story when the cut has one.** A cut made here stores the
- * story its planner extracted, and a later cut is planned from that plus the
- * prompts of any clips improvised onto it since -- never from the planner's
- * own polished prompts, because a copy of a copy drifts. A hand-built cut has
- * no story, and its prompts are the source.
- *
- * Settled rather than all-or-nothing, the chat's rule: a shot that failed to
- * submit has left a failed row behind, and the ones that went through are
- * already being made and paid for.
- */
-export async function cutFromScript(sessionId: string): Promise<Session> {
+export async function cancelScriptCut(sessionId: string, cutId: string) {
   const { userId } = await resolveAuth()
-  const session = await requireSession(userId, idSchema.parse(sessionId))
-  if (session.chat) throw new Error('A chat has one cut.')
-  const source = session.cut
-  if (source.clipIds.length === 0)
-    throw new Error('This cut has no clips to make a script from.')
+  const job = await readCutJob(userId, idSchema.parse(cutId))
+  if (job?.session_id !== idSchema.parse(sessionId))
+    throw new Error('Cut not found.')
+  await cancelCutJob(userId, cutId)
+  return requireSession(userId, sessionId)
+}
 
-  const rows = await sql<
-    Array<{ id: string; description: string | null; plan_cut: string | null }>
-  >`
-    select id, description,
-      generation_metadata->'director_plan'->>'cut_id' as plan_cut
-    from user_images
-    where id = any(${source.clipIds}) and user_id = ${userId}
-      and origin = 'director' and deleted_at is null
-  `
-  const byId = new Map(rows.map((row) => [row.id, row]))
-  const ordered = source.clipIds.flatMap((id) => byId.get(id) ?? [])
-  /* On a cut made here, only what was improvised onto it since: the rows the
-     planner made are what `story` already says. */
-  const improvised = source.story
-    ? ordered.filter((row) => row.plan_cut !== source.id)
-    : ordered
-  const prompts = improvised.flatMap((row) =>
-    row.description?.trim() ? [row.description.trim()] : [],
-  )
-  if (!source.story && prompts.length === 0)
-    throw new Error('None of these clips has a prompt to read the story from.')
+export async function retryScriptCut(sessionId: string, cutId: string) {
+  const { userId } = await resolveAuth()
+  const job = await readCutJob(userId, idSchema.parse(cutId))
+  if (job?.session_id !== idSchema.parse(sessionId))
+    throw new Error('Cut not found.')
+  await retryCutJob(userId, cutId)
+  return requireSession(userId, sessionId)
+}
 
-  /* The cast this cut was made with, when nothing has been added to it since:
-     describing it again from its own stills is a copy of a copy. Otherwise
-     one vision call over the stills, which are recorded on the session so
-     they are trashed with it, as an extraction's are. */
-  let cast = source.story && prompts.length === 0 ? source.cast : undefined
-  if (!cast) {
-    const frames = await collectSessionFrames(userId, source.clipIds)
-    if (frames.length === 0)
-      throw new Error(
-        'No finished clips to read. Wait for the run to render, then try again.',
-      )
-    await addSessionRefs(
-      userId,
-      session.id,
-      {},
-      frames.map((frame) => frame.imageId),
+/** Editing a waiting line shares the worker lock, so its next checkpoint cannot
+ * overwrite the correction with a stale plan. */
+export async function changeCutPronunciation(
+  sessionId: string,
+  cutId: string,
+  clipId: string,
+  spoken: string,
+) {
+  const { userId } = await resolveAuth()
+  idSchema.parse(sessionId)
+  idSchema.parse(cutId)
+  idSchema.parse(clipId)
+  if (typeof spoken !== 'string' || spoken.length > 4000)
+    throw new Error('The spoken line is too long.')
+  const connection = await sql.reserve()
+  let locked = false
+  try {
+    const lock = first(
+      await connection<Array<{ locked: boolean }>>`
+      select pg_try_advisory_lock(hashtextextended(${`director-cut:${cutId}`}, 0)) as locked
+    `,
     )
-    const written = await writeCast({
-      frames,
-      prompts: ordered.flatMap((row) => row.description ?? []),
-    })
-    cast = composeCast(written.look, written.characters)
+    locked = lock?.locked ?? false
+    if (!locked)
+      throw new Error('The cut is updating. Try saving again in a moment.')
+    const job = await readCutJob(userId, cutId)
+    if (
+      !job ||
+      job.session_id !== sessionId ||
+      job.status !== 'active' ||
+      job.data.phase !== 'generate'
+    )
+      throw new Error(
+        'Pronunciation can be changed for clips still waiting to generate.',
+      )
+    const shot = job.data.shots.find((item) => item.id === clipId)
+    if (!shot || shot.state !== 'waiting')
+      throw new Error('That clip has already started.')
+    shot.spokenOverride =
+      spoken.trim() && spoken.trim() !== shot.spoken ? spoken.trim() : null
+    if (!(await checkpoint(job)))
+      throw new Error('The cut changed. Reload before saving.')
+  } finally {
+    try {
+      if (locked)
+        await connection`select pg_advisory_unlock(hashtextextended(${`director-cut:${cutId}`}, 0))`
+    } finally {
+      connection.release()
+    }
   }
-
-  const plan = await planCut({
-    cast,
-    source: { story: source.story ?? null, prompts },
-  })
-
-  const model = genModel()
-  const seed = randomInt(0, 2 ** 31)
-  const submitted = await Promise.allSettled(
-    plan.shots.map((shot) =>
-      generateVideo({
-        prompt: composeShotPrompt(cast, plan.scenes[shot.scene - 1], shot),
-        duration: shotDuration(shot, model.durations),
-        aspectRatio: CUT_RATIO,
-        modelSlug: model.slug,
-        origin: 'director',
-        seed,
-      }),
-    ),
-  )
-  const landed = submitted.flatMap((result, index) =>
-    result.status === 'fulfilled'
-      ? [{ clipId: result.value.recordId, shot: index + 1 }]
-      : [],
-  )
-  if (landed.length === 0) {
-    const failed = submitted[0]
-    throw failed.status === 'rejected' && failed.reason instanceof Error
-      ? failed.reason
-      : new Error('The cut could not be generated.')
-  }
-
-  return addPlannedCut(userId, session.id, {
-    clipIds: landed.map((item) => item.clipId),
-    shots: landed.map((item) => item.shot),
-    story: plan.story,
-    cast,
-    seed,
-    from: source.id,
-  })
 }

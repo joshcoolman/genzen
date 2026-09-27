@@ -38,7 +38,7 @@ be set on a deployment.
 
 - **Pre-deploy command: `pnpm db:migrate`.** Migrations must run before the new
   container serves traffic.
-- **Domain target port: 3000.** `start` is `next start --port 3000`, which
+- **Domain target port: 3000.** `start` runs Next on port 3000 through `scripts/serve.mjs`, which
   ignores an injected `PORT`. A platform that assigns a random port will route
   to the wrong one and serve 502s over a green deployment — the failure looks
   like a crash and isn't one.
@@ -48,3 +48,21 @@ be set on a deployment.
 - `pnpm users` resolves the deployed database by asking the Railway CLI for a
   service literally named `Postgres`. A different name falls back to local
   silently — the one quiet failure in this path.
+
+## Director script-cut worker (#749)
+
+The long-lived web process starts the Director worker through Next instrumentation.
+`scripts/serve.mjs` warms `/login` on startup because Next initializes its render
+server lazily. Both `pnpm dev` and `pnpm start` use it; no browser is needed to
+resume a saved job after restart.
+Apply migration 0027 before startup (the existing pre-deploy migration command
+does this). No extra service or credentials are required. Jobs survive browser
+closure and process restarts in Postgres. Each worker holds at most two reserved
+connections for job locks; normal queries use the remaining pool. Multiple web
+instances coordinate using advisory locks and checkpoint versions.
+
+This worker requires a continuously running Node server. A request-only or
+sleeping deployment cannot advance jobs while stopped; it resumes when the
+server starts. A provider POST without a saved receipt is marked blocked on
+recovery rather than submitted twice. Investigate that request in Activity and
+the provider before cancelling/restarting; Retry never resubmits ambiguous work.

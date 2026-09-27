@@ -26,7 +26,8 @@ vi.mock('#/lib/image-storage', () => ({
   }),
 }))
 
-const { extractVideoPoster } = await import('./video-poster.server')
+const { extractVideoPoster, decodeEndFrame } =
+  await import('./video-poster.server')
 
 const execFileAsync = promisify(execFile)
 
@@ -64,6 +65,15 @@ afterAll(async () => {
 })
 
 describe('extractVideoPoster', () => {
+  it('provides a full-resolution ending PNG for continuity, before thumbnail resizing', async () => {
+    const frame = await decodeEndFrame(join(dir, 'clip.mp4'))
+    expect(frame).not.toBeNull()
+    const meta = await sharp(frame!).metadata()
+    expect(meta.format).toBe('png')
+    expect(meta.width).toBe(1280)
+    expect(meta.height).toBe(720)
+  })
+
   it('stores frame one as a WebP thumbnail and reads the clip’s dimensions off it', async () => {
     uploads.length = 0
 

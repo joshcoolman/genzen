@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react'
 import styles from './clip-row.module.css'
+import type { CutProgress } from '../../../_lib/cut-job'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 import { clipFacts, clipName } from '#/features/video/clip-facts'
 import { cx } from '#/lib/utils'
@@ -90,6 +91,7 @@ const pending = (clip: VideoRecord) => clip.status !== 'completed'
 export function ClipRow({
   clips,
   mode = 'run',
+  generation,
   playingIndex,
   onAddGen,
   onScript,
@@ -103,6 +105,7 @@ export function ClipRow({
   /** A chat's row loses Add gen, drag and the pencil (#670); it keeps
    *  Remove and gains Rerun (#688). */
   mode?: 'run' | 'chat'
+  generation?: CutProgress | null
   /** Where the player is in the run, so the row can say so (#512). */
   playingIndex: number | null
   /** Open the dialog that makes the next clip (#660). */
@@ -124,7 +127,9 @@ export function ClipRow({
   const [overGap, setOverGap] = useState<number | null>(null)
 
   const dragging = draggingIndex !== null
-  const editable = mode === 'run'
+  const locked =
+    !!generation && !['completed', 'cancelled'].includes(generation.status)
+  const editable = mode === 'run' && !locked
 
   const reset = () => {
     setDraggingIndex(null)
@@ -204,8 +209,29 @@ export function ClipRow({
             <span className={styles.ordinal}>{index + 1}</span>
             {pending(clip) ? (
               <div className={styles.making}>
-                <Loader size={14} />
-                <span>Making this</span>
+                {clip.status === 'pending' &&
+                  (!generation ||
+                    (generation.status === 'active' &&
+                      generation.data.index === index &&
+                      generation.data.phase === 'generate')) && (
+                    <Loader size={14} />
+                  )}
+                <span>
+                  {generation
+                    ? generation.status === 'cancelled'
+                      ? 'Cancelled'
+                      : generation.status === 'failed' ||
+                          generation.status === 'blocked'
+                        ? index === generation.data.index
+                          ? 'Stopped'
+                          : 'Waiting'
+                        : generation.data.shots[index]?.state === 'generating'
+                          ? 'Generating'
+                          : 'Waiting'
+                    : clip.status === 'failed'
+                      ? 'Failed'
+                      : 'Making this'}
+                </span>
               </div>
             ) : (
               <ClipFrames clip={clip} size={TILE} alt={clipFacts(clip)} />
@@ -243,18 +269,20 @@ export function ClipRow({
                 <RefreshCw size={12} />
               </button>
             )}
-            <button
-              type="button"
-              className={styles.remove}
-              onClick={(e) => {
-                e.stopPropagation()
-                onRemove(clip.id)
-              }}
-              aria-label="Remove from the run and trash it"
-              title="Remove from the run and trash it"
-            >
-              <X size={12} />
-            </button>
+            {!locked && (
+              <button
+                type="button"
+                className={styles.remove}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRemove(clip.id)
+                }}
+                aria-label="Remove from the run and trash it"
+                title="Remove from the run and trash it"
+              >
+                <X size={12} />
+              </button>
+            )}
             {/* In the corner opposite the ordinal, and out of the flow: a name
                 that took its own line would make named tiles taller than
                 unnamed ones and the row ragged. Absent until there is one, so

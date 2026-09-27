@@ -96,7 +96,7 @@ export async function generateVideo({
       select id from user_images
       where id in ${sql(wanted)} and user_id = ${userId}
         and deleted_at is null and status = 'completed'
-        and source in ('upload', 'ai_generated')
+        and source in ('upload', 'ai_generated', 'ai_video_frame')
     `
     if (found.length !== new Set(wanted).size) {
       throw new Error('Source image not found')

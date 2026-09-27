@@ -541,3 +541,10 @@ starts on and keeps the user's choice when switching models. It controls new
 generation, not playback mute, and is captured with each batch. Audio-off
 Kling estimates use its lower rate. Prompt guidance mentions speech only when
 the chosen model and audio setting support it.
+
+## Director continuity inputs (#749)
+
+The shared `generateVideo` action accepts completed `ai_video_frame` images as
+well as uploads and generated stills, always owner-scoped. Director’s durable
+queue saves full-resolution ending frames with that source; normal Add gen can
+reuse them through `findClipEndFrame` without being rejected at submission.

@@ -11,7 +11,7 @@ const shot = (spoken: string, speaker = 'the genie') => ({
 
 describe('new cut from script (#744)', () => {
   /* A line is timed from its words, never by the model (#685); a silent beat
-     is the shortest clip, because the film should cut often. */
+     is the shortest clip, without arbitrarily padding a silent beat. */
   it('times a line from its words and a silent beat short', () => {
     expect(shotDuration(shot(''), DURATIONS)).toBe(5)
     expect(shotDuration(shot('What is your wish?'), DURATIONS)).toBe(5)

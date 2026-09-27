@@ -229,7 +229,7 @@ export async function processVideoResult(
           file_size = ${fileSize},
           mime_type = 'video/mp4',
           title = ${title},
-          description = ${prompt},
+          description = ${typeof meta.canonical_prompt === 'string' ? meta.canonical_prompt : prompt},
           generation_metadata =
             coalesce(generation_metadata, '{}'::jsonb) || ${jsonb({
               // Kept deliberately: if a future ingest change fails midway, a

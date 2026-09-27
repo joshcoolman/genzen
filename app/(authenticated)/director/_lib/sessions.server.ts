@@ -1,5 +1,6 @@
 import 'server-only'
 import { randomUUID } from 'node:crypto'
+import { cancelCutJob, readCutJob } from './cut-job.server'
 import {
   activeCut,
   allCutClipIds,
@@ -54,6 +55,7 @@ export async function getSession(
     ...row,
     cuts,
     cut: activeCut(cuts),
+    generation: (await readCutJob(owner, cuts.active)) ?? null,
     chat: parseChat(row.chat),
     refs: parseRefs(row.refs),
     board: parseBoard(row.board),
@@ -155,6 +157,9 @@ export async function saveRun(
   )
   const session = await requireSession(owner, id)
   if (session.revision !== revision) throw stale
+  const job = await readCutJob(owner, cutId)
+  if (job && !['completed', 'cancelled'].includes(job.status))
+    throw new Error('Cancel or finish the cut before changing its clips.')
   const ids = clipIds.map((clipId) => idSchema.parse(clipId))
   const cuts = withCutClips(session.cuts, idSchema.parse(cutId), () => ids)
   const rows = await sql`
@@ -385,6 +390,7 @@ export async function trashSessionClips(owner: string, ids: Array<string>) {
 export async function deleteSession(owner: string, id: string) {
   const session = await getSession(owner, id)
   if (!session) return
+  await Promise.all(session.cuts.cuts.map((cut) => cancelCutJob(owner, cut.id)))
   await trashSessionClips(owner, [
     ...allCutClipIds(session.cuts),
     ...session.refs.characters,
@@ -518,7 +524,7 @@ export async function addCut(owner: string, id: string): Promise<Session> {
     active: cut.id,
     cuts: [...session.cuts.cuts, cut],
   }
-  await writeCuts(owner, id, cuts)
+  await writeCuts(owner, id, cuts, session.revision)
   return requireSession(owner, id)
 }
 
@@ -544,11 +550,16 @@ export async function addPlannedCut(
     id: randomUUID(),
     name: nextCutName(session.cuts),
   })
-  await writeCuts(owner, id, {
-    ...session.cuts,
-    active: cut.id,
-    cuts: [...session.cuts.cuts, cut],
-  })
+  await writeCuts(
+    owner,
+    id,
+    {
+      ...session.cuts,
+      active: cut.id,
+      cuts: [...session.cuts.cuts, cut],
+    },
+    session.revision,
+  )
   for (const [index, clipId] of cut.clipIds.entries()) {
     await sql`
       update user_images
@@ -570,7 +581,12 @@ export async function openCut(
   idSchema.parse(cutId)
   if (!session.cuts.cuts.some((cut) => cut.id === cutId))
     throw new Error('That cut is not in this session.')
-  await writeCuts(owner, id, { ...session.cuts, active: cutId })
+  await writeCuts(
+    owner,
+    id,
+    { ...session.cuts, active: cutId },
+    session.revision,
+  )
   return requireSession(owner, id)
 }
 
@@ -590,20 +606,34 @@ export async function deleteCut(
   if (index < 0) throw new Error('That cut is not in this session.')
   if (session.cuts.cuts.length === 1)
     throw new Error('The last cut cannot be deleted.')
+  await cancelCutJob(owner, cutId)
   const remaining = session.cuts.cuts.filter((cut) => cut.id !== cutId)
   const active =
     session.cuts.active === cutId
       ? remaining[Math.max(0, index - 1)].id
       : session.cuts.active
-  await writeCuts(owner, id, { ...session.cuts, active, cuts: remaining })
+  await writeCuts(
+    owner,
+    id,
+    { ...session.cuts, active, cuts: remaining },
+    session.revision,
+  )
   await trashSessionClips(owner, session.cuts.cuts[index].clipIds)
   return requireSession(owner, id)
 }
 
-async function writeCuts(owner: string, id: string, cuts: StoredCuts) {
-  await sql`
+async function writeCuts(
+  owner: string,
+  id: string,
+  cuts: StoredCuts,
+  revision: number,
+) {
+  const changed = await sql`
     update director_sessions
     set cut = ${jsonb(cuts)}, revision = revision + 1, updated_at = now()
-    where id = ${id} and user_id = ${owner}
+    where id = ${id} and user_id = ${owner} and revision = ${revision}
+    returning id
   `
+  if (!changed.length)
+    throw new Error('This session changed. Reload before editing.')
 }

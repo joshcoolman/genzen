@@ -1,0 +1,32 @@
+.panel {
+  display: grid;
+  gap: var(--space-8);
+  margin-bottom: var(--space-12);
+  padding: var(--space-12);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+}
+.heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+.error {
+  margin: 0;
+  color: var(--danger);
+}
+.pronunciation {
+  color: var(--text-muted);
+}
+
+.line {
+  display: grid;
+  gap: var(--space-8);
+  margin-top: var(--space-12);
+}
+.line p {
+  margin: 0;
+}

@@ -1,0 +1,15 @@
+.content {
+  display: grid;
+  gap: var(--space-12);
+  max-width: 36rem;
+}
+.hint {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}

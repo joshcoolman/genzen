@@ -22,6 +22,7 @@ export function CutTabs({
   active,
   busy,
   writing,
+  canGenerate = true,
   onOpen,
   onAdd,
   onFromScript,
@@ -32,6 +33,7 @@ export function CutTabs({
   busy: boolean
   /** A cut is being written from script. */
   writing: boolean
+  canGenerate?: boolean
   onOpen: (cutId: string) => void
   onAdd: () => void
   onFromScript: () => void
@@ -93,9 +95,9 @@ export function CutTabs({
       <button
         type="button"
         className={styles.add}
-        disabled={busy || !open?.clipIds.length}
+        disabled={busy || !canGenerate || !open?.clipIds.length}
         onClick={onFromScript}
-        title={`A new cut made from ${open?.name ?? 'this cut'}'s story, every shot at once`}
+        title={`A new cut made from ${open?.name ?? 'this cut'}'s story with continuous frame handoffs`}
       >
         {writing ? (
           <Loader size={14} className={styles.spin} />

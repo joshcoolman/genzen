@@ -1,9 +1,13 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { newCut, removeCut, switchCut } from '../_actions/sessions.action'
-import { cutFromScript } from '../_actions/rerun.action'
+import {
+  cancelScriptCut,
+  cutFromScript,
+  retryScriptCut,
+} from '../_actions/rerun.action'
 import type { Session } from '../_lib/types'
 import { toast, useReportError } from '#/components'
 
@@ -26,6 +30,14 @@ export function useCuts(
    *  calls before the first shot is submitted, so it says so. */
   const [writing, setWriting] = useState(false)
   const reportError = useReportError()
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [direction, setDirection] = useState('')
+  const running = session.generation?.status === 'active'
+  useEffect(() => {
+    if (!running) return
+    const timer = setInterval(() => router.refresh(), 2000)
+    return () => clearInterval(timer)
+  }, [running, router])
 
   const run = useCallback(
     async (write: () => Promise<Session>, failure: string) => {
@@ -55,12 +67,28 @@ export function useCuts(
             'The cut could not be opened.',
           ),
     writing,
+    dialogOpen,
+    setDialogOpen,
+    direction,
+    setDirection,
+    cancel: () =>
+      run(
+        () => cancelScriptCut(session.id, session.cut.id),
+        'The cut could not be cancelled.',
+      ),
+    retry: () =>
+      run(
+        () => retryScriptCut(session.id, session.cut.id),
+        'The cut could not be retried.',
+      ),
     /** New cut from script: a missing Anthropic key opens the key dialog. */
     fromScript: async () => {
       setBusy(true)
       setWriting(true)
       try {
-        await afterSaves(() => cutFromScript(session.id))
+        await afterSaves(() => cutFromScript(session.id, direction))
+        setDialogOpen(false)
+        setDirection('')
         router.refresh()
       } catch (cause) {
         reportError(cause, 'The cut could not be made.')

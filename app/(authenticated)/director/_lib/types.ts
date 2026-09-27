@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { CutProgress } from './cut-job'
 
 export const idSchema = z.string().uuid()
 export const nameSchema = z.string().trim().min(1).max(120)
@@ -154,6 +155,7 @@ export function parseChat(value: unknown): StoredChat | null {
 export type SessionKind = 'run' | 'chat'
 
 export interface Session {
+  generation?: CutProgress | null
   id: string
   name: string
   /** Bumped by every write and checked by the next one: a second tab editing

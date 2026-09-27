@@ -63,7 +63,7 @@ function toThumbnail(image: sharp.Sharp): Promise<Buffer> {
  *
  * Null on any failure -- a clip with no readable ending still has a poster.
  */
-async function decodeEndFrame(file: string): Promise<Buffer | null> {
+export async function decodeEndFrame(file: string): Promise<Buffer | null> {
   const out = join(dirname(file), `${randomUUID()}.png`)
   try {
     await execFileAsync(
