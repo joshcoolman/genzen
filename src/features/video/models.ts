@@ -26,6 +26,9 @@ export interface VideoEndpoint {
     includedInPrice?: number
     extraImageCents?: number
   }
+  /** Reference mode uses the first frame as image one, guided by a prompt. */
+  firstFrameAsReference?: boolean
+  durationSuffix?: 's'
   durationAsString?: boolean
   omitResolution?: boolean
   defaults?: Record<string, string | boolean>
@@ -413,6 +416,47 @@ export const VIDEO_MODELS: Array<VideoModel> = [
     ],
     durations: [4, 6, 8, 10, 12, 15, 20, 25, 30],
     defaultDuration: 4,
+    supportsAudio: true,
+  },
+  {
+    slug: 'veo-3.1-fast',
+    label: 'Veo 3.1 Fast',
+    description: 'Native audio and reference images; prompted continuity',
+    endpoints: {
+      textToVideo: {
+        id: 'fal-ai/veo3.1/fast',
+        aspectRatios: ['16:9', '9:16'],
+        durationSuffix: 's',
+        maxPromptLength: 20000,
+        defaults: { auto_fix: false },
+        acceptsSeed: true,
+      },
+      withImage: {
+        id: 'fal-ai/veo3.1/fast/image-to-video',
+        firstFrameParam: 'image_url',
+        aspectRatios: ['16:9', '9:16'],
+        durationSuffix: 's',
+        maxPromptLength: 20000,
+        defaults: { auto_fix: false },
+        acceptsSeed: true,
+      },
+      withReferences: {
+        id: 'fal-ai/veo3.1/fast/reference-to-video',
+        aspectRatios: ['16:9', '9:16'],
+        firstFrameAsReference: true,
+        references: { param: 'image_urls', max: 3, notation: 'Image ' },
+        durationSuffix: 's',
+        maxPromptLength: 20000,
+        defaults: { auto_fix: false },
+      },
+    },
+    // V1 uses the intersection: reference mode requires exactly eight seconds.
+    // Three images is our trial cap, including the incoming frame.
+    durations: [8],
+    defaultDuration: 8,
+    resolution: '720p',
+    pricePerSecondCents: 15,
+    silentPricePerSecondCents: 10,
     supportsAudio: true,
   },
 ]

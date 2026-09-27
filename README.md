@@ -277,7 +277,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus: #749 — Director script cuts with sequential frame handoffs and visible progress.**
+**Focus: #751 — Try Veo Fast for Director reference clips; continuity queue in #750 is in review.**
 
 Recent highlights:
 

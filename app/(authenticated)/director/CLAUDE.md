@@ -87,6 +87,19 @@ spoken override, visible and editable while a clip is waiting.
   prompt. Phonetic preparation uses `pronounceLines`, sparingly, with lowercase
   syllables to avoid the audio model shouting capitalized stress markers.
 
+## Veo reference trial
+
+Manual Add Gen / Regenerate offers Veo 3.1 Fast and Kling when extra references
+are present. Veo is the initial choice; dropping all references returns to H3.
+Veo uses eight seconds, 720p and audio ($1.20 estimated). Its three-image trial
+cap includes the incoming frame. The server orders that frame first in
+`image_urls`, with appearance refs after it, and prepends
+`veo-reference-continuation.md`. This is prompted continuity, not a fixed frame.
+Canonical text stays in `prompt` / `canonical_prompt`; `sent_prompt` records the
+assembled instructions. Extra images and ending frames block submission rather
+than being dropped. Kling remains available for fixed first/last-frame joins.
+The script-cut worker still uses H3; this experiment changes manual references.
+
 ## Chat sessions (#670)
 
 A session started as a chat instead of a run: type a question, a character

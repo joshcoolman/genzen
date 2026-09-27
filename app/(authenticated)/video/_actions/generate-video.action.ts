@@ -1,6 +1,7 @@
 'use server'
 
 import type { VideoImageInput } from '#/features/video/inputs'
+import veoContinuation from '#/lib/prompts/veo-reference-continuation.md'
 import { fal } from '#/lib/server/fal-client.server'
 import { withNetworkRetry } from '#/lib/server/fal-retry.server'
 import { DEFAULT_VIDEO_MODEL, videoModelBySlug } from '#/features/video/models'
@@ -70,10 +71,19 @@ export async function generateVideo({
   const images = videoImagesSchema.parse(rawImages)
   const model = modelSlug ? videoModelBySlug(modelSlug) : DEFAULT_VIDEO_MODEL
   if (!model) throw new Error('Unknown video model')
+  const originalPrompt = prompt.trim()
+  if (!originalPrompt) throw new Error('A prompt is required')
+  const promptedHandoff =
+    model.endpoints.withReferences?.firstFrameAsReference &&
+    images.some((i) => i.role === 'first') &&
+    images.some((i) => i.role === 'reference')
+  const providerPrompt = promptedHandoff
+    ? `${veoContinuation.trim()}\n\n${originalPrompt}`
+    : originalPrompt
   const plan = videoRequestPlan(
     model,
     images,
-    prompt,
+    providerPrompt,
     duration,
     aspectRatio,
     resolution,
@@ -110,7 +120,7 @@ export async function generateVideo({
     groupId,
     generationType: images.length > 0 ? 'image_to_video' : 'text_to_video',
     falModelId: endpoint.id,
-    prompt: trimmed,
+    prompt: originalPrompt,
     aspectRatio,
     // The default title resolves an *image* endpoint against the image lineup,
     // which knows nothing about clips. The label is already in hand here, and a
@@ -121,6 +131,13 @@ export async function generateVideo({
       // Read back by `processVideoResult` for the row's title, so a
       // `.server.ts` module never has to import the route-owned catalog.
       model_label: model.label,
+      ...(trimmed !== prompt.trim()
+        ? {
+            canonical_prompt: prompt.trim(),
+            sent_prompt: trimmed,
+            continuity_mode: 'prompted_reference',
+          }
+        : {}),
       input_images: images,
       reference_image_ids: referenceIds,
       ...(firstFrameId ? { source_image_id: firstFrameId } : {}),
