@@ -189,13 +189,17 @@ export async function retryCutJob(owner: string, cutId: string) {
     delete shot.submittedAt
     delete shot.rejected
   }
-  const changed =
-    await sql`update director_cut_jobs set status = 'active', error = null,
-      data = ${jsonb(job.data)}, version = version + 1, updated_at = now()
-    where id = ${cutId} and user_id = ${owner} and status = 'failed' and version = ${job.version}
-    returning id`
-  if (changed.length && shot)
-    await sql`update user_images set status = 'pending', generation_error = null,
-      request_id = case when ${rejected} then null else request_id end
-    where id = ${shot.id} and user_id = ${owner}`
+  // Publish the resumable job and its media status together: a worker must not
+  // finish the receipt between these writes and have its result reset to pending.
+  await sql.begin(async (tx) => {
+    const changed =
+      await tx`update director_cut_jobs set status = 'active', error = null,
+        data = ${jsonb(job.data)}, version = version + 1, updated_at = now()
+      where id = ${cutId} and user_id = ${owner} and status = 'failed' and version = ${job.version}
+      returning id`
+    if (changed.length && shot)
+      await tx`update user_images set status = 'pending', generation_error = null,
+        request_id = case when ${rejected} then null else request_id end
+      where id = ${shot.id} and user_id = ${owner}`
+  })
 }
