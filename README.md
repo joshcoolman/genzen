@@ -277,14 +277,18 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus: #751 — Try Veo Fast for Director reference clips; continuity queue in #750 is in review.**
+**Focus: try the mobile trial (#753, merged in #754) on a real phone. Each reaction becomes its own card; nothing is queued behind it yet.**
 
 Recent highlights:
 
-- **Director cuts (#744, #746, #747)** -- a run session holds several cuts as
-  tabs. **New cut from script** remakes the open cut in one pass: prose cast,
-  one planning call, H3 Max Turbo clips; the story is stored
-  on the cut and carries to the next.
+- **Mobile trial (#753)** -- phone-only: a bottom nav pill with a swipe-up
+  sheet, a floating plus that opens a one-tap generator (prompt, chips for
+  models, refs, aspect, count), a 2-up bare Images wall, a Photos-first
+  reference picker, and "Generate from this" in the viewer. Desktop unchanged.
+- **Director cuts (#744, #746, #747, #749, #751)** -- a run session holds
+  several cuts as tabs. **New cut from script** remakes the open cut in one
+  pass, clips chained through durable frame handoffs; reference clips can try
+  Veo Fast.
 - **Director chat answers end on a last beat (#740, #741)** -- a tease, an
   offer, a fork or a provocation that invites the next question, never a
   question about the person and never a tidy wrap-up. Its own prompt section.
@@ -303,6 +307,3 @@ Recent highlights:
   makes a new still from selected frames into that group; Continue fills the
   gap between two clips, pinned at both frames or at any still off the strip;
   Export stitches.
-- The Video wall's playback dialog walks the section with Left and Right,
-  carries the play state, and Delete moves on (#728). A press held on a card
-  or a picker tile plays the clip in place.
