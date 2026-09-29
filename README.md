@@ -283,7 +283,7 @@ Recent highlights:
 
 - **Code tidy (#758, #757)** -- knip's dead code removed, the S3 client
   guarded `server-only`; `src/lib/server/` grouped into `fal/ claude/
-  storage/ media/ generations/`, single-use files moved to their route.
+storage/ media/ generations/`, single-use files moved to their route.
 - **Phone layout (#753, #755)** -- below 48rem: a bottom nav pill with a
   swipe-up sheet; on Images and Video a floating plus opens a one-tap composer
   (prompt, chips, Generate with cost), 2-up bare walls, a Photos-first picker;
