@@ -20,27 +20,27 @@ vi.mock('#/lib/server/db.server', () => ({
   first: (rows: Array<unknown>) => rows[0],
   sql: vi.fn().mockResolvedValue([]),
 }))
-vi.mock('#/lib/server/fal-client.server', () => ({
+vi.mock('#/lib/server/fal/client.server', () => ({
   fal: { queue: { submit: mocks.submit } },
 }))
-vi.mock('#/lib/server/fal-retry.server', () => ({
+vi.mock('#/lib/server/fal/retry.server', () => ({
   withNetworkRetry: (_: string, fn: () => unknown) => fn(),
 }))
-vi.mock('#/lib/server/fal-key.server', () => ({ assertFalKey: vi.fn() }))
-vi.mock('#/lib/server/describe-image.server', () => ({
+vi.mock('#/lib/server/fal/key.server', () => ({ assertFalKey: vi.fn() }))
+vi.mock('./describe-image.server', () => ({
   describeImage: vi.fn(),
 }))
-vi.mock('#/lib/server/fal-image-upload.server', () => ({
+vi.mock('#/lib/server/fal/image-upload.server', () => ({
   uploadBufferToFal: vi.fn(),
 }))
-vi.mock('#/lib/server/fal-image-inputs.server', () => ({
+vi.mock('#/lib/server/fal/image-inputs.server', () => ({
   uploadLibraryImageToFal: mocks.source,
   uploadLibraryImagesToFal: mocks.refs,
 }))
-vi.mock('#/lib/server/compute-cost.server', () => ({
+vi.mock('./compute-cost.server', () => ({
   computeFalCostCents: () => Promise.resolve(3),
 }))
-vi.mock('#/lib/server/create-pending-generation.server', () => ({
+vi.mock('#/lib/server/generations/create-pending.server', () => ({
   createPendingGeneration: mocks.reserve,
   markGenerationSubmitted: mocks.mark,
   markGenerationFailed: mocks.fail,

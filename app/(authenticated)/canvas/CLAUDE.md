@@ -271,7 +271,7 @@ them.
 - `#/features/user-images/` -- `useUserImages` for upload
 - `app/(authenticated)/_components/existing-image-picker/existing-image-picker` -- library picker
 - `#/features/user-images/lib/file-hash` -- `computeFileHash` for dedup on upload
-- `#/lib/server/check-pending-generations.action` -- triggers FAL status checks
+- `#/lib/server/generations/check-pending.action` -- triggers FAL status checks
 
 ## Quirks / Notes
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { checkPendingGenerations } from '#/lib/server/check-pending-generations.action'
+import { checkPendingGenerations } from '#/lib/server/generations/check-pending.action'
 
 /**
  * The one poll that carries a generation to its outcome (#327).

@@ -74,7 +74,7 @@ export function OutpaintDialog({
     setCurrentRatio(null)
   }, [image?.id])
 
-  // Measured off the thumbnail, which `generate-thumbnail.server` resizes with
+  // Measured off the thumbnail, which `media/thumbnail.server` resizes with
   // `fit: 'inside'` -- so its ratio is the full image's, and it is the one
   // browsers already have cached from the grid.
   useEffect(() => {

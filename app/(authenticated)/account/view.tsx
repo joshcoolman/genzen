@@ -6,7 +6,7 @@ import { ActivityPreview } from './_components/activity-preview/activity-preview
 import { ConnectionStatus } from './_components/connection-status/connection-status'
 import { UserInfo } from './_components/user-info/user-info'
 import { useView } from './use-view'
-import type { AccountStats as Stats } from '#/lib/server/account-stats.server'
+import type { AccountStats as Stats } from './_lib/account-stats.server'
 import { PageHeader, Stack } from '#/components'
 
 export function View({ stats }: { stats: Stats }) {

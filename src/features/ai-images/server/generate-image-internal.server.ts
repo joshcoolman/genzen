@@ -2,29 +2,29 @@ import { createHash } from 'node:crypto'
 import { parsePromptInvocation } from '../skills/registry'
 import { validatePreparedSkill } from './storyboard.server'
 import { buildFalInput } from './fal-params.server'
+import { describeImage } from './describe-image.server'
+import { computeFalCostCents } from './compute-cost.server'
 import type { PreparedImageSkill } from '../skills/types'
 import type { ReferenceReading } from '../ref-roles'
 import type { GenerationOrigin } from '#/lib/types/db'
-import { fal } from '#/lib/server/fal-client.server'
-import { withNetworkRetry } from '#/lib/server/fal-retry.server'
+import { fal } from '#/lib/server/fal/client.server'
+import { withNetworkRetry } from '#/lib/server/fal/retry.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { DEFAULT_DESCRIBE_MODE } from '#/lib/prompts/describe'
-import { describeImage } from '#/lib/server/describe-image.server'
 import { endpointFor } from '#/features/ai-images/models'
-import { assertFalKey } from '#/lib/server/fal-key.server'
-import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
+import { assertFalKey } from '#/lib/server/fal/key.server'
+import { uploadBufferToFal } from '#/lib/server/fal/image-upload.server'
 import {
   uploadLibraryImageToFal,
   uploadLibraryImagesToFal,
-} from '#/lib/server/fal-image-inputs.server'
-import { computeFalCostCents } from '#/lib/server/compute-cost.server'
+} from '#/lib/server/fal/image-inputs.server'
 import {
   createPendingGeneration,
   describeGenerationError,
   markGenerationFailed,
   markGenerationSubmitted,
-} from '#/lib/server/create-pending-generation.server'
+} from '#/lib/server/generations/create-pending.server'
 
 export interface GenerateImageInput {
   /** The string sent to the provider. Retry replays this one. */

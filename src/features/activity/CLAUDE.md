@@ -28,7 +28,7 @@ one route that renders it, `app/(authenticated)/account/`.
 
 **Activity does not total anything.** A `totals` component, `ActivityTotals` and
 a `TOTALS_ROW_CAP` were documented here long after they had been deleted. The
-aggregate view is the account overview instead (`src/lib/server/account-stats.server.ts`,
+aggregate view is the account overview instead (`app/(authenticated)/account/_lib/account-stats.server.ts`,
 #406), which is the right home for it. The two agree on what they are counting
 since #398; before that the overview counted clips and Activity could not see
 them, so the same money had two answers.
@@ -41,7 +41,7 @@ generates through `generateVideo`, so there is nothing separate to exclude. The
 `origin = director` filter that stood here (and in the account aggregates) went
 with the export copies it was written for.
 
-Reads from `user_images` with `source in ('ai_generated','ai_video')` -- clips were excluded outright until #398, which made the log blind to most of the spend (a 20s Flux 3 clip is $3.40 against $0.08 for the dearest still). No status/deleted_at filters. Timestamps for duration come from `generation_metadata.submitted_at` + `completed_at` | `failed_at` (all ISO strings, in JSONB). Cost stashed at FAL completion in `generation_metadata.provider_cost_cents` (see `src/lib/server/fal-completion.server.ts`), and it may be a **fraction of a cent** since #400 -- do not assume an integer.
+Reads from `user_images` with `source in ('ai_generated','ai_video')` -- clips were excluded outright until #398, which made the log blind to most of the spend (a 20s Flux 3 clip is $3.40 against $0.08 for the dearest still). No status/deleted_at filters. Timestamps for duration come from `generation_metadata.submitted_at` + `completed_at` | `failed_at` (all ISO strings, in JSONB). Cost stashed at FAL completion in `generation_metadata.provider_cost_cents` (see `src/lib/server/fal/completion.server.ts`), and it may be a **fraction of a cent** since #400 -- do not assume an integer.
 
 ## Shared Dependencies
 

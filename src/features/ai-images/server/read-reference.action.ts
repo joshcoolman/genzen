@@ -1,16 +1,13 @@
 'use server'
 
 import { isReadRole } from '../ref-roles'
+import { describeImage } from './describe-image.server'
+import { deriveLightingSetup, fillGels } from './derive-lighting.server'
+import { loadVisionImage } from './vision-image.server'
 import type { ReadRole } from '../ref-roles'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
-import { describeImage } from '#/lib/server/describe-image.server'
-import {
-  deriveLightingSetup,
-  fillGels,
-} from '#/lib/server/derive-lighting.server'
-import { loadVisionImage } from '#/lib/server/vision-image.server'
-import { requireAiRole } from '#/lib/server/ai.server'
+import { requireAiRole } from '#/lib/server/claude/client.server'
 
 /**
  * Read a staged reference for its role (#635): the text that goes with the

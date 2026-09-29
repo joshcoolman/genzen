@@ -17,11 +17,11 @@ import type { CutJob } from './cut-job'
 import type { VideoImageInput } from '#/features/video/inputs'
 import { videoFalInput, videoRequestPlan } from '#/features/video/inputs'
 import { first, jsonb, sql } from '#/lib/server/db.server'
-import { fal, submitFalOnce } from '#/lib/server/fal-client.server'
-import { uploadLibraryImagesToFal } from '#/lib/server/fal-image-inputs.server'
-import { processVideoResult } from '#/lib/server/fal-completion.server'
-import { isFalRejection } from '#/lib/server/fal-error.server'
-import { cancelFalRequest } from '#/lib/server/fal-cancel.server'
+import { fal, submitFalOnce } from '#/lib/server/fal/client.server'
+import { uploadLibraryImagesToFal } from '#/lib/server/fal/image-inputs.server'
+import { processVideoResult } from '#/lib/server/fal/completion.server'
+import { isFalRejection } from '#/lib/server/fal/error.server'
+import { cancelFalRequest } from '#/lib/server/fal/cancel.server'
 
 const POLL_MS = 3000
 

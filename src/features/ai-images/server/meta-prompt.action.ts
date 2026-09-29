@@ -2,12 +2,12 @@
 
 import { generateObject } from 'ai'
 import { z } from 'zod'
-import type { VisionImage } from '#/lib/server/vision-image.server'
+import { loadVisionImage } from './vision-image.server'
+import type { VisionImage } from './vision-image.server'
 import metaPromptSystem from '#/lib/prompts/meta-prompt.md'
-import { ai, requireAiRole } from '#/lib/server/ai.server'
+import { ai, requireAiRole } from '#/lib/server/claude/client.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { sql } from '#/lib/server/db.server'
-import { loadVisionImage } from '#/lib/server/vision-image.server'
 
 /** Enough for a strip you would actually stage. Past this the pictures crowd
  *  the instruction and the prompts stop referring to any of them in particular

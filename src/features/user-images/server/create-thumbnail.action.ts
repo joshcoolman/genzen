@@ -2,7 +2,7 @@
 
 import { resolveAuth } from '#/lib/server/auth.server'
 import { sql } from '#/lib/server/db.server'
-import { generateAndStoreThumbnail } from '#/lib/server/generate-thumbnail.server'
+import { generateAndStoreThumbnail } from '#/lib/server/media/thumbnail.server'
 
 interface CreateThumbnailInput {
   imageId: string

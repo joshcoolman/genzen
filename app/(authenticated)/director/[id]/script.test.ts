@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { composeClipPrompt } from '../_lib/chat.server'
 import { dialogueOf, dialogueText, runSeconds, scriptOf } from './script'
-import { composeClipPrompt } from '#/lib/server/director-chat.server'
 
 describe('scriptOf', () => {
   it('joins the prompts verbatim with a blank line, keeping an upload as an empty entry', () => {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { captionImage } from './caption-image.action'
+import { describeImage } from './describe-image.server'
 import { sql } from '#/lib/server/db.server'
-import { describeImage } from '#/lib/server/describe-image.server'
 import { updateImageDescription } from '#/features/user-images/server/images.action'
 
 vi.mock('#/lib/server/auth.server', () => ({
@@ -11,10 +11,10 @@ vi.mock('#/lib/server/db.server', () => ({
   sql: vi.fn(),
   first: (rows: Array<unknown>) => rows[0],
 }))
-vi.mock('#/lib/server/describe-image.server', () => ({
+vi.mock('./describe-image.server', () => ({
   describeImage: vi.fn().mockResolvedValue('The resulting picture'),
 }))
-vi.mock('#/lib/image-storage', () => ({
+vi.mock('#/lib/server/storage/client.server', () => ({
   createImageStorage: () => ({
     download: vi.fn().mockResolvedValue(new Blob(['pixels'])),
   }),

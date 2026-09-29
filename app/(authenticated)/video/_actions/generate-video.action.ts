@@ -2,8 +2,8 @@
 
 import type { VideoImageInput } from '#/features/video/inputs'
 import veoContinuation from '#/lib/prompts/veo-reference-continuation.md'
-import { fal } from '#/lib/server/fal-client.server'
-import { withNetworkRetry } from '#/lib/server/fal-retry.server'
+import { fal } from '#/lib/server/fal/client.server'
+import { withNetworkRetry } from '#/lib/server/fal/retry.server'
 import { DEFAULT_VIDEO_MODEL, videoModelBySlug } from '#/features/video/models'
 import {
   videoFalInput,
@@ -17,8 +17,8 @@ import {
   describeGenerationError,
   markGenerationFailed,
   markGenerationSubmitted,
-} from '#/lib/server/create-pending-generation.server'
-import { uploadLibraryImagesToFal } from '#/lib/server/fal-image-inputs.server'
+} from '#/lib/server/generations/create-pending.server'
+import { uploadLibraryImagesToFal } from '#/lib/server/fal/image-inputs.server'
 
 export interface GenerateVideoInput {
   images?: Array<VideoImageInput>
@@ -51,7 +51,7 @@ export interface GenerateVideoInput {
  *
  * Shaped like the image path deliberately: reserve the row *before* FAL is
  * contacted, so a submit that never happens still leaves a visible record, then
- * attach the request id. The poll in `check-pending-generations.action.ts`
+ * attach the request id. The poll in `generations/check-pending.action.ts`
  * settles it -- nothing here waits.
  */
 export async function generateVideo({

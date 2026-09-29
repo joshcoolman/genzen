@@ -12,16 +12,16 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('#/lib/server/db.server', () => ({ sql: mocks.sql }))
 vi.mock('#/lib/server/auth.server', () => ({ resolveAuth: mocks.auth }))
-vi.mock('#/lib/server/fal-image-inputs.server', () => ({
+vi.mock('#/lib/server/fal/image-inputs.server', () => ({
   uploadLibraryImagesToFal: mocks.upload,
 }))
-vi.mock('#/lib/server/fal-client.server', () => ({
+vi.mock('#/lib/server/fal/client.server', () => ({
   fal: { queue: { submit: mocks.submit } },
 }))
-vi.mock('#/lib/server/fal-retry.server', () => ({
+vi.mock('#/lib/server/fal/retry.server', () => ({
   withNetworkRetry: (_name: string, run: () => unknown) => run(),
 }))
-vi.mock('#/lib/server/create-pending-generation.server', () => ({
+vi.mock('#/lib/server/generations/create-pending.server', () => ({
   createPendingGeneration: mocks.reserve,
   markGenerationSubmitted: mocks.submitted,
   markGenerationFailed: mocks.failed,

@@ -5,8 +5,8 @@ import type { WireError, WireErrorTag } from './result'
  * The failure family, in one place.
  *
  * The app had already hand-written most of this, one outage at a time and in
- * four different shapes: `fal-retry.server.ts` decides what to retry from a
- * code set, `fal-error.server.ts` walks a `cause` chain into a blob,
+ * four different shapes: `fal/retry.server.ts` decides what to retry from a
+ * code set, `fal/error.server.ts` walks a `cause` chain into a blob,
  * `error-classification.ts` re-derives the same verdict on the client with a
  * regex over a message, and `ai-keys.ts` smuggles "no key" across the RPC
  * boundary as a string prefix. Each one answers a slice of the same question --
@@ -25,7 +25,7 @@ import type { WireError, WireErrorTag } from './result'
 
 /** The transport died -- a reset socket, a destroyed HTTP/2 session, a TLS
  *  record that did not decode. Worth retrying; the next attempt opens a new
- *  connection. See `fal-retry.server.ts` for why this is a whole family. */
+ *  connection. See `fal/retry.server.ts` for why this is a whole family. */
 export class FalTransport extends Schema.TaggedError<FalTransport>()(
   'FalTransport',
   { message: Schema.String, code: Schema.String },

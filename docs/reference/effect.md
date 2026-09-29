@@ -15,8 +15,8 @@ in a diff.
 Effect was not adopted for novelty. About a third of it already existed here,
 discovered one outage at a time and in a different shape each time:
 
-- `fal-retry.server.ts` is a `Schedule` plus a retry predicate.
-- `fal-error.server.ts` is `Cause` walking plus a hand-decoded error union.
+- `fal/retry.server.ts` is a `Schedule` plus a retry predicate.
+- `fal/error.server.ts` is `Cause` walking plus a hand-decoded error union.
 - `processImageResult` removing the object when the row update fails is
   `acquireRelease`.
 - `error-classification.ts` is a `Match.tag` -- run in the browser, on a regex

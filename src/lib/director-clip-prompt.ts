@@ -18,7 +18,7 @@ const SPOKEN = /Speaking to camera(?:, in English)?:\s*"([\s\S]*)"\s*$/
  * quietly stops handling a spelling the other does. That is not hypothetical:
  * #703 was a duplicated list of the rows the board owns, and the copies had
  * already drifted by the time anyone looked. A pure module because `script.ts`
- * is client-importable and `director-chat.server.ts` is server-only, so neither
+ * is client-importable and `app/(authenticated)/director/_lib/chat.server.ts` is server-only, so neither
  * can hold something the other imports.
  *
  * `null` means the prompt has no spoken segment at all -- a silent burst, or a

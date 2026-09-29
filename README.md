@@ -264,7 +264,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   breaks silently.
 - `.server.ts` must never be imported from client code; `.action.ts` is a `'use server'` module meant to be. Lint enforces the split (#241).
 - FAL generation status is reconciled via on-demand polling in
-  `src/lib/server/check-pending-generations.action.ts`. **There are no webhooks** —
+  `src/lib/server/generations/check-pending.action.ts`. **There are no webhooks** —
   the route, the flag and the env vars went in #362, and polling is the only path
   by which a result reaches the app.
 - The bucket is private, so there are no public object URLs to persist. Images

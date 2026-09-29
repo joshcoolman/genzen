@@ -179,7 +179,7 @@ Two of the three things this doc argues for already exist here, which is most of
 why it was worth carrying over.
 
 - **The per-model dialect seam is built.** `src/lib/prompts/guide-*.md` is one
-  instruction per model, mapped by `src/lib/server/prompt-guides.server.ts`, with
+  instruction per model, mapped by `src/features/ai-images/server/prompt-guides.server.ts`, with
   `enhance-prompt.md` as the fallback — seven of eight models take the fallback
   today, and that is the intended resting state. "Dialect follows the text
   encoder" is exactly the reason a guide would ever diverge, and `models.ts`

@@ -1,14 +1,14 @@
 'use server'
 
-import type { ClipFrame } from '#/lib/server/clip-frames.server'
+import type { ClipFrame } from '#/lib/server/media/clip-frames.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import {
   GRID_VERSION,
   buildClipFrameGrid,
   extractClipFrame,
-} from '#/lib/server/clip-frames.server'
-import { createImageStorage } from '#/lib/image-storage'
+} from '#/lib/server/media/clip-frames.server'
+import { createImageStorage } from '#/lib/server/storage/client.server'
 
 /** What the grid needs to draw itself: the sheet is fetched from
  *  `/img/[id]?v=frames`, and everything here says how to slice it. */

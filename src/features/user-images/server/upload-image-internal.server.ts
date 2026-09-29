@@ -1,6 +1,6 @@
 import { MAX_FILE_SIZE } from '../types'
 import { resolveAuth } from '#/lib/server/auth.server'
-import { createImageStorage } from '#/lib/image-storage'
+import { createImageStorage } from '#/lib/server/storage/client.server'
 
 function validateImageBuffer(buffer: Buffer): string {
   if (buffer.length > MAX_FILE_SIZE)

@@ -110,7 +110,7 @@ the model invents answers it in up to six 9:16 clips. A toy, on purpose.
   other. `cut.clipIds` still holds every clip in order, so the player, the row
   and Script read a chat exactly as they read a run -- the turns only say
   which clips answer which question.
-- **One Claude call per turn** (`src/lib/server/director-chat.server.ts`,
+- **One Claude call per turn** (`app/(authenticated)/director/_lib/chat.server.ts`,
   prompt in `src/lib/prompts/director-chat.md`): Sonnet 5 at low effort, adaptive
   thinking, structured output, web search capped at two uses. The character
   is invented on the first turn from the question's cue -- a sports question
@@ -543,7 +543,7 @@ from the chosen model.
   the result is fetched, as a 422. So the happy path sails past the status check
   and throws at the result, and merely logging it left the take pending and the
   board saying "working" for ever. The verdict is the poll's own
-  `isFalRejection`, which lives in `fal-error.server.ts` for the purpose: a
+  `isFalRejection`, which lives in `fal/error.server.ts` for the purpose: a
   `'use server'` module may export nothing but async functions, so a sync helper
   exported from one fails the build.
 - **A non-destructive pass writes only its own field** (`patchBoardScenes`).

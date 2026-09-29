@@ -5,10 +5,10 @@ import sharp from 'sharp'
 import { z } from 'zod'
 import type { RefKind } from './types'
 import inventoryPrompt from '#/lib/prompts/director-inventory.md'
-import { ai, requireAiRole } from '#/lib/server/ai.server'
+import { ai, requireAiRole } from '#/lib/server/claude/client.server'
 import { first, sql } from '#/lib/server/db.server'
-import { extractClipFrame } from '#/lib/server/clip-frames.server'
-import { createImageStorage } from '#/lib/image-storage'
+import { extractClipFrame } from '#/lib/server/media/clip-frames.server'
+import { createImageStorage } from '#/lib/server/storage/client.server'
 
 /**
  * Turning a session's clips into reference sheets (#690).

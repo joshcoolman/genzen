@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { trashGalleryImages } from './gallery.action'
 import { sql } from '#/lib/server/db.server'
 import { removeImages } from '#/features/user-images/server/remove-images.action'
-import { cancelFalRequest } from '#/lib/server/fal-cancel.server'
+import { cancelFalRequest } from '#/lib/server/fal/cancel.server'
 
 vi.mock('#/lib/server/auth.server', () => ({
   resolveAuth: vi.fn().mockResolvedValue({ userId: 'user-test' }),
@@ -20,7 +20,7 @@ vi.mock('#/features/user-images/server/remove-images.action', () => ({
   removeImages: vi.fn(),
 }))
 
-vi.mock('#/lib/server/fal-cancel.server', () => ({
+vi.mock('#/lib/server/fal/cancel.server', () => ({
   cancelFalRequest: vi.fn(),
 }))
 

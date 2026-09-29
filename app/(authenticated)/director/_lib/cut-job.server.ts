@@ -5,7 +5,7 @@ import { nextCutName, parseCuts } from './types'
 import { requireSession } from './sessions.server'
 import type { CutJob, CutJobData } from './cut-job'
 import { first, jsonb, sql } from '#/lib/server/db.server'
-import { cancelFalRequest } from '#/lib/server/fal-cancel.server'
+import { cancelFalRequest } from '#/lib/server/fal/cancel.server'
 
 export async function readCutJob(owner: string, cutId: string) {
   return first(

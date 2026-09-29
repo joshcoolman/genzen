@@ -1,11 +1,11 @@
 'use server'
 
 import { generateText } from 'ai'
+import { promptGuideFor } from './prompt-guides.server'
 import enhancePromptSkill from '#/lib/prompts/enhance-prompt.md'
 import { multiShotPrompt } from '#/lib/prompts/multi-shot'
 import steeringFrame from '#/lib/prompts/steering-frame.md'
-import { ai, requireAiRole } from '#/lib/server/ai.server'
-import { promptGuideFor } from '#/lib/server/prompt-guides.server'
+import { ai, requireAiRole } from '#/lib/server/claude/client.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 
 interface EnhancePromptInput {
