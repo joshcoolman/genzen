@@ -57,12 +57,20 @@
 /* Keep horizontal drags as pointer events instead of browser panning, so the
    stage can read them as swipes. Vertical pan and pinch stay native. */
 .swipes {
+  --slide-x: 0px;
+
   touch-action: pan-y pinch-zoom;
 }
 
 .swipes > img {
   -webkit-user-drag: none;
   user-select: none;
+  transform: translateX(var(--slide-x));
+}
+
+/* Matches SLIDE_MS in the component. */
+.swipes[data-sliding] > img {
+  transition: transform 180ms var(--ease-out);
 }
 
 /* Size the element itself to the fitted frame. Letterboxing belongs to the
