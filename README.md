@@ -281,14 +281,18 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 Recent highlights:
 
+- **Phone nav and swipe (#768, #764-#767)** -- one corner button, bottom
+  right, under the plus: Images / Video / More, More flying out left with the
+  rest. The image viewer swipes with a slide; fixed page scroll freezing after
+  closing it, and blank images after a swipe.
 - **Mobile viewers (#762)** -- Images and Video fill the screen, with title
   above, navigation below, and confirmation before Trash. Tap empty space to
   close; image prompts and actions live in a details sheet.
 - **Code tidy (#758, #757)** -- knip's dead code removed, the S3 client
   guarded `server-only`; `src/lib/server/` grouped into `fal/ claude/
 storage/ media/ generations/`, single-use files moved to their route.
-- **Phone layout (#753, #755)** -- below 48rem: a bottom nav pill with a
-  swipe-up sheet; on Images and Video a floating plus opens a one-tap composer
+- **Phone layout (#753, #755)** -- below 48rem: a nav (now the corner
+  menu, #768); on Images and Video a floating plus opens a one-tap composer
   (prompt, chips, Generate with cost), 2-up bare walls, a Photos-first picker;
   the Images viewer has Generate from this and Animate. Desktop unchanged.
 - **Director cuts (#744, #746, #747, #749, #751)** -- a run session holds
