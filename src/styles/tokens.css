@@ -277,12 +277,16 @@
   --z-dialog: 50;
   --z-toast: 60;
 
-  /* Where the phone's floating controls sit (#753): the nav pill and the
-     Images plus button share one line, clear of the home indicator. The page
-     reserves `--mobile-dock-clearance` under its content so nothing ends up
-     permanently beneath them. */
+  /* Where the phone's floating controls sit: one stack in the bottom-right
+     corner, the menu button on the bottom and the plus above it, clear of the
+     home indicator. The page reserves `--mobile-dock-clearance` under its
+     content so nothing ends up permanently beneath them. */
+  --mobile-control-size: 3.25rem;
   --mobile-dock-bottom: calc(var(--space-16) + env(safe-area-inset-bottom));
-  --mobile-dock-clearance: 6rem;
+  --mobile-fab-bottom: calc(
+    var(--mobile-dock-bottom) + var(--mobile-control-size) + var(--space-12)
+  );
+  --mobile-dock-clearance: 9rem;
 
   /* ========================================
      MOTION

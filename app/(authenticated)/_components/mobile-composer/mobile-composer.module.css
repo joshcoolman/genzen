@@ -3,12 +3,12 @@
 .fab {
   position: fixed;
   right: var(--space-16);
-  bottom: var(--mobile-dock-bottom);
+  bottom: var(--mobile-fab-bottom);
   z-index: var(--z-drawer);
   display: grid;
   place-items: center;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: var(--mobile-control-size);
+  height: var(--mobile-control-size);
   border: none;
   border-radius: var(--radius-full);
   background: var(--accent);

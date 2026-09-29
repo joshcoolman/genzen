@@ -36,6 +36,8 @@ export {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
   type DropdownMenuContentProps,
 } from './dropdown-menu/dropdown-menu'

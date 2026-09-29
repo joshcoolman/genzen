@@ -19,17 +19,17 @@ export interface NavItem {
   dividerBefore?: boolean
   matchPaths?: Array<string>
   /**
-   * Where the phone's bottom sheet puts it (#753). `primary` is the row of
-   * tiles -- the few sections that are worth using on a phone -- and `hidden`
-   * leaves it off the phone entirely. Unset is the list under the tiles.
+   * Where the phone puts it. `menu` is the corner button's short list -- the
+   * sections a phone is actually used for -- and `hidden` leaves it off the
+   * phone entirely. Unset is the More flyout.
    */
-  mobile?: 'primary' | 'hidden'
+  mobile?: 'menu' | 'hidden'
 }
 
 export const navItems: Array<NavItem> = [
   {
     id: 'images',
-    mobile: 'primary',
+    mobile: 'menu',
     label: 'Images',
     href: '/images',
     icon: Sparkles,
@@ -53,14 +53,13 @@ export const navItems: Array<NavItem> = [
   // },
   {
     id: 'video',
-    mobile: 'primary',
+    mobile: 'menu',
     label: 'Video',
     href: '/video',
     icon: Clapperboard,
   },
   {
     id: 'director',
-    mobile: 'primary',
     label: 'Director',
     href: '/director',
     icon: Film,
@@ -75,7 +74,6 @@ export const navItems: Array<NavItem> = [
   },
   {
     id: 'news',
-    mobile: 'primary',
     label: 'News',
     href: '/news',
     icon: Newspaper,

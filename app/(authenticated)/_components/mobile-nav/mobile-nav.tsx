@@ -1,39 +1,40 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { LogOut, Menu } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { ChevronLeft, Ellipsis, LogOut, Menu } from 'lucide-react'
 import { clsx } from 'clsx'
 import styles from './mobile-nav.module.css'
 import type { NavItem } from '#/lib/nav-items'
 import { logout } from '#/features/auth/logout.action'
-import { ConfirmDialog, Sheet, SheetContent, useConfirm } from '#/components'
+import {
+  ConfirmDialog,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+  useConfirm,
+} from '#/components'
 import { navItems } from '#/lib/nav-items'
 
-/** How far up a drag on the pill has to travel before it counts as a swipe. */
-const SWIPE_PX = 16
-
 /**
- * The phone's navigation (#753): a pill at the bottom that opens a sheet from
- * the bottom. It replaced a hamburger in the top-left corner, the one place a
- * thumb does not reach.
+ * The phone's navigation: one round button in the bottom-right corner, the
+ * thumb's home, with the Images/Video plus stacked above it. It replaced a
+ * bottom-centre pill and sheet (#753) that was easy to forget was there,
+ * which in turn replaced a top-left hamburger a thumb could not reach.
  *
- * **The pill sits above the bottom edge, never on it.** A swipe up from the
- * very edge is iOS's go-home gesture and the system always wins it, so the
- * thing you swipe has to be something visible a little higher up.
- *
- * Tap and swipe up both open it. The sheet holds the sections worth using on
- * a phone as tiles, then everything else as a list; `NavItem.mobile` says
- * which is which, and Edit is not on the phone at all.
+ * The button opens a short menu of the sections actually used on a phone
+ * (`NavItem.mobile === 'menu'`) and More, which flies out to the left with
+ * everything else and Log out -- the same list, one level down, rather than a
+ * different surface. Edit is not on the phone at all.
  */
 export function MobileNav({ className }: { className?: string }) {
-  const [open, setOpen] = useState(false)
   const pathname = usePathname()
-  const swipeFrom = useRef<number | null>(null)
+  const router = useRouter()
 
-  const primary = navItems.filter((item) => item.mobile === 'primary')
-  const others = navItems.filter((item) => !item.mobile)
+  const menu = navItems.filter((item) => item.mobile === 'menu')
+  const more = navItems.filter((item) => !item.mobile)
 
   const { confirm, dialogProps } = useConfirm()
 
@@ -47,94 +48,66 @@ export function MobileNav({ className }: { className?: string }) {
     if (ok) void logout()
   }
 
-  useEffect(() => {
-    setOpen(false)
-  }, [pathname])
-
   const isActive = (item: NavItem) => {
     if (pathname.startsWith(item.href)) return true
     return item.matchPaths?.some((p) => pathname.startsWith(p)) ?? false
   }
 
-  const current = navItems.find(isActive)
-  const CurrentIcon = current?.icon ?? Menu
+  const row = (item: NavItem) => (
+    <DropdownMenuItem
+      key={item.id}
+      className={clsx(
+        styles.item,
+        isActive(item) && styles.on,
+        item.dividerBefore && styles.divided,
+      )}
+      onClick={() => router.push(item.href)}
+    >
+      <item.icon />
+      {item.label}
+    </DropdownMenuItem>
+  )
 
   return (
     <div className={clsx(styles.root, className)}>
-      <button
-        type="button"
-        className={styles.pill}
-        aria-label="Open menu"
-        aria-expanded={open}
-        onClick={() => setOpen(true)}
-        onPointerDown={(e) => {
-          swipeFrom.current = e.clientY
-        }}
-        onPointerMove={(e) => {
-          if (swipeFrom.current === null) return
-          if (swipeFrom.current - e.clientY > SWIPE_PX) {
-            swipeFrom.current = null
-            setOpen(true)
-          }
-        }}
-        onPointerUp={() => {
-          swipeFrom.current = null
-        }}
-        onPointerCancel={() => {
-          swipeFrom.current = null
-        }}
-      >
-        <span className={styles.grip} aria-hidden="true" />
-        <span className={styles.pillLabel}>
-          <CurrentIcon />
-          {current?.label ?? 'Menu'}
-        </span>
-      </button>
-
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="bottom"
-          className={styles.sheet}
-          showCloseButton={false}
+      <DropdownMenu>
+        <DropdownMenuTrigger className={styles.button} aria-label="Open menu">
+          <Menu />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          side="top"
+          align="end"
+          sideOffset={8}
+          className={styles.menu}
         >
-          <span className={styles.handle} aria-hidden="true" />
-          <nav className={styles.nav}>
-            <div className={styles.tiles}>
-              {primary.map((item) => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={clsx(styles.tile, isActive(item) && styles.on)}
-                >
-                  <item.icon />
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-            <div className={styles.list}>
-              {others.map((item) => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={clsx(styles.row, isActive(item) && styles.on)}
-                >
-                  <item.icon />
-                  {item.label}
-                </Link>
-              ))}
-              <button
-                type="button"
-                className={styles.row}
+          {menu.map(row)}
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger
+              className={clsx(styles.item, more.some(isActive) && styles.on)}
+            >
+              <Ellipsis />
+              More
+              <ChevronLeft className={styles.flyoutMark} />
+            </DropdownMenuSubTrigger>
+            <DropdownMenuContent
+              side="left"
+              align="end"
+              sideOffset={4}
+              className={styles.menu}
+            >
+              {more.map(row)}
+              <DropdownMenuItem
+                className={clsx(styles.item, styles.divided)}
                 onClick={() => void askThenSignOut()}
               >
                 <LogOut />
                 Log out
-              </button>
-            </div>
-          </nav>
-          <ConfirmDialog {...dialogProps} />
-        </SheetContent>
-      </Sheet>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenuSub>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }
