@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 
 const MOBILE_BREAKPOINT = 400 // matches --breakpoint-xs
 
@@ -10,20 +10,26 @@ const MOBILE_BREAKPOINT = 400 // matches --breakpoint-xs
  * @returns boolean indicating if viewport is below breakpoint
  */
 export function useIsMobile(breakpoint = MOBILE_BREAKPOINT) {
-  // Always false for the first render, on both server and client -- reading
-  // window.innerWidth here made a narrow viewport a hydration mismatch. The
-  // effect below corrects it before paint.
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`)
-    setIsMobile(mql.matches)
-    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-    mql.addEventListener('change', onChange)
-    return () => mql.removeEventListener('change', onChange)
-  }, [breakpoint])
-
-  return isMobile
+  const query = `(max-width: ${breakpoint - 1}px)`
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      const mql = window.matchMedia(query)
+      mql.addEventListener('change', onChange)
+      return () => mql.removeEventListener('change', onChange)
+    },
+    [query],
+  )
+  // False while hydrating (reading the width then was a mismatch), but correct
+  // on the first render of anything mounted after. A useState(false) + effect
+  // rendered every late mount as desktop for one commit: the image viewer's
+  // desktop lightbox locked the body in that commit, and the phone Dialog's
+  // scroll lock recorded it as the original and restored it on close,
+  // freezing the page.
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(query).matches,
+    () => false,
+  )
 }
 
 /** Where the app chrome swaps its rail for the phone's bottom nav: `48rem`
