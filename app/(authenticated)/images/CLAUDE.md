@@ -435,7 +435,17 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   detail to tune. The hidden zones failed the same way: a target that reveals
   its chevron only once you are inside it confirms rather than affords.
   `_components/experiment/` is deleted; do not rebuild it without a new reason
-- **The viewer is `#/components/image-viewer/`, shared since #690.** A plain lightbox: scrim over the app, the picture
+- **The phone viewer uses the full viewport** (#762). Below 48rem,
+  `MobileMediaViewer` (shared with Video) puts the title and close above the
+  centered, uncropped image, with previous/counter/next and Trash below.
+  Tapping empty space around the fitted image closes it; tapping the image
+  does not. Touch targets are 48px and respect safe areas. Trash asks first,
+  with Cancel initially focused. Details opens a sheet containing the prompt,
+  description, Generate from this, Animate and Hide; it starts closed without
+  changing the desktop prompt preference. Viewer shortcuts are suspended while
+  that sheet or the confirmation is open.
+
+- **The desktop viewer is `#/components/image-viewer/`, shared since #690.** A plain lightbox: scrim over the app, the picture
   centred, chevrons either side, an X, a counter, click outside the image to
   dismiss, arrows and Escape. **No filmstrip and no metadata** -- and nothing
   else proposed for it gets in without answering why it is not a card action or

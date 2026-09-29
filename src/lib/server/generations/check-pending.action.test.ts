@@ -7,7 +7,6 @@ import type * as FalError from '#/lib/server/fal/error.server'
 import * as falCompletion from '#/lib/server/fal/completion.server'
 import { sql } from '#/lib/server/db.server'
 
-
 vi.mock('@fal-ai/client', () => ({
   fal: {
     config: vi.fn(),

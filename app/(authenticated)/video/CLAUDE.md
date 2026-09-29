@@ -9,6 +9,14 @@ source images; `use-view.ts` owns everything after the first paint.
 
 ## Quirks
 
+- **The phone player fills the viewport** (#762). `MobileMediaViewer`, shared
+  with Images, puts title/rename/close above the centered, uncropped clip and
+  previous/counter/next plus a separate Trash icon below. The media's own box
+  fits its aspect ratio, leaving empty margins tappable to close without
+  intercepting native player controls. Controls are 48px and clear safe areas.
+  Trash asks “Move this video to Trash?” before advancing; confirmation blocks
+  the viewer's shortcuts. Desktop keeps its dialog and immediate deletion.
+
 - **On a phone the form is a sheet, not a column** (#755). Below the chrome's
   48rem (`usePhoneLayout`) the controls column is not rendered: a floating plus
   opens `MobileVideoComposer`, built from the same `mobile-composer` parts as
@@ -44,10 +52,9 @@ source images; `use-view.ts` owns everything after the first paint.
   focus; only a name being typed keeps them.
 - **The playback dialog is where a clip is judged, so Delete is in it** (#658).
   Clips out of one prompt separate the moment they run, not on the wall. It
-  moves to Trash -- `deleteGalleryImage`, the card menu's own call -- and closes
-  the dialog; the card leaving the wall is the feedback. **It does not ask
-  first**, matching the card's menu: a prompt before a recoverable act would be
-  the only one in the app, and the cull loop is all clicks.
+  moves to Trash -- `deleteGalleryImage`, the card menu's own call -- and
+  advances to the next clip (closing only when none remain). Desktop deletes
+  immediately; **phones ask first** (#762), with Cancel focused by default.
   **The title is edited in place there too** (#657): the heading is the clip's
   name when it has one, a pencil turns it into an input with a tick and a
   cross, and Escape cancels the edit without closing the dialog -- the keydown

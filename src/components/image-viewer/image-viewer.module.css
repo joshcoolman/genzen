@@ -353,37 +353,20 @@
   color: var(--text);
 }
 
-/* Narrow: the gutters give way before the picture does. Nothing is hidden --
-   that was the bug in the layout this replaces. */
-@media (max-width: 40rem) {
-  .root {
-    --viewer-gutter: var(--space-48);
-  }
+.mobileDetails {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
-  .nav {
-    width: 2.25rem;
-    height: 2.25rem;
-  }
+.mobileActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
 
-  .navPrev {
-    left: var(--space-4);
-  }
-
-  .navNext {
-    right: var(--space-4);
-  }
-
-  /* Below this the split is two cramped columns rather than one good one, so
-     the picture keeps the width and the prompt goes under it. */
-  .root {
-    flex-direction: column;
-  }
-
-  .panel {
-    width: 100%;
-    max-height: 40%;
-    padding-top: var(--space-24);
-    border-left: none;
-    border-top: 1px solid var(--border);
-  }
+.mobileDetails button {
+  min-height: 3rem;
 }

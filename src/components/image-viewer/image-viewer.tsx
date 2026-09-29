@@ -12,9 +12,12 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
+import { DialogTitle } from '../dialog/dialog'
+import { MobileMediaViewer } from '../mobile-media-viewer/mobile-media-viewer'
 import { CopyText } from '../copy-text/copy-text'
 import { MiniButton } from '../mini-button/mini-button'
 import styles from './image-viewer.module.css'
+import { usePhoneLayout } from '#/lib/use-is-mobile'
 import { cx } from '#/lib/utils'
 import { usePersistedState } from '#/lib/use-persisted-state'
 
@@ -109,6 +112,8 @@ export function ImageViewer({
   onDescribe,
   describeStates,
 }: ImageViewerProps) {
+  const isPhone = usePhoneLayout()
+  const hotkeyOptions = { enabled: !isPhone }
   const [showPrompt, setShowPrompt, hydrated] = usePersistedState(
     () => window.localStorage.getItem(PROMPT_PANEL_KEY) !== 'off',
     true,
@@ -160,29 +165,159 @@ export function ImageViewer({
     }
   }, [])
 
-  useHotkey('Escape', onClose)
-  useHotkey('ArrowRight', onNext)
-  useHotkey('ArrowLeft', onPrev)
-  useHotkey('Delete', () => onDelete?.())
-  useHotkey('Backspace', () => onDelete?.())
+  useHotkey('Escape', onClose, hotkeyOptions)
+  useHotkey('ArrowRight', onNext, hotkeyOptions)
+  useHotkey('ArrowLeft', onPrev, hotkeyOptions)
+  useHotkey('Delete', () => onDelete?.(), hotkeyOptions)
+  useHotkey('Backspace', () => onDelete?.(), hotkeyOptions)
   /* **Delete destroys, H clears away** (#545) -- the card's own arrangement
      (#504) at the surface where the judging happens. A bare letter is safe
      here because the viewer holds no text field; nothing in it can be typed
      into. */
-  useHotkey('H', () => onHide?.())
+  useHotkey('H', () => onHide?.(), hotkeyOptions)
   /* Same reasoning as `H`: a bare letter is safe because nothing in here can
      be typed into. */
-  useHotkey('P', () => setShowPrompt((on) => !on))
+  useHotkey('P', () => setShowPrompt((on) => !on), hotkeyOptions)
 
   const describe = item && onDescribe ? () => onDescribe(item.id) : undefined
   const describeState = item ? describeStates?.[item.id] : undefined
   /* Same reasoning as `H`. Works with the panel off too: the result lands on
      the card either way. */
-  useHotkey('D', () => {
-    if (!describeState?.busy) describe?.()
-  })
+  useHotkey(
+    'D',
+    () => {
+      if (!describeState?.busy) describe?.()
+    },
+    hotkeyOptions,
+  )
 
   if (!item) return null
+
+  const promptContent = (
+    <>
+      <span className={styles.panelTitle}>{item.title}</span>
+      {item.prompt && (
+        /* The card's contract, unchanged: click copies, Cmd-click loads it
+               into the generator. `key` so a tick left standing never reads as
+               a claim about the image you have just paged to. */
+        <CopyText
+          key={item.id}
+          text={item.prompt}
+          label="Copy"
+          onModifierClick={onUsePrompt}
+          modifierLabel="Load into the panel"
+          className={styles.panelPrompt}
+          textClassName={styles.panelPromptText}
+        />
+      )}
+      {item.description && (
+        <>
+          {item.prompt && (
+            <span className={styles.panelTitle}>Description</span>
+          )}
+          <CopyText
+            key={`${item.id}:description`}
+            text={item.description}
+            label="Copy"
+            onModifierClick={onUsePrompt}
+            modifierLabel="Load into the panel"
+            className={styles.panelPrompt}
+            textClassName={styles.panelPromptText}
+          />
+        </>
+      )}
+      {!item.prompt && !item.description && (
+        <p className={styles.panelEmpty}>No prompt recorded.</p>
+      )}
+      {describe && (
+        <div className={styles.panelActions}>
+          {/* Always overwrites: the button is how you ask again, so a
+                  description already there is not a reason to refuse. */}
+          <MiniButton
+            icon={<ScanText />}
+            spinning={describeState?.busy}
+            disabled={describeState?.busy}
+            onClick={describe}
+            title="Describe (D)"
+          >
+            {describeState?.busy
+              ? 'Describing...'
+              : item.description
+                ? 'Describe again'
+                : 'Describe'}
+          </MiniButton>
+          {describeState?.error && (
+            <p className={styles.panelError}>{describeState.error}</p>
+          )}
+        </div>
+      )}
+    </>
+  )
+
+  if (isPhone) {
+    return (
+      <MobileMediaViewer
+        itemId={item.id}
+        kind="image"
+        title={<DialogTitle>{item.title || 'Image'}</DialogTitle>}
+        position={currentIndex + 1}
+        count={items.length}
+        onClose={onClose}
+        onPrevious={items.length > 1 ? onPrev : undefined}
+        onNext={items.length > 1 ? onNext : undefined}
+        onDelete={onDelete}
+        details={
+          <div className={styles.mobileDetails}>
+            <div className={styles.mobileActions}>
+              {onGenerateFrom && url && (
+                <button
+                  type="button"
+                  className={styles.make}
+                  onClick={onGenerateFrom}
+                >
+                  <Sparkles className={styles.controlIcon} />
+                  Generate from this
+                </button>
+              )}
+              {onAnimate && url && (
+                <button
+                  type="button"
+                  className={cx(styles.make, styles.makeSecondary)}
+                  onClick={onAnimate}
+                >
+                  <Clapperboard className={styles.controlIcon} />
+                  Animate
+                </button>
+              )}
+              {onHide && (
+                <button
+                  type="button"
+                  className={cx(styles.make, styles.makeSecondary)}
+                  onClick={onHide}
+                >
+                  <EyeOff className={styles.controlIcon} />
+                  Hide image
+                </button>
+              )}
+            </div>
+            {promptContent}
+          </div>
+        }
+      >
+        {url ? (
+          <img
+            key={url}
+            src={url}
+            alt={item.title}
+            className={!loaded ? styles.imageLoading : undefined}
+            onLoad={() => setLoaded(true)}
+          />
+        ) : (
+          <div className={styles.placeholder} />
+        )}
+      </MobileMediaViewer>
+    )
+  }
 
   return (
     // Clicking the backdrop closes; the image does not. That is the
@@ -349,62 +484,7 @@ export function ImageViewer({
           onClick={(e) => e.stopPropagation()}
           aria-label="Prompt"
         >
-          <span className={styles.panelTitle}>{item.title}</span>
-          {item.prompt && (
-            /* The card's contract, unchanged: click copies, Cmd-click loads it
-               into the generator. `key` so a tick left standing never reads as
-               a claim about the image you have just paged to. */
-            <CopyText
-              key={item.id}
-              text={item.prompt}
-              label="Copy"
-              onModifierClick={onUsePrompt}
-              modifierLabel="Load into the panel"
-              className={styles.panelPrompt}
-              textClassName={styles.panelPromptText}
-            />
-          )}
-          {item.description && (
-            <>
-              {item.prompt && (
-                <span className={styles.panelTitle}>Description</span>
-              )}
-              <CopyText
-                key={`${item.id}:description`}
-                text={item.description}
-                label="Copy"
-                onModifierClick={onUsePrompt}
-                modifierLabel="Load into the panel"
-                className={styles.panelPrompt}
-                textClassName={styles.panelPromptText}
-              />
-            </>
-          )}
-          {!item.prompt && !item.description && (
-            <p className={styles.panelEmpty}>No prompt recorded.</p>
-          )}
-          {describe && (
-            <div className={styles.panelActions}>
-              {/* Always overwrites: the button is how you ask again, so a
-                  description already there is not a reason to refuse. */}
-              <MiniButton
-                icon={<ScanText />}
-                spinning={describeState?.busy}
-                disabled={describeState?.busy}
-                onClick={describe}
-                title="Describe (D)"
-              >
-                {describeState?.busy
-                  ? 'Describing...'
-                  : item.description
-                    ? 'Describe again'
-                    : 'Describe'}
-              </MiniButton>
-              {describeState?.error && (
-                <p className={styles.panelError}>{describeState.error}</p>
-              )}
-            </div>
-          )}
+          {promptContent}
         </aside>
       )}
 

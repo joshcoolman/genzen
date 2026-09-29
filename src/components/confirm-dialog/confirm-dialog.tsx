@@ -16,6 +16,8 @@ export interface ConfirmChoice {
 
 export interface ConfirmDialogProps {
   open: boolean
+  /** Optional popup styling, e.g. larger touch targets on a phone. */
+  className?: string
   title: string
   message: string
   confirmLabel?: string
@@ -65,6 +67,7 @@ export interface ConfirmDialogProps {
  */
 export function ConfirmDialog({
   open,
+  className,
   title,
   message,
   confirmLabel = 'Delete',
@@ -90,7 +93,10 @@ export function ConfirmDialog({
       <AlertDialog.Portal>
         <AlertDialog.Backdrop className={styles.backdrop} />
         <AlertDialog.Viewport className={styles.viewport}>
-          <AlertDialog.Popup initialFocus={cancelRef} className={styles.popup}>
+          <AlertDialog.Popup
+            initialFocus={cancelRef}
+            className={`${styles.popup} ${className ?? ''}`}
+          >
             <div className={styles.textCol}>
               <AlertDialog.Title className={styles.title}>
                 {title}
