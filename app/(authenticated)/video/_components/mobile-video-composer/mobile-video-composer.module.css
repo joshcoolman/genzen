@@ -1,0 +1,19 @@
+/* What Video's composer adds to the shared parts (#755): the audio switch as
+   a row of its own, and the compatibility error. */
+.audio {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2.75rem;
+  padding: 0 var(--space-12);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.error {
+  color: var(--danger);
+  font-size: var(--text-xs);
+}

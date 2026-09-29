@@ -1,11 +1,12 @@
 'use client'
 
 import { VideoGroupCard } from '../video-group-card/video-group-card'
-import { VideoThumb } from '../video-thumb/video-thumb'
+import { BareVideoThumb, VideoThumb } from '../video-thumb/video-thumb'
 import styles from './video-list.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
 import type { ImageGroupSummary } from '#/features/groups/hooks/use-groups'
 import { EmptyState } from '#/components'
+import { cx } from '#/lib/utils'
 
 /** One cell of the wall: a clip, or a group standing in for several (#517). */
 export type VideoCell = { key: string } & (
@@ -44,8 +45,12 @@ export function VideoList({
   onToggleGroupMembers,
   workingByGroup,
   hiddenByGroup,
+  compact = false,
 }: {
   cells: Array<VideoCell>
+  /** The phone's wall (#755): two across, bare square posters, group cards
+   *  the full width. */
+  compact?: boolean
   /** Inside a group the empty state says something different -- the wall is
    *  not empty, this group is. */
   isInGroup: boolean
@@ -89,7 +94,7 @@ export function VideoList({
   }
 
   return (
-    <div className={styles.list}>
+    <div className={cx(styles.list, compact && styles.compact)}>
       {cells.map((cell) =>
         cell.kind === 'group' ? (
           <VideoGroupCard
@@ -111,6 +116,8 @@ export function VideoList({
             working={workingByGroup[cell.group.id] ?? 0}
             hidden={hiddenByGroup[cell.group.id] ?? 0}
           />
+        ) : compact ? (
+          <BareVideoThumb key={cell.key} video={cell.video} onPlay={onPlay} />
         ) : (
           <VideoThumb
             key={cell.key}

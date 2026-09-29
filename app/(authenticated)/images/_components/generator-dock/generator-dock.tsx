@@ -1,7 +1,10 @@
 'use client'
 
-import { Plus } from 'lucide-react'
 import { GeneratorPanel } from '../../../_components/generator-panel/generator-panel'
+import {
+  ComposerFab,
+  ComposerSheet,
+} from '../../../_components/mobile-composer/mobile-composer'
 import { MobileGenerator } from '../mobile-generator/mobile-generator'
 import { SystemInstructionsButton } from '../../../_components/system-instructions-button/system-instructions-button'
 import styles from './generator-dock.module.css'
@@ -10,7 +13,6 @@ import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import type { UserImage } from '#/features/user-images/types'
 import type { ReactNode } from 'react'
-import { Sheet, SheetContent } from '#/components'
 import { cx } from '#/lib/utils'
 
 interface GeneratorDockProps {
@@ -86,33 +88,23 @@ export function GeneratorDock({
   if (isMobile) {
     return (
       <>
-        <button
-          type="button"
-          className={styles.fab}
-          aria-label="Generate"
+        <ComposerFab
+          label="Generate"
           onClick={() => onMobileOpenChange(true)}
-        >
-          <Plus />
-        </button>
-        <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
-          <SheetContent
-            side="bottom"
-            className={styles.sheet}
-            showCloseButton={false}
-          >
-            <MobileGenerator
-              generator={generator}
-              modelSelector={modelSelector}
-              userImages={userImages}
-              uploadGroupId={uploadGroupId}
-              onClose={() => onMobileOpenChange(false)}
-              onSubmit={() => {
-                onMobileOpenChange(false)
-                onMobileSubmit?.()
-              }}
-            />
-          </SheetContent>
-        </Sheet>
+        />
+        <ComposerSheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
+          <MobileGenerator
+            generator={generator}
+            modelSelector={modelSelector}
+            userImages={userImages}
+            uploadGroupId={uploadGroupId}
+            onClose={() => onMobileOpenChange(false)}
+            onSubmit={() => {
+              onMobileOpenChange(false)
+              onMobileSubmit?.()
+            }}
+          />
+        </ComposerSheet>
       </>
     )
   }

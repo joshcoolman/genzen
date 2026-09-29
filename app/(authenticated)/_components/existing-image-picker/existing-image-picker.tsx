@@ -8,7 +8,7 @@ import type { ImageGroupName } from '#/features/user-images/server/image-groups.
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
 import { listImageGroupNames } from '#/features/user-images/server/image-groups.action'
 import { useAuth } from '#/lib/auth'
-import { useIsMobile } from '#/lib/use-is-mobile'
+import { usePhoneLayout } from '#/lib/use-is-mobile'
 import {
   Button,
   Dialog,
@@ -90,7 +90,7 @@ export function ExistingImagePicker({
   uploadGroupId = null,
 }: ExistingImagePickerProps) {
   const { user } = useAuth()
-  const isMobile = useIsMobile()
+  const isMobile = usePhoneLayout()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
   const [groupFilter, setGroupFilter] = useState<GroupFilter>(null)

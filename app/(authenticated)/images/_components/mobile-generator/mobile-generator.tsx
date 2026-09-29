@@ -1,7 +1,23 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, ImagePlus, Plus, X } from 'lucide-react'
+import { ImagePlus, Plus, X } from 'lucide-react'
+import {
+  Chip,
+  ChipLabel,
+  ChipRow,
+  ChipStack,
+  ComposerBody,
+  ComposerHeader,
+  ComposerNote,
+  ComposerPrompt,
+  ComposerRoot,
+  DoneFooter,
+  NoteAction,
+  PrimaryAction,
+  Tile,
+  TileGrid,
+} from '../../../_components/mobile-composer/mobile-composer'
 import { ExistingImagePicker } from '../../../_components/existing-image-picker/existing-image-picker'
 import { ModelTable } from '../../../_components/model-selector/model-selector'
 import { SystemInstructionsButton } from '../../../_components/system-instructions-button/system-instructions-button'
@@ -13,16 +29,8 @@ import type { RefRole } from '#/features/ai-images/ref-roles'
 import type { UserImage } from '#/features/user-images/types'
 import { pricedForImages } from '#/features/ai-images/model-selector/unified-models'
 import { REF_ROLES, isReadRole } from '#/features/ai-images/ref-roles'
-import {
-  ALL_RATIOS,
-  ActionButton,
-  ConfirmDialog,
-  RatioIcon,
-  SheetTitle,
-  Textarea,
-} from '#/components'
+import { ALL_RATIOS, ConfirmDialog, RatioIcon } from '#/components'
 import { formatCents } from '#/lib/format'
-import { cx } from '#/lib/utils'
 
 /** `adjustGens` clamps to this; the tiles offer every value it allows. */
 const COUNTS = [1, 2, 3, 4, 5]
@@ -110,127 +118,91 @@ export function MobileGenerator({
   }
 
   return (
-    <div className={styles.root}>
-      <div className={styles.header}>
-        {step !== 'compose' && (
-          <button
-            type="button"
-            className={styles.iconButton}
-            aria-label="Back"
-            onClick={back}
-          >
-            <ArrowLeft />
-          </button>
-        )}
-        <SheetTitle className={styles.title}>{TITLES[step]}</SheetTitle>
-        {/* The gear rides every surface that generates -- a prompt prefix
-            applying with nothing on screen saying so is the failure it
-            guards (see images/CLAUDE.md). */}
-        {step === 'compose' && <SystemInstructionsButton />}
-        <button
-          type="button"
-          className={styles.iconButton}
-          aria-label="Close"
-          onClick={onClose}
-        >
-          <X />
-        </button>
-      </div>
+    <ComposerRoot>
+      <ComposerHeader
+        title={TITLES[step]}
+        onBack={step === 'compose' ? undefined : back}
+        onClose={onClose}
+        /* The gear rides every surface that generates -- a prompt prefix
+           applying with nothing on screen saying so is the failure it guards
+           (see images/CLAUDE.md). */
+        action={step === 'compose' ? <SystemInstructionsButton /> : undefined}
+      />
 
       {step === 'compose' && (
-        <div className={styles.body}>
-          <Textarea
+        <ComposerBody>
+          <ComposerPrompt
             value={generator.prompts[0] ?? ''}
             onChange={(e) => generator.setPromptAtIndex(0, e.target.value)}
             placeholder="Describe your image..."
-            rows={4}
             disabled={busy}
-            className={styles.prompt}
           />
           {extraPrompts > 0 && (
-            <p className={styles.note}>
+            <ComposerNote
+              action={
+                <NoteAction
+                  onClick={() => {
+                    for (let i = generator.prompts.length - 1; i > 0; i--)
+                      generator.removePrompt(i)
+                  }}
+                >
+                  Remove
+                </NoteAction>
+              }
+            >
               {`+${extraPrompts} more prompt${extraPrompts === 1 ? '' : 's'} will also run.`}
-              <button
-                type="button"
-                className={styles.noteAction}
-                onClick={() => {
-                  for (let i = generator.prompts.length - 1; i > 0; i--)
-                    generator.removePrompt(i)
-                }}
-              >
-                Remove
-              </button>
-            </p>
+            </ComposerNote>
           )}
 
-          <div className={styles.chips}>
-            <button
-              type="button"
-              className={cx(styles.chip, styles.chipWide)}
-              onClick={() => setStep('models')}
-            >
-              <span className={styles.chipLabel}>{modelsLabel}</span>
-            </button>
-            <button
-              type="button"
-              className={styles.chip}
+          <ChipRow>
+            <Chip wide onClick={() => setStep('models')}>
+              <ChipLabel>{modelsLabel}</ChipLabel>
+            </Chip>
+            <Chip
               onClick={() =>
                 generator.refImages.length > 0 ? setStep('refs') : openPicker()
               }
               aria-label="Reference images"
             >
               {generator.refImages.length > 0 ? (
-                <span className={styles.stack}>
-                  {generator.refImages.slice(0, 3).map((img) => (
-                    <img key={img.id} src={img.url} alt="" />
-                  ))}
-                  <span>{generator.refImages.length}</span>
-                </span>
+                <ChipStack
+                  urls={generator.refImages.map((img) => img.url)}
+                  count={generator.refImages.length}
+                />
               ) : (
                 <ImagePlus />
               )}
-            </button>
-            <button
-              type="button"
-              className={styles.chip}
-              onClick={() => setStep('aspect')}
-              disabled={busy}
-            >
+            </Chip>
+            <Chip onClick={() => setStep('aspect')} disabled={busy}>
               <RatioIcon w={ratio.w} h={ratio.h} />
               {ratio.label}
-            </button>
-            <button
-              type="button"
-              className={styles.chip}
-              onClick={() => setStep('count')}
-              disabled={busy}
-            >
+            </Chip>
+            <Chip onClick={() => setStep('count')} disabled={busy}>
               {`×${modelSelector.gensPerModel}`}
-            </button>
-          </div>
+            </Chip>
+          </ChipRow>
 
-          <ActionButton
+          <PrimaryAction
             onClick={() => void generate()}
             loading={busy}
             loadingText=""
             disabled={!generator.canGenerate}
-            className={styles.generate}
+            cost={
+              generator.estimatedCost.cents > 0
+                ? formatCents(generator.estimatedCost.cents)
+                : null
+            }
           >
             {generator.totalImages > 1
               ? `Generate ${generator.totalImages}`
               : 'Generate'}
-            {generator.estimatedCost.cents > 0 && (
-              <span className={styles.cost}>
-                {formatCents(generator.estimatedCost.cents)}
-              </span>
-            )}
-          </ActionButton>
-        </div>
+          </PrimaryAction>
+        </ComposerBody>
       )}
 
       {step === 'models' && (
         <>
-          <div className={cx(styles.body, styles.scroll)}>
+          <ComposerBody scroll>
             <ModelTable
               models={models}
               selectedIds={modelSelector.selectedIds}
@@ -239,14 +211,14 @@ export function MobileGenerator({
               onToggleAll={modelSelector.toggleAll}
               onSelectOnly={(id) => modelSelector.selectOnly([id])}
             />
-          </div>
-          <Done onClick={back} />
+          </ComposerBody>
+          <DoneFooter onClick={back} />
         </>
       )}
 
       {step === 'refs' && (
         <>
-          <div className={cx(styles.body, styles.scroll)}>
+          <ComposerBody scroll>
             <button
               type="button"
               className={styles.addRefs}
@@ -292,7 +264,7 @@ export function MobileGenerator({
                   </div>
                   <button
                     type="button"
-                    className={styles.iconButton}
+                    className={styles.remove}
                     aria-label="Remove"
                     onClick={() => {
                       generator.removeRefImage(img.id)
@@ -305,21 +277,17 @@ export function MobileGenerator({
                 </li>
               ))}
             </ul>
-          </div>
-          <Done onClick={back} />
+          </ComposerBody>
+          <DoneFooter onClick={back} />
         </>
       )}
 
       {step === 'aspect' && (
-        <div className={cx(styles.body, styles.tiles)}>
+        <TileGrid>
           {ALL_RATIOS.map((r) => (
-            <button
+            <Tile
               key={r.label}
-              type="button"
-              className={cx(
-                styles.tile,
-                r.label === generator.aspectRatio && styles.tileOn,
-              )}
+              on={r.label === generator.aspectRatio}
               onClick={() => {
                 generator.setOrientation(r.w >= r.h ? 'landscape' : 'portrait')
                 generator.setAspectRatio(r.label)
@@ -328,32 +296,27 @@ export function MobileGenerator({
             >
               <RatioIcon w={r.w} h={r.h} />
               {r.label}
-            </button>
+            </Tile>
           ))}
-        </div>
+        </TileGrid>
       )}
 
       {step === 'count' && (
-        <div className={cx(styles.body, styles.tiles)}>
+        <TileGrid note="Per model, per prompt.">
           {COUNTS.map((n) => (
-            <button
+            <Tile
               key={n}
-              type="button"
-              className={cx(
-                styles.tile,
-                styles.countTile,
-                n === modelSelector.gensPerModel && styles.tileOn,
-              )}
+              big
+              on={n === modelSelector.gensPerModel}
               onClick={() => {
                 modelSelector.adjustGens(n - modelSelector.gensPerModel)
                 back()
               }}
             >
               {n}
-            </button>
+            </Tile>
           ))}
-          <p className={styles.tilesNote}>Per model, per prompt.</p>
-        </div>
+        </TileGrid>
       )}
 
       <ExistingImagePicker
@@ -373,16 +336,6 @@ export function MobileGenerator({
         }}
       />
       <ConfirmDialog {...dialogProps} />
-    </div>
-  )
-}
-
-function Done({ onClick }: { onClick: () => void }) {
-  return (
-    <div className={styles.footer}>
-      <ActionButton onClick={onClick} className={styles.generate}>
-        Done
-      </ActionButton>
-    </div>
+    </ComposerRoot>
   )
 }

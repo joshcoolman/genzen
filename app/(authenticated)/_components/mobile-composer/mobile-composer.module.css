@@ -1,0 +1,236 @@
+/* The phone composers' shared parts (#753, #755). Everything is sized for a
+   thumb: no target under 2.75rem. */
+.fab {
+  position: fixed;
+  right: var(--space-16);
+  bottom: var(--mobile-dock-bottom);
+  z-index: var(--z-drawer);
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  box-shadow: var(--shadow-overlay);
+  cursor: pointer;
+}
+
+.fab > svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.sheet {
+  --sheet-max-height: 92dvh;
+  --sheet-background: var(--surface);
+  --sheet-gap: 0;
+  --sheet-overflow: hidden;
+}
+
+.root {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-12) var(--space-8) var(--space-16);
+}
+
+.title {
+  flex: 1;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+}
+
+.iconButton {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.iconButton > svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-4) var(--space-16) var(--space-16);
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 1rem, not smaller: iOS zooms the page into any field under 16px. */
+.prompt {
+  font-size: var(--text-base);
+}
+
+.note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.noteAction {
+  color: var(--text);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---- chips ---- */
+
+.chips {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.chip {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  min-width: 2.75rem;
+  height: 2.75rem;
+  padding: 0 var(--space-12);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chip:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.chip > svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+
+.chipWide {
+  flex: 1;
+  flex-shrink: 1;
+  min-width: 0;
+  justify-content: flex-start;
+}
+
+.chipLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stack {
+  display: flex;
+  align-items: center;
+}
+
+.stack > img {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--surface-raised);
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.stack > img + img {
+  margin-left: calc(var(--space-10) * -1);
+}
+
+.stack > span {
+  margin-left: var(--space-6);
+}
+
+/* ---- the primary action and Done ---- */
+
+.primary {
+  width: 100%;
+  min-height: 3rem;
+  font-size: var(--text-base);
+}
+
+.cost {
+  margin-left: var(--space-8);
+  opacity: 0.7;
+  font-size: var(--text-sm);
+}
+
+.footer {
+  flex-shrink: 0;
+  padding: var(--space-12) var(--space-16) var(--space-4);
+  border-top: var(--border-width) solid var(--border);
+}
+
+/* ---- one-tap steps ---- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-8);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  min-height: 5.5rem;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+/* The shape is what is being chosen, so it is drawn big. */
+.tile > svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.tileBig {
+  font-size: var(--text-2xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.tileOn {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.tilesNote {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}

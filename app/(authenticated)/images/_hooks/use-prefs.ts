@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { usePersistedState } from '#/lib/use-persisted-state'
-import { useIsMobile } from '#/lib/use-is-mobile'
+import { usePhoneLayout } from '#/lib/use-is-mobile'
 
 /**
  * What the grid is scoped to (#444).
@@ -169,7 +169,7 @@ export function usePrefs(): PrefsState {
     DEFAULTS.originFilter,
   )
 
-  const isMobile = useIsMobile()
+  const isMobile = usePhoneLayout()
 
   // `thumbZoom` is not `thumbSize` coming back. That was three named sizes,
   // each with its own card treatment, behind a dropdown; this is one multiplier
