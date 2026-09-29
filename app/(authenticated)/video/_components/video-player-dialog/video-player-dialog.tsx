@@ -170,6 +170,7 @@ export function VideoPlayerDialog({
         <Player
           key={`player-${video.id}`}
           video={video}
+          bareWhilePlaying
           autoPlay={wantPlaying.current}
           playerRef={player}
           onPlayingChange={(playing) => {
@@ -368,17 +369,24 @@ function TitleRow({
 
 function Player({
   video,
+  bareWhilePlaying = false,
   autoPlay,
   playerRef,
   onPlayingChange,
 }: {
   video: VideoRecord
+  /** Phone: no controls while it plays. The browser owns how long native
+   *  controls linger (seconds, on iOS) and a short clip spends most of its run
+   *  under them. A tap pauses, which brings them back; so does the end. */
+  bareWhilePlaying?: boolean
   autoPlay: boolean
   playerRef: React.MutableRefObject<HTMLVideoElement | null>
   /** What the person did: a pause is a pause, a run to the end is not. */
   onPlayingChange: (playing: boolean) => void
 }) {
   const [failed, setFailed] = useState(false)
+  const [playing, setPlaying] = useState(false)
+  const bare = bareWhilePlaying && playing
   return (
     <>
       <video
@@ -386,11 +394,16 @@ function Player({
         className={styles.player}
         src={imageUrl(video.id)}
         poster={imageUrl(video.id, 'thumb')}
-        controls
+        controls={!bare}
         autoPlay={autoPlay}
         playsInline
-        onPlay={() => onPlayingChange(true)}
+        onClick={bare ? (e) => e.currentTarget.pause() : undefined}
+        onPlay={() => {
+          setPlaying(true)
+          onPlayingChange(true)
+        }}
         onPause={(e) => {
+          setPlaying(false)
           if (!e.currentTarget.ended) onPlayingChange(false)
         }}
         onError={() => setFailed(true)}
