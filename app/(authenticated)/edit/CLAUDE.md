@@ -146,7 +146,7 @@ lands on the next ready one. All in `cut.ts`, tested.
 ## Export
 
 `_lib/export.server.ts` downloads each source once, runs
-`stitchTimeline` from `src/lib/server/` -- built for the old Director (#515),
+`stitchTimeline` from `_lib/stitch-timeline.server.ts` -- built for the old Director (#515),
 unused since #662, and exactly this: per-clip in and out, one canvas, one
 encode, hard cuts -- and stores the result as an ordinary `user_images` video
 row with `origin = 'edit'`, the edit's name as its title, and
