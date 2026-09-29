@@ -1032,6 +1032,37 @@ export function useView(initial: Array<SavedAiImage>) {
     [pushReference],
   )
 
+  /* The phone's generator sheet (#753). Not `dock.open`: that is the desktop
+     column's persisted preference, and it defaults to open. Held here rather
+     than in the dock because the viewer opens it too. */
+  const [composerOpen, setComposerOpen] = useState(false)
+
+  /**
+   * The viewer's "Generate from this" (#753): that picture becomes *the*
+   * reference -- the set is replaced, not pushed onto -- and the generator
+   * opens with the viewer closed, ready for a prompt.
+   *
+   * Replace rather than push because the gesture is "make something from
+   * this one". Most runs carry a single reference, and a push would quietly
+   * keep whatever was staged from last time. Cmd-click on a card is still the
+   * add-to-the-set gesture.
+   */
+  const generateFrom = useCallback(
+    (img: SavedAiImage) => {
+      if (!img.storage_path) return
+      if (generator.maxRefImages === 0) {
+        toast('The selected model does not take images')
+        return
+      }
+      generator.replaceRefImages([
+        { id: img.id, url: imageUrl(img.id), title: img.title },
+      ])
+      if (prefs.isMobile) setComposerOpen(true)
+      else dock.setOpen(true)
+    },
+    [generator, prefs.isMobile, dock],
+  )
+
   const usePromptText = useCallback(
     (text: string) => {
       dock.setOpen(true)
@@ -1391,6 +1422,9 @@ export function useView(initial: Array<SavedAiImage>) {
     trashImage,
     viewer,
     addReference,
+    generateFrom,
+    composerOpen,
+    setComposerOpen,
     usePromptText,
     loadIntoPanel,
     imageDetails,

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ArrowLeft, ImagePlus, Plus, X } from 'lucide-react'
 import { ExistingImagePicker } from '../../../_components/existing-image-picker/existing-image-picker'
 import { ModelTable } from '../../../_components/model-selector/model-selector'
+import { SystemInstructionsButton } from '../../../_components/system-instructions-button/system-instructions-button'
 import { useGenerateClick } from '../../../_components/generator-panel/use-generate-click'
 import styles from './mobile-generator.module.css'
 import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
@@ -61,7 +62,7 @@ interface MobileGeneratorProps {
  * told.
  *
  * Deliberately less than the desktop panel. Add prompt, Generate prompt,
- * slash commands, Shots and system instructions are not here: the phone is
+ * slash commands and Shots are not here: the phone is
  * for a quick run, and every one of them is still on desktop. A prompt list
  * that arrives with several rows (loaded there) is said, not hidden, because
  * Generate runs all of them.
@@ -122,6 +123,10 @@ export function MobileGenerator({
           </button>
         )}
         <SheetTitle className={styles.title}>{TITLES[step]}</SheetTitle>
+        {/* The gear rides every surface that generates -- a prompt prefix
+            applying with nothing on screen saying so is the failure it
+            guards (see images/CLAUDE.md). */}
+        {step === 'compose' && <SystemInstructionsButton />}
         <button
           type="button"
           className={styles.iconButton}

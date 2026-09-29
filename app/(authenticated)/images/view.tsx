@@ -49,6 +49,9 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     trashImage,
     viewer,
     addReference,
+    generateFrom,
+    composerOpen,
+    setComposerOpen,
     usePromptText,
     loadIntoPanel,
     outpaintTarget,
@@ -298,6 +301,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
       <GeneratorDock
         dock={dock}
         isMobile={prefs.isMobile}
+        mobileOpen={composerOpen}
+        onMobileOpenChange={setComposerOpen}
         selectionActive={selectMode}
         selectionActions={
           selectionSurface === 'panel' ? selectionActions : null
@@ -327,6 +332,14 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onPrev={viewer.prev}
           onDelete={viewer.deleteAndAdvance}
           onHide={viewer.hideAndAdvance}
+          /* The quickest path on a phone from "I like that" to a new run
+             (#753): this picture as the one reference, generator open. */
+          onGenerateFrom={() => {
+            const id = viewer.items[viewer.index!]?.id
+            const img = images.find((i) => i.id === id)
+            viewer.close()
+            if (img) generateFrom(img)
+          }}
           onUsePrompt={usePromptText}
           onDescribe={describeImageById}
           describeStates={descriptionStates}

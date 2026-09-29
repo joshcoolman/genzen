@@ -7,6 +7,7 @@ import {
   ChevronRight,
   EyeOff,
   ScanText,
+  Sparkles,
   Trash2,
   X,
 } from 'lucide-react'
@@ -51,6 +52,9 @@ interface ImageViewerProps {
   onDelete?: () => void
   /** Hide the current image and move on (#545). */
   onHide?: () => void
+  /** Start a run from the current image (#753). Absent, no button -- Director
+   *  has no generator to open. */
+  onGenerateFrom?: () => void
   /** Cmd/Ctrl-click on the panel's prompt loads it into the generator, the
    *  same gesture the card's caption carries. */
   onUsePrompt?: (text: string) => void
@@ -95,6 +99,7 @@ export function ImageViewer({
   onPrev,
   onDelete,
   onHide,
+  onGenerateFrom,
   onUsePrompt,
   onDescribe,
   describeStates,
@@ -246,6 +251,23 @@ export function ImageViewer({
                   </button>
                 )}
               </div>
+            )}
+
+            {/* The one verb that *makes* something, so it is labelled and sits
+              opposite the two that take things away (#753). On a phone this
+              is the whole path from "I like that" to a new run. */}
+            {onGenerateFrom && url && (
+              <button
+                type="button"
+                className={styles.generateFrom}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onGenerateFrom()
+                }}
+              >
+                <Sparkles className={styles.controlIcon} />
+                Generate from this
+              </button>
             )}
           </div>
         </div>

@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { GeneratorPanel } from '../../../_components/generator-panel/generator-panel'
 import { MobileGenerator } from '../mobile-generator/mobile-generator'
@@ -17,6 +16,9 @@ import { cx } from '#/lib/utils'
 interface GeneratorDockProps {
   dock: DockState
   isMobile: boolean
+  /** The phone's sheet. The route holds it, because the viewer opens it too. */
+  mobileOpen: boolean
+  onMobileOpenChange: (open: boolean) => void
   /** A selection is up, and the column is too narrow to hand over: the panel
    *  steps back rather than competing with the bottom drawer. */
   selectionActive?: boolean
@@ -46,8 +48,8 @@ interface GeneratorDockProps {
  *
  * **The phone does not share `dock.open`.** That is a persisted desktop
  * preference, and it defaults to open -- on a phone it put a full-screen
- * generator over the wall on every load. The sheet is local state, closed
- * until the plus is pressed, and it closes itself on Generate so the pending
+ * generator over the wall on every load. The sheet is its own state, closed
+ * until the plus (or the viewer's Generate from this) opens it, and it closes itself on Generate so the pending
  * tiles are what you see next. What it holds is `MobileGenerator`, not the
  * panel: a phone gets a composer of one-tap steps rather than the desktop's
  * column squeezed to fit.
@@ -60,6 +62,8 @@ interface GeneratorDockProps {
 export function GeneratorDock({
   dock,
   isMobile,
+  mobileOpen,
+  onMobileOpenChange,
   selectionActive,
   selectionActions,
   generator,
@@ -69,8 +73,6 @@ export function GeneratorDock({
   onShots,
   onMobileSubmit,
 }: GeneratorDockProps) {
-  const [sheetOpen, setSheetOpen] = useState(false)
-
   const panel = (
     <GeneratorPanel
       generator={generator}
@@ -88,11 +90,11 @@ export function GeneratorDock({
           type="button"
           className={styles.fab}
           aria-label="Generate"
-          onClick={() => setSheetOpen(true)}
+          onClick={() => onMobileOpenChange(true)}
         >
           <Plus />
         </button>
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
           <SheetContent
             side="bottom"
             className={styles.sheet}
@@ -103,9 +105,9 @@ export function GeneratorDock({
               modelSelector={modelSelector}
               userImages={userImages}
               uploadGroupId={uploadGroupId}
-              onClose={() => setSheetOpen(false)}
+              onClose={() => onMobileOpenChange(false)}
               onSubmit={() => {
-                setSheetOpen(false)
+                onMobileOpenChange(false)
                 onMobileSubmit?.()
               }}
             />
