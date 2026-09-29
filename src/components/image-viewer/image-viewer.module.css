@@ -227,6 +227,29 @@
   color: var(--danger);
 }
 
+/* Just under the picture, right-aligned: the constructive verb, labelled, on
+   the accent -- it is the one control in here that starts work (#753). Off the
+   picture rather than on it, because a labelled pill over a narrow image
+   collides with Hide and Trash in its lower-left corner. */
+.generateFrom {
+  position: absolute;
+  top: calc(100% + var(--space-12));
+  right: 0;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  height: 2.25rem;
+  padding: 0 var(--space-12);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
 .controlIcon {
   width: 1rem;
   height: 1rem;

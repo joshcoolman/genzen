@@ -15,6 +15,18 @@
   align-items: start;
 }
 
+/* The phone's wall (#753). Tighter gutters, and a group card takes the whole
+   row: its strip of swatches is unreadable at half a phone's width, and a
+   full-width heading between runs of pictures is what makes it read as a
+   group rather than as one more thumbnail. */
+.compact {
+  gap: var(--space-8);
+}
+
+.compact > [data-drop-group-id] {
+  grid-column: 1 / -1;
+}
+
 /* While a sweep is running (#440). The pointerdown default is already
    prevented, which stops a selection starting; this stops one the browser
    extends from somewhere else, and turns off the native image drag. */

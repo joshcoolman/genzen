@@ -157,3 +157,95 @@
 .thumbSelected {
   border-color: var(--accent);
 }
+
+/* ---- the phone's sheet (#753) ----
+   Header, Photos, filters and footer hold still; the grid between them
+   scrolls. The sheet's own overflow is off so only that one part moves. */
+.sheet {
+  --sheet-max-height: 88dvh;
+  --sheet-background: var(--surface);
+  --sheet-gap: var(--space-12);
+  --sheet-padding: 0 var(--space-16);
+  --sheet-padding-bottom: var(--space-12);
+  --sheet-overflow: hidden;
+  /* Tall enough to feel like a place, not a popover, even over a small
+     library; the grid takes whatever is left. */
+  height: 88dvh;
+}
+
+.sheetHeader {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-16);
+}
+
+.sheetTitle {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+}
+
+.sheetClose {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.sheetClose > svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* The phone's own photos, first and full width: on a phone that is usually
+   where the reference is. */
+.photos {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-12);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.photos:disabled {
+  color: var(--text-muted);
+}
+
+.photos > svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* The phone's one filter: sources and groups in a single native select. */
+.filterSelect {
+  flex-shrink: 0;
+  min-height: 2.75rem;
+  padding: 0 var(--space-12);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+.sheetFooter {
+  flex-shrink: 0;
+  padding-top: var(--space-12);
+  border-top: var(--border-width) solid var(--border);
+}
+
+.sheetFooter .footerInner > button {
+  flex: 1;
+}

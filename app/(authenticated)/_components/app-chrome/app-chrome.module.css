@@ -22,7 +22,9 @@
 .main {
   flex: 1;
   min-width: 0;
-  padding: var(--space-24);
+  /* Tighter on a phone, where 24px a side is a tenth of the width, and clear
+     of the floating nav pill at the bottom. */
+  padding: var(--space-12) var(--space-12) var(--mobile-dock-clearance);
   transition: all var(--duration-slow) var(--ease-in-out);
 }
 
@@ -39,5 +41,6 @@
 
   .main {
     margin-left: var(--space-64);
+    padding: var(--space-24);
   }
 }

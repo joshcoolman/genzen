@@ -49,6 +49,9 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     trashImage,
     viewer,
     addReference,
+    generateFrom,
+    composerOpen,
+    setComposerOpen,
     usePromptText,
     loadIntoPanel,
     outpaintTarget,
@@ -127,13 +130,29 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           something is picked, so an ordinary click on the background of an
           ordinary page stays an ordinary click. */}
       <Workspace
-        pushed={dock.open || selectionSurface === 'panel'}
+        /* Never on a phone: `dock.open` is the desktop column's preference,
+           and the phone's generator is a sheet over the wall (#753). */
+        pushed={!prefs.isMobile && (dock.open || selectionSurface === 'panel')}
         onBackgroundClick={selectMode ? selection.clearSelection : undefined}
       >
         <Toolbar
           prefs={prefs}
           panelOpen={dock.open}
-          onTogglePanel={() => dock.setOpen(!dock.open)}
+          /* The phone's way in is the floating plus instead (#753). */
+          onTogglePanel={
+            prefs.isMobile ? undefined : () => dock.setOpen(!dock.open)
+          }
+          /* One row on a phone, not two: the scope pills fold up into this
+             one. Top level only, the same rule as the row below. */
+          trailing={
+            prefs.isMobile && !activeGroup ? (
+              <ScopeRow
+                inline
+                value={prefs.originFilter}
+                onChange={prefs.setOriginFilter}
+              />
+            ) : undefined
+          }
           groupName={activeGroup?.name}
           /* Undefined wherever the route is about generating rather than
              filing, which is what leaves the button out (#550). */
@@ -189,10 +208,12 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
             )}
           </>
         ) : (
-          <ScopeRow
-            value={prefs.originFilter}
-            onChange={prefs.setOriginFilter}
-          />
+          !prefs.isMobile && (
+            <ScopeRow
+              value={prefs.originFilter}
+              onChange={prefs.setOriginFilter}
+            />
+          )
         )}
 
         <ImageGallery
@@ -202,6 +223,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           loadingGallery={gallery.loadingGallery}
           showInfo={prefs.showInfo}
           thumbZoom={prefs.thumbZoom}
+          compact={prefs.isMobile}
           onDelete={trashImage}
           onHide={(img) => void visibility.hide([img.id])}
           onRetry={gallery.retryImage}
@@ -279,6 +301,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
       <GeneratorDock
         dock={dock}
         isMobile={prefs.isMobile}
+        mobileOpen={composerOpen}
+        onMobileOpenChange={setComposerOpen}
         selectionActive={selectMode}
         selectionActions={
           selectionSurface === 'panel' ? selectionActions : null
@@ -288,6 +312,14 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         userImages={userImages}
         uploadGroupId={activeGroupId}
         onShots={openShots}
+        /* The sheet has closed; take the wall to where the pending tiles
+           land, or the submit looks like it went nowhere (#753). */
+        onMobileSubmit={() =>
+          window.scrollTo({
+            top: prefs.sortAsc ? document.documentElement.scrollHeight : 0,
+            behavior: 'smooth',
+          })
+        }
       />
 
       {viewer.isOpen && (
@@ -300,6 +332,14 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onPrev={viewer.prev}
           onDelete={viewer.deleteAndAdvance}
           onHide={viewer.hideAndAdvance}
+          /* The quickest path on a phone from "I like that" to a new run
+             (#753): this picture as the one reference, generator open. */
+          onGenerateFrom={() => {
+            const id = viewer.items[viewer.index!]?.id
+            const img = images.find((i) => i.id === id)
+            viewer.close()
+            if (img) generateFrom(img)
+          }}
           onUsePrompt={usePromptText}
           onDescribe={describeImageById}
           describeStates={descriptionStates}

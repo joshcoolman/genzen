@@ -18,11 +18,18 @@ export interface NavItem {
   icon: LucideIcon
   dividerBefore?: boolean
   matchPaths?: Array<string>
+  /**
+   * Where the phone's bottom sheet puts it (#753). `primary` is the row of
+   * tiles -- the few sections that are worth using on a phone -- and `hidden`
+   * leaves it off the phone entirely. Unset is the list under the tiles.
+   */
+  mobile?: 'primary' | 'hidden'
 }
 
 export const navItems: Array<NavItem> = [
   {
     id: 'images',
+    mobile: 'primary',
     label: 'Images',
     href: '/images',
     icon: Sparkles,
@@ -46,24 +53,29 @@ export const navItems: Array<NavItem> = [
   // },
   {
     id: 'video',
+    mobile: 'primary',
     label: 'Video',
     href: '/video',
     icon: Clapperboard,
   },
   {
     id: 'director',
+    mobile: 'primary',
     label: 'Director',
     href: '/director',
     icon: Film,
   },
   {
     id: 'edit',
+    // A timeline of trims is too fiddly for a thumb; not linked on a phone.
+    mobile: 'hidden',
     label: 'Edit',
     href: '/edit',
     icon: Scissors,
   },
   {
     id: 'news',
+    mobile: 'primary',
     label: 'News',
     href: '/news',
     icon: Newspaper,

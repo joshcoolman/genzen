@@ -773,15 +773,27 @@ existed only so the tools were not underneath it (#207).
 **The toolbar toggle is the only way in and out** (#345). The panel's own X went
 with it: an X on something the sidebar toggles reads as "discard this" rather
 than "collapse this", and there is nothing to discard, since the prompt and the
-staged set survive either way. One switch going both directions. The mobile
-full-screen variant keeps its X, because it covers the toolbar that would
-otherwise close it.
+staged set survive either way. One switch going both directions. The phone has
+neither: see below.
 
 The panel's header carries the title and the system-instructions gear. **Every
-surface that renders `GeneratorPanel` must render that gear** -- the Images dock,
-its mobile variant, and the Canvas dialog. It used to live inside the panel so
+surface that generates must render that gear** -- the Images dock, the phone's
+`MobileGenerator`, and the Canvas dialog. It used to live inside the panel so
 that was structural; it is now a rule, and the failure it guards against is
 silent: a prompt prefix applying to generations with nothing on screen saying so.
+
+**On a phone the generator is `MobileGenerator`, not the panel** (#753). A
+floating plus opens it as a bottom sheet (state in `use-view`, never
+`dock.open`, which is the desktop column's persisted preference and defaults to
+open). One prompt, a chip row -- models, references, aspect, count -- and
+Generate; each chip is its own step in the sheet. **A single choice returns on
+tap, a multiple choice has Done.** Add prompt, Generate prompt, slash commands
+and Shots are desktop-only. The sheet closes on Generate and scrolls the wall
+to the pending tiles. **The viewer's Generate from this replaces the set with
+that one picture** and opens the generator -- replace, not push, because it
+means "make something from this one"; Cmd-click stays the additive gesture.
+The phone's wall is 2-up and bare (no caption, badges, menu or tick): a tap
+opens the viewer, which carries the verbs.
 
 Vertical spacing in the panel is one knob, `--panel-rhythm` on
 `generator-panel.module.css`'s root, inherited by `PromptList` and

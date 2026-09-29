@@ -34,6 +34,11 @@ interface ImageCardProps {
   imageUrl: string | undefined
   objectFit?: 'contain' | 'cover'
   showInfo?: boolean
+  /** The picture and nothing else -- no caption, badges, menu or tick (#753).
+   *  The phone's wall, where a tap opens the viewer and the viewer carries the
+   *  verbs; at half a phone's width the card's own controls cover the image
+   *  they act on. */
+  bare?: boolean
   onDelete?: (img: SavedAiImage) => void
   /** Take it out of the grid without destroying it (#504). When set, this is
    *  what the corner icon does, and Trash moves behind Cmd. */
@@ -88,6 +93,7 @@ export function ImageCard({
   imageUrl,
   objectFit,
   showInfo = true,
+  bare = false,
   onDelete,
   onHide,
   onDownload,
@@ -234,7 +240,7 @@ export function ImageCard({
   return (
     <Thumbnail
       topLeftBadge={
-        img.generation_metadata?.storyboard_shot
+        !bare && img.generation_metadata?.storyboard_shot
           ? `Shot ${img.generation_metadata.storyboard_shot}`
           : undefined
       }
@@ -248,7 +254,7 @@ export function ImageCard({
          read as a title for the prompt underneath it. Owned by Thumbnail since
          #367, so a pending card carries the identical badge in the identical
          place and nothing moves when the picture lands. */
-      bottomRightBadge={badge}
+      bottomRightBadge={bare ? undefined : badge}
       selected={selected}
       selectedClassName={styles.selectedTile}
       /* Select mode reads off the border alone: accent when taken, grey when
@@ -267,17 +273,18 @@ export function ImageCard({
          `data-drop-group-id` instead -- groups do not nest, so one is a
          destination and never a passenger. */
       dataAttrs={{ 'data-drag-image-id': img.id }}
-      overlayActionsLeft={selectionActive ? undefined : moreButton}
-      overlayActions={selectionActive ? undefined : cornerAction}
+      overlayActionsLeft={selectionActive || bare ? undefined : moreButton}
+      overlayActions={selectionActive || bare ? undefined : cornerAction}
       imageOverlay={
-        <>
-          {/* The image used to name its Cmd-click ("Add") while the key was
+        bare ? undefined : (
+          <>
+            {/* The image used to name its Cmd-click ("Add") while the key was
               held. It went with the "On canvas" marker: the gesture is an
               insider's, and it does not need announcing over every thumbnail
               of a grid. The prompt's own hint still names its modifier -- that
               one sits in a hover surface that already exists. */}
-          {refNote && <span className={styles.refNote}>{refNote}</span>}
-          {/* The tick, and the way *into* select mode (#325). On every card
+            {refNote && <span className={styles.refNote}>{refNote}</span>}
+            {/* The tick, and the way *into* select mode (#325). On every card
               always, not only once the mode is on: it is the only thing saying
               a card can be picked, and a toolbar toggle asked you to turn a
               mode on before you could touch the picture you were looking at.
@@ -287,21 +294,25 @@ export function ImageCard({
 
               Above the full-card overlay, so a click on the tick and a click
               on the card do the same thing once the mode is on. */}
-          {onSelect && (
-            <button
-              type="button"
-              className={cx(styles.selectTick, selected && styles.selectTickOn)}
-              aria-pressed={selected}
-              aria-label={selected ? 'Deselect image' : 'Select image'}
-              onClick={(e) => {
-                e.stopPropagation()
-                onSelect(img.id, e.shiftKey)
-              }}
-            >
-              <CheckCircle2 className={styles.selectTickIcon} />
-            </button>
-          )}
-        </>
+            {onSelect && (
+              <button
+                type="button"
+                className={cx(
+                  styles.selectTick,
+                  selected && styles.selectTickOn,
+                )}
+                aria-pressed={selected}
+                aria-label={selected ? 'Deselect image' : 'Select image'}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSelect(img.id, e.shiftKey)
+                }}
+              >
+                <CheckCircle2 className={styles.selectTickIcon} />
+              </button>
+            )}
+          </>
+        )
       }
       /* Cmd adds it to the reference images. One modifier, not two: Cmd used to
          replace the first image and Cmd-Shift push onto the rest, which was a
@@ -330,7 +341,7 @@ export function ImageCard({
     >
       {/* Shared with `PendingImageCard`, so a caption cannot change size,
           colour, clamp or behaviour when the picture lands (#367). */}
-      {showInfo && caption && (
+      {showInfo && !bare && caption && (
         <CardCaption
           text={caption}
           onUsePrompt={selectionActive ? undefined : onUsePrompt}

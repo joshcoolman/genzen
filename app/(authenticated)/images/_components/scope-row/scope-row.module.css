@@ -33,3 +33,10 @@
 .itemOn {
   color: var(--text);
 }
+
+/* Folded into the toolbar's row on a phone (#753): the row it joins is the
+   separation, so the hairline would be a second one. */
+.inline {
+  padding-block-end: 0;
+  border-block-end: none;
+}

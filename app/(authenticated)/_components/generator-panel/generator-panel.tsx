@@ -7,6 +7,7 @@ import { MetaPromptButton } from '../meta-prompt-dialog/meta-prompt-dialog'
 import { ExistingImagePicker } from '../existing-image-picker/existing-image-picker'
 import { ModelSelector } from '../model-selector/model-selector'
 import styles from './generator-panel.module.css'
+import { useGenerateClick } from './use-generate-click'
 import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { UserImage } from '#/features/user-images/types'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
@@ -14,7 +15,6 @@ import { pricedForImages } from '#/features/ai-images/model-selector/unified-mod
 import { REF_ROLES, isReadRole } from '#/features/ai-images/ref-roles'
 import { populateStoryboard } from '#/features/ai-images/server/populate-storyboard.action'
 import { systemInstructionsPrefix } from '#/features/ai-images/system-instructions'
-import { formatCents } from '#/lib/format'
 import {
   ActionButton,
   AspectRatioSelect,
@@ -23,20 +23,7 @@ import {
   ExpandableText,
   NumberStepper,
   RefImageStrip,
-  useConfirm,
 } from '#/components'
-
-/**
- * Above this many images in one submit, Generate asks first.
- *
- * The count is prompts x models x gens, so it multiplies out of sight -- three
- * prompts and two models is six generations from a panel that shows a "1" in
- * the stepper. Five is low enough to catch that and high enough that a normal
- * run never sees the dialog.
- */
-const CONFIRM_ABOVE = 5
-
-const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
 
 interface UserImagesData {
   images: Array<UserImage>
@@ -86,7 +73,10 @@ export function GeneratorPanel({
   const [pickerOpen, setPickerOpen] = useState(false)
   const [populating, setPopulating] = useState(false)
   const [populateError, setPopulateError] = useState<string | null>(null)
-  const { confirm, dialogProps } = useConfirm()
+  const { generate, dialogProps } = useGenerateClick({
+    generator,
+    modelSelector,
+  })
 
   /**
    * One storyboard command, and nothing else to lose.
@@ -156,33 +146,6 @@ export function GeneratorPanel({
   }
 
   const addGeneratedPrompt = (text: string) => addGeneratedPrompts([text])
-
-  /**
-   * A big run says how big before it starts. Cancel returns without submitting
-   * anything, so the model selection and the count are still there to adjust --
-   * the alternative was noticing twenty cards after they had already been paid
-   * for, since nothing here is refundable once FAL has the job.
-   *
-   * Not `destructive`: generating is not destruction, and the red confirm
-   * button is reserved for things that lose work.
-   */
-  async function handleGenerateClick() {
-    const count = generator.totalImages
-    if (count > CONFIRM_ABOVE) {
-      const models = modelSelector.selectedIds.length
-      // The multiplication spelled out, because the surprise is never the
-      // number itself -- it is which of the three factors was larger than you
-      // remembered.
-      const ok = await confirm({
-        title: `Generate ${count} images?`,
-        message: `${plural(count, 'image')} across ${plural(models, 'model')} (including every storyboard shot), about ${formatCents(generator.estimatedCost.cents)}. Cancel to change the count or the models.`,
-        confirmLabel: `Generate ${count}`,
-        destructive: false,
-      })
-      if (!ok) return
-    }
-    await generator.handleGenerate()
-  }
 
   return (
     <div className={styles.root}>
@@ -371,7 +334,7 @@ export function GeneratorPanel({
           </ActionButton>
         )}
         <ActionButton
-          onClick={() => void handleGenerateClick()}
+          onClick={() => void generate()}
           loading={generator.loading}
           /* Spinner only. There is no room beside it for a word at this width,
              and the panel is disabled while a run is in flight anyway. */

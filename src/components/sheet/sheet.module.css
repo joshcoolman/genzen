@@ -2,7 +2,8 @@
  * Everything a call site changes is a custom property, not a re-declared
  * property: two modules setting `width` or `background` on one element race on
  * bundle order. `--sheet-width`, `--sheet-max-width`, `--sheet-background`,
- * `--sheet-padding`, `--sheet-gap`.
+ * `--sheet-padding`, `--sheet-gap`; for `bottom`, `--sheet-max-height`,
+ * `--sheet-overflow` and `--sheet-padding-bottom`.
  */
 .backdrop {
   position: fixed;
@@ -48,6 +49,26 @@
 .left {
   left: 0;
   border-right: var(--border-width) solid var(--border);
+}
+
+.bottom {
+  inset-inline: 0;
+  bottom: 0;
+  max-height: var(--sheet-max-height, 90dvh);
+  /* `hidden` when the caller scrolls an inner body instead. */
+  overflow-y: var(--sheet-overflow, auto);
+  border-top: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  /* Clear of the home indicator. Zero until the viewport opts into
+     `viewport-fit=cover`, so it costs nothing until then. */
+  padding-bottom: calc(
+    var(--sheet-padding-bottom, 0px) + env(safe-area-inset-bottom)
+  );
+}
+
+.bottom[data-starting-style],
+.bottom[data-ending-style] {
+  transform: translateY(100%);
 }
 
 .right[data-starting-style],

@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronDown, Upload } from 'lucide-react'
+import { Check, ChevronDown, ImagePlus, Upload, X } from 'lucide-react'
 import styles from './existing-image-picker.module.css'
 import type { CollectedImage, UserImage } from '#/features/user-images/types'
 import type { ImageGroupName } from '#/features/user-images/server/image-groups.action'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
 import { listImageGroupNames } from '#/features/user-images/server/image-groups.action'
 import { useAuth } from '#/lib/auth'
+import { useIsMobile } from '#/lib/use-is-mobile'
 import {
   Button,
   Dialog,
@@ -20,6 +21,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   ImageGrid,
+  Sheet,
+  SheetContent,
+  SheetTitle,
   Thumbnail,
   toast,
 } from '#/components'
@@ -86,6 +90,7 @@ export function ExistingImagePicker({
   uploadGroupId = null,
 }: ExistingImagePickerProps) {
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
   const [groupFilter, setGroupFilter] = useState<GroupFilter>(null)
@@ -147,12 +152,24 @@ export function ExistingImagePicker({
      filters to an empty grid is a dead end you have to back out of. `images`
      is already the caller's scoped list, so a picker that excludes videos
      never offers a group of nothing but videos. */
+  /* Counted over what could actually be picked -- `excludeIds` out -- so a
+     group whose only pictures are excluded is empty here, and an empty
+     choice is never offered (#753). The source pills follow the same rule
+     below. */
+  const pickable = useMemo(
+    () =>
+      excludeIds?.size
+        ? images.filter((img) => !excludeIds.has(img.id))
+        : images,
+    [images, excludeIds],
+  )
+
   const groupOptions = useMemo(() => {
     const present = new Set(
-      images.map((img) => img.group_id).filter((id): id is string => !!id),
+      pickable.map((img) => img.group_id).filter((id): id is string => !!id),
     )
     return { named: groups.filter((g) => present.has(g.id)) }
-  }, [images, groups])
+  }, [pickable, groups])
 
   const groupLabel =
     groupFilter === null
@@ -275,7 +292,249 @@ export function ExistingImagePicker({
     { value: 'all', label: 'All' },
     { value: 'upload', label: 'Uploads' },
     { value: 'ai_generated', label: 'AI Generated' },
-  ]
+  ].filter(
+    (btn): btn is { value: SourceFilter; label: string } =>
+      btn.value === 'all' || pickable.some((img) => img.source === btn.value),
+  )
+
+  /* One hidden input, whichever control clicks it: the desktop's Upload
+     beside the filters, or the phone's Photos button above them (#753). */
+  const fileInput = canUpload ? (
+    <input
+      ref={fileInputRef}
+      type="file"
+      accept="image/jpeg,image/png,image/webp,image/gif"
+      multiple
+      className={styles.fileInput}
+      onChange={(e) => {
+        const files = Array.from(e.target.files ?? [])
+        if (files.length > 0) void uploadFiles(files)
+        e.target.value = ''
+      }}
+    />
+  ) : null
+
+  /* Above the grid rather than in the footer, and opposite the filters:
+     those three narrow what is already here, this brings something that is
+     not. */
+  const uploadButton = canUpload ? (
+    <button
+      type="button"
+      className={styles.upload}
+      onClick={() => fileInputRef.current?.click()}
+      disabled={uploadingCount > 0}
+    >
+      <Upload className={styles.uploadIcon} />
+      {uploadingCount > 0 ? `Uploading ${uploadingCount}...` : 'Upload'}
+    </button>
+  ) : null
+
+  const filterRow = (
+    <div className={styles.filters}>
+      {filterButtons.map((btn) => (
+        <button
+          key={btn.value}
+          type="button"
+          onClick={() => setSourceFilter(btn.value)}
+          className={`${styles.filter} ${sourceFilter === btn.value ? styles.filterSelected : ''}`}
+        >
+          {btn.label}
+        </button>
+      ))}
+
+      {/* Only when there is a group to pick: a dropdown over a library
+        with no groups in it is a control that cannot do anything. A
+        dropdown rather than more pills because the count is unbounded --
+        three sources fit on a row, thirty groups do not.
+
+        It reads "All" and then the group names, the same word the source
+        pills use for the same idea. Two "All"s sit next to each other and
+        that is fine: they narrow different things, and the one that is
+        open tells you which. */}
+      {groupOptions.named.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className={`${styles.filter} ${styles.groupTrigger} ${
+              groupFilter !== null ? styles.filterSelected : ''
+            }`}
+          >
+            {groupLabel}
+            <ChevronDown className={styles.groupChevron} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onClick={() => setGroupFilter(null)}>
+              All
+            </DropdownMenuItem>
+            {groupOptions.named.map((g) => (
+              <DropdownMenuItem key={g.id} onClick={() => setGroupFilter(g.id)}>
+                {g.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
+      {!isMobile && uploadButton}
+    </div>
+  )
+
+  /* **The phone gets one dropdown, not a row** (#753): sources, then groups
+     under their own heading. One choice at a time -- picking a group clears
+     the source and the other way round -- because two filters that combine
+     are a desktop affordance, and on a phone the second was a pill scrolled
+     out of sight. Native, so it is the phone's own wheel. */
+  const filterSelect = (
+    <select
+      className={styles.filterSelect}
+      aria-label="Show"
+      value={groupFilter !== null ? `group:${groupFilter}` : sourceFilter}
+      onChange={(e) => {
+        const v = e.target.value
+        if (v.startsWith('group:')) {
+          setSourceFilter('all')
+          setGroupFilter(v.slice('group:'.length))
+        } else {
+          setGroupFilter(null)
+          setSourceFilter(v as SourceFilter)
+        }
+      }}
+    >
+      {filterButtons.map((btn) => (
+        <option key={btn.value} value={btn.value}>
+          {btn.label}
+        </option>
+      ))}
+      {groupOptions.named.length > 0 && (
+        <optgroup label="Groups">
+          {groupOptions.named.map((g) => (
+            <option key={g.id} value={`group:${g.id}`}>
+              {g.name}
+            </option>
+          ))}
+        </optgroup>
+      )}
+    </select>
+  )
+
+  const grid = (
+    <div className={styles.grid}>
+      {isLoading ? (
+        <div className={styles.state}>Loading images...</div>
+      ) : filteredImages.length === 0 ? (
+        <div className={styles.state}>No images found</div>
+      ) : (
+        <>
+          {alreadyCollectedImages.length > 0 && (
+            <>
+              <div className={styles.collected}>
+                <p className={styles.collectedLabel}>Already collected</p>
+                <ImageGrid size={isMobile ? 'sm' : 'md'}>
+                  {alreadyCollectedImages.map((image) => (
+                    <Thumbnail
+                      key={image.id}
+                      url={imageUrls[image.id] ?? null}
+                      alt={image.title}
+                      compact
+                      objectFit={isMobile ? 'cover' : undefined}
+                    />
+                  ))}
+                </ImageGrid>
+              </div>
+              <hr className={styles.divider} />
+            </>
+          )}
+          <ImageGrid size={isMobile ? 'sm' : 'md'}>
+            {availableImages.map((image) => {
+              const isSelected = selectedIds.has(image.id)
+
+              return (
+                <Thumbnail
+                  key={image.id}
+                  url={imageUrls[image.id] ?? null}
+                  alt={image.title}
+                  onClick={() => toggleSelect(image.id)}
+                  compact
+                  objectFit={isMobile ? 'cover' : undefined}
+                  pickable
+                  selected={isSelected}
+                  selectedClassName={styles.thumbSelected}
+                  imageOverlay={
+                    isSelected ? (
+                      <div className={styles.check}>
+                        <Check />
+                      </div>
+                    ) : undefined
+                  }
+                />
+              )
+            })}
+          </ImageGrid>
+        </>
+      )}
+    </div>
+  )
+
+  const footer = (
+    <div className={styles.footerInner}>
+      {max !== undefined && (
+        <span className={styles.count}>
+          {selectedIds.size}/{max} selected
+        </span>
+      )}
+      <Button
+        variant="primary"
+        onClick={handleConfirm}
+        disabled={selectedIds.size === 0}
+      >
+        Add {selectedIds.size > 0 ? `${selectedIds.size} ` : ''}Selected
+      </Button>
+    </div>
+  )
+
+  /* **On a phone it is a sheet from the bottom** (#753), over the generator
+     sheet it was opened from, so it reads as a step deeper rather than a
+     box floating over another. The phone's own photos come first -- on iOS
+     the input offers the library, the camera and Files -- because that is
+     where a reference usually is when you are holding the phone; the
+     genzen library is the grid below. */
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={handleOpenChange}>
+        <SheetContent
+          side="bottom"
+          className={styles.sheet}
+          showCloseButton={false}
+        >
+          <div className={styles.sheetHeader}>
+            <SheetTitle className={styles.sheetTitle}>Add images</SheetTitle>
+            <button
+              type="button"
+              className={styles.sheetClose}
+              aria-label="Close"
+              onClick={() => handleOpenChange(false)}
+            >
+              <X />
+            </button>
+          </div>
+          {fileInput}
+          {canUpload && (
+            <button
+              type="button"
+              className={styles.photos}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingCount > 0}
+            >
+              <ImagePlus />
+              {uploadingCount > 0 ? `Uploading ${uploadingCount}...` : 'Photos'}
+            </button>
+          )}
+          {filterSelect}
+          {grid}
+          <div className={styles.sheetFooter}>{footer}</div>
+        </SheetContent>
+      </Sheet>
+    )
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -283,156 +542,10 @@ export function ExistingImagePicker({
         <DialogHeader>
           <DialogTitle>Library</DialogTitle>
         </DialogHeader>
-
-        <div className={styles.filters}>
-          {filterButtons.map((btn) => (
-            <button
-              key={btn.value}
-              type="button"
-              onClick={() => setSourceFilter(btn.value)}
-              className={`${styles.filter} ${sourceFilter === btn.value ? styles.filterSelected : ''}`}
-            >
-              {btn.label}
-            </button>
-          ))}
-
-          {/* Only when there is a group to pick: a dropdown over a library
-              with no groups in it is a control that cannot do anything. A
-              dropdown rather than more pills because the count is unbounded --
-              three sources fit on a row, thirty groups do not.
-
-              It reads "All" and then the group names, the same word the source
-              pills use for the same idea. Two "All"s sit next to each other and
-              that is fine: they narrow different things, and the one that is
-              open tells you which. */}
-          {groupOptions.named.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className={`${styles.filter} ${styles.groupTrigger} ${
-                  groupFilter !== null ? styles.filterSelected : ''
-                }`}
-              >
-                {groupLabel}
-                <ChevronDown className={styles.groupChevron} />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => setGroupFilter(null)}>
-                  All
-                </DropdownMenuItem>
-                {groupOptions.named.map((g) => (
-                  <DropdownMenuItem
-                    key={g.id}
-                    onClick={() => setGroupFilter(g.id)}
-                  >
-                    {g.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          {/* Above the grid rather than in the footer, and opposite the
-              filters: those three narrow what is already here, this brings
-              something that is not. */}
-          {canUpload && (
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                multiple
-                className={styles.fileInput}
-                onChange={(e) => {
-                  const files = Array.from(e.target.files ?? [])
-                  if (files.length > 0) void uploadFiles(files)
-                  e.target.value = ''
-                }}
-              />
-              <button
-                type="button"
-                className={styles.upload}
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingCount > 0}
-              >
-                <Upload className={styles.uploadIcon} />
-                {uploadingCount > 0
-                  ? `Uploading ${uploadingCount}...`
-                  : 'Upload'}
-              </button>
-            </>
-          )}
-        </div>
-
-        <div className={styles.grid}>
-          {isLoading ? (
-            <div className={styles.state}>Loading images...</div>
-          ) : filteredImages.length === 0 ? (
-            <div className={styles.state}>No images found</div>
-          ) : (
-            <>
-              {alreadyCollectedImages.length > 0 && (
-                <>
-                  <div className={styles.collected}>
-                    <p className={styles.collectedLabel}>Already collected</p>
-                    <ImageGrid size="md">
-                      {alreadyCollectedImages.map((image) => (
-                        <Thumbnail
-                          key={image.id}
-                          url={imageUrls[image.id] ?? null}
-                          alt={image.title}
-                          compact
-                        />
-                      ))}
-                    </ImageGrid>
-                  </div>
-                  <hr className={styles.divider} />
-                </>
-              )}
-              <ImageGrid size="md">
-                {availableImages.map((image) => {
-                  const isSelected = selectedIds.has(image.id)
-
-                  return (
-                    <Thumbnail
-                      key={image.id}
-                      url={imageUrls[image.id] ?? null}
-                      alt={image.title}
-                      onClick={() => toggleSelect(image.id)}
-                      compact
-                      pickable
-                      selected={isSelected}
-                      selectedClassName={styles.thumbSelected}
-                      imageOverlay={
-                        isSelected ? (
-                          <div className={styles.check}>
-                            <Check />
-                          </div>
-                        ) : undefined
-                      }
-                    />
-                  )
-                })}
-              </ImageGrid>
-            </>
-          )}
-        </div>
-
-        <DialogFooter className={styles.footer}>
-          <div className={styles.footerInner}>
-            {max !== undefined && (
-              <span className={styles.count}>
-                {selectedIds.size}/{max} selected
-              </span>
-            )}
-            <Button
-              variant="primary"
-              onClick={handleConfirm}
-              disabled={selectedIds.size === 0}
-            >
-              Add {selectedIds.size > 0 ? `${selectedIds.size} ` : ''}Selected
-            </Button>
-          </div>
-        </DialogFooter>
+        {fileInput}
+        {filterRow}
+        {grid}
+        <DialogFooter className={styles.footer}>{footer}</DialogFooter>
       </DialogContent>
     </Dialog>
   )

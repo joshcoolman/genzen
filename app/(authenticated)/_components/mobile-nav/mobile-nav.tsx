@@ -1,29 +1,39 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut, Menu } from 'lucide-react'
 import { clsx } from 'clsx'
 import styles from './mobile-nav.module.css'
+import type { NavItem } from '#/lib/nav-items'
 import { logout } from '#/features/auth/logout.action'
-import {
-  Button,
-  ConfirmDialog,
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  useConfirm,
-} from '#/components'
+import { ConfirmDialog, Sheet, SheetContent, useConfirm } from '#/components'
 import { navItems } from '#/lib/nav-items'
 
+/** How far up a drag on the pill has to travel before it counts as a swipe. */
+const SWIPE_PX = 16
+
+/**
+ * The phone's navigation (#753): a pill at the bottom that opens a sheet from
+ * the bottom. It replaced a hamburger in the top-left corner, the one place a
+ * thumb does not reach.
+ *
+ * **The pill sits above the bottom edge, never on it.** A swipe up from the
+ * very edge is iOS's go-home gesture and the system always wins it, so the
+ * thing you swipe has to be something visible a little higher up.
+ *
+ * Tap and swipe up both open it. The sheet holds the sections worth using on
+ * a phone as tiles, then everything else as a list; `NavItem.mobile` says
+ * which is which, and Edit is not on the phone at all.
+ */
 export function MobileNav({ className }: { className?: string }) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
+  const swipeFrom = useRef<number | null>(null)
 
-  const accountItem = navItems.find((item) => item.id === 'account')!
-
-  const mainItems = navItems.filter((item) => item.id !== 'account')
+  const primary = navItems.filter((item) => item.mobile === 'primary')
+  const others = navItems.filter((item) => !item.mobile)
 
   const { confirm, dialogProps } = useConfirm()
 
@@ -37,68 +47,92 @@ export function MobileNav({ className }: { className?: string }) {
     if (ok) void logout()
   }
 
-  // Close sheet on route change
   useEffect(() => {
     setOpen(false)
   }, [pathname])
 
-  const isActive = (item: { href: string; matchPaths?: Array<string> }) => {
+  const isActive = (item: NavItem) => {
     if (pathname.startsWith(item.href)) return true
     return item.matchPaths?.some((p) => pathname.startsWith(p)) ?? false
   }
 
+  const current = navItems.find(isActive)
+  const CurrentIcon = current?.icon ?? Menu
+
   return (
     <div className={clsx(styles.root, className)}>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger
-          render={
-            <Button variant="secondary" className={styles.trigger}>
-              <Menu />
-            </Button>
+      <button
+        type="button"
+        className={styles.pill}
+        aria-label="Open menu"
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+        onPointerDown={(e) => {
+          swipeFrom.current = e.clientY
+        }}
+        onPointerMove={(e) => {
+          if (swipeFrom.current === null) return
+          if (swipeFrom.current - e.clientY > SWIPE_PX) {
+            swipeFrom.current = null
+            setOpen(true)
           }
-        />
-        <SheetContent side="left" className={styles.sheet}>
-          {/* Nav items */}
+        }}
+        onPointerUp={() => {
+          swipeFrom.current = null
+        }}
+        onPointerCancel={() => {
+          swipeFrom.current = null
+        }}
+      >
+        <span className={styles.grip} aria-hidden="true" />
+        <span className={styles.pillLabel}>
+          <CurrentIcon />
+          {current?.label ?? 'Menu'}
+        </span>
+      </button>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          side="bottom"
+          className={styles.sheet}
+          showCloseButton={false}
+        >
+          <span className={styles.handle} aria-hidden="true" />
           <nav className={styles.nav}>
-            {mainItems.map((item) => {
-              const active = isActive(item)
-              return (
-                <div key={item.href}>
-                  {item.dividerBefore && <div className={styles.divider} />}
-                  <Link
-                    href={item.href}
-                    className={clsx(styles.item, active && styles.itemActive)}
-                  >
-                    <item.icon />
-                    {item.label}
-                  </Link>
-                </div>
-              )
-            })}
-            <div className={styles.divider} />
-            {[accountItem].map((item) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                className={clsx(
-                  styles.item,
-                  isActive(item) && styles.itemActive,
-                )}
+            <div className={styles.tiles}>
+              {primary.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className={clsx(styles.tile, isActive(item) && styles.on)}
+                >
+                  <item.icon />
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+            <div className={styles.list}>
+              {others.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className={clsx(styles.row, isActive(item) && styles.on)}
+                >
+                  <item.icon />
+                  {item.label}
+                </Link>
+              ))}
+              <button
+                type="button"
+                className={styles.row}
+                onClick={() => void askThenSignOut()}
               >
-                <item.icon />
-                {item.label}
-              </Link>
-            ))}
-            <button
-              type="button"
-              className={styles.item}
-              onClick={() => void askThenSignOut()}
-            >
-              <LogOut />
-              Log out
-            </button>
-            <ConfirmDialog {...dialogProps} />
+                <LogOut />
+                Log out
+              </button>
+            </div>
           </nav>
+          <ConfirmDialog {...dialogProps} />
         </SheetContent>
       </Sheet>
     </div>

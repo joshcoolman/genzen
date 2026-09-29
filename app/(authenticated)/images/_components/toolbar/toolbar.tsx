@@ -15,7 +15,7 @@ import { useRef } from 'react'
 import { ZOOM_STOPS } from '../../_hooks/use-prefs'
 import styles from './toolbar.module.css'
 import type { PrefsState } from '../../_hooks/use-prefs'
-import type { ReactElement } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,7 +55,11 @@ interface ToolbarProps {
   prefs: PrefsState
   /** The generator panel. Its control stays put whichever way it is showing. */
   panelOpen: boolean
-  onTogglePanel: () => void
+  /** Absent on a phone, where the floating plus is the way in (#753). */
+  onTogglePanel?: () => void
+  /** Rendered at the end of the row in place of the view tools -- the phone
+   *  folds the scope row up into this one rather than stacking two (#753). */
+  trailing?: ReactNode
   /** The group being worked in, or null at top level (#319). The name *and*
    *  the way back are a heading above the grid since #432; this row only needs
    *  to know whether it is inside one. */
@@ -81,6 +85,7 @@ export function Toolbar({
   prefs,
   panelOpen,
   onTogglePanel,
+  trailing,
   groupName,
   onDownloadGroup,
   onTrashGroup,
@@ -196,109 +201,119 @@ export function Toolbar({
           </>
         )}
       </div>
-      <TooltipProvider delay={300}>
-        <div className={styles.tools}>
-          {/* Says what the click will do, not which way it is sorted now --
+      {trailing ?? (
+        <TooltipProvider delay={300}>
+          <div className={styles.tools}>
+            {/* Says what the click will do, not which way it is sorted now --
               the arrow already shows that. */}
-          {!manualOrder && (
-            <Labelled
-              label={prefs.sortAsc ? 'Sort newest first' : 'Sort oldest first'}
-            >
-              <button
-                onClick={prefs.toggleSort}
-                className={cx(styles.viewToggle, styles.viewToggleBoxed)}
-                aria-label={
+            {!manualOrder && (
+              <Labelled
+                label={
                   prefs.sortAsc ? 'Sort newest first' : 'Sort oldest first'
                 }
               >
-                {prefs.sortAsc ? (
-                  <ArrowUp className={styles.icon} />
-                ) : (
-                  <ArrowDown className={styles.icon} />
-                )}
-              </button>
-            </Labelled>
-          )}
+                <button
+                  onClick={prefs.toggleSort}
+                  className={cx(styles.viewToggle, styles.viewToggleBoxed)}
+                  aria-label={
+                    prefs.sortAsc ? 'Sort newest first' : 'Sort oldest first'
+                  }
+                >
+                  {prefs.sortAsc ? (
+                    <ArrowUp className={styles.icon} />
+                  ) : (
+                    <ArrowDown className={styles.icon} />
+                  )}
+                </button>
+              </Labelled>
+            )}
 
-          {/* Thumbnail size (#403). A flyout of the four stops, and the
+            {/* Thumbnail size (#403). A flyout of the four stops, and the
               collapsed button shows only the icon -- what it is set to is
               visible in the grid behind it, so a number on the button would
               label the obvious and make the row's one variable-width control.
               The keyboard gesture is the fast path; this is the discoverable
               one. */}
-          <DropdownMenu>
-            {/* Opens on hover, so the stops are one gesture away rather than
+            <DropdownMenu>
+              {/* Opens on hover, so the stops are one gesture away rather than
                 two. No tooltip, unlike its neighbours: a tooltip and a menu
                 racing to occupy the same space under the same pointer is one
                 of them always being wrong. The menu is the better answer --
                 it says what the control does by showing what it offers. */}
-            <DropdownMenuTrigger
-              openOnHover
-              delay={120}
-              closeDelay={200}
-              render={
-                <button
-                  type="button"
-                  className={cx(styles.viewToggle, styles.viewToggleBoxed)}
-                  aria-label="Thumbnail size"
-                >
-                  <ZoomIn className={styles.icon} />
-                </button>
-              }
-            />
-            {/* Centred under the glyph and only as wide as "100". The menu's
+              <DropdownMenuTrigger
+                openOnHover
+                delay={120}
+                closeDelay={200}
+                render={
+                  <button
+                    type="button"
+                    className={cx(styles.viewToggle, styles.viewToggleBoxed)}
+                    aria-label="Thumbnail size"
+                  >
+                    <ZoomIn className={styles.icon} />
+                  </button>
+                }
+              />
+              {/* Centred under the glyph and only as wide as "100". The menu's
                 own 8rem min-width is sized for labelled items; three digits
                 left it mostly empty and pulled to one side. */}
-            <DropdownMenuContent align="center" className={styles.zoomMenu}>
-              {ZOOM_STOPS.map((stop) => (
-                <DropdownMenuItem
-                  key={stop}
-                  onClick={() => prefs.setThumbZoom(stop)}
-                  /* Marked in the text colour, never with a background: the
+              <DropdownMenuContent align="center" className={styles.zoomMenu}>
+                {ZOOM_STOPS.map((stop) => (
+                  <DropdownMenuItem
+                    key={stop}
+                    onClick={() => prefs.setThumbZoom(stop)}
+                    /* Marked in the text colour, never with a background: the
                      background is what hover means here, and a set value
                      wearing the hover fill reads as "the pointer is there"
                      rather than "this is the one". */
-                  className={cx(prefs.thumbZoom === stop && styles.zoomCurrent)}
-                >
-                  {Math.round(stop * 100)}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                    className={cx(
+                      prefs.thumbZoom === stop && styles.zoomCurrent,
+                    )}
+                  >
+                    {Math.round(stop * 100)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          {/* "Captions", not "info": what it shows is the model name and the
+            {/* "Captions", not "info": what it shows is the model name and the
               prompt under each card. */}
-          <Labelled label={prefs.showInfo ? 'Hide captions' : 'Show captions'}>
-            <button
-              onClick={prefs.toggleInfo}
-              className={cx(
-                styles.viewToggle,
-                prefs.showInfo && styles.viewToggleOn,
-              )}
-              aria-label={prefs.showInfo ? 'Hide captions' : 'Show captions'}
+            <Labelled
+              label={prefs.showInfo ? 'Hide captions' : 'Show captions'}
             >
-              <TextInitial className={styles.icon} />
-            </button>
-          </Labelled>
+              <button
+                onClick={prefs.toggleInfo}
+                className={cx(
+                  styles.viewToggle,
+                  prefs.showInfo && styles.viewToggleOn,
+                )}
+                aria-label={prefs.showInfo ? 'Hide captions' : 'Show captions'}
+              >
+                <TextInitial className={styles.icon} />
+              </button>
+            </Labelled>
 
-          {/* The generator's own control, and it stays put: it used to be a
+            {/* The generator's own control, and it stays put: it used to be a
               green `+` that vanished once the panel was open, so opening it
               left only the panel's X and closing it moved the button back --
               two controls for one thing, neither of them where the other was.
               A panel toggle instead, in the row's own style, lit while the
               panel is showing the way select is. */}
-          <Labelled label={panelOpen ? 'Hide generator' : 'Show generator'}>
-            <button
-              onClick={onTogglePanel}
-              className={cx(styles.action, panelOpen && styles.actionOn)}
-              aria-pressed={panelOpen}
-              aria-label={panelOpen ? 'Hide generator' : 'Show generator'}
-            >
-              <PanelRight className={styles.icon} />
-            </button>
-          </Labelled>
-        </div>
-      </TooltipProvider>
+            {onTogglePanel && (
+              <Labelled label={panelOpen ? 'Hide generator' : 'Show generator'}>
+                <button
+                  onClick={onTogglePanel}
+                  className={cx(styles.action, panelOpen && styles.actionOn)}
+                  aria-pressed={panelOpen}
+                  aria-label={panelOpen ? 'Hide generator' : 'Show generator'}
+                >
+                  <PanelRight className={styles.icon} />
+                </button>
+              </Labelled>
+            )}
+          </div>
+        </TooltipProvider>
+      )}
     </div>
   )
 }
