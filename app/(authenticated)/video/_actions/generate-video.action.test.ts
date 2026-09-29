@@ -49,6 +49,53 @@ beforeEach(() => {
   mocks.submit.mockResolvedValue({ request_id: 'request-1' })
 })
 describe('Video server action', () => {
+  it('submits a prompted Veo handoff while retaining the original script and image roles', async () => {
+    const images = [
+      { id: a, role: 'reference' as const },
+      { id: b, role: 'first' as const },
+    ]
+    await generateVideo({
+      ...base,
+      modelSlug: 'veo-3.1-fast',
+      origin: 'director',
+      images,
+    })
+    const input = mocks.submit.mock.calls[0][1].input
+    expect(mocks.submit.mock.calls[0][0]).toBe(
+      'fal-ai/veo3.1/fast/reference-to-video',
+    )
+    expect(input.image_urls).toEqual(['url-b', 'url-a'])
+    expect(input.prompt).toContain('first supplied image is the ending frame')
+    expect(input.prompt).toContain(base.prompt)
+    expect(input.duration).toBe('8s')
+    expect(input.auto_fix).toBe(false)
+    expect(mocks.reserve).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: base.prompt,
+        origin: 'director',
+        extraMetadata: expect.objectContaining({
+          canonical_prompt: base.prompt,
+          sent_prompt: input.prompt,
+          continuity_mode: 'prompted_reference',
+          input_images: images,
+          source_image_id: b,
+          reference_image_ids: [a],
+          estimated_cost_cents: 120,
+        }),
+      }),
+    )
+  })
+  it('does not invent an incoming frame for Veo reference-only requests', async () => {
+    await generateVideo({
+      ...base,
+      modelSlug: 'veo-3.1-fast',
+      images: [
+        { id: a, role: 'reference' },
+        { id: b, role: 'reference' },
+      ],
+    })
+    expect(mocks.submit.mock.calls[0][1].input.prompt).toBe(base.prompt)
+  })
   it('records ordered references and uses the authenticated owner for uploads', async () => {
     const images = [
       { id: b, role: 'reference' as const },

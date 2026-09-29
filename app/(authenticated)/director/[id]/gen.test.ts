@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest'
 import {
   GEN_FALLBACK_RATIO,
   MAX_REFS,
+  VEO_REF_MODEL_SLUG,
   clampRatio,
+  genDurationFor,
   genModel,
   genModelFor,
   genRatios,
   genRatiosFor,
   nearestGenRatio,
   refModel,
+  referenceCapacity,
 } from './gen'
 
 describe('the model a run generates with', () => {
@@ -89,5 +92,17 @@ describe('the model a reference switches to (#665)', () => {
     genModel().durations.forEach((seconds) => {
       expect(refModel().durations).toContain(seconds)
     })
+  })
+})
+
+describe('Director reference model choice', () => {
+  it('uses Veo only for reference clips and presents the actual duration', () => {
+    const veo = genModelFor(1, VEO_REF_MODEL_SLUG)
+    expect(veo.slug).toBe('veo-3.1-fast')
+    expect(genDurationFor(veo, 5)).toBe(8)
+    expect(genDurationFor(genModelFor(1), 5)).toBe(5)
+    expect(genModelFor(0, VEO_REF_MODEL_SLUG).slug).toBe(genModel().slug)
+    expect(referenceCapacity(VEO_REF_MODEL_SLUG, true)).toBe(2)
+    expect(referenceCapacity(VEO_REF_MODEL_SLUG, false)).toBe(3)
   })
 })

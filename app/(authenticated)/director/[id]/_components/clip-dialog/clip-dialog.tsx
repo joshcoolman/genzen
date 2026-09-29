@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { GenForm } from '../gen-form/gen-form'
 import styles from './clip-dialog.module.css'
+import type { ReferenceModelSlug } from '../../gen'
 import type { GenFrame } from '../gen-form/gen-form'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 import { cx } from '#/lib/utils'
@@ -24,6 +25,8 @@ export interface GenFormState {
   endFrame: GenFrame | null
   endFrameLoading: boolean
   onDropEndFrame: () => void
+  referenceModel: ReferenceModelSlug
+  onReferenceModelChange: (value: ReferenceModelSlug) => void
   refs: Array<GenFrame>
   runClips: Array<VideoRecord>
   onAddRefs: (frames: Array<GenFrame>) => void

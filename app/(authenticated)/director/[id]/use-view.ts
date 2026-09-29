@@ -11,10 +11,10 @@ import {
 import { completedPrefix } from '../_lib/cut-job'
 import { trashClip, writeRun } from '../_actions/sessions.action'
 import {
-  GEN_MODEL_SLUG,
   MAX_REFS,
-  REF_MODEL_SLUG,
+  VEO_REF_MODEL_SLUG,
   clampRatio,
+  genDurationFor,
   genModel,
   genModelFor,
   genRatiosFor,
@@ -30,6 +30,7 @@ import {
 } from './run'
 import { scriptOf } from './script'
 import type { Ready } from './run'
+import type { ReferenceModelSlug } from './gen'
 import type { GenFrame } from './_components/gen-form/gen-form'
 import type { ChatTurn, Session } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
@@ -579,6 +580,8 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
    * a continuation that did not ask for it.
    */
   const [refs, setRefs] = useState<Array<GenFrame>>([])
+  const [referenceModel, setReferenceModel] =
+    useState<ReferenceModelSlug>(VEO_REF_MODEL_SLUG)
   const [busy, setBusy] = useState(false)
 
   /** Appended, skipping anything already on the strip and stopping at the cap
@@ -816,14 +819,14 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
    * position immediately and the reconcile effect above swaps the real row in.
    */
   const submitGen = useCallback(async () => {
-    if (!target || busy) return
+    if (!target || busy || frameLoading || endFrameLoading) return
     const text = prompt.trim()
     if (!text) return
 
-    /* The inputs choose the model, exactly as they do on Video: a reference
-       means Kling O3 Pro, which is the only one taking references and a
-       starting frame together, and none means H3 Max Turbo. See `gen.ts`. */
-    const ratios = genRatiosFor(refs.length)
+    // References use the chosen trial model; no extra references keeps H3.
+    const selectedModel = genModelFor(refs.length, referenceModel)
+    const selectedDuration = genDurationFor(selectedModel, duration)
+    const ratios = genRatiosFor(refs.length, referenceModel)
 
     setBusy(true)
     try {
@@ -834,7 +837,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
           ...(endFrame ? [{ id: endFrame.id, role: 'last' as const }] : []),
         ],
         prompt: text,
-        duration,
+        duration: selectedDuration,
         /* Ignored by H3's image endpoint, which has no such parameter and
            follows the frame; a real choice only when there is no frame. Kling's
            reference endpoint does take one and validates it, so whichever of
@@ -843,7 +846,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
           frame || endFrame
             ? nearestRatio(ratios, runRatio)
             : clampRatio(ratios, ratio),
-        modelSlug: refs.length > 0 ? REF_MODEL_SLUG : GEN_MODEL_SLUG,
+        modelSlug: selectedModel.slug,
         origin: 'director',
       })
 
@@ -851,14 +854,14 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
         id: recordId,
         // The model the inputs chose, not the page's default -- the row's own
         // title is written server-side from the same choice.
-        title: genModelFor(refs.length).label,
+        title: selectedModel.label,
         description: text,
         status: 'pending',
         generation_error: null,
         created_at: new Date().toISOString(),
         group_id: null,
         generation_metadata: {
-          duration_seconds: duration,
+          duration_seconds: selectedDuration,
           ...(frame ? { source_image_id: frame.id } : {}),
           ...(endFrame ? { end_image_id: endFrame.id } : {}),
           ...(refs.length > 0
@@ -902,6 +905,9 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
     prompt,
     frame,
     endFrame,
+    frameLoading,
+    endFrameLoading,
+    referenceModel,
     refs,
     duration,
     ratio,
@@ -957,6 +963,8 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
       /* Only the finished clips: a pending row has nothing behind `/img/[id]`
          to cut a frame out of. */
       runClips: picked.filter((c) => c.status === 'completed'),
+      referenceModel,
+      onReferenceModelChange: setReferenceModel,
       onAddRefs: addRefs,
       onDropRef: dropRef,
       prompt,

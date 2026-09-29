@@ -102,3 +102,15 @@ preserve the previous audio-on behavior. Kling O3 Pro uses $0.112/s with audio
 off and $0.14/s with audio on (FAL rate card, 2026-09-11); Seedance pricing
 is unchanged by audio. The same choice drives the composer estimate, model
 price, and server reservation. Unsupported models receive no audio parameter.
+
+## Veo 3.1 Fast trial
+
+Verified fal schemas on 2026-09-27. The catalog includes text, image and reference
+endpoints at 720p, with eight seconds exposed across all modes because reference
+mode requires `8s`. Audio defaults on: 15 cents/second, or 10 cents without audio.
+Reference mode has no fixed first-frame parameter. `firstFrameAsReference`
+explicitly permits the incoming frame as reference image one and counts it
+against the three-image app cap; last frames are refused. The generate action
+adds server-owned continuation instructions only when both first and reference
+roles are present, retaining the canonical prompt separately. Plain image mode
+still uses `image_url`. No reference seed or automatic prompt rewriting is sent.

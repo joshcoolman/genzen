@@ -44,10 +44,17 @@ export function imageCompatibility(
   if (refs.length > 0) {
     const endpoint = model.endpoints.withReferences
     if (!endpoint?.references) return 'Does not accept reference images'
+    if (
+      endpoint.firstFrameAsReference &&
+      refs.length + first.length > endpoint.references.max
+    )
+      return `Up to ${endpoint.references.max} images including the starting frame`
     if (refs.length > endpoint.references.max)
       return `Up to ${endpoint.references.max} reference images here`
     if (
-      (first.length && !endpoint.firstFrameParam) ||
+      (first.length &&
+        !endpoint.firstFrameParam &&
+        !endpoint.firstFrameAsReference) ||
       (last.length && !endpoint.acceptsEndImage)
     ) {
       return 'Use references or frames, not both'
@@ -194,12 +201,16 @@ export function videoFalInput(
   const refs = images.flatMap((i, index) =>
     i.role === 'reference' ? [urls[index]] : [],
   )
+  const referenceUrls =
+    endpoint.firstFrameAsReference && first ? [first, ...refs] : refs
   return {
     ...endpoint.defaults,
     prompt: settings.prompt,
-    duration: endpoint.durationAsString
-      ? String(settings.duration)
-      : settings.duration,
+    duration: endpoint.durationSuffix
+      ? `${settings.duration}${endpoint.durationSuffix}`
+      : endpoint.durationAsString
+        ? String(settings.duration)
+        : settings.duration,
     ...(endpoint.aspectRatios.length
       ? { aspect_ratio: settings.aspectRatio }
       : {}),
@@ -211,8 +222,8 @@ export function videoFalInput(
       ? { [endpoint.firstFrameParam]: first }
       : {}),
     ...(last && endpoint.acceptsEndImage ? { end_image_url: last } : {}),
-    ...(refs.length && endpoint.references
-      ? { [endpoint.references.param]: refs }
+    ...(referenceUrls.length && endpoint.references
+      ? { [endpoint.references.param]: referenceUrls }
       : {}),
     ...(settings.seed !== undefined && endpoint.acceptsSeed
       ? { seed: settings.seed }

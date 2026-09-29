@@ -89,23 +89,8 @@ export function nearestRatio(
 /* ------------------------------------------------------------ references
    Naming something that has left the shot (#665). */
 
-/**
- * What a clip with reference images is made with.
- *
- * **Kling O3 Pro, because it is the only model in the lineup that takes both.**
- * `fal-ai/kling-video/o3/pro/reference-to-video` accepts `start_image_url` and
- * `image_urls` on the same request, so the previous clip's ending still pins
- * frame one while the references carry who and what. Seedance 2.5's reference
- * endpoint has no first-frame parameter at all and cannot be the one, and H3
- * Max Turbo has no reference endpoint.
- *
- * **So a reference switches the model, and there is still no picker.** The
- * inputs select the model, exactly as they do on Video: adding a reference
- * moves the request here, dropping every reference moves it back. What the
- * dialog owes in return is the price, which is the whole of the trade --
- * 14c/s against 0.625c/s, roughly $1.12 for an eight-second clip against
- * $0.05.
- */
+/** Kling retains the fixed-frame path. Add Gen defaults its explicit
+ * reference-model choice to Veo Fast for the prompted-continuity trial. */
 export const REF_MODEL_SLUG = 'kling-o3-pro'
 
 export function refModel(): VideoModel {
@@ -115,8 +100,31 @@ export function refModel(): VideoModel {
 }
 
 /** The model a request with this many references goes to. */
-export function genModelFor(referenceCount: number): VideoModel {
-  return referenceCount > 0 ? refModel() : genModel()
+export const VEO_REF_MODEL_SLUG = 'veo-3.1-fast'
+export type ReferenceModelSlug =
+  | typeof REF_MODEL_SLUG
+  | typeof VEO_REF_MODEL_SLUG
+
+export function genModelFor(
+  referenceCount: number,
+  referenceModel: ReferenceModelSlug = REF_MODEL_SLUG,
+): VideoModel {
+  return referenceCount > 0 ? videoModelBySlug(referenceModel)! : genModel()
+}
+
+export function genDurationFor(model: VideoModel, duration: number): number {
+  return model.durations.includes(duration) ? duration : model.defaultDuration
+}
+
+export function referenceCapacity(
+  referenceModel: ReferenceModelSlug,
+  hasFrame: boolean,
+): number {
+  const endpoint = genModelFor(1, referenceModel).endpoints.withReferences!
+  return (
+    endpoint.references!.max -
+    (endpoint.firstFrameAsReference && hasFrame ? 1 : 0)
+  )
 }
 
 /**
@@ -145,8 +153,11 @@ export function clampRatio(ratios: Array<string>, id: string): string {
 }
 
 /** The ratio pills a request with this many references should show. */
-export function genRatiosFor(referenceCount: number): Array<string> {
-  const model = genModelFor(referenceCount)
+export function genRatiosFor(
+  referenceCount: number,
+  referenceModel: ReferenceModelSlug = REF_MODEL_SLUG,
+): Array<string> {
+  const model = genModelFor(referenceCount, referenceModel)
   const endpoint =
     referenceCount > 0
       ? model.endpoints.withReferences

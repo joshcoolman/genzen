@@ -4,16 +4,20 @@ import { useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import {
   GEN_FALLBACK_RATIO,
-  MAX_REFS,
+  REF_MODEL_SLUG,
+  VEO_REF_MODEL_SLUG,
   clampRatio,
+  genDurationFor,
   genModel,
   genModelFor,
   genRatiosFor,
+  referenceCapacity,
 } from '../../gen'
 import { RefPicker } from '../ref-picker/ref-picker'
 import styles from './gen-form.module.css'
+import type { ReferenceModelSlug } from '../../gen'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
-import { estimateVideoCost } from '#/features/video/inputs'
+import { estimateVideoCost, imageCompatibility } from '#/features/video/inputs'
 import { cx } from '#/lib/utils'
 import { Button, CostNote, Textarea, Thumbnail } from '#/components'
 
@@ -24,36 +28,9 @@ export interface GenFrame {
   title: string
 }
 
-/**
- * What to make next, and nothing else (#660).
- *
- * **The frame is the default and the prompt is the whole question.** Appending
- * to a run almost always means "carry on from where that ended", so the
- * previous clip's last frame is already in the slot when this opens and the
- * only thing left to say is what happens next. Dropping it is one click and
- * turns the request into text-to-video -- a hard cut, which is a real thing to
- * want and not the common one.
- *
- * **There is no model picker, no resolution and usually no ratio.** See
- * `gen.ts` for why one model, and why a continuation needs no aspect ratio at
- * all: H3's image endpoint has no such parameter and follows the frame, so a
- * generated clip always matches the run without anyone being asked. The ratio
- * pills appear only with no frame, which is the one case where nothing else
- * can answer the question.
- *
- * **References are the one control that changes the model** (#665). A run
- * drifts as soon as a clip moves away from what came before it, and no wording
- * restores a face that left the shot -- the picture that would is in an earlier
- * clip. Adding one moves the request to Kling O3 Pro, the only model in the
- * lineup taking references and a first frame together, so the continuity frame
- * survives; dropping every reference moves it back to H3 Max Turbo. That costs
- * 14c/s against 0.625, and the form says so beside the price rather than
- * offering a picker -- the inputs select the model, the way they do on Video.
- *
- * Nothing is sent to Claude. There is no enhance step and no rewrite before
- * FAL -- the words submitted are the words typed, which is the bargain that
- * keeps a press cheap enough to make casually.
- */
+/** Add Gen keeps the incoming frame visible. Reference clips can try Veo's
+ * prompted opening match or Kling's fixed-frame handoff; no inputs are dropped.
+ * Duration and price reflect the selected model before submission. */
 export function GenForm({
   frame,
   frameLoading,
@@ -63,6 +40,8 @@ export function GenForm({
   endFrameLoading,
   onDropEndFrame,
   refs,
+  referenceModel,
+  onReferenceModelChange,
   runClips,
   onAddRefs,
   onDropRef,
@@ -88,6 +67,8 @@ export function GenForm({
   endFrameLoading: boolean
   onDropEndFrame: () => void
   /** Frames pulled out of earlier clips, carrying identity and look (#665). */
+  referenceModel: ReferenceModelSlug
+  onReferenceModelChange: (value: ReferenceModelSlug) => void
   refs: Array<GenFrame>
   /** The run's finished clips: the first step of picking a reference is saying
    *  which clip it is in. */
@@ -107,17 +88,19 @@ export function GenForm({
 }) {
   const [pickingRef, setPickingRef] = useState(false)
 
-  /* The inputs choose the model, and the duration pills do not follow it: every
-     duration H3 Max Turbo offers is one Kling takes, so adding a reference
-     changes the price and nothing else on screen. */
-  const model = genModelFor(refs.length)
+  // Keep the displayed duration and quote aligned with the submitted model.
+  const model = genModelFor(refs.length, referenceModel)
+  const selectedDuration = genDurationFor(model, duration)
+  const maxRefs = referenceCapacity(referenceModel, !!frame)
+  const veo = refs.length > 0 && referenceModel === VEO_REF_MODEL_SLUG
   const images = [
     ...(frame ? [{ id: frame.id, role: 'first' as const }] : []),
     ...refs.map((ref) => ({ id: ref.id, role: 'reference' as const })),
     ...(endFrame ? [{ id: endFrame.id, role: 'last' as const }] : []),
   ]
-  const cost = estimateVideoCost(model, duration, undefined, images)
-  const ratios = genRatiosFor(refs.length)
+  const cost = estimateVideoCost(model, selectedDuration, undefined, images)
+  const ratios = genRatiosFor(refs.length, referenceModel)
+  const inputError = imageCompatibility(model, images)
 
   return (
     <div className={styles.form}>
@@ -150,11 +133,13 @@ export function GenForm({
         <p className={styles.frameNote}>
           {frameError
             ? frameError
-            : endFrame
-              ? 'Pinned at both ends, so the joins either side survive. Say what happens in between.'
-              : frame
-                ? 'Starts on the frame the clip before it ended on.'
-                : 'Starts from nothing. A hard cut into the run.'}
+            : veo && frame
+              ? 'Uses this as Image 1 and asks Veo to match the opening. The frame is not fixed.'
+              : endFrame
+                ? 'Pinned at both ends, so the joins either side survive. Say what happens in between.'
+                : frame
+                  ? 'Starts on the frame the clip before it ended on.'
+                  : 'Starts from nothing. A hard cut into the run.'}
         </p>
       </div>
 
@@ -180,7 +165,7 @@ export function GenForm({
           <Button
             variant="secondary"
             size="sm"
-            disabled={refs.length >= MAX_REFS}
+            disabled={refs.length >= maxRefs}
             onClick={() => setPickingRef(true)}
           >
             <Plus size={14} />
@@ -189,8 +174,10 @@ export function GenForm({
         </div>
         <p className={styles.frameNote}>
           {refs.length === 0
-            ? `A frame from an earlier clip, so the prompt can name someone who has left the shot. Up to ${MAX_REFS}.`
-            : `${model.label}: the only model taking references and a starting frame together. It carries identity and look -- framing is still the prompt's job.`}
+            ? `A frame from an earlier clip, so the prompt can name someone who has left the shot. Up to ${maxRefs}.`
+            : veo
+              ? 'Veo uses up to three images total. The starting frame comes first; other images guide appearance.'
+              : 'Kling fixes the starting frame and uses other images for appearance.'}
         </p>
       </div>
 
@@ -198,9 +185,35 @@ export function GenForm({
         open={pickingRef}
         onOpenChange={setPickingRef}
         clips={runClips}
-        remaining={MAX_REFS - refs.length}
+        remaining={Math.max(0, maxRefs - refs.length)}
         onAdd={onAddRefs}
       />
+
+      {refs.length > 0 && (
+        <div className={styles.pills} role="group" aria-label="Reference model">
+          {([VEO_REF_MODEL_SLUG, REF_MODEL_SLUG] as const).map((slug) => (
+            <button
+              type="button"
+              key={slug}
+              className={cx(
+                styles.pill,
+                referenceModel === slug && styles.pillOn,
+              )}
+              aria-pressed={referenceModel === slug}
+              onClick={() => onReferenceModelChange(slug)}
+            >
+              {genModelFor(1, slug).label}
+            </button>
+          ))}
+        </div>
+      )}
+      {inputError && (
+        <p role="alert" className={styles.frameNote}>
+          {veo && endFrame
+            ? 'Veo cannot fix an ending frame. Choose Kling to keep both joins.'
+            : inputError}
+        </p>
+      )}
 
       <Textarea
         autoFocus
@@ -216,8 +229,11 @@ export function GenForm({
             <button
               key={value}
               type="button"
-              className={cx(styles.pill, duration === value && styles.pillOn)}
-              aria-pressed={duration === value}
+              className={cx(
+                styles.pill,
+                selectedDuration === value && styles.pillOn,
+              )}
+              aria-pressed={selectedDuration === value}
               onClick={() => onDurationChange(value)}
             >
               {value}s
@@ -252,7 +268,13 @@ export function GenForm({
       <div className={styles.submit}>
         <Button
           onClick={onSubmit}
-          disabled={busy || frameLoading || prompt.trim().length === 0}
+          disabled={
+            busy ||
+            frameLoading ||
+            endFrameLoading ||
+            !!inputError ||
+            prompt.trim().length === 0
+          }
         >
           {busy ? 'Submitting' : submitLabel}
         </Button>

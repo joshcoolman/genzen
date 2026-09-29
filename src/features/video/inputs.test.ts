@@ -319,3 +319,71 @@ describe('seed (#687)', () => {
     expect(none).not.toHaveProperty('seed')
   })
 })
+
+describe('Veo Fast reference trial', () => {
+  const veo = videoModelBySlug('veo-3.1-fast')!
+  it('orders the incoming frame first even when the input list is interleaved', () => {
+    const images = [
+      image('character', 'reference'),
+      image('incoming', 'first'),
+      image('prop', 'reference'),
+    ]
+    const plan = videoRequestPlan(veo, images, 'Continue', 8, '16:9')
+    const input = videoFalInput(
+      plan.endpoint,
+      images,
+      ['character-url', 'incoming-url', 'prop-url'],
+      { ...settings, resolution: plan.resolution, supportsAudio: true },
+    )
+    expect(input.image_urls).toEqual([
+      'incoming-url',
+      'character-url',
+      'prop-url',
+    ])
+    expect(input.duration).toBe('8s')
+    expect(input.generate_audio).toBe(true)
+    expect(input).not.toHaveProperty('start_image_url')
+    expect(input).not.toHaveProperty('image_url')
+    expect(plan.estimatedCostCents).toBe(120)
+  })
+  it('counts the starting image toward the cap and refuses a last frame', () => {
+    expect(
+      imageCompatibility(veo, [image('first', 'first'), ...refs(2)]),
+    ).toBeNull()
+    expect(
+      imageCompatibility(veo, [image('first', 'first'), ...refs(3)]),
+    ).toMatch(/3 images including/)
+    expect(
+      imageCompatibility(veo, [
+        image('first', 'first'),
+        image('last', 'last'),
+        ...refs(1),
+      ]),
+    ).toMatch(/references or frames/)
+    expect(() => videoRequestPlan(veo, refs(1), 'Continue', 5, '16:9')).toThrow(
+      /duration/,
+    )
+    expect(() => videoRequestPlan(veo, refs(1), 'Continue', 8, '1:1')).toThrow(
+      /aspect ratio/,
+    )
+  })
+  it('retains all reference-only inputs and quotes audio-off correctly', () => {
+    const plan = videoRequestPlan(
+      veo,
+      refs(3),
+      'Continue',
+      8,
+      '9:16',
+      undefined,
+      false,
+    )
+    expect(plan.estimatedCostCents).toBe(80)
+    expect(
+      videoFalInput(plan.endpoint, refs(3), ['a', 'b', 'c'], {
+        ...settings,
+        supportsAudio: true,
+        generateAudio: false,
+      }).image_urls,
+    ).toEqual(['a', 'b', 'c'])
+  })
+})
