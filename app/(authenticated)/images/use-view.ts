@@ -1063,6 +1063,14 @@ export function useView(initial: Array<SavedAiImage>) {
     [generator, prefs.isMobile, dock],
   )
 
+  /** The viewer's Animate (#755): Video, with this picture as the first
+   *  frame. `?image=` is Video's front door for a still; on a phone it also
+   *  opens the composer there. */
+  const animate = useCallback(
+    (img: SavedAiImage) => router.push(`/video?image=${img.id}`),
+    [router],
+  )
+
   const usePromptText = useCallback(
     (text: string) => {
       dock.setOpen(true)
@@ -1423,6 +1431,7 @@ export function useView(initial: Array<SavedAiImage>) {
     viewer,
     addReference,
     generateFrom,
+    animate,
     composerOpen,
     setComposerOpen,
     usePromptText,

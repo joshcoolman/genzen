@@ -41,6 +41,7 @@ import { useSelection } from '#/lib/use-selection'
 import { useGroups } from '#/features/groups/hooks/use-groups'
 import { useVisibility } from '#/features/visibility/hooks/use-visibility'
 import { toast } from '#/components'
+import { usePhoneLayout } from '#/lib/use-is-mobile'
 
 /** Which model the picker is on. One slug; see `readSlug`. */
 const MODEL_KEY = 'genzen:video:model'
@@ -197,13 +198,16 @@ export function useView(initialVideos: Array<VideoRecord>) {
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  /* The phone's composer sheet (#755). Here rather than in the view because
+     the `?image=` handoff below opens it. */
+  const isPhone = usePhoneLayout()
+  const [composerOpen, setComposerOpen] = useState(false)
 
-  // `?image=<id>` pre-loads the first frame from a library row. It was how
-  // Images' `Animate` menu item handed a card over; that item is gone, so
-  // nothing in the app links here today and the parameter is kept as the
-  // route's front door for a still -- it costs one effect and it is what any
-  // future handoff would use. It resolves once the library has loaded, because
-  // the strip needs a URL and a title, not just an id.
+  // `?image=<id>` pre-loads the first frame from a library row. The Images
+  // viewer's Animate is what links here (#755); on a phone it also opens the
+  // composer, since the form is not on the page there. It resolves once the
+  // library has loaded, because the strip needs a URL and a title, not just an
+  // id.
   const handoffId = searchParams.get('image')
   const appliedHandoff = useRef<string | null>(null)
   useEffect(() => {
@@ -225,8 +229,9 @@ export function useView(initialVideos: Array<VideoRecord>) {
           role: 'first',
         },
       ])
+      if (isPhone) setComposerOpen(true)
     }
-  }, [handoffId, sources.length, userImages])
+  }, [handoffId, sources.length, userImages, isPhone])
 
   // The oldest clip still rendering, which is what paces the poll (#327). A
   // clip is minutes of work, so its deadline is longer than a still's -- that
@@ -957,6 +962,9 @@ export function useView(initialVideos: Array<VideoRecord>) {
   ])
 
   return {
+    isPhone,
+    composerOpen,
+    setComposerOpen,
     model,
     supportsAudio: model.supportsAudio,
     generateAudio,

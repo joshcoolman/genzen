@@ -9,6 +9,17 @@ source images; `use-view.ts` owns everything after the first paint.
 
 ## Quirks
 
+- **On a phone the form is a sheet, not a column** (#755). Below the chrome's
+  48rem (`usePhoneLayout`) the controls column is not rendered: a floating plus
+  opens `MobileVideoComposer`, built from the same `mobile-composer` parts as
+  Images' generator -- a prompt, a chip per setting, Generate with its cost.
+  Model is single-choice so it returns on tap; audio is an inline switch; a
+  setting the model lacks has no chip. The wall goes 2-up with
+  `BareVideoThumb` (square poster, duration badge, tap to play) and **no
+  hold-to-play**, since a long press on iOS is the system's image menu.
+  `?image=` also opens the composer on a phone -- it is where the Images
+  viewer's Animate lands.
+
 - **A press held on a card plays the clip on the card** (#726), sound on,
   until the press ends; a click still opens the playback dialog. The hook is
   `src/lib/use-hold-to-play.ts`, shared with the clip picker, and the click

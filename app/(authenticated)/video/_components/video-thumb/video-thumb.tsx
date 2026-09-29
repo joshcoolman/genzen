@@ -418,3 +418,48 @@ function CornerAction({
     />
   )
 }
+
+/**
+ * The phone's tile (#755): the poster and nothing else, cropped square, so a
+ * 2-up wall reads like the Images one. A tap opens the player, which carries
+ * the verbs. **No hold-to-play**: a long press on iOS is the system's own menu
+ * on an image, and fighting it loses. Pending and failed keep their states --
+ * a blank square would say nothing about a clip still being made.
+ */
+export function BareVideoThumb({
+  video,
+  onPlay,
+}: {
+  video: VideoRecord
+  onPlay: (id: string) => void
+}) {
+  if (video.status === 'completed') {
+    return (
+      <button
+        type="button"
+        className={styles.bare}
+        onClick={() => onPlay(video.id)}
+        aria-label="Play this clip"
+        aria-haspopup="dialog"
+      >
+        <img src={imageUrl(video.id, 'thumb')} alt="" loading="lazy" />
+        <span className={styles.bareBadge} aria-hidden="true">
+          <Play size={12} />
+          {durationOf(video)}
+        </span>
+      </button>
+    )
+  }
+  return (
+    <div className={cx(styles.state, styles.bareState)}>
+      {video.status === 'failed' ? (
+        <>
+          <AlertTriangle size={16} />
+          <span>Failed</span>
+        </>
+      ) : (
+        <Loader2 className={styles.spinner} size={16} />
+      )}
+    </div>
+  )
+}

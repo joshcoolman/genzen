@@ -5,10 +5,15 @@ import { GroupHeading } from '../_components/group-heading/group-heading'
 import { GroupPickerDialog } from '../_components/group-picker-dialog/group-picker-dialog'
 import { HiddenBar } from '../_components/hidden-bar/hidden-bar'
 import { useSelectionPanelFits } from '../_components/selection-panel/selection-panel'
+import {
+  ComposerFab,
+  ComposerSheet,
+} from '../_components/mobile-composer/mobile-composer'
 import { ImageInputs } from './_components/image-inputs/image-inputs'
 import { ModelPicker } from './_components/model-picker/model-picker'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { VideoForm } from './_components/video-form/video-form'
+import { MobileVideoComposer } from './_components/mobile-video-composer/mobile-video-composer'
 import { FrameGridDialog } from './_components/frame-grid-dialog/frame-grid-dialog'
 import { VideoPlayerDialog } from './_components/video-player-dialog/video-player-dialog'
 import { VideoList } from './_components/video-list/video-list'
@@ -21,6 +26,9 @@ import { ConfirmDialog, NameDialog, PageHeader, Stack } from '#/components'
 
 export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
   const {
+    isPhone,
+    composerOpen,
+    setComposerOpen,
     pickerModels,
     supportsAudio,
     generateAudio,
@@ -209,30 +217,94 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             onToggleGroupMembers={toggleGroupMembers}
             workingByGroup={workingByGroup}
             hiddenByGroup={hiddenByGroup}
+            compact={isPhone}
           />
         </div>
 
-        <div className={styles.controls}>
-          {/* The column is handed over while a selection is up: the form holds
+        {/* On a phone the form is the composer sheet behind the plus
+            (#755), not a column stacked under the wall. */}
+        {!isPhone && (
+          <div className={styles.controls}>
+            {/* The column is handed over while a selection is up: the form holds
               a prompt you are part-way through, but it is not what you are
               doing, and two stacks of controls in one column is neither. */}
-          {selectionSurface === 'panel' ? (
-            selectionActions
-          ) : (
-            <VideoForm
-              supportsAudio={supportsAudio}
-              generateAudio={generateAudio}
-              onGenerateAudioChange={setGenerateAudio}
-              durationOptions={durationOptions}
-              promptCount={promptCount}
-              needsConfirm={needsConfirm}
+            {selectionSurface === 'panel' ? (
+              selectionActions
+            ) : (
+              <VideoForm
+                supportsAudio={supportsAudio}
+                generateAudio={generateAudio}
+                onGenerateAudioChange={setGenerateAudio}
+                durationOptions={durationOptions}
+                promptCount={promptCount}
+                needsConfirm={needsConfirm}
+                prompts={prompts}
+                onUpdatePrompt={updatePrompt}
+                onAddPrompt={addPrompt}
+                onRemovePrompt={removePrompt}
+                onClearPrompts={clearPrompts}
+                pendingCount={pendingCount}
+                duration={duration}
+                onDurationChange={setDuration}
+                aspectRatio={aspectRatio}
+                aspectOptions={aspectOptions}
+                onAspectRatioChange={setAspectRatio}
+                resolution={resolution}
+                resolutionOptions={resolutionOptions}
+                onResolutionChange={setResolution}
+                estimatedCost={estimatedCost}
+                isSubmitting={isSubmitting}
+                canSubmit={canSubmit}
+                onSubmit={submit}
+                framesSlot={
+                  <ImageInputs
+                    images={sources}
+                    endpoint={endpoint}
+                    disabled={isSubmitting}
+                    onAdd={openPicker}
+                    onRemove={removeSource}
+                    onClear={clearSources}
+                    onRoleChange={setImageRole}
+                    error={compatibilityError}
+                  />
+                }
+                modelSlot={
+                  <ModelPicker
+                    models={pickerModels}
+                    selectedSlug={modelSlug}
+                    images={sources}
+                    resolution={resolution}
+                    generateAudio={generateAudio}
+                    disabled={isSubmitting}
+                    onSelect={selectModel}
+                  />
+                }
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      {isPhone && (
+        <>
+          <ComposerFab label="New clip" onClick={() => setComposerOpen(true)} />
+          <ComposerSheet open={composerOpen} onOpenChange={setComposerOpen}>
+            <MobileVideoComposer
+              models={pickerModels}
+              modelSlug={modelSlug}
+              onSelectModel={selectModel}
+              sources={sources}
+              endpoint={endpoint}
+              compatibilityError={compatibilityError}
+              onAddImages={openPicker}
+              onRemoveImage={removeSource}
+              onClearImages={clearSources}
+              onImageRoleChange={setImageRole}
               prompts={prompts}
               onUpdatePrompt={updatePrompt}
-              onAddPrompt={addPrompt}
               onRemovePrompt={removePrompt}
-              onClearPrompts={clearPrompts}
-              pendingCount={pendingCount}
               duration={duration}
+              durationOptions={durationOptions}
               onDurationChange={setDuration}
               aspectRatio={aspectRatio}
               aspectOptions={aspectOptions}
@@ -240,37 +312,27 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
               resolution={resolution}
               resolutionOptions={resolutionOptions}
               onResolutionChange={setResolution}
+              supportsAudio={supportsAudio}
+              generateAudio={generateAudio}
+              onGenerateAudioChange={setGenerateAudio}
               estimatedCost={estimatedCost}
+              needsConfirm={needsConfirm}
+              pendingCount={pendingCount}
+              promptCount={promptCount}
               isSubmitting={isSubmitting}
               canSubmit={canSubmit}
-              onSubmit={submit}
-              framesSlot={
-                <ImageInputs
-                  images={sources}
-                  endpoint={endpoint}
-                  disabled={isSubmitting}
-                  onAdd={openPicker}
-                  onRemove={removeSource}
-                  onClear={clearSources}
-                  onRoleChange={setImageRole}
-                  error={compatibilityError}
-                />
-              }
-              modelSlot={
-                <ModelPicker
-                  models={pickerModels}
-                  selectedSlug={modelSlug}
-                  images={sources}
-                  resolution={resolution}
-                  generateAudio={generateAudio}
-                  disabled={isSubmitting}
-                  onSelect={selectModel}
-                />
-              }
+              onClose={() => setComposerOpen(false)}
+              /* Closes first, then submits: the new clips land at the top of
+                 the wall, and the sheet was covering it. */
+              onSubmit={() => {
+                setComposerOpen(false)
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+                void submit()
+              }}
             />
-          )}
-        </div>
-      </div>
+          </ComposerSheet>
+        </>
+      )}
 
       {selectionSurface === 'drawer' && selectionActions}
 

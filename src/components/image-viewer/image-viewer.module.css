@@ -227,15 +227,19 @@
   color: var(--danger);
 }
 
-/* Just under the picture, right-aligned: the constructive verb, labelled, on
-   the accent -- it is the one control in here that starts work (#753). Off the
-   picture rather than on it, because a labelled pill over a narrow image
-   collides with Hide and Trash in its lower-left corner. */
-.generateFrom {
+/* Just under the picture, right-aligned: the verbs that *make* something,
+   labelled -- opposite the two on the picture that take things away (#753,
+   #755). Off the picture rather than on it, because labelled pills over a
+   narrow image collide with Hide and Trash in its lower-left corner. */
+.makeActions {
   position: absolute;
   top: calc(100% + var(--space-12));
   right: 0;
-  white-space: nowrap;
+  display: flex;
+  gap: var(--space-8);
+}
+
+.make {
   display: flex;
   align-items: center;
   gap: var(--space-6);
@@ -247,7 +251,14 @@
   color: var(--accent-contrast);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
+  white-space: nowrap;
   cursor: pointer;
+}
+
+/* Animate is the other route's verb; one accent pill per row. */
+.makeSecondary {
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .controlIcon {

@@ -782,15 +782,17 @@ surface that generates must render that gear** -- the Images dock, the phone's
 that was structural; it is now a rule, and the failure it guards against is
 silent: a prompt prefix applying to generations with nothing on screen saying so.
 
-**On a phone the generator is `MobileGenerator`, not the panel** (#753). A
-floating plus opens it as a bottom sheet (state in `use-view`, never
+**On a phone the generator is `MobileGenerator`, not the panel** (#753),
+built from `(authenticated)/_components/mobile-composer/`, which Video's
+composer shares (#755). A floating plus opens it as a bottom sheet (state in `use-view`, never
 `dock.open`, which is the desktop column's persisted preference and defaults to
 open). One prompt, a chip row -- models, references, aspect, count -- and
 Generate; each chip is its own step in the sheet. **A single choice returns on
 tap, a multiple choice has Done.** Add prompt, Generate prompt, slash commands
 and Shots are desktop-only. The sheet closes on Generate and scrolls the wall
 to the pending tiles. **The viewer's Generate from this replaces the set with
-that one picture** and opens the generator -- replace, not push, because it
+that one picture** and opens the generator; **Animate** beside it goes to
+`/video?image=` with the picture as the first frame -- replace, not push, because it
 means "make something from this one"; Cmd-click stays the additive gesture.
 The phone's wall is 2-up and bare (no caption, badges, menu or tick): a tap
 opens the viewer, which carries the verbs.

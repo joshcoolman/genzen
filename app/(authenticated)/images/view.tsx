@@ -50,6 +50,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     viewer,
     addReference,
     generateFrom,
+    animate,
     composerOpen,
     setComposerOpen,
     usePromptText,
@@ -339,6 +340,12 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
             const img = images.find((i) => i.id === id)
             viewer.close()
             if (img) generateFrom(img)
+          }}
+          onAnimate={() => {
+            const id = viewer.items[viewer.index!]?.id
+            const img = images.find((i) => i.id === id)
+            viewer.close()
+            if (img) animate(img)
           }}
           onUsePrompt={usePromptText}
           onDescribe={describeImageById}

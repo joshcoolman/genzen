@@ -5,6 +5,7 @@ import { useHotkey } from '@tanstack/react-hotkeys'
 import {
   ChevronLeft,
   ChevronRight,
+  Clapperboard,
   EyeOff,
   ScanText,
   Sparkles,
@@ -55,6 +56,9 @@ interface ImageViewerProps {
   /** Start a run from the current image (#753). Absent, no button -- Director
    *  has no generator to open. */
   onGenerateFrom?: () => void
+  /** Make the current image move -- Video with it as the first frame (#755).
+   *  Absent, no button. */
+  onAnimate?: () => void
   /** Cmd/Ctrl-click on the panel's prompt loads it into the generator, the
    *  same gesture the card's caption carries. */
   onUsePrompt?: (text: string) => void
@@ -100,6 +104,7 @@ export function ImageViewer({
   onDelete,
   onHide,
   onGenerateFrom,
+  onAnimate,
   onUsePrompt,
   onDescribe,
   describeStates,
@@ -256,18 +261,32 @@ export function ImageViewer({
             {/* The one verb that *makes* something, so it is labelled and sits
               opposite the two that take things away (#753). On a phone this
               is the whole path from "I like that" to a new run. */}
-            {onGenerateFrom && url && (
-              <button
-                type="button"
-                className={styles.generateFrom}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onGenerateFrom()
-                }}
+            {(onGenerateFrom || onAnimate) && url && (
+              <div
+                className={styles.makeActions}
+                onClick={(e) => e.stopPropagation()}
               >
-                <Sparkles className={styles.controlIcon} />
-                Generate from this
-              </button>
+                {onAnimate && (
+                  <button
+                    type="button"
+                    className={cx(styles.make, styles.makeSecondary)}
+                    onClick={onAnimate}
+                  >
+                    <Clapperboard className={styles.controlIcon} />
+                    Animate
+                  </button>
+                )}
+                {onGenerateFrom && (
+                  <button
+                    type="button"
+                    className={styles.make}
+                    onClick={onGenerateFrom}
+                  >
+                    <Sparkles className={styles.controlIcon} />
+                    Generate from this
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>

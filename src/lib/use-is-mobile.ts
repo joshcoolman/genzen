@@ -25,3 +25,17 @@ export function useIsMobile(breakpoint = MOBILE_BREAKPOINT) {
 
   return isMobile
 }
+
+/** Where the app chrome swaps its rail for the phone's bottom nav: `48rem`
+ *  in `app-chrome.module.css`. */
+const PHONE_BREAKPOINT = 768 // --breakpoint-md
+
+/**
+ * The phone layout (#753, #755): bottom nav, floating plus, composer sheets,
+ * 2-up walls. **One width for all of it**, the chrome's. The trial used this
+ * file's 400px default, which left anything between -- a Pro Max is 430px --
+ * with the phone's nav over the desktop's generator and wall.
+ */
+export function usePhoneLayout() {
+  return useIsMobile(PHONE_BREAKPOINT)
+}
