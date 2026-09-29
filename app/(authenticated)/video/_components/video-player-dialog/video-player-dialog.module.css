@@ -115,3 +115,35 @@
   cursor: default;
   opacity: 0.4;
 }
+
+.playerError {
+  margin: 0;
+}
+
+@media (max-width: 767px) {
+  .playerError {
+    position: absolute;
+    inset-inline: var(--space-16);
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .titleRow {
+    padding-inline-end: 0;
+    gap: 0;
+  }
+
+  .titleRow > :first-child {
+    min-width: 0;
+  }
+
+  .edit {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .titleInput {
+    min-width: 0;
+    font-size: var(--text-base);
+  }
+}

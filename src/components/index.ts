@@ -112,3 +112,4 @@ export {
   type ZipDownloadDialogProps,
   type ZipDownloadImage,
 } from './zip-download-dialog/zip-download-dialog'
+export { MobileMediaViewer } from './mobile-media-viewer/mobile-media-viewer'

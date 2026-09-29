@@ -281,6 +281,9 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 Recent highlights:
 
+- **Mobile viewers (#762)** -- Images and Video fill the screen, with title
+  above, navigation below, and confirmation before Trash. Tap empty space to
+  close; image prompts and actions live in a details sheet.
 - **Code tidy (#758, #757)** -- knip's dead code removed, the S3 client
   guarded `server-only`; `src/lib/server/` grouped into `fal/ claude/
 storage/ media/ generations/`, single-use files moved to their route.
@@ -299,14 +302,3 @@ storage/ media/ generations/`, single-use files moved to their route.
   with the Rive CLI, `rive/news-progress/`, `pnpm rive:build`) in an overlay in
   the app shell: expanded or minimized, survives navigation. Get news shows it
   with activity and outcome; `Preview progress` (dev) plays a paced fake run.
-- **Auto-describe (#585)** -- every upload on `/images` is described in
-  `reconstruct` mode in the background and stored, so each card carries a
-  runnable prompt. The viewer's prompt panel has Describe (`D`, always
-  overwrites) on every image, and shows prompt and description apart. New
-  News heroes store the prompt that made them.
-- **`/edit` (#726 to #733)** -- a timeline of Video wall clips with in and out
-  points, played gapless with nothing rendered; keys for play, step, split,
-  delete; F saves a frame to a group named after the edit; Generate frame
-  makes a new still from selected frames into that group; Continue fills the
-  gap between two clips, pinned at both frames or at any still off the strip;
-  Export stitches.

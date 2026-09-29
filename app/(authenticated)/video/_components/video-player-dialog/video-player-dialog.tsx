@@ -11,8 +11,16 @@ import {
 } from 'lucide-react'
 import styles from './video-player-dialog.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
-import { Button, Dialog, DialogContent, DialogTitle, Input } from '#/components'
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Input,
+  MobileMediaViewer,
+} from '#/components'
 import { clipName } from '#/features/video/clip-facts'
+import { usePhoneLayout } from '#/lib/use-is-mobile'
 import { imageUrl } from '#/lib/image-url'
 
 /**
@@ -29,11 +37,9 @@ import { imageUrl } from '#/lib/image-url'
  * that to a modal over a modal -- or back out to the card's menu -- is the
  * detour this dialog is supposed to remove.
  *
- * **No confirmation, and that is deliberate.** Delete moves the row to Trash
- * -- the same call the card's menu makes, which has never asked either. A
- * prompt here would be the only place in the app that asks before a
- * recoverable act, and it doubles the clicks in the one loop that is all
- * clicks.
+ * **Phones ask before moving a clip to Trash** (#762). The shared mobile
+ * viewer fills the screen, with navigation below and title/close above.
+ * Desktop retains immediate deletion for the keyboard cull loop.
  *
  * **It walks the section** (#726). Left and Right, or the chevrons either
  * side of the clip, move to the previous or next clip on the wall in the
@@ -73,6 +79,7 @@ export function VideoPlayerDialog({
   /** Name this clip, from the header. */
   onRename: (video: VideoRecord, title: string) => void
 }) {
+  const isPhone = usePhoneLayout()
   const index = video ? videos.findIndex((v) => v.id === video.id) : -1
   const prev = index > 0 ? videos[index - 1] : null
   const next =
@@ -105,7 +112,7 @@ export function VideoPlayerDialog({
   }, [video, next, index, videos, onDelete, onNavigate, onClose])
 
   useEffect(() => {
-    if (!video) return
+    if (!video || isPhone) return
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return
       const target = e.target as HTMLElement | null
@@ -132,7 +139,46 @@ export function VideoPlayerDialog({
        is the only place both are certain. */
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [video, prev, next, go, remove])
+  }, [video, prev, next, go, remove, isPhone])
+
+  if (isPhone) {
+    if (!video) return null
+    return (
+      <MobileMediaViewer
+        itemId={video.id}
+        kind="video"
+        title={
+          <TitleRow
+            key={`title-${video.id}`}
+            video={video}
+            onRename={(title) => onRename(video, title)}
+          />
+        }
+        position={index + 1}
+        count={videos.length}
+        onClose={onClose}
+        onPrevious={prev ? () => go(prev) : undefined}
+        onNext={next ? () => go(next) : undefined}
+        onDelete={remove}
+        onTogglePlayback={() => {
+          const el = player.current
+          if (!el) return
+          if (el.paused) void el.play().catch(() => {})
+          else el.pause()
+        }}
+      >
+        <Player
+          key={`player-${video.id}`}
+          video={video}
+          autoPlay={wantPlaying.current}
+          playerRef={player}
+          onPlayingChange={(playing) => {
+            wantPlaying.current = playing
+          }}
+        />
+      </MobileMediaViewer>
+    )
+  }
 
   return (
     <Dialog
@@ -351,7 +397,7 @@ function Player({
         aria-label={video.description || 'Generated video'}
       />
       {failed && (
-        <p role="alert">
+        <p role="alert" className={styles.playerError}>
           This video could not be loaded. Close and reopen it to try again.
         </p>
       )}
