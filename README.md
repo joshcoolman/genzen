@@ -277,14 +277,14 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus: try the mobile trial (#753, merged in #754) on a real phone. Each reaction becomes its own card; nothing is queued behind it yet.**
+**Focus: try the phone layout on a real phone -- Images (#753) and Video (#755), start with the 2-up clip wall, which was never seen with real clips. Each reaction becomes its own card.**
 
 Recent highlights:
 
-- **Mobile trial (#753)** -- phone-only: a bottom nav pill with a swipe-up
-  sheet, a floating plus that opens a one-tap generator (prompt, chips for
-  models, refs, aspect, count), a 2-up bare Images wall, a Photos-first
-  reference picker, and "Generate from this" in the viewer. Desktop unchanged.
+- **Phone layout (#753, #755)** -- below 48rem: a bottom nav pill with a
+  swipe-up sheet; on Images and Video a floating plus opens a one-tap composer
+  (prompt, chips, Generate with cost), 2-up bare walls, a Photos-first picker;
+  the Images viewer has Generate from this and Animate. Desktop unchanged.
 - **Director cuts (#744, #746, #747, #749, #751)** -- a run session holds
   several cuts as tabs. **New cut from script** remakes the open cut in one
   pass, clips chained through durable frame handoffs; reference clips can try
