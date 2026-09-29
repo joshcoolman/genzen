@@ -302,7 +302,3 @@ storage/ media/ generations/`, single-use files moved to their route.
 - **Director chat answers end on a last beat (#740, #741)** -- a tease, an
   offer, a fork or a provocation that invites the next question, never a
   question about the person and never a tidy wrap-up. Its own prompt section.
-- **News progress overlay (#725, #738)** -- a Rive animation (authored as RML
-  with the Rive CLI, `rive/news-progress/`, `pnpm rive:build`) in an overlay in
-  the app shell: expanded or minimized, survives navigation. Get news shows it
-  with activity and outcome; `Preview progress` (dev) plays a paced fake run.
