@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { ChevronLeft, Ellipsis, LogOut, Menu } from 'lucide-react'
+import { ChevronRight, Ellipsis, LogOut, Menu } from 'lucide-react'
 import { clsx } from 'clsx'
 import styles from './mobile-nav.module.css'
 import type { NavItem } from '#/lib/nav-items'
@@ -19,13 +19,13 @@ import {
 import { navItems } from '#/lib/nav-items'
 
 /**
- * The phone's navigation: one round button in the bottom-right corner, the
- * thumb's home, with the Images/Video plus stacked above it. It replaced a
- * bottom-centre pill and sheet (#753) that was easy to forget was there,
- * which in turn replaced a top-left hamburger a thumb could not reach.
+ * The phone's navigation: one round button in the bottom-left corner, with
+ * the Images/Video plus in the bottom-right. It replaced a bottom-centre pill
+ * and sheet (#753) that was easy to forget was there, which in turn replaced
+ * a top-left hamburger a thumb could not reach.
  *
  * The button opens a short menu of the sections actually used on a phone
- * (`NavItem.mobile === 'menu'`) and More, which flies out to the left with
+ * (`NavItem.mobile === 'menu'`) and More, which flies out to the right with
  * everything else and Log out -- the same list, one level down, rather than a
  * different surface. Edit is not on the phone at all.
  */
@@ -76,7 +76,7 @@ export function MobileNav({ className }: { className?: string }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent
           side="top"
-          align="end"
+          align="start"
           sideOffset={8}
           className={styles.menu}
         >
@@ -87,10 +87,10 @@ export function MobileNav({ className }: { className?: string }) {
             >
               <Ellipsis />
               More
-              <ChevronLeft className={styles.flyoutMark} />
+              <ChevronRight className={styles.flyoutMark} />
             </DropdownMenuSubTrigger>
             <DropdownMenuContent
-              side="left"
+              side="right"
               align="end"
               sideOffset={4}
               className={styles.menu}

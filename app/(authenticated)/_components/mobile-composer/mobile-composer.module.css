@@ -3,7 +3,7 @@
 .fab {
   position: fixed;
   right: var(--space-16);
-  bottom: var(--mobile-fab-bottom);
+  bottom: var(--mobile-dock-bottom);
   z-index: var(--z-drawer);
   display: grid;
   place-items: center;

@@ -1,9 +1,9 @@
-/* The corner button floats over the page, bottom right, above the sticky
-   chrome but below dialogs. The plus on Images and Video stacks directly
-   above it (`--mobile-fab-bottom`), so every phone control is in one place. */
+/* The menu button floats over the page, bottom left, above the sticky chrome
+   but below dialogs; the plus on Images and Video takes the bottom right, on
+   the same line (`--mobile-dock-bottom`). One corner each: go, and make. */
 .root {
   position: fixed;
-  right: var(--space-16);
+  left: var(--space-16);
   bottom: var(--mobile-dock-bottom);
   z-index: var(--z-drawer);
 }
@@ -13,11 +13,11 @@
   place-items: center;
   width: var(--mobile-control-size);
   height: var(--mobile-control-size);
-  border: var(--border-width) solid var(--border);
+  border: none;
   border-radius: var(--radius-full);
-  background: var(--surface);
+  background: var(--accent);
   box-shadow: var(--shadow-overlay);
-  color: var(--text);
+  color: var(--accent-contrast);
   cursor: pointer;
 }
 

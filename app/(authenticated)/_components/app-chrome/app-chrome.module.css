@@ -23,7 +23,7 @@
   flex: 1;
   min-width: 0;
   /* Tighter on a phone, where 24px a side is a tenth of the width, and clear
-     of the floating controls in the bottom-right corner. */
+     of the floating controls in the bottom corners. */
   padding: var(--space-12) var(--space-12) var(--mobile-dock-clearance);
   transition: all var(--duration-slow) var(--ease-in-out);
 }
