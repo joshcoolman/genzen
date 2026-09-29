@@ -4,7 +4,7 @@ import { useId, useState } from 'react'
 import styles from './skill-prompt.module.css'
 import type { ComponentProps } from 'react'
 import {
-  PROMPT_IMAGE_SKILLS,
+  IMAGE_SKILLS,
   storyboardShotCount,
 } from '#/features/ai-images/skills/registry'
 import { Textarea } from '#/components'
@@ -20,13 +20,11 @@ export function SkillPrompt({
   const [focused, setFocused] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const text = typeof props.value === 'string' ? props.value.trimStart() : ''
-  const command = PROMPT_IMAGE_SKILLS.find(
+  const command = IMAGE_SKILLS.find(
     (skill) => text.match(/^\S+/)?.[0].toLowerCase() === skill.command,
   )
   const choice = /^\/[a-z]*$/i.test(text)
-    ? PROMPT_IMAGE_SKILLS.find((skill) =>
-        skill.command.startsWith(text.toLowerCase()),
-      )
+    ? IMAGE_SKILLS.find((skill) => skill.command.startsWith(text.toLowerCase()))
     : undefined
   // Null is the normal case since #714: the plan reads the count off the
   // brief, and the label says so rather than showing a number nothing chose.

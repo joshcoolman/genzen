@@ -28,8 +28,8 @@ const GLOBALS = ['src/styles/tokens.css', 'src/styles/base.css']
  */
 const SET_IN_JS = new Set([
   '--available-height',
-  '--badge-border',
-  '--badge-color',
+  '--dialog-overflow',
+  '--dialog-padding',
   '--dialog-title-color',
   '--image-box-pad',
   '--image-box-size',

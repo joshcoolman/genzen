@@ -257,16 +257,6 @@ export async function processVideoResult(
   }
 }
 
-export async function markGenerationFailed(recordId: string, errorMsg: string) {
-  // sql-scope-exempt: `recordId` comes from the poll scan, which is its own
-  // `user_id`-filtered select. Not a caller naming a row.
-  await sql`
-    update user_images
-    set status = 'failed', generation_error = ${errorMsg}
-    where id = ${recordId}
-  `
-}
-
 /**
  * Failure path that preserves the full structured FAL error blob in
  * generation_metadata.error while mirroring the human message to
@@ -279,8 +269,8 @@ export async function markGenerationFailedWithBlob(
 ) {
   const title = await failureTitle(recordId)
 
-  // sql-scope-exempt: same provenance as markGenerationFailed above -- the
-  // poll scan's own user_id-filtered select.
+  // sql-scope-exempt: `recordId` comes from the poll scan, which is its own
+  // `user_id`-filtered select. Not a caller naming a row.
   await sql`
     update user_images
     set status = 'failed',

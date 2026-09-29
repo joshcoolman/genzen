@@ -6,7 +6,7 @@ longer talks to the database.
 
 ## Key Files
 
-- `types.ts` -- UserImage, CollectedImage, CreateUserImageInput types, Zod schemas, ColorPalette/ShadeScale types
+- `types.ts` -- UserImage, CollectedImage, CreateUserImageInput types, `MAX_FILE_SIZE`
 - `hooks/use-user-images.ts` -- CRUD hook: fetch, create, update, soft-delete images via `server/images.action`
 - `hooks/use-existing-images.ts` -- Fetch the user's existing library rows for the shared image picker (URLs come from `#/lib/image-url`, never the bucket)
 - `lib/file-hash.ts` -- Client-side SHA-256 hashing for duplicate detection
@@ -16,7 +16,6 @@ longer talks to the database.
   a caller that only needs to write one image does not mount `useUserImages` --
   that hook fetches the whole library on mount, and a second copy on the same
   page doubles the query. `useUserImages.create` delegates to it
-- `lib/filename-parser.ts` -- Converts filenames to title-case display names
 - `server/images.action.ts` -- list / create / update / soft-delete, user scoped by `resolveAuth()`
 - `server/image-groups.action.ts` -- `listImageGroupNames()`: every group's id
   and name, for narrowing the shared picker to one. Deliberately not
@@ -65,12 +64,11 @@ the routes that consume this feature bring those.
   browser reads images from `/img/[id]`, which resolves identity from the cookie
   and filters the row by `user_id`. Build URLs only through `#/lib/image-url`.
 - Storage goes through `createImageStorage()` from `#/lib/image-storage`
-- `user_images.color_palette` and the `ColorPalette` type in `types.ts` are a
-  column and a shape with nothing writing them -- there is no palette generator.
+- `user_images.color_palette` is a column with nothing writing it -- there is no palette generator.
   The column is selected into every image read and indexed on a predicate that
   is always false; #472 has the details
-- **Max upload size: 15MB** (`MAX_FILE_SIZE` in `types.ts`); allowed types:
-  JPEG, PNG, WebP, GIF. **That number and two limits in
+- **Max upload size: 15MB** (`MAX_FILE_SIZE` in `types.ts`). The picker's
+  file input accepts JPEG, PNG, WebP and GIF; nothing server-side checks type. **That number and two limits in
   `next.config.ts` are one decision** (#482): a file reaches the server base64'd
   inside a Server Action call, a third larger than itself, and passes through
   `proxy.ts` on the way -- so `serverActions.bodySizeLimit` **and**

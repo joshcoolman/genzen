@@ -183,20 +183,10 @@ export async function removeFromCanvas(
   }
 }
 
-/** Get image dimensions from a File using an object URL (fast, no base64) */
-export function getImageDimensions(
-  file: File,
-): Promise<{ w: number; h: number }> {
-  return readLocalImage(file).then(({ w, h, url }) => {
-    URL.revokeObjectURL(url)
-    return { w, h }
-  })
-}
-
 /**
  * Dimensions *and* the object URL that produced them, so a dropped file can be
  * drawn from local bytes while its upload is still in flight. The caller owns
- * the URL and must revoke it -- `getImageDimensions` is the throwaway variant.
+ * the URL and must revoke it.
  */
 export function readLocalImage(
   file: File,

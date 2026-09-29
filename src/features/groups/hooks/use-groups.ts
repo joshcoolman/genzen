@@ -260,5 +260,4 @@ export function useGroups(kind: GroupKind) {
   }
 }
 
-export type GroupsState = ReturnType<typeof useGroups>
 export type { GroupKind, GroupWrite, ImageGroupSummary }

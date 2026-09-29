@@ -10,7 +10,6 @@ export {
   matchRatio,
 } from './aspect-ratio-select/aspect-ratio-constants'
 export { RatioIcon } from './aspect-ratio-select/ratio-icon'
-export { Badge, type BadgeProps } from './badge/badge'
 export { CardCaption } from './card-caption/card-caption'
 export {
   Button,
@@ -42,13 +41,11 @@ export {
 } from './dropdown-menu/dropdown-menu'
 export {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   type DialogContentProps,
 } from './dialog/dialog'
 export { EmptyState, type EmptyStateProps } from './empty-state/empty-state'
@@ -70,7 +67,6 @@ export {
 } from './missing-key-dialog/missing-key-dialog'
 export { MiniButton, type MiniButtonProps } from './mini-button/mini-button'
 export { NameDialog } from './name-dialog/name-dialog'
-export { MobileDialogHeader } from './mobile-dialog-header/mobile-dialog-header'
 export {
   MultiSelect,
   type MultiSelectProps,
@@ -98,7 +94,6 @@ export {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
   type SheetContentProps,
 } from './sheet/sheet'
 export { Stack, type StackProps } from './stack/stack'

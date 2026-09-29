@@ -12,8 +12,6 @@ export const IMAGE_SKILLS = [
   },
 ] as const satisfies ReadonlyArray<PromptImageSkillDefinition>
 
-export const PROMPT_IMAGE_SKILLS = IMAGE_SKILLS
-
 export type PromptInvocation =
   | { kind: 'plain'; text: string }
   | {
@@ -82,9 +80,7 @@ export function parsePromptInvocation(input: string): PromptInvocation {
   const text = input.trim()
   if (!text.startsWith('/')) return { kind: 'plain', text }
   const token = text.match(/^\S+/)![0]
-  const skill = PROMPT_IMAGE_SKILLS.find(
-    (s) => s.command === token.toLowerCase(),
-  )
+  const skill = IMAGE_SKILLS.find((s) => s.command === token.toLowerCase())
   if (!skill)
     throw new Error(
       `Unknown image command “${token}”. Use /storyboard followed by a scene idea, or remove the leading slash.`,

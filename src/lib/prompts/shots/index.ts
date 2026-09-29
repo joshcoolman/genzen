@@ -133,8 +133,6 @@ export const SHOTS = [
   },
 ] as const
 
-export type ShotId = (typeof SHOTS)[number]['id']
-
 export function findShot(id: string) {
   return SHOTS.find((s) => s.id === id)
 }

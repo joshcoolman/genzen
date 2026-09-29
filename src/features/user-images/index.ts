@@ -8,21 +8,12 @@
 export type {
   UserImage,
   CreateUserImageInput,
-  UpdateUserImageInput,
   UserImageFilters,
   CollectedImage,
 } from './types'
 
-// Validation Schemas
-export { createUserImageSchema, updateUserImageSchema } from './types'
-
 // Utilities
-export {
-  computeFileHash,
-  isValidSHA256Hash,
-  computeAndValidateFileHash,
-} from './lib/file-hash'
-export { parseFilenameToTitle, sanitizeFilename } from './lib/filename-parser'
+export { computeFileHash } from './lib/file-hash'
 
 // Hooks
 export { useUserImages } from './hooks/use-user-images'

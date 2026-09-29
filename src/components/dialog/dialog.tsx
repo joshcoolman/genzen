@@ -30,20 +30,6 @@ export function Dialog(props: ComponentProps<typeof BaseDialog.Root>) {
   return <BaseDialog.Root {...props} />
 }
 
-/**
- * Base UI composes through `render`, not `asChild`:
- *   <DialogTrigger render={<Button variant="secondary" />}>Download</DialogTrigger>
- */
-export function DialogTrigger(
-  props: ComponentProps<typeof BaseDialog.Trigger>,
-) {
-  return <BaseDialog.Trigger {...props} />
-}
-
-export function DialogClose(props: ComponentProps<typeof BaseDialog.Close>) {
-  return <BaseDialog.Close {...props} />
-}
-
 export interface DialogContentProps {
   children: ReactNode
   /**
@@ -59,11 +45,9 @@ export interface DialogContentProps {
   /**
    * `wide` sizes off the viewport (66vw x 80vh) instead of off content -- for
    * dialogs that are a grid, where the default 32rem shows two thumbnails.
-   * `fullscreen` is the mobile shape: edge to edge, no rounding or padding,
-   * paired with `MobileDialogHeader` and `showCloseButton={false}`.
    * @default 'default'
    */
-  size?: 'default' | 'wide' | 'full' | 'fullscreen'
+  size?: 'default' | 'wide' | 'full'
   /**
    * Where focus lands on open. Point it at the safe control when the dialog
    * can destroy something -- `ConfirmDialog` focuses Cancel for exactly that.
@@ -81,9 +65,7 @@ export function DialogContent({
   return (
     <BaseDialog.Portal>
       <BaseDialog.Backdrop className={styles.backdrop} />
-      <BaseDialog.Viewport
-        className={`${styles.viewport} ${size === 'fullscreen' ? styles.viewportFlush : ''}`}
-      >
+      <BaseDialog.Viewport className={styles.viewport}>
         <BaseDialog.Popup
           initialFocus={initialFocus}
           className={`${styles.popup} ${size !== 'default' ? styles[size] : ''} ${className ?? ''}`}

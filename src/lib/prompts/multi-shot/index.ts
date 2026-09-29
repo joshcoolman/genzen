@@ -39,8 +39,6 @@ export const MULTI_SHOT_PROMPTS = [
   },
 ] as const
 
-export type MultiShotId = (typeof MULTI_SHOT_PROMPTS)[number]['id']
-
 export function multiShotPrompt(id: string) {
   return MULTI_SHOT_PROMPTS.find((p) => p.id === id)
 }

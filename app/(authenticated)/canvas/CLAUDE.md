@@ -234,7 +234,7 @@ them.
   (`memberToImage`, `stateToImages`, `groupsForSave`, `positionsForSave`) plus
   fail-safe wrappers over `_actions/canvas.ts`: `saveCanvas()`, `addToCanvas()`,
   `removeFromCanvas()`, `readLocalImage()`, `preloadUrl()`,
-  `getImageDimensions()`, `getUrlDimensions()`. The wrappers swallow failures on
+  `getUrlDimensions()`. The wrappers swallow failures on
   purpose: a write that cannot reach the server must never take a card off the
   screen. `groupsForSave` is the one non-obvious piece -- a group formed over
   freshly-uploaded cards still holds local placeholder ids, and saving those
