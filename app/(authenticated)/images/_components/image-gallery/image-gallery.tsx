@@ -49,6 +49,9 @@ interface ImageGalleryProps {
   /** A true zoom on the grid and nothing else (#284 follow-up). See the note on
    *  the grid element itself. */
   thumbZoom?: number
+  /** The phone's wall (#753): two columns of bare, cropped pictures, with
+   *  group cards across the full width. Zoom does not apply. */
+  compact?: boolean
   onDelete: (img: SavedAiImage) => void
   /** #504. Passed straight through to the card's corner icon. */
   onHide: (img: SavedAiImage) => void
@@ -111,6 +114,7 @@ export function ImageGallery({
   loadingGallery,
   showInfo = true,
   thumbZoom = 1,
+  compact = false,
   onDelete,
   onHide,
   onRetry,
@@ -195,6 +199,7 @@ export function ImageGallery({
         <div
           className={cx(
             styles.grid,
+            compact && styles.compact,
             (sweep.sweeping || drag.dragging || reorder.dragging) &&
               styles.sweeping,
           )}
@@ -217,8 +222,10 @@ export function ImageGallery({
             // scaling the column alone leaves the caption at its old size, so
             // the text re-wraps and the card stops being the same card. Nothing
             // in here re-wraps -- only how many fit.
-            zoom: thumbZoom,
-            gridTemplateColumns: `repeat(auto-fill, minmax(${GRID_MIN_WIDTH}, 1fr))`,
+            zoom: compact ? 1 : thumbZoom,
+            gridTemplateColumns: compact
+              ? 'repeat(2, minmax(0, 1fr))'
+              : `repeat(auto-fill, minmax(${GRID_MIN_WIDTH}, 1fr))`,
           }}
         >
           {/* One sequence, groups and images ordered against each other -- a
@@ -309,7 +316,8 @@ export function ImageGallery({
                 lifted={reorder.drag?.id === img.id}
                 imageUrl={imageUrls[img.id]}
                 onHide={onHide}
-                objectFit="contain"
+                objectFit={compact ? 'cover' : 'contain'}
+                bare={compact}
                 showInfo={showInfo}
                 onDelete={onDelete}
                 onDownload={onDownload}

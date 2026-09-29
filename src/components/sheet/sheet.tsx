@@ -36,8 +36,9 @@ export interface SheetContentProps {
    *   `--sheet-padding`, `--sheet-gap`.
    */
   className?: string
-  /** @default 'right' */
-  side?: 'left' | 'right'
+  /** @default 'right'. `bottom` is the phone's sheet: full width, as tall as
+   *  its content up to `--sheet-max-height`. */
+  side?: 'left' | 'right' | 'bottom'
   /** @default true */
   showCloseButton?: boolean
 }

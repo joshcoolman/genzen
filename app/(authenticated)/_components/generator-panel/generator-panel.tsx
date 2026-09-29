@@ -57,6 +57,10 @@ interface GeneratorPanelProps {
    *  route owns the submits, not the panel: Images passes it, Canvas does not,
    *  and the button is absent rather than dead where nobody handles it. */
   onShots?: () => void
+  /** A run has been committed to -- past the size confirm, about to submit.
+   *  The phone's sheet closes on it, so the pending tiles are what you see
+   *  next (#753). */
+  onSubmit?: () => void
 }
 
 /**
@@ -77,6 +81,7 @@ export function GeneratorPanel({
   modelDisplay = 'panel',
   uploadGroupId = null,
   onShots,
+  onSubmit,
 }: GeneratorPanelProps) {
   const activePrompts = generator.prompts.filter((p) => p.trim())
   const readImages = generator.refImages.filter((img) => isReadRole(img.role))
@@ -181,6 +186,7 @@ export function GeneratorPanel({
       })
       if (!ok) return
     }
+    onSubmit?.()
     await generator.handleGenerate()
   }
 

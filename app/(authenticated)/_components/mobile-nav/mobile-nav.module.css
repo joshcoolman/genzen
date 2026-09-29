@@ -1,73 +1,126 @@
-/* The hamburger floats over the page it belongs to, above the sticky chrome but
-   below dialogs. */
+/* The pill floats over the page it belongs to, bottom centre, above the sticky
+   chrome but below dialogs. Its offset is `--mobile-dock-bottom`, shared with
+   anything else that floats in the thumb zone (the Images plus button), so the
+   two sit on one line. */
 .root {
   position: fixed;
-  top: var(--space-16);
-  left: var(--space-16);
+  left: 50%;
+  bottom: var(--mobile-dock-bottom);
   z-index: var(--z-drawer);
+  translate: -50% 0;
 }
 
-.trigger {
+.pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-16) var(--space-8);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-full);
   background: var(--surface);
+  box-shadow: var(--shadow-overlay);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  /* The swipe is ours: without this the browser takes a vertical drag as a
+     scroll and the pointer events stop arriving. */
+  touch-action: none;
 }
 
-/* Size through the property, not by re-declaring `width`, which would race
-   sheet.module.css on bundle order. */
+/* The grab bar says "this lifts" -- the same mark the sheet wears at its top,
+   so the thing you pull and the thing that arrives read as one surface. */
+.grip,
+.handle {
+  width: var(--space-24);
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+}
+
+.pillLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.pillLabel > svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
 .sheet {
-  --sheet-width: 16rem;
-  --sheet-max-width: none;
   --sheet-background: var(--surface);
   --sheet-gap: 0;
+  --sheet-padding: var(--space-8) 0 0;
+  --sheet-padding-bottom: var(--space-16);
+  align-items: center;
 }
 
 .nav {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-16);
+  width: 100%;
   padding: var(--space-16);
 }
 
-.divider {
-  margin-block: var(--space-8);
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-8);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-12) var(--space-4);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.tile > svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-8);
   border-top: var(--border-width) solid var(--border);
 }
 
-.item {
+.row {
   display: flex;
   width: 100%;
   align-items: center;
   gap: var(--space-12);
-  padding: var(--space-8) var(--space-12);
-  color: var(--text-muted);
+  padding: var(--space-10) var(--space-8);
+  border: none;
   border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
   font-size: var(--text-sm);
   cursor: pointer;
-  transition:
-    color var(--duration-normal) var(--ease-out),
-    background-color var(--duration-normal) var(--ease-out);
 }
 
-.item:hover {
-  background: var(--bg);
-  color: var(--text);
-}
-
-/* The active marker is a left border, so the row keeps its box: a 2px border
-   added on hover would shift the label. It is always there, transparent until
-   the route matches. */
-.item {
-  border-left: 2px solid transparent;
-}
-
-.itemActive,
-.itemActive:hover {
-  background: var(--bg);
-  color: var(--text);
-  border-left-color: var(--accent);
-}
-
-.item > svg {
+.row > svg {
   width: 1rem;
   height: 1rem;
   flex-shrink: 0;
+}
+
+/* Where you are: the accent is the one thing that says it, on a tile or a
+   row alike. */
+.on {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--accent);
 }

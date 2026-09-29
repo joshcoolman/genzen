@@ -29,12 +29,15 @@ import { cx } from '#/lib/utils'
 export function ScopeRow({
   value,
   onChange,
+  inline,
 }: {
   value: OriginFilter
   onChange: (filter: OriginFilter) => void
+  /** Inside the toolbar's row on a phone (#753), so no rule of its own. */
+  inline?: boolean
 }) {
   return (
-    <div className={styles.row}>
+    <div className={cx(styles.row, inline && styles.inline)}>
       {ORIGIN_FILTERS.map((filter) => (
         <button
           key={filter}

@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { Plus } from 'lucide-react'
 import { GeneratorPanel } from '../../../_components/generator-panel/generator-panel'
 import { SystemInstructionsButton } from '../../../_components/system-instructions-button/system-instructions-button'
 import styles from './generator-dock.module.css'
@@ -8,7 +10,7 @@ import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import type { UserImage } from '#/features/user-images/types'
 import type { ReactNode } from 'react'
-import { Dialog, DialogContent, MobileDialogHeader } from '#/components'
+import { MobileDialogHeader, Sheet, SheetContent } from '#/components'
 import { cx } from '#/lib/utils'
 
 interface GeneratorDockProps {
@@ -32,11 +34,20 @@ interface GeneratorDockProps {
   uploadGroupId?: string | null
   /** Opens the Shots dialog for the staged references (#553). */
   onShots?: () => void
+  /** A run was just submitted from the phone's sheet, which has closed. */
+  onMobileSubmit?: () => void
 }
 
 /**
- * Where the generator sits: a full-screen dialog on mobile, and on desktop a
- * fixed right-hand column that pushes the gallery over.
+ * Where the generator sits: on a phone, a sheet from the bottom behind a
+ * floating plus (#753); on desktop a fixed right-hand column that pushes the
+ * gallery over.
+ *
+ * **The phone does not share `dock.open`.** That is a persisted desktop
+ * preference, and it defaults to open -- on a phone it put a full-screen
+ * generator over the wall on every load. The sheet is local state, closed
+ * until the plus is pressed, and it closes itself on Generate so the pending
+ * tiles are what you see next.
  *
  * It could also float above the gallery, until the pin came out -- floating
  * covered the right-hand column of thumbnails to give the gallery back the
@@ -53,7 +64,10 @@ export function GeneratorDock({
   userImages,
   uploadGroupId,
   onShots,
+  onMobileSubmit,
 }: GeneratorDockProps) {
+  const [sheetOpen, setSheetOpen] = useState(false)
+
   const panel = (
     <GeneratorPanel
       generator={generator}
@@ -62,23 +76,43 @@ export function GeneratorDock({
       uploadGroupId={uploadGroupId}
       onShots={onShots}
       modelDisplay={isMobile ? 'dropdown' : undefined}
+      onSubmit={
+        isMobile
+          ? () => {
+              setSheetOpen(false)
+              onMobileSubmit?.()
+            }
+          : undefined
+      }
     />
   )
 
   if (isMobile) {
     return (
-      <Dialog open={dock.open} onOpenChange={dock.setOpen}>
-        <DialogContent size="fullscreen" showCloseButton={false}>
-          {/* The X stays here, unlike the desktop header: a full-screen dialog
-              covers the sidebar that would otherwise close it. */}
-          <MobileDialogHeader
-            title="Generate"
-            onClose={() => dock.setOpen(false)}
-            action={<SystemInstructionsButton />}
-          />
-          <div className={styles.mobileBody}>{panel}</div>
-        </DialogContent>
-      </Dialog>
+      <>
+        <button
+          type="button"
+          className={styles.fab}
+          aria-label="Generate"
+          onClick={() => setSheetOpen(true)}
+        >
+          <Plus />
+        </button>
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetContent
+            side="bottom"
+            className={styles.sheet}
+            showCloseButton={false}
+          >
+            <MobileDialogHeader
+              title="Generate"
+              onClose={() => setSheetOpen(false)}
+              action={<SystemInstructionsButton />}
+            />
+            <div className={styles.mobileBody}>{panel}</div>
+          </SheetContent>
+        </Sheet>
+      </>
     )
   }
 
