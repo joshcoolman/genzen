@@ -3,10 +3,8 @@
 import {
   createEdit,
   deleteEdit,
-  listEditFrames,
   listEdits,
   renameEdit,
-  requireEdit,
   saveCut,
   setEditGroup,
 } from '../_lib/edits.server'
@@ -33,12 +31,6 @@ export async function attachFramesGroup(id: string, groupId: string) {
     idSchema.parse(id),
     idSchema.parse(groupId),
   )
-}
-/** The frames saved out of this edit, as they stand. */
-export async function loadFrames(id: string) {
-  const { userId } = await resolveAuth()
-  const edit = await requireEdit(userId, idSchema.parse(id))
-  return listEditFrames(userId, edit.group_id)
 }
 /** The cut, as the workspace has it. Returns the edit so the caller holds the
  *  revision its next write has to match. */

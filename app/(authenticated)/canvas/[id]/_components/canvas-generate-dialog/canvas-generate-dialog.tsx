@@ -33,8 +33,7 @@ export function CanvasGenerateDialog({ canvasGen }: CanvasGenerateDialogProps) {
         <DialogHeader>
           {/* A row inside the header rather than a class flipping the header's
               own `flex-direction` -- that is a call-site module fighting a
-              component module for ordering, which `MobileDialogHeader` exists
-              to avoid. */}
+              component module for ordering. */}
           <div className={styles.titleRow}>
             <DialogTitle>Generate from Image</DialogTitle>
             <SystemInstructionsButton />

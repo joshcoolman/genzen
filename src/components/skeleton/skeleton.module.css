@@ -1,7 +1,6 @@
 /*
  * Colour and radius come in as custom properties, not as classes the call site
- * adds -- same reasoning as Badge: two CSS modules each setting `background`
- * race on bundle order, and a custom property has no fight to lose.
+ * adds: two CSS modules each setting `background` race on bundle order, and a custom property has no fight to lose.
  *
  *   .thumb { --skeleton-bg: ...; --skeleton-radius: 0; }
  */

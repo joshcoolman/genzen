@@ -1,10 +1,6 @@
 import { fal } from './fal-client.server'
-import {
-  detectImageMimeType,
-  prepareImageForFal,
-} from './fal-image-prepare.server'
+import { prepareImageForFal } from './fal-image-prepare.server'
 import { withNetworkRetry } from './fal-retry.server'
-import type { ImageMediaType } from './fal-image-prepare.server'
 
 /** Upload raw bytes to FAL storage with auto-detected MIME. Returns FAL URL. */
 export async function uploadBufferToFal(buffer: ArrayBuffer): Promise<string> {
@@ -15,27 +11,4 @@ export async function uploadBufferToFal(buffer: ArrayBuffer): Promise<string> {
   return withNetworkRetry('storage.upload', () =>
     fal.storage.upload(new Blob([bytes], { type: mimeType })),
   )
-}
-
-/** Fetch image from URL, detect MIME, upload to FAL storage. Returns FAL URL. */
-export async function fetchAndUploadToFal(imageUrl: string): Promise<string> {
-  const imageRes = await fetch(imageUrl)
-  const buffer = await imageRes.arrayBuffer()
-  return uploadBufferToFal(buffer)
-}
-
-/** Fetch image, return base64 + detected MIME (for LLM vision calls). */
-export async function fetchImageAsBase64(imageUrl: string): Promise<{
-  data: string
-  mediaType: ImageMediaType
-  buffer: ArrayBuffer
-}> {
-  const imageRes = await fetch(imageUrl)
-  const buffer = await imageRes.arrayBuffer()
-  const mediaType = detectImageMimeType(new Uint8Array(buffer))
-  return {
-    data: Buffer.from(buffer).toString('base64'),
-    mediaType,
-    buffer,
-  }
 }

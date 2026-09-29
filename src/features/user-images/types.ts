@@ -6,7 +6,6 @@
  * types it used to come from went with #176.
  */
 
-import { z } from 'zod'
 import type { UserImageRow } from '#/lib/types/db'
 
 /**
@@ -33,15 +32,6 @@ export interface CollectedImage {
 }
 
 /**
- * Data required to update an existing user image
- */
-export interface UpdateUserImageInput {
-  id: string
-  title?: string
-  description?: string | null
-}
-
-/**
  * Filter options for querying images
  */
 export interface UserImageFilters {
@@ -49,15 +39,6 @@ export interface UserImageFilters {
   limit?: number
   offset?: number
 }
-
-// Zod Schemas for validation
-
-const ALLOWED_MIME_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-] as const
 
 /**
  * The largest file the library takes, in bytes (#482).
@@ -78,89 +59,3 @@ const ALLOWED_MIME_TYPES = [
  * through an action at all -- a presigned PUT straight to the bucket (#483).
  */
 export const MAX_FILE_SIZE = 15 * 1024 * 1024 // 15MB
-
-/**
- * Schema for creating a new user image
- */
-export const createUserImageSchema = z.object({
-  title: z
-    .string()
-    .min(1, 'Title is required')
-    .max(200, 'Title must be 200 characters or less')
-    .trim(),
-
-  /* No length cap (#582). The 1000 that used to be here mirrored a database
-     check that no longer exists, and on a generation this field holds the
-     prompt -- Shots routinely writes three or four thousand characters. */
-  description: z.string().trim().nullable().optional(),
-
-  file: z
-    .instanceof(File, { message: 'File is required' })
-    .refine((file) => file.size > 0, 'File cannot be empty')
-    .refine((file) => file.size <= MAX_FILE_SIZE, {
-      message: `File size must be less than ${MAX_FILE_SIZE / 1024 / 1024}MB`,
-    })
-    .refine(
-      (file) =>
-        ALLOWED_MIME_TYPES.includes(
-          file.type as (typeof ALLOWED_MIME_TYPES)[number],
-        ),
-      {
-        message: `File type must be one of: ${ALLOWED_MIME_TYPES.join(', ')}`,
-      },
-    ),
-
-  file_hash: z
-    .string()
-    .length(64, 'File hash must be a valid SHA-256 hash (64 hex characters)')
-    .regex(/^[a-f0-9]{64}$/, 'File hash must be a valid SHA-256 hash')
-    .optional(),
-})
-
-/**
- * Schema for updating an existing user image
- */
-export const updateUserImageSchema = z.object({
-  id: z.string().uuid('Invalid image ID'),
-
-  title: z
-    .string()
-    .min(1, 'Title cannot be empty')
-    .max(200, 'Title must be 200 characters or less')
-    .trim()
-    .optional(),
-
-  /* No length cap (#582). The 1000 that used to be here mirrored a database
-     check that no longer exists, and on a generation this field holds the
-     prompt -- Shots routinely writes three or four thousand characters. */
-  description: z.string().trim().nullable().optional(),
-})
-
-/**
- * Tailwind shade scale (50-950)
- * 11 shades from lightest to darkest
- */
-export interface ShadeScale {
-  50: string
-  100: string
-  200: string
-  300: string
-  400: string
-  500: string
-  600: string
-  700: string
-  800: string
-  900: string
-  950: string
-}
-
-/**
- * Color palette v3: 8 hue-diverse colors with shade scales
- */
-export interface ColorPalette {
-  colors: Array<ShadeScale>
-  metadata: {
-    extractionMethod: 'lab-kmeans'
-    version: 3
-  }
-}

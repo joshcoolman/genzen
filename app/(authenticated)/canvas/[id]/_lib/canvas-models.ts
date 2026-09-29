@@ -30,11 +30,6 @@ export const CANVAS_MODELS: Array<ModelEntry> = CURATED_CANVAS_MODEL_SLUGS.map(
   (slug) => IMAGE_MODELS.find((m) => m.slug === slug),
 ).filter((m): m is ModelEntry => !!m && m.withImages !== null)
 
-/** Default selected canvas model (first curated, gated entry). */
-export const CANVAS_DEFAULT_MODEL = CANVAS_MODELS[0]
-  ? pickerId(CANVAS_MODELS[0])
-  : ''
-
 /**
  * A curated canvas model's edit endpoint + how many reference images it accepts.
  * Used by the multi-image ("generate from a group") flow, where every selected

@@ -12,19 +12,13 @@ import type { ComponentProps, ReactNode } from 'react'
  * these want swipe-to-dismiss; it brings its own viewport/swipe-area parts and
  * is a behaviour change, not a conversion.
  *
- * Deliberately three of shadcn's eight parts: `Close`, `Footer` and
- * `Description` had no consumer.
+ * Deliberately a subset of shadcn's eight parts: the rest had no consumer.
  *
  * Unlike Dialog, this one animates. A panel that slides in from an edge with no
  * travel reads as a glitch rather than as a surface arriving.
  */
 export function Sheet(props: ComponentProps<typeof BaseDialog.Root>) {
   return <BaseDialog.Root {...props} />
-}
-
-/** Composes through `render`, not `asChild`. */
-export function SheetTrigger(props: ComponentProps<typeof BaseDialog.Trigger>) {
-  return <BaseDialog.Trigger {...props} />
 }
 
 export interface SheetContentProps {

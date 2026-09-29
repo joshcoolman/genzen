@@ -36,10 +36,4 @@ export interface CanvasGroup {
   padding: number
 }
 
-export interface PersistedState {
-  images: Array<CanvasImage>
-  transform: Transform
-  groups?: Array<CanvasGroup>
-}
-
 export type DragMode = 'pan' | 'move' | 'marquee' | null

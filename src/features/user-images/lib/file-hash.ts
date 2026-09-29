@@ -26,27 +26,3 @@ export async function computeFileHash(file: File): Promise<string> {
     )
   }
 }
-
-/**
- * Validates that a string is a valid SHA-256 hash
- */
-export function isValidSHA256Hash(hash: string): boolean {
-  return /^[a-f0-9]{64}$/.test(hash)
-}
-
-/**
- * Computes hash and validates the file in one step
- */
-export async function computeAndValidateFileHash(file: File): Promise<string> {
-  if (file.size === 0) {
-    throw new Error('File is empty or invalid')
-  }
-
-  const hash = await computeFileHash(file)
-
-  if (!isValidSHA256Hash(hash)) {
-    throw new Error('Generated hash is invalid')
-  }
-
-  return hash
-}
