@@ -23,20 +23,13 @@
   height: 1.5rem;
 }
 
-/* The phone's generator: a sheet from the bottom, most of the screen tall. The
-   header sticks while the body scrolls, so the sheet itself does not. */
+/* The phone's generator: a sheet from the bottom, as tall as the step it is
+   showing. A long step scrolls inside itself, so the sheet does not. */
 .sheet {
   --sheet-max-height: 92dvh;
   --sheet-background: var(--surface);
   --sheet-gap: 0;
   --sheet-overflow: hidden;
-}
-
-.mobileBody {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: var(--space-8) var(--space-12) var(--space-16);
 }
 
 .panel {

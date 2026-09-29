@@ -227,15 +227,17 @@
   height: 1.125rem;
 }
 
-/* Scrolls sideways rather than running off the edge. */
-.sheet .filters {
+/* The phone's one filter: sources and groups in a single native select. */
+.filterSelect {
   flex-shrink: 0;
-  overflow-x: auto;
-}
-
-.sheet .filter {
-  flex-shrink: 0;
-  white-space: nowrap;
+  min-height: 2.75rem;
+  padding: 0 var(--space-12);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
 }
 
 .sheetFooter {

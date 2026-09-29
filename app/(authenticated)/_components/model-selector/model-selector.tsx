@@ -151,7 +151,10 @@ function selectionLabel(
   return models.find((m) => selectedIds.includes(m.id))?.name ?? 'Select...'
 }
 
-function ModelTable({
+/** The list itself, for a surface that is already its own view -- the phone's
+ *  Models step (#753) -- and so needs neither the collapsing header nor the
+ *  dropdown. */
+export function ModelTable({
   models,
   selectedIds,
   stagedImageCount,

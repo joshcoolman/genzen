@@ -1,0 +1,298 @@
+/* The phone's generator (#753). Header fixed, body scrolls when a step is
+   long (models, references), footer fixed. Everything is sized for a thumb:
+   no target under 2.75rem. */
+.root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-12) var(--space-8) var(--space-16);
+}
+
+.title {
+  flex: 1;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+}
+
+.iconButton {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.iconButton > svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-4) var(--space-16) var(--space-16);
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.prompt {
+  font-size: var(--text-base);
+}
+
+.note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.noteAction {
+  color: var(--text);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---- the chip row ---- */
+
+.chips {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.chip {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  min-width: 2.75rem;
+  height: 2.75rem;
+  padding: 0 var(--space-12);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.chip:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.chip > svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+
+/* The model name is the one label of unknown length; it takes the slack and
+   truncates rather than pushing the others off the row. */
+.chipWide {
+  flex: 1;
+  flex-shrink: 1;
+  min-width: 0;
+  justify-content: flex-start;
+}
+
+.chipLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Staged references as a little fanned stack, then the count. */
+.stack {
+  display: flex;
+  align-items: center;
+}
+
+.stack > img {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--surface-raised);
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.stack > img + img {
+  margin-left: calc(var(--space-10) * -1);
+}
+
+.stack > span {
+  margin-left: var(--space-6);
+}
+
+.generate {
+  width: 100%;
+  min-height: 3rem;
+  font-size: var(--text-base);
+}
+
+.cost {
+  margin-left: var(--space-8);
+  opacity: 0.7;
+  font-size: var(--text-sm);
+}
+
+.footer {
+  flex-shrink: 0;
+  padding: var(--space-12) var(--space-16) var(--space-4);
+  border-top: var(--border-width) solid var(--border);
+}
+
+/* ---- one-tap steps: aspect and count ---- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-8);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  min-height: 5.5rem;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+/* The shape is what is being chosen, so it is drawn big. */
+.tile > svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.countTile {
+  font-size: var(--text-2xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.tileOn {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.tilesNote {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+/* ---- references ---- */
+
+.addRefs {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  min-height: 2.75rem;
+  border: var(--border-width) dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.addRefs > svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.refList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.refRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-12);
+}
+
+.refThumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 4rem;
+  height: 4rem;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.refThumb > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.refOrdinal {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  min-width: 1.125rem;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--scrim-chip);
+  color: var(--text);
+  font-size: var(--text-3xs);
+  line-height: 1.125rem;
+  text-align: center;
+}
+
+.refMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.roleSelect {
+  min-height: 2.75rem;
+  padding: 0 var(--space-12);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+.reading {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}

@@ -152,12 +152,24 @@ export function ExistingImagePicker({
      filters to an empty grid is a dead end you have to back out of. `images`
      is already the caller's scoped list, so a picker that excludes videos
      never offers a group of nothing but videos. */
+  /* Counted over what could actually be picked -- `excludeIds` out -- so a
+     group whose only pictures are excluded is empty here, and an empty
+     choice is never offered (#753). The source pills follow the same rule
+     below. */
+  const pickable = useMemo(
+    () =>
+      excludeIds?.size
+        ? images.filter((img) => !excludeIds.has(img.id))
+        : images,
+    [images, excludeIds],
+  )
+
   const groupOptions = useMemo(() => {
     const present = new Set(
-      images.map((img) => img.group_id).filter((id): id is string => !!id),
+      pickable.map((img) => img.group_id).filter((id): id is string => !!id),
     )
     return { named: groups.filter((g) => present.has(g.id)) }
-  }, [images, groups])
+  }, [pickable, groups])
 
   const groupLabel =
     groupFilter === null
@@ -280,7 +292,10 @@ export function ExistingImagePicker({
     { value: 'all', label: 'All' },
     { value: 'upload', label: 'Uploads' },
     { value: 'ai_generated', label: 'AI Generated' },
-  ]
+  ].filter(
+    (btn): btn is { value: SourceFilter; label: string } =>
+      btn.value === 'all' || pickable.some((img) => img.source === btn.value),
+  )
 
   /* One hidden input, whichever control clicks it: the desktop's Upload
      beside the filters, or the phone's Photos button above them (#753). */
@@ -361,6 +376,44 @@ export function ExistingImagePicker({
 
       {!isMobile && uploadButton}
     </div>
+  )
+
+  /* **The phone gets one dropdown, not a row** (#753): sources, then groups
+     under their own heading. One choice at a time -- picking a group clears
+     the source and the other way round -- because two filters that combine
+     are a desktop affordance, and on a phone the second was a pill scrolled
+     out of sight. Native, so it is the phone's own wheel. */
+  const filterSelect = (
+    <select
+      className={styles.filterSelect}
+      aria-label="Show"
+      value={groupFilter !== null ? `group:${groupFilter}` : sourceFilter}
+      onChange={(e) => {
+        const v = e.target.value
+        if (v.startsWith('group:')) {
+          setSourceFilter('all')
+          setGroupFilter(v.slice('group:'.length))
+        } else {
+          setGroupFilter(null)
+          setSourceFilter(v as SourceFilter)
+        }
+      }}
+    >
+      {filterButtons.map((btn) => (
+        <option key={btn.value} value={btn.value}>
+          {btn.label}
+        </option>
+      ))}
+      {groupOptions.named.length > 0 && (
+        <optgroup label="Groups">
+          {groupOptions.named.map((g) => (
+            <option key={g.id} value={`group:${g.id}`}>
+              {g.name}
+            </option>
+          ))}
+        </optgroup>
+      )}
+    </select>
   )
 
   const grid = (
@@ -475,7 +528,7 @@ export function ExistingImagePicker({
               {uploadingCount > 0 ? `Uploading ${uploadingCount}...` : 'Photos'}
             </button>
           )}
-          {filterRow}
+          {filterSelect}
           {grid}
           <div className={styles.sheetFooter}>{footer}</div>
         </SheetContent>

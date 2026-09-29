@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { GeneratorPanel } from '../../../_components/generator-panel/generator-panel'
+import { MobileGenerator } from '../mobile-generator/mobile-generator'
 import { SystemInstructionsButton } from '../../../_components/system-instructions-button/system-instructions-button'
 import styles from './generator-dock.module.css'
 import type { DockState } from '../../_hooks/use-dock'
@@ -10,7 +11,7 @@ import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import type { UserImage } from '#/features/user-images/types'
 import type { ReactNode } from 'react'
-import { MobileDialogHeader, Sheet, SheetContent } from '#/components'
+import { Sheet, SheetContent } from '#/components'
 import { cx } from '#/lib/utils'
 
 interface GeneratorDockProps {
@@ -47,7 +48,9 @@ interface GeneratorDockProps {
  * preference, and it defaults to open -- on a phone it put a full-screen
  * generator over the wall on every load. The sheet is local state, closed
  * until the plus is pressed, and it closes itself on Generate so the pending
- * tiles are what you see next.
+ * tiles are what you see next. What it holds is `MobileGenerator`, not the
+ * panel: a phone gets a composer of one-tap steps rather than the desktop's
+ * column squeezed to fit.
  *
  * It could also float above the gallery, until the pin came out -- floating
  * covered the right-hand column of thumbnails to give the gallery back the
@@ -75,15 +78,6 @@ export function GeneratorDock({
       userImages={userImages}
       uploadGroupId={uploadGroupId}
       onShots={onShots}
-      modelDisplay={isMobile ? 'dropdown' : undefined}
-      onSubmit={
-        isMobile
-          ? () => {
-              setSheetOpen(false)
-              onMobileSubmit?.()
-            }
-          : undefined
-      }
     />
   )
 
@@ -104,12 +98,17 @@ export function GeneratorDock({
             className={styles.sheet}
             showCloseButton={false}
           >
-            <MobileDialogHeader
-              title="Generate"
+            <MobileGenerator
+              generator={generator}
+              modelSelector={modelSelector}
+              userImages={userImages}
+              uploadGroupId={uploadGroupId}
               onClose={() => setSheetOpen(false)}
-              action={<SystemInstructionsButton />}
+              onSubmit={() => {
+                setSheetOpen(false)
+                onMobileSubmit?.()
+              }}
             />
-            <div className={styles.mobileBody}>{panel}</div>
           </SheetContent>
         </Sheet>
       </>
