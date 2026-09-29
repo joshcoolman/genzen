@@ -157,13 +157,17 @@ export function ImageViewer({
 
   // The page behind must not scroll -- a fixed overlay leaves the grid free to
   // move under it, so closing lands somewhere else than where you opened from.
+  // Desktop only: the phone viewer is a Base UI Dialog with its own lock, and
+  // two locks on one style restore out of order -- Base UI records this
+  // 'hidden' as the original and writes it back after close, freezing the page.
   useEffect(() => {
+    if (isPhone) return
     const previous = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = previous
     }
-  }, [])
+  }, [isPhone])
 
   useHotkey('Escape', onClose, hotkeyOptions)
   useHotkey('ArrowRight', onNext, hotkeyOptions)
