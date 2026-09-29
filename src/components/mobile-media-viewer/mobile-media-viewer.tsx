@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../confirm-dialog/confirm-dialog'
 import { Sheet, SheetContent, SheetTitle } from '../sheet/sheet'
 import styles from './mobile-media-viewer.module.css'
 import type { CSSProperties, ReactNode, SyntheticEvent } from 'react'
+import { cx } from '#/lib/utils'
 
 /** The phone's media stage. Callers own the media and cursor; this shell owns
  *  touch controls, modal focus, details, and confirmation before removal. */
@@ -59,6 +60,9 @@ export function MobileMediaViewer({
     if (width && height) setMediaSize({ id: itemId, ratio: width / height })
   }
   const pressedEmptySpace = useRef(false)
+  // Images only: a horizontal drag on a video fights its native scrubber.
+  const swipes = kind === 'image'
+  const swipeStart = useRef<{ x: number; y: number } | null>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -120,7 +124,7 @@ export function MobileMediaViewer({
             </BaseDialog.Close>
           </header>
           <div
-            className={styles.stage}
+            className={cx(styles.stage, swipes && styles.swipes)}
             style={
               {
                 '--media-ratio': mediaSize?.id === itemId ? mediaSize.ratio : 1,
@@ -130,9 +134,27 @@ export function MobileMediaViewer({
             onLoadedMetadataCapture={readMediaSize}
             onPointerDown={(event) => {
               pressedEmptySpace.current = event.target === event.currentTarget
+              // A second finger is a pinch, never a swipe.
+              swipeStart.current =
+                swipes && event.pointerType === 'touch' && event.isPrimary
+                  ? { x: event.clientX, y: event.clientY }
+                  : null
+            }}
+            onPointerUp={(event) => {
+              const start = swipeStart.current
+              swipeStart.current = null
+              if (!start || !event.isPrimary || blocked) return
+              const dx = event.clientX - start.x
+              const dy = event.clientY - start.y
+              if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return
+              // A swipe that began on the letterbox must not also dismiss.
+              pressedEmptySpace.current = false
+              if (dx < 0) onNext?.()
+              else onPrevious?.()
             }}
             onPointerCancel={() => {
               pressedEmptySpace.current = false
+              swipeStart.current = null
             }}
             onClick={(event) => {
               if (

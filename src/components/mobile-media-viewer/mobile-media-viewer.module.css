@@ -54,6 +54,17 @@
   overflow: hidden;
 }
 
+/* Keep horizontal drags as pointer events instead of browser panning, so the
+   stage can read them as swipes. Vertical pan and pinch stay native. */
+.swipes {
+  touch-action: pan-y pinch-zoom;
+}
+
+.swipes > img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
 /* Size the element itself to the fitted frame. Letterboxing belongs to the
    stage, so tapping it dismisses without intercepting native video controls. */
 .stage > img,
