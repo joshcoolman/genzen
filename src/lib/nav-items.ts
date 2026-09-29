@@ -20,11 +20,10 @@ export interface NavItem {
   matchPaths?: Array<string>
   /**
    * Where the phone puts it. `menu` is the corner button's short list -- the
-   * sections a phone is actually used for. `tile` heads the More sheet, and
-   * `hidden` leaves it off the phone entirely. Unset is the list under the
-   * tiles.
+   * sections a phone is actually used for -- and `hidden` leaves it off the
+   * phone entirely. Unset is the More flyout.
    */
-  mobile?: 'menu' | 'tile' | 'hidden'
+  mobile?: 'menu' | 'hidden'
 }
 
 export const navItems: Array<NavItem> = [
@@ -61,7 +60,6 @@ export const navItems: Array<NavItem> = [
   },
   {
     id: 'director',
-    mobile: 'tile',
     label: 'Director',
     href: '/director',
     icon: Film,
@@ -76,7 +74,6 @@ export const navItems: Array<NavItem> = [
   },
   {
     id: 'news',
-    mobile: 'tile',
     label: 'News',
     href: '/news',
     icon: Newspaper,

@@ -1,9 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Ellipsis, LogOut, Menu } from 'lucide-react'
+import { ChevronLeft, Ellipsis, LogOut, Menu } from 'lucide-react'
 import { clsx } from 'clsx'
 import styles from './mobile-nav.module.css'
 import type { NavItem } from '#/lib/nav-items'
@@ -13,9 +11,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-  Sheet,
-  SheetContent,
   useConfirm,
 } from '#/components'
 import { navItems } from '#/lib/nav-items'
@@ -23,22 +21,20 @@ import { navItems } from '#/lib/nav-items'
 /**
  * The phone's navigation: one round button in the bottom-right corner, the
  * thumb's home, with the Images/Video plus stacked above it. It replaced a
- * bottom-centre pill (#753) that was easy to forget was there, which in turn
- * replaced a top-left hamburger a thumb could not reach.
+ * bottom-centre pill and sheet (#753) that was easy to forget was there,
+ * which in turn replaced a top-left hamburger a thumb could not reach.
  *
  * The button opens a short menu of the sections actually used on a phone
- * (`NavItem.mobile === 'menu'`) and More. More opens the full sheet:
- * everything else as tiles and a list, and Log out. Edit is not on the phone
- * at all.
+ * (`NavItem.mobile === 'menu'`) and More, which flies out to the left with
+ * everything else and Log out -- the same list, one level down, rather than a
+ * different surface. Edit is not on the phone at all.
  */
 export function MobileNav({ className }: { className?: string }) {
-  const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
 
   const menu = navItems.filter((item) => item.mobile === 'menu')
-  const tiles = navItems.filter((item) => item.mobile === 'tile')
-  const others = navItems.filter((item) => !item.mobile)
+  const more = navItems.filter((item) => !item.mobile)
 
   const { confirm, dialogProps } = useConfirm()
 
@@ -52,14 +48,25 @@ export function MobileNav({ className }: { className?: string }) {
     if (ok) void logout()
   }
 
-  useEffect(() => {
-    setOpen(false)
-  }, [pathname])
-
   const isActive = (item: NavItem) => {
     if (pathname.startsWith(item.href)) return true
     return item.matchPaths?.some((p) => pathname.startsWith(p)) ?? false
   }
+
+  const row = (item: NavItem) => (
+    <DropdownMenuItem
+      key={item.id}
+      className={clsx(
+        styles.item,
+        isActive(item) && styles.on,
+        item.dividerBefore && styles.divided,
+      )}
+      onClick={() => router.push(item.href)}
+    >
+      <item.icon />
+      {item.label}
+    </DropdownMenuItem>
+  )
 
   return (
     <div className={clsx(styles.root, className)}>
@@ -73,70 +80,34 @@ export function MobileNav({ className }: { className?: string }) {
           sideOffset={8}
           className={styles.menu}
         >
-          {menu.map((item) => (
-            <DropdownMenuItem
-              key={item.id}
-              className={clsx(styles.menuItem, isActive(item) && styles.on)}
-              onClick={() => router.push(item.href)}
+          {menu.map(row)}
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger
+              className={clsx(styles.item, more.some(isActive) && styles.on)}
             >
-              <item.icon />
-              {item.label}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuItem
-            className={styles.menuItem}
-            onClick={() => setOpen(true)}
-          >
-            <Ellipsis />
-            More
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="bottom"
-          className={styles.sheet}
-          showCloseButton={false}
-        >
-          <span className={styles.handle} aria-hidden="true" />
-          <nav className={styles.nav}>
-            <div className={styles.tiles}>
-              {tiles.map((item) => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={clsx(styles.tile, isActive(item) && styles.on)}
-                >
-                  <item.icon />
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-            <div className={styles.list}>
-              {others.map((item) => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={clsx(styles.row, isActive(item) && styles.on)}
-                >
-                  <item.icon />
-                  {item.label}
-                </Link>
-              ))}
-              <button
-                type="button"
-                className={styles.row}
+              <Ellipsis />
+              More
+              <ChevronLeft className={styles.flyoutMark} />
+            </DropdownMenuSubTrigger>
+            <DropdownMenuContent
+              side="left"
+              align="end"
+              sideOffset={4}
+              className={styles.menu}
+            >
+              {more.map(row)}
+              <DropdownMenuItem
+                className={clsx(styles.item, styles.divided)}
                 onClick={() => void askThenSignOut()}
               >
                 <LogOut />
                 Log out
-              </button>
-            </div>
-          </nav>
-          <ConfirmDialog {...dialogProps} />
-        </SheetContent>
-      </Sheet>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenuSub>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

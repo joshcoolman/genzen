@@ -5,10 +5,10 @@ import styles from './dropdown-menu.module.css'
 import type { ComponentProps, ReactNode } from 'react'
 
 /**
- * A button-triggered menu. Four parts, where the shadcn version had fifteen:
- * its checkbox items, radio groups, submenus, shortcuts, labels and separators
- * had no consumer, and Base UI's `menu` has equivalents for all of them if one
- * ever turns up.
+ * A button-triggered menu. Six parts, where the shadcn version had fifteen:
+ * its checkbox items, radio groups, shortcuts, labels and separators had no
+ * consumer, and Base UI's `menu` has equivalents for all of them if one ever
+ * turns up. Submenus did (the phone's More flyout).
  *
  * Kept under shadcn's names, like Popover and Tooltip, so the one consumer
  * swaps by import.
@@ -70,5 +70,24 @@ export function DropdownMenuItem({
 }: ComponentProps<typeof Menu.Item>) {
   return (
     <Menu.Item {...props} className={`${styles.item} ${className ?? ''}`} />
+  )
+}
+
+/** A nested menu: wrap a `DropdownMenuSubTrigger` and a `DropdownMenuContent`. */
+export function DropdownMenuSub(
+  props: ComponentProps<typeof Menu.SubmenuRoot>,
+) {
+  return <Menu.SubmenuRoot {...props} />
+}
+
+export function DropdownMenuSubTrigger({
+  className,
+  ...props
+}: ComponentProps<typeof Menu.SubmenuTrigger>) {
+  return (
+    <Menu.SubmenuTrigger
+      {...props}
+      className={`${styles.item} ${className ?? ''}`}
+    />
   )
 }

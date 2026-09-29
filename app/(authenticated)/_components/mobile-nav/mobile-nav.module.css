@@ -28,107 +28,42 @@
 
 /* Thumb-sized rows, not the desktop menu's compact ones. Doubled class so it
    outranks the primitive's own `.item` regardless of stylesheet order. */
+/* Thumb-sized rows, not the desktop menu's compact ones. Doubled class so it
+   outranks the primitive's own `.item` regardless of stylesheet order. */
 .menu {
   min-width: 10rem;
 }
 
-.menu .menuItem {
+.menu .item {
   gap: var(--space-12);
-  padding: var(--space-12) var(--space-12);
+  padding: var(--space-12);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
 }
 
-.menuItem > svg {
+.item > svg {
   width: 1.125rem;
   height: 1.125rem;
   flex-shrink: 0;
 }
 
-.handle {
-  width: var(--space-24);
-  height: 3px;
-  border-radius: var(--radius-full);
-  background: var(--border);
-}
-
-.sheet {
-  --sheet-background: var(--surface);
-  --sheet-gap: 0;
-  --sheet-padding: var(--space-8) 0 0;
-  --sheet-padding-bottom: var(--space-16);
-  align-items: center;
-}
-
-.nav {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-16);
-  width: 100%;
-  padding: var(--space-16);
-}
-
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-8);
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-6);
-  padding: var(--space-12) var(--space-4);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-md);
+/* Points the way the flyout opens. */
+.menu .flyoutMark {
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-left: auto;
   color: var(--text-muted);
-  font-size: var(--text-xs);
 }
 
-.tile > svg {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.list {
-  display: flex;
-  flex-direction: column;
-  padding-top: var(--space-8);
+/* The rail's divider: Trash and what follows are about the app, not places
+   you work. */
+.menu .divided {
+  margin-top: var(--space-4);
   border-top: var(--border-width) solid var(--border);
+  border-radius: 0;
 }
 
-.row {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: var(--space-12);
-  padding: var(--space-10) var(--space-8);
-  border: none;
-  border-radius: var(--radius-md);
-  background: none;
-  color: var(--text-muted);
-  font: inherit;
-  font-size: var(--text-sm);
-  cursor: pointer;
-}
-
-.row > svg {
-  width: 1rem;
-  height: 1rem;
-  flex-shrink: 0;
-}
-
-/* Where you are: the accent is the one thing that says it, on a tile or a
-   row alike. */
-.on {
-  background: var(--bg);
-  color: var(--text);
-  border-color: var(--accent);
-}
-
-/* Where you are, in the short menu: the accent on the icon, since the rows
-   carry no border for `.on` to colour. */
+/* Where you are: the accent on the icon, since the rows carry no border. */
 .menu .on > svg {
   color: var(--accent);
 }
