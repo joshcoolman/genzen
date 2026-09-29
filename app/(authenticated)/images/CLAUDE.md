@@ -444,8 +444,10 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   description, Generate from this, Animate and Hide; it starts closed without
   changing the desktop prompt preference. Viewer shortcuts are suspended while
   that sheet or the confirmation is open. A horizontal swipe on the image
-  goes previous/next; Video does not get it, because a sideways drag on a
-  clip fights its native scrubber.
+  goes previous/next: the image tracks the finger, slides off, and the next
+  slides in from the far side -- one step per swipe, input ignored mid-slide,
+  instant under reduced motion. Video does not get it, because a sideways
+  drag on a clip fights its native scrubber.
 
 - **The desktop viewer is `#/components/image-viewer/`, shared since #690.** A plain lightbox: scrim over the app, the picture
   centred, chevrons either side, an X, a counter, click outside the image to
