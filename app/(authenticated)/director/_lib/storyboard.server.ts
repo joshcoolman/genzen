@@ -114,6 +114,7 @@ export const pronounceSchema = z.object({
  */
 export async function pronounceLines(
   lines: Array<{ number: number; line: string }>,
+  signal?: AbortSignal,
 ): Promise<Map<number, string | null>> {
   requireAiRole('reasoning')
   if (lines.length === 0) return new Map()
@@ -122,6 +123,7 @@ export async function pronounceLines(
     model: ai.reasoning,
     maxOutputTokens: 16000,
     system: pronouncePrompt,
+    abortSignal: signal,
     schema: pronounceSchema,
     messages: [
       {

@@ -14,10 +14,10 @@ as letters. A common English word is never respelled.
 
 When you do respell, change **only** the hard words and leave the rest of the
 line byte for byte as it was given. Write the respelling in ordinary English
-letters, never in phonetic alphabet symbols: syllables joined by hyphens, and
-the stressed syllable in capitals. Descartes becomes day-KART, Baudrillard
-becomes boh-dree-YAR, Nietzsche becomes NEE-chuh, Nebuchadnezzar becomes
-neb-yuh-kud-NEZ-er. A name appearing in several lines is respelled the same way
+letters, never in phonetic alphabet symbols: syllables joined by hyphens, all in lowercase. Do not capitalize syllables for
+stress: the video audio model may shout them. Descartes becomes day-kart,
+Baudrillard becomes boh-dree-yar, Nietzsche becomes nee-chuh, Nebuchadnezzar
+becomes neb-yuh-kud-nez-er. A name appearing in several lines is respelled the same way
 in every one of them.
 
 Be sparing. A respelling is a change to what the audience hears, and a word that

@@ -8,6 +8,7 @@ import {
   dropChatClip,
   rerunChatClip,
 } from '../_actions/chat.action'
+import { completedPrefix } from '../_lib/cut-job'
 import { trashClip, writeRun } from '../_actions/sessions.action'
 import {
   GEN_MODEL_SLUG,
@@ -62,6 +63,9 @@ import { toast, useReportError } from '#/components'
  */
 export function useView(session: Session, clips: Array<VideoRecord>) {
   const router = useRouter()
+  const building =
+    !!session.generation &&
+    !['completed', 'cancelled'].includes(session.generation.status)
   const { user } = useAuth()
 
   /**
@@ -100,9 +104,16 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
   const revision = useRef(session.revision)
   const queue = useRef<Promise<void>>(Promise.resolve())
   const saved = useRef(session.cut.clipIds.join(','))
+  const serverOrder = useRef(session.cut.clipIds.join(','))
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (
+      building ||
+      (session.generation &&
+        serverOrder.current !== session.cut.clipIds.join(','))
+    )
+      return
     const ids = picked.map((c) => c.id)
     const key = ids.join(',')
     if (key === saved.current) return
@@ -121,7 +132,14 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
         )
       }
     })
-  }, [picked, session.id, session.cut.id])
+  }, [
+    picked,
+    session.id,
+    session.cut.id,
+    session.cut.clipIds,
+    session.generation,
+    building,
+  ])
 
   /**
    * A session write that has to wait its turn behind the run's saves (#744):
@@ -159,17 +177,34 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
    * thing that was just asked for.
    */
   useEffect(() => {
+    const orderChanged = serverOrder.current !== session.cut.clipIds.join(',')
+    serverOrder.current = session.cut.clipIds.join(',')
+    if (session.generation) {
+      revision.current = session.revision
+      if (building || orderChanged)
+        saved.current = session.cut.clipIds.join(',')
+    }
     if (clips.length === 0) return
     const byId = new Map(clips.map((c) => [c.id, c]))
     setPicked((current) => {
-      const next = current.map((clip) => byId.get(clip.id) ?? clip)
+      const next =
+        building || (!!session.generation && orderChanged)
+          ? session.cut.clipIds.flatMap((id) => byId.get(id) ?? [])
+          : current.map((clip) => byId.get(clip.id) ?? clip)
       // Same rows, same order: hand back the array we were given, so a refresh
       // that changed nothing in the run is not a re-render of it.
-      return next.some((clip, index) => clip !== current[index])
+      return next.length !== current.length ||
+        next.some((clip, index) => clip !== current[index])
         ? next
         : current
     })
-  }, [clips])
+  }, [
+    clips,
+    building,
+    session.cut.clipIds,
+    session.generation,
+    session.revision,
+  ])
 
   /**
    * The oldest clip in the run still being made, or null.
@@ -181,7 +216,9 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
    */
   const pendingSince = useMemo(() => {
     const times = picked
-      .filter((c) => c.status === 'pending')
+      .filter(
+        (c) => c.status === 'pending' && !c.generation_metadata?.director_queue,
+      )
       .map((c) => c.created_at)
       .sort()
     return times[0] ?? null
@@ -297,7 +334,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
         .filter((turn) => turn.clipIds.some((id) => !done.has(id)))
         .map((turn) => turn.id),
     )
-  }, [chat, picked])
+  }, [chat, picked, session.generation])
 
   /**
    * What the player may hold. A run: every finished clip. A chat: a clip once
@@ -309,6 +346,14 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
    * there).
    */
   const ready = useMemo<Ready>(() => {
+    if (session.generation && session.generation.status !== 'completed') {
+      const done = new Set(completedPrefix(session.generation))
+      const planned = new Set(
+        session.generation.data.shots.map((shot) => shot.id),
+      )
+      return (clip) =>
+        isReady(clip) && (!planned.has(clip.id) || done.has(clip.id))
+    }
     if (!chat) return isReady
     const done = new Set(
       picked.filter((c) => c.status === 'completed').map((c) => c.id),
@@ -322,7 +367,7 @@ export function useView(session: Session, clips: Array<VideoRecord>) {
       }
     }
     return (clip) => isReady(clip) && !held.has(clip.id)
-  }, [chat, picked])
+  }, [chat, picked, session.generation])
 
   /**
    * The answer that just started arriving, as the row index of its first

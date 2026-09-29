@@ -40,41 +40,52 @@ name, clipIds }] }` -- written against `revision`, which rejects a second
 - Deleting a session trashes everything it made -- clips, sheets and the
   stills behind them -- then deletes the row.
 
-## New cut from script (#744)
+## New cut from script (#749)
 
-Directing clip by clip is how a story is found, and why it drifts: each clip is
-made knowing nothing of what follows. **New cut from script** makes the open cut
-again as a new cut beside it, the way a chat answer is made -- one fast pass.
+A dialog accepts optional direction for style, pacing, camera, tone or emphasis.
+Both the appearance pass and the whole-story planner receive it. Blank preserves
+the source look; a new direction re-reads appearance rather than reusing an
+unadapted cast. Story and dialogue stay canonical; pronunciation has a separate
+spoken override, visible and editable while a clip is waiting.
 
-- **Three steps** (`_actions/rerun.action.ts`): a prose cast from one vision
-  call over the source cut's stills (`director-rerun-cast.md`); one planning
-  call that extracts the story and cuts it into shots
-  (`director-rerun.md`); every shot submitted at once on H3 Max Turbo
-  text-to-video at 16:9 with one seed. About 25s of model calls, then the film
-  lands in about one clip's time.
-- **The anchors are prepended in code** (`_lib/rerun.ts`), the chat's rule: the
-  cast (look plus each member as `name: description`) and the scene go in front
-  of every shot, and the model writes only action, speaker and line. **Shots
-  name people exactly as the cast does** -- the first run had the cast say "the
-  barista" and every shot say "Enzo Bramante" off the source prompts, which is
-  two anchors for one face. The look never states the frame's shape: a source
-  cut can be 9:16 and the new one is 16:9.
-- **A line is timed from its words, a silent beat is the shortest clip**
-  (`shotDuration`) -- never by the model (#685).
-- **Prose continuity only, no Kling.** No references, no drawn frames -- the fast
-  cousin of Storyboard. Kling took 158s on one clip and refused another.
-- **The story carries across cuts; the shot list does not.** A planned cut
-  stores `story` (beats and verbatim dialogue), `cast`, `seed` and `from`. A
-  later cut is planned from that story plus the prompts of clips improvised onto
-  the cut since -- never from the planner's own prompts, a copy of a copy. An
-  untouched planned cut reuses its stored cast rather than describing its own
-  stills again.
-- **Every planned clip is stamped at birth**: `generation_metadata.director_plan
-= { cut_id, shot }`. Nothing reads it yet; it is what the incremental rerun
-  (#745) builds on -- a re-roll is a new row, so "untouched" is "still the row
-  the planner made". Completion merges metadata, so the stamp survives.
-- The stills the cast call cuts are recorded in `refs.frames`, so they are
-  trashed with the session like an extraction's.
+- `cutFromScript` snapshots the source, reserves/selects the new cut and returns
+  immediately. Planning runs server-side. All planned positions become ordinary
+  pending `user_images` rows together, before video submission. The session cut
+  retains story, cast, seed and source id, as before #749.
+- `director_cut_jobs` stores the ordered plan, phase, receipts and progress.
+  `instrumentation.ts` starts a worker in the self-hosted Node process (`scripts/serve.mjs`
+  warms the server on startup), independent
+  of navigation. A reserved Postgres connection holds a per-cut advisory lock;
+  checkpoint versions fence stale workers and concurrent edits. This requires a
+  long-lived Node process, not request-lifetime/serverless execution.
+- Every clip after the first waits for the previous completed video and its
+  full-resolution ending PNG (`cut-frame.server.ts`, sharing `decodeEndFrame`).
+  That image is the next first-frame input on H3 Max Turbo. No text-only fallback.
+  The planner may direct motivated cuts inside a generation, after its incoming
+  frame, and may continue a shot across generations. A generation boundary is
+  never itself a reason to cut.
+- `cut-worker.server.ts` uses the shared video input builder, FAL client and
+  completion handler. Queue-owned media carry `director_queue: true`; the normal
+  browser poll skips them, including unsubmitted waiting rows. The worker alone
+  submits/settles them. Rows retain `canonical_prompt` and `canonical_dialogue`;
+  completion never substitutes phonetic text for their script.
+- Submission intent is persisted before a single-attempt provider POST. A crash
+  with a receipt resumes polling; a crash without one blocks for reconciliation,
+  never blind paid resubmission. Retry after transient failure reuses the receipt;
+  a confirmed provider rejection permits a fresh request only on explicit Retry.
+- Cancel is available during planning and rendering. It persists before provider
+  cancellation, stops the tail and fences late responses. In-flight provider
+  cancellation is best effort. Completed clips remain; cancelled slots stay
+  visible. Deleting a cut/session also cancels its jobs. Running cuts cannot be
+  reordered or have their dependencies removed.
+- UI refresh reads saved progress every two seconds while active; it does not
+  drive execution. Tab selection happens once at creation. Playback follows the
+  completed prefix, holds its ending while waiting, and resumes when the next
+  clip lands. It respects pause, and script cuts do not loop automatically.
+- Source extraction still samples clips at 20/50/80%, writes concrete recurring
+  character/object descriptions, and prepends the pinned cast and scene to each
+  prompt. Phonetic preparation uses `pronounceLines`, sparingly, with lowercase
+  syllables to avoid the audio model shouting capitalized stress markers.
 
 ## Chat sessions (#670)
 

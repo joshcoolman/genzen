@@ -31,9 +31,13 @@ const castSchema = z.object({
 export async function writeCast({
   frames,
   prompts,
+  direction = '',
+  signal,
 }: {
   frames: Array<SessionFrame>
   prompts: Array<string>
+  direction?: string
+  signal?: AbortSignal
 }): Promise<{ look: string; characters: Array<CastMember> }> {
   requireAiRole('vision')
   const thumbnails = await Promise.all(
@@ -49,7 +53,7 @@ export async function writeCast({
   > = [
     {
       type: 'text',
-      text: `The clips were generated from these prompts, in order:\n\n${prompts.join('\n\n')}`,
+      text: `Direction for this new cut: ${direction || 'Preserve the source look.'}\n\nThe clips were generated from these prompts, in order:\n\n${prompts.join('\n\n')}`,
     },
   ]
   thumbnails.forEach((thumbnail, index) => {
@@ -61,6 +65,7 @@ export async function writeCast({
   })
   const { object } = await generateObject({
     model: ai.vision,
+    abortSignal: signal,
     maxOutputTokens: 4096,
     system: castPrompt,
     schema: castSchema,
@@ -105,12 +110,15 @@ export interface CutPlan {
 export async function planCut(input: {
   /** The cast as prose, each member led by the name shots should use. */
   cast: string
+  direction?: string
+  signal?: AbortSignal
   /** Either a stored story, or the clip prompts, in order. */
   source: { story: string | null; prompts: Array<string> }
 }): Promise<CutPlan> {
   requireAiRole('chat')
   const { output } = await generateText({
     model: ai.chat,
+    abortSignal: input.signal,
     system: plannerPrompt,
     providerOptions: {
       anthropic: {
@@ -125,6 +133,7 @@ export async function planCut(input: {
         role: 'user',
         content: JSON.stringify({
           cast: input.cast,
+          direction: input.direction ?? '',
           ...(input.source.story
             ? {
                 story: input.source.story,
@@ -136,7 +145,12 @@ export async function planCut(input: {
       },
     ],
   })
+  if (output.story.length > 20000 || output.shots.length > MAX_SHOTS)
+    throw new Error(
+      'The planned cut is too long. Shorten the source or direction.',
+    )
   const scenes = output.scenes.map((scene) => scene.description)
+  if (scenes.length === 0) throw new Error('The planner wrote no locations.')
   const shots = output.shots.slice(0, MAX_SHOTS).map((shot) => ({
     ...shot,
     /* A scene number outside the list is the first scene rather than none:

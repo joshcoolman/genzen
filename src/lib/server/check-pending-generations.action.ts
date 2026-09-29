@@ -72,6 +72,7 @@ export async function checkPendingGenerations() {
            (extract(epoch from (now() - created_at)) * 1000)::float8 as age_ms
     from user_images
     where user_id = ${userId}
+      and coalesce(generation_metadata->>'director_queue', 'false') <> 'true'
       and (
         status = 'pending'
         or (status = 'failed'

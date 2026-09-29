@@ -6,7 +6,7 @@ import { countWords, durationForWords } from '#/lib/server/director-chat.server'
  * `rerun.server.ts`.
  */
 
-/** The most shots one cut may plan. Every one is a clip submitted at once. */
+/** The most shots one cut may plan. Every segment is generated after its predecessor. */
 export const MAX_SHOTS = 30
 
 export interface CastMember {
@@ -65,7 +65,7 @@ export function composeShotPrompt(
  * the chat's rule (#685), for the chat's reason: a model dealing out durations
  * gives a short line fifteen seconds and it comes back as noise. A silent beat
  * gets the shortest the model makes, because a reveal or a record screech is
- * a moment and the film should cut often.
+ * a moment; longer actions can continue across segments.
  */
 export function shotDuration(
   shot: PlannedShot,
