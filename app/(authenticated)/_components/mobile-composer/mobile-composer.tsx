@@ -13,8 +13,8 @@ import {
 import { cx } from '#/lib/utils'
 
 /**
- * The way in: a round plus in the thumb zone, stacked above the corner menu
- * button (`--mobile-fab-bottom`). The accent, because it is the one thing on the
+ * The way in: a round plus in the bottom-right corner, level with the menu
+ * button in the bottom-left (`--mobile-dock-bottom`). The accent, because it is the one thing on the
  * page that makes something.
  */
 export function ComposerFab({
