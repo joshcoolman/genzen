@@ -13,10 +13,10 @@ import {
 import type { z } from 'zod'
 import type { FalFailure } from './decode-fal.server'
 import { AI_PROVIDERS } from '#/lib/ai-keys'
-import { ai } from '#/lib/server/ai.server'
+import { ai } from '#/lib/server/claude/client.server'
 import { sql } from '#/lib/server/db.server'
-import { fal } from '#/lib/server/fal-client.server'
-import { downloadAndStoreImage } from '#/lib/server/image-storage.server'
+import { fal } from '#/lib/server/fal/client.server'
+import { downloadAndStoreImage } from '#/lib/server/storage/download.server'
 
 /**
  * The four services News runs on, named for the job rather than the vendor.

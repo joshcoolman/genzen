@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { composeClipPrompt } from '../../app/(authenticated)/director/_lib/chat.server'
 import { spokenFromClipPrompt } from './director-clip-prompt'
-import { composeClipPrompt } from '#/lib/server/director-chat.server'
 
 describe('reading a chat clip line back out of its prompt', () => {
   it('reads what composeClipPrompt wrote', () => {

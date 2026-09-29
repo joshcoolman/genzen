@@ -6,7 +6,7 @@ import type { BoardSheet, StoryboardPlan } from '../[id]/board'
 import type { ScriptLine } from '../[id]/script'
 import pronouncePrompt from '#/lib/prompts/director-pronounce.md'
 import storyboardPrompt from '#/lib/prompts/director-storyboard.md'
-import { ai, requireAiRole } from '#/lib/server/ai.server'
+import { ai, requireAiRole } from '#/lib/server/claude/client.server'
 
 /**
  * Planning a session's storyboard (#695).

@@ -14,7 +14,7 @@
 // Trashed clips are included, on #511's reasoning -- Trash renders clip tiles
 // too, and a soft delete keeps the object, so there is something to read.
 //
-// **The output must match `src/lib/server/video-poster.server.ts` exactly** --
+// **The output must match `src/lib/server/media/video-poster.server.ts` exactly** --
 // same 400px WebP at quality 80, same `-sseof -1 -update 1` decode, same
 // `{userId}/thumbs/{name}-end.webp` key. A backfilled clip that differs from a
 // freshly generated one is a bug that shows up as a row of subtly mismatched
@@ -68,7 +68,7 @@ if (!endpoint || !accessKeyId || !secretAccessKey) {
   process.exit(1)
 }
 
-// Same concession as `image-storage.ts`: MinIO serves one host, so
+// Same concession as `storage/client.server.ts`: MinIO serves one host, so
 // `bucket.localhost` has nothing to resolve to.
 const { hostname } = new URL(endpoint)
 const forcePathStyle =

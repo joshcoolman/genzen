@@ -208,7 +208,7 @@ source images; `use-view.ts` owns everything after the first paint.
   twice. Storing every frame up front would be paying for the twenty-five
   nobody wanted.
 
-  The decode is `src/lib/server/clip-frames.server.ts`, beside the poster's --
+  The decode is `src/lib/server/media/clip-frames.server.ts`, beside the poster's --
   `ffmpeg-static`, an npm dependency, so unlike `lab/frames` this needs no
   system binary and works on the deploy.
 

@@ -159,7 +159,7 @@ a "no" now has somewhere to go.
   **`end_frame_path` (#512) is not an exception to that, and it is worth saying
   why, because it looks like one.** The column was wanted by Sequence and added
   anyway — but nothing lab-shaped is in it. It holds a fact about a clip, written
-  at ingest by `fal-completion.server.ts` beside the poster and served by
+  at ingest by `fal/completion.server.ts` beside the poster and served by
   `/img/[id]?v=end`; delete this whole folder and the column, the extraction and
   the route all still make sense. The rule is about a lab page storing its own
   state, not about a lab page being the first thing to want something the app

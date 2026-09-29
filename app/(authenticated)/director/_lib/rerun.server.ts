@@ -7,7 +7,7 @@ import type { CastMember, PlannedShot } from './rerun'
 import type { SessionFrame } from './references.server'
 import castPrompt from '#/lib/prompts/director-rerun-cast.md'
 import plannerPrompt from '#/lib/prompts/director-rerun.md'
-import { ai, requireAiRole } from '#/lib/server/ai.server'
+import { ai, requireAiRole } from '#/lib/server/claude/client.server'
 
 /** What the cast call sees: enough to read a face, small enough that thirty
  *  stills are one quick call. The inventory's width, for its reason. */

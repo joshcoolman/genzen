@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { ConnectionCheck } from '#/lib/server/check-connections.action'
+import { checkConnections } from './_actions/check-connections.action'
+import type { ConnectionCheck } from './_actions/check-connections.action'
 import { useAuth } from '#/lib/auth'
-import { checkConnections } from '#/lib/server/check-connections.action'
 
 export function useView() {
   const { user } = useAuth()

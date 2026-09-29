@@ -1,7 +1,7 @@
 import {
   buildReferenceSheet,
   referenceSheetFileName,
-} from '#/lib/server/reference-sheet.server'
+} from './reference-sheet.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 
 const UUID = /^[0-9a-f-]{36}$/i

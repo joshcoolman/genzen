@@ -40,12 +40,12 @@ import openFramePrompt from '#/lib/prompts/director-frame-open.md'
 import sectionPrompt from '#/lib/prompts/director-section.md'
 import { generateImageInternal } from '#/features/ai-images/server/generate-image-internal.server'
 import { updateImageMeta } from '#/features/user-images/server/images.action'
-import { fal } from '#/lib/server/fal-client.server'
-import { extractFalError, isFalRejection } from '#/lib/server/fal-error.server'
+import { fal } from '#/lib/server/fal/client.server'
+import { extractFalError, isFalRejection } from '#/lib/server/fal/error.server'
 import {
   markGenerationFailedWithBlob,
   processVideoResult,
-} from '#/lib/server/fal-completion.server'
+} from '#/lib/server/fal/completion.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 

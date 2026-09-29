@@ -15,7 +15,7 @@ import {
   composeClipPrompt,
   countWords,
   durationForWords,
-} from '#/lib/server/director-chat.server'
+} from '../_lib/chat.server'
 import { spokenFromClipPrompt } from '#/lib/director-clip-prompt'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { sql } from '#/lib/server/db.server'

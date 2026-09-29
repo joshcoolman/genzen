@@ -292,7 +292,7 @@ list once when the seed comes back full, so the grid is never short.
   sits with the other selection verbs because groups are only one place a
   selection happens.
   The layout is `src/lib/justified-rows.ts` (pure, tested) and the compositing is
-  `src/lib/server/reference-sheet.server.ts`, reached through
+  `app/api/reference-sheet/reference-sheet.server.ts`, reached through
   `POST /api/reference-sheet`, which answers with the PNG itself. **Justified rows, not native
   sizes**: every row is exactly the sheet's width and every image in a row the
   same height, so two pictures of the same shape come out the same size and the

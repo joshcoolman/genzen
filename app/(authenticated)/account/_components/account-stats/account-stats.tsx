@@ -1,5 +1,5 @@
 import styles from './account-stats.module.css'
-import type { AccountStats as Stats } from '#/lib/server/account-stats.server'
+import type { AccountStats as Stats } from '../../_lib/account-stats.server'
 import { formatCents } from '#/lib/format'
 
 /**

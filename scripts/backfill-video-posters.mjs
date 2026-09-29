@@ -16,7 +16,7 @@
 // just moves the broken tiles somewhere less visible. A soft delete keeps the
 // object, so there is something to read.
 //
-// **The output must match `src/lib/server/video-poster.server.ts` exactly** --
+// **The output must match `src/lib/server/media/video-poster.server.ts` exactly** --
 // same 400px WebP at quality 80, same `{userId}/thumbs/{name}.webp` key. A
 // backfilled clip that differs from a freshly generated one is a bug that
 // shows up as a grid of subtly mismatched tiles. The constants are duplicated
@@ -69,7 +69,7 @@ if (!endpoint || !accessKeyId || !secretAccessKey) {
   process.exit(1)
 }
 
-// Same concession as `image-storage.ts`: MinIO serves one host, so
+// Same concession as `storage/client.server.ts`: MinIO serves one host, so
 // `bucket.localhost` has nothing to resolve to.
 const { hostname } = new URL(endpoint)
 const forcePathStyle =

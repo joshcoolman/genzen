@@ -38,7 +38,7 @@ the ten writes had ever filtered on `source`.
   already in hand on the server, so the write says what happened and the client
   patches both lists from it rather than buying a second round trip.
 - **A generation's group is checked at birth against the kind, in
-  `create-pending-generation.server.ts`.** It derives the kind from `source`
+  `generations/create-pending.server.ts`.** It derives the kind from `source`
   rather than taking one, so every caller gets it without knowing about this.
   A group that does not resolve files the row at top level rather than failing
   the generation: a wrong group is worth losing, a picture is not.

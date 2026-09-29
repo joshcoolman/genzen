@@ -1,5 +1,5 @@
 import { View } from './view'
-import { getAccountStats } from '#/lib/server/account-stats.server'
+import { getAccountStats } from './_lib/account-stats.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 
 // Same seam as `/account/style`: the aggregation runs here and is handed down,

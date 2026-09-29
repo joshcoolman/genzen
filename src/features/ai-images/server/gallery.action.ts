@@ -4,7 +4,7 @@ import type { SavedAiImage } from '#/features/ai-images/types'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { removeImages } from '#/features/user-images/server/remove-images.action'
-import { cancelFalRequest } from '#/lib/server/fal-cancel.server'
+import { cancelFalRequest } from '#/lib/server/fal/cancel.server'
 import { clearCanvasMembership } from '#/lib/server/canvas-membership.server'
 
 // The gallery's reads and deletes, which the browser used to run directly

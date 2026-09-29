@@ -29,8 +29,8 @@ import { planCut, writeCast } from './rerun.server'
 import { pronounceLines } from './storyboard.server'
 import { completedPrefix, cutProgressLabel } from './cut-job'
 import { sql } from '#/lib/server/db.server'
-import { fal, submitFalOnce } from '#/lib/server/fal-client.server'
-import { cancelFalRequest } from '#/lib/server/fal-cancel.server'
+import { fal, submitFalOnce } from '#/lib/server/fal/client.server'
+import { cancelFalRequest } from '#/lib/server/fal/cancel.server'
 
 vi.mock('./cut-frame.server', () => ({ continuityFrame: vi.fn() }))
 vi.mock('./rerun.server', () => ({ planCut: vi.fn(), writeCast: vi.fn() }))
@@ -42,17 +42,17 @@ vi.mock('./references.server', () => ({
       { imageId: randomUUID(), bytes: Buffer.from('frame') },
     ]),
 }))
-vi.mock('#/lib/server/fal-client.server', () => ({
+vi.mock('#/lib/server/fal/client.server', () => ({
   submitFalOnce: vi.fn(),
   fal: { queue: { status: vi.fn(), result: vi.fn() } },
 }))
-vi.mock('#/lib/server/fal-cancel.server', () => ({ cancelFalRequest: vi.fn() }))
-vi.mock('#/lib/server/fal-image-inputs.server', () => ({
+vi.mock('#/lib/server/fal/cancel.server', () => ({ cancelFalRequest: vi.fn() }))
+vi.mock('#/lib/server/fal/image-inputs.server', () => ({
   uploadLibraryImagesToFal: vi.fn((ids: Array<string>) =>
     Promise.resolve(ids.map((id) => `https://example.test/${id}`)),
   ),
 }))
-vi.mock('#/lib/server/fal-completion.server', () => ({
+vi.mock('#/lib/server/fal/completion.server', () => ({
   processVideoResult: vi.fn(async (id: string, owner: string) => {
     await sql`update user_images set status = 'completed' where id = ${id} and user_id = ${owner}`
   }),

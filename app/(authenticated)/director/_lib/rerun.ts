@@ -1,4 +1,4 @@
-import { countWords, durationForWords } from '#/lib/server/director-chat.server'
+import { countWords, durationForWords } from './chat.server'
 
 /**
  * New cut from script (#744): the pure half -- how a planned shot becomes the

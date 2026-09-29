@@ -63,7 +63,7 @@ the routes that consume this feature bring those.
 - **The bucket is private** (#226). Nothing is served by its object URL; the
   browser reads images from `/img/[id]`, which resolves identity from the cookie
   and filters the row by `user_id`. Build URLs only through `#/lib/image-url`.
-- Storage goes through `createImageStorage()` from `#/lib/image-storage`
+- Storage goes through `createImageStorage()` from `#/lib/server/storage/client.server`
 - `user_images.color_palette` is a column with nothing writing it -- there is no palette generator.
   The column is selected into every image read and indexed on a predicate that
   is always false; #472 has the details

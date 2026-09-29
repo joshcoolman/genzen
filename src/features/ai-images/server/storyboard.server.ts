@@ -19,12 +19,12 @@ import {
   resolveStoryboardLayout,
 } from './storyboard-layout.server'
 import { fetchModelSchema } from './fal-schema.server'
+import { loadVisionImage } from './vision-image.server'
 import type { PreparedImageSkill } from '../skills/types'
 import type { ImagePart, TextPart } from 'ai'
-import { ai, requireAiRole } from '#/lib/server/ai.server'
+import { ai, requireAiRole } from '#/lib/server/claude/client.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { sql } from '#/lib/server/db.server'
-import { loadVisionImage } from '#/lib/server/vision-image.server'
 
 const requestSchema = z.object({
   skillId: z.literal('storyboard'),

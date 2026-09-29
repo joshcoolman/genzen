@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { composeClipPrompt } from '../_lib/chat.server'
 import { rerunChatClip } from './chat.action'
-import { composeClipPrompt } from '#/lib/server/director-chat.server'
 
 /**
  * What a re-roll is generated at (#692).

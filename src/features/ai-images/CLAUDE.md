@@ -84,7 +84,7 @@ files under `src/lib/prompts/storyboard/`.
 ## Images on the way to FAL
 
 **Every image the app sends FAL goes through `uploadBufferToFal`**, which
-shrinks it first (`fal-image-prepare.server.ts`, #560) and retries a dead
+shrinks it first (`fal/image-prepare.server.ts`, #560) and retries a dead
 connection around it (#556). The stored file is never touched -- this is a
 transport concern, and the library row keeps its full-resolution original.
 
@@ -303,7 +303,7 @@ transport concern, and the library row keeps its full-resolution original.
   attached, not a place you go. Since #297 the images are set from the panel's
   Reference images widget, never from the grid and never by uploading.
 - **Vision gets a downscaled copy, never the original**
-  (`src/lib/server/vision-image.server.ts`). Not an optimisation: originals held
+  (`src/features/ai-images/server/vision-image.server.ts`). Not an optimisation: originals held
   for one image and failed outright the first time two went in one message --
   Node destroyed the HTTP/2 session mid-upload (`ERR_HTTP2_INVALID_SESSION`) and
   the AI SDK retried into `Cannot connect to API`, an error naming everything
@@ -331,7 +331,7 @@ transport concern, and the library row keeps its full-resolution original.
   which is why the fixes below had to be made three times or not at all. It
   backs off with the age of the work, stops while the tab is hidden, and stops
   outright when the action reports nothing left in flight. **A generation also
-  has a deadline** (`DEADLINE_MS` in `check-pending-generations.action.ts`, 10
+  has a deadline** (`DEADLINE_MS` in `generations/check-pending.action.ts`, 10
   minutes for a still and 30 for a clip): past it the row becomes a failed card
   rather than a poll that never ends. One had been pending for 26 hours, checked
   every five seconds throughout (#327). The poll's backfill of error detail on
@@ -348,7 +348,7 @@ transport concern, and the library row keeps its full-resolution original.
   `localhost`; since #226 it is the only thing that works at all, because our
   images have no URL a third party could fetch. The bytes come straight off the
   bucket (`storage.download()`), never over HTTP to our own app.
-  `#/lib/server/fal-image-inputs.server.ts` is the one seam; generate and retry
+  `#/lib/server/fal/image-inputs.server.ts` is the one seam; generate and retry
   both go through it, and it preserves caller order because models read the
   image list positionally.
 - **FAL is the only image provider, Anthropic the only other one.** Prompt work

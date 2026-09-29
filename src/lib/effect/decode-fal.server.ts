@@ -1,7 +1,7 @@
 import 'server-only'
 import { ContentRefused, FalRefused, FalTimeout, FalTransport } from './errors'
-import { describeThrown, extractFalError } from '#/lib/server/fal-error.server'
-import { isTransientNetworkError } from '#/lib/server/fal-retry.server'
+import { describeThrown, extractFalError } from '#/lib/server/fal/error.server'
+import { isTransientNetworkError } from '#/lib/server/fal/retry.server'
 
 export type FalFailure = FalTransport | FalTimeout | FalRefused | ContentRefused
 

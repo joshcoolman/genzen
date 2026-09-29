@@ -5,7 +5,7 @@ const buildReferenceSheet = vi.fn()
 vi.mock('#/lib/server/auth.server', () => ({
   resolveAuth: () => Promise.resolve({ userId: 'user-1' }),
 }))
-vi.mock('#/lib/server/reference-sheet.server', () => ({
+vi.mock('./reference-sheet.server', () => ({
   buildReferenceSheet: (...args: Array<unknown>) =>
     buildReferenceSheet(...args),
   referenceSheetFileName: () => 'select-one-2imgs.jpg',

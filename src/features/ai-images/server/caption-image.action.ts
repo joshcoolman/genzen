@@ -1,12 +1,12 @@
 'use server'
 
+import { describeImage } from './describe-image.server'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import type { DescribeMode } from '#/lib/prompts/describe'
 import { DEFAULT_DESCRIBE_MODE } from '#/lib/prompts/describe'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
-import { describeImage } from '#/lib/server/describe-image.server'
-import { createImageStorage } from '#/lib/image-storage'
+import { createImageStorage } from '#/lib/server/storage/client.server'
 import { updateImageDescription } from '#/features/user-images/server/images.action'
 
 interface CaptionImageInput {

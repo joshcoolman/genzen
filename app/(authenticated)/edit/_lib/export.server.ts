@@ -4,10 +4,10 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { requireEdit } from './edits.server'
-import { createImageStorage } from '#/lib/image-storage'
+import { stitchTimeline } from './stitch-timeline.server'
+import { createImageStorage } from '#/lib/server/storage/client.server'
 import { first, jsonb, sql } from '#/lib/server/db.server'
-import { stitchTimeline } from '#/lib/server/stitch-timeline.server'
-import { extractVideoPoster } from '#/lib/server/video-poster.server'
+import { extractVideoPoster } from '#/lib/server/media/video-poster.server'
 
 /**
  * Cut an edit into one mp4 on the Video wall (#726).

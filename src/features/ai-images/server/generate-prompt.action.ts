@@ -2,7 +2,7 @@
 
 import { generateText } from 'ai'
 import generatePromptSkill from '#/lib/prompts/generate-prompt.md'
-import { ai, requireAiRole } from '#/lib/server/ai.server'
+import { ai, requireAiRole } from '#/lib/server/claude/client.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 
 interface GeneratePromptInput {

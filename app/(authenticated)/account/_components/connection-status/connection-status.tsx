@@ -2,7 +2,7 @@ import styles from './connection-status.module.css'
 import type {
   ConnectionCheck,
   ConnectionState,
-} from '#/lib/server/check-connections.action'
+} from '../../_actions/check-connections.action'
 
 const VARIANTS: Record<ConnectionState, string> = {
   checking: styles.badgeChecking,

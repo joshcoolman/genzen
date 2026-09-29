@@ -79,7 +79,7 @@ export interface ModelEntry {
    *
    * **A path, not the text.** This module is client-bundled by the model
    * selector, and the guides are only read server-side; shipping them to the
-   * browser buys nothing. `src/lib/server/prompt-guides.server.ts` maps the
+   * browser buys nothing. `src/features/ai-images/server/prompt-guides.server.ts` maps the
    * path to the imported string. The path itself *is* wanted on the client --
    * a lab page's job is to name the file that steers it.
    *
@@ -527,7 +527,7 @@ export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
  * records.** `generate-image-internal.server.ts` and `retry-generation.action.ts`
  * write `estimated_cost_cents` from `computeFalCostCents`, which reads FAL's
  * pricing API — the source rejected two paragraphs up — and
- * `fal-completion.server.ts` promotes that to `provider_cost_cents`, because
+ * `fal/completion.server.ts` promotes that to `provider_cost_cents`, because
  * FAL's image queue returns no cost. So Activity and the account totals are
  * built on the table the panel refused, and three things follow: the quote and
  * the logged row can disagree for one generation; an **edit is logged at

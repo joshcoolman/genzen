@@ -14,10 +14,10 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('#/lib/server/auth.server', () => ({ resolveAuth: mocks.auth }))
 vi.mock('#/lib/server/db.server', () => ({ sql: mocks.sql }))
-vi.mock('#/lib/server/vision-image.server', () => ({
+vi.mock('./vision-image.server', () => ({
   loadVisionImage: mocks.vision,
 }))
-vi.mock('#/lib/server/ai.server', () => ({
+vi.mock('#/lib/server/claude/client.server', () => ({
   ai: { reasoning: { modelId: 'test-claude' } },
   requireAiRole: mocks.require,
 }))

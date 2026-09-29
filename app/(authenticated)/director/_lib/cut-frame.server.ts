@@ -5,8 +5,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import sharp from 'sharp'
 import { first, jsonb, sql } from '#/lib/server/db.server'
-import { createImageStorage } from '#/lib/image-storage'
-import { decodeEndFrame } from '#/lib/server/video-poster.server'
+import { createImageStorage } from '#/lib/server/storage/client.server'
+import { decodeEndFrame } from '#/lib/server/media/video-poster.server'
 
 /** Full-resolution PNG, never the end thumbnail. Provenance makes retries reuse it. */
 export async function continuityFrame(
