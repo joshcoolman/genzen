@@ -130,11 +130,10 @@ export function ImageViewer({
   // while this is open, and TS is not checking indexed access here.
   const item = items[currentIndex] as ViewerItem | undefined
   const url = item && imageUrls[item.id]
-  const [loaded, setLoaded] = useState(false)
-
-  useEffect(() => {
-    setLoaded(false)
-  }, [url])
+  // Which url has loaded, not a flag reset on change: a cached image can fire
+  // load before a reset effect runs, which left it at opacity 0 for good.
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null)
+  const loaded = !!url && loadedUrl === url
 
   // Paging should not wait on the network. Two either side covers a held arrow
   // key without fetching the whole set.
@@ -314,7 +313,7 @@ export function ImageViewer({
             src={url}
             alt={item.title}
             className={!loaded ? styles.imageLoading : undefined}
-            onLoad={() => setLoaded(true)}
+            onLoad={() => setLoadedUrl(url)}
           />
         ) : (
           <div className={styles.placeholder} />
@@ -352,7 +351,7 @@ export function ImageViewer({
                 alt={item.title}
                 className={cx(styles.image, !loaded && styles.imageLoading)}
                 onClick={(e) => e.stopPropagation()}
-                onLoad={() => setLoaded(true)}
+                onLoad={() => setLoadedUrl(url)}
               />
             ) : (
               <div className={styles.placeholder} />
