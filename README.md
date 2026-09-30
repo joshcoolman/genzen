@@ -63,9 +63,9 @@ Download individual results, a group, or a selection as a ZIP.
 Generate a clip from a prompt, add a first or last frame, or supply reference
 images where the chosen model supports them. Image roles are explicit, and model
 compatibility, duration, shape, and resolution guide the available choices.
-Several prompts can produce several clips in one submission. Seedance 2.5 is
-available alongside Kling, MiniMax, LTX, and Flux, with reference images or
-first/last frames, native audio, and clips up to 30 seconds. For models that
+Several prompts can produce several clips in one submission. The lineup is
+Seedance 2.5, Veo 3.1 Fast, Kling, MiniMax, LTX, and Flux; Seedance takes
+reference images or first/last frames, native audio, and clips up to 30 seconds. For models that
 support sound, **Generate audio** lets you choose audio or silent output.
 
 Click a video thumbnail to open a large player with the complete frame, playback
@@ -78,15 +78,21 @@ Trash for removal. Generating inside a video group keeps the new clips there.
 
 ## Director: build a sequence over time
 
-A session is a name and a run of clips. Pick clips you already have, drag them
-into order, and watch them back to back — the question the whole page is for is
-whether the order cuts together and whether the next clip follows.
+A session is a name and a run of clips, watched back to back — the question the
+whole page is for is whether the order cuts together and whether the next clip
+follows. A session can hold several **cuts**, shown as tabs, each a run of its
+own.
 
 **Add gen** makes the next clip from inside the run: the last clip's final frame
 in the first slot, a prompt, a duration, one button. The pencil on a tile names
 a clip, or re-rolls it in place — a clip in the middle is pinned at both ends,
-so the joins either side survive. Clips are ordinary library rows, so they are
-on the Video wall, in Activity, and trashed from there like anything else.
+so the joins either side survive. **New cut from script** remakes the open cut
+in one pass, from optional direction on style, pacing, or tone, each clip
+starting from the last one's final frame. A session can also start as a
+**chat**: ask a question and an invented character answers in short clips.
+
+Director's clips belong to their session: they are not on the Video wall, they
+show in Activity for the cost record, and removing one from the run trashes it.
 
 ## Edit: trim clips on a timeline and watch the cut
 
@@ -99,6 +105,21 @@ the frame on screen** to a group on Images named after the edit, shown under
 the timeline too. **Continue** makes the clip between the highlighted clip and
 the next, pinned at both frames, and holds its place on the strip while FAL
 works. **Export to Video** cuts it into one clip on the Video wall.
+
+## News: what changed in image and video models
+
+**News** is an illustrated feed. A run has Claude search for recent image and
+video model news, compared against the models genzen already offers, and writes
+each story up as a post with a generated hero image. A post opens to its full
+write-up and sources.
+
+## On a phone
+
+Below tablet width the app has a phone layout. A green menu button sits bottom
+left: Images, Video, and More, which flies out with everything else. A green
+plus bottom right opens a one-tap composer on Images and Video. Walls are 2-up,
+and the image and video viewers fill the screen; swipe the image viewer to move
+through the set. Edit is desktop only.
 
 ## Keep the context and the cost
 
@@ -187,33 +208,38 @@ about it — that's the usual reason generation 401s.
 
 ## Scripts
 
-| Command                | Purpose                                                                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm local:up`        | Start the local stack, write `.env.local`                                                                                       |
-| `pnpm local:down`      | Stop it (data kept)                                                                                                             |
-| `pnpm local:reset`     | Stop it and delete the volumes                                                                                                  |
-| `pnpm dev`             | Next dev server on :3000                                                                                                        |
-| `pnpm build`           | Production build                                                                                                                |
-| `pnpm test`            | Vitest                                                                                                                          |
-| `pnpm check`           | Prettier + ESLint --fix + color and token checks (run before commit)                                                            |
-| `pnpm check:colors`    | Fail on a raw color outside `tokens.css`                                                                                        |
-| `pnpm check:tokens`    | Fail on a `var(--x)` that is declared nowhere                                                                                   |
-| `pnpm typecheck`       | `tsc --noEmit` (the build typechecks too)                                                                                       |
-| `pnpm db:migrate`      | Apply pending `migrations/*.sql`                                                                                                |
-| `pnpm users`           | List/add/delete logins; `-h` for usage, `--local` for docker. Reaching a _deployed_ database needs an authenticated Railway CLI |
-| `pnpm check:claude-md` | What the pre-commit hook checks (advisory)                                                                                      |
+| Command                 | Purpose                                                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm local:up`         | Start the local stack, write `.env.local`                                                                                       |
+| `pnpm local:down`       | Stop it (data kept)                                                                                                             |
+| `pnpm local:reset`      | Stop it and delete the volumes                                                                                                  |
+| `pnpm dev`              | Next dev server on :3000                                                                                                        |
+| `pnpm build`            | Production build                                                                                                                |
+| `pnpm test`             | Vitest                                                                                                                          |
+| `pnpm check`            | Prettier + ESLint --fix + color, token and class checks (run before commit)                                                     |
+| `pnpm check:colors`     | Fail on a raw color outside `tokens.css`                                                                                        |
+| `pnpm check:tokens`     | Fail on a `var(--x)` that is declared nowhere                                                                                   |
+| `pnpm check:classes`    | Fail on a CSS module class that is used but never defined                                                                       |
+| `pnpm typecheck`        | `tsc --noEmit` (the build typechecks too)                                                                                       |
+| `pnpm db:migrate`       | Apply pending `migrations/*.sql`                                                                                                |
+| `pnpm users`            | List/add/delete logins; `-h` for usage, `--local` for docker. Reaching a _deployed_ database needs an authenticated Railway CLI |
+| `pnpm check:claude-md`  | What the pre-commit hook checks (advisory)                                                                                      |
+| `pnpm activity:inspect` | Load a pasted Activity URL's stored data and media, no browser needed                                                           |
+| `pnpm context:find`     | Find uploads/generations by recency, local date or text                                                                         |
+| `pnpm context:inspect`  | Load a generation's stored data and media by URL or id                                                                          |
+| `pnpm rive:build`       | Rebuild the News progress animation from `rive/news-progress/`                                                                  |
 
 ## Stack
 
-| Layer       | Tech                                                  |
-| ----------- | ----------------------------------------------------- |
-| App         | Next.js App Router (React 19 + Turbopack)             |
-| UI          | CSS Modules + Base UI, on the tokens in `src/styles/` |
-| Data        | Postgres, queried with SQL via `postgres` (no ORM)    |
-| Auth        | scrypt + signed session cookie, own `users` table     |
-| Storage     | S3 — MinIO locally, a Railway bucket in production    |
-| Images      | FAL                                                   |
-| Text/vision | Anthropic — prompt work, and vision                   |
+| Layer        | Tech                                                  |
+| ------------ | ----------------------------------------------------- |
+| App          | Next.js App Router (React 19 + Turbopack)             |
+| UI           | CSS Modules + Base UI, on the tokens in `src/styles/` |
+| Data         | Postgres, queried with SQL via `postgres` (no ORM)    |
+| Auth         | scrypt + signed session cookie, own `users` table     |
+| Storage      | S3 — MinIO locally, a Railway bucket in production    |
+| Images/video | FAL                                                   |
+| Text/vision  | Anthropic — prompt work, and vision                   |
 
 ## Repo map
 
@@ -277,14 +303,15 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus: try the phone layout on a real phone -- Images (#753) and Video (#755), start with the 2-up clip wall, which was never seen with real clips. Each reaction becomes its own card.**
+**Focus: nothing in the Focus column. Open #748 (top of Now) -- Director reordering after Extract or a storyboard write fails as "changed in another tab".**
 
 Recent highlights:
 
-- **Phone nav and swipe (#768, #764-#767)** -- one corner button, bottom
-  right, under the plus: Images / Video / More, More flying out left with the
-  rest. The image viewer swipes with a slide; fixed page scroll freezing after
-  closing it, and blank images after a swipe.
+- **Phone nav and swipe (#768-#770, #764-#767)** -- a green menu button
+  bottom left (Images / Video / More, More flying out right), the plus bottom
+  right. The image viewer swipes with a slide; fixed page scroll freezing after
+  closing it, and blank images after a swipe. Hiding video controls on play was
+  tried and reverted (#771): it stopped iOS playing at all.
 - **Mobile viewers (#762)** -- Images and Video fill the screen, with title
   above, navigation below, and confirmation before Trash. Tap empty space to
   close; image prompts and actions live in a details sheet.
