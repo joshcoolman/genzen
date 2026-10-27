@@ -187,6 +187,21 @@ export function useView(initial: Array<SavedAiImage>) {
     [activeGroupId, uploadsIgnoreGroups, prefs.originFilter],
   )
 
+  /**
+   * Whether the Generations scope is hiding uploads right now (#781). The
+   * question on your mind when the wall shows pictures but not the ones you
+   * expect is "where are my uploads?", so the scope row asks it for you and
+   * one click widens to All. Only under Generations at top level: Uploads and
+   * All hide no upload, and inside a group the group is the scope.
+   */
+  const uploadsHidden = useMemo(
+    () =>
+      !activeGroupId &&
+      prefs.originFilter === 'images' &&
+      gallery.images.some((img) => img.origin === 'upload'),
+    [activeGroupId, prefs.originFilter, gallery.images],
+  )
+
   // What the grid is allowed to draw (#504): hidden rows, and the focus
   // spotlight. Sits above the scope filter below rather than inside it,
   // because it applies inside a group and at top level alike.
@@ -1380,6 +1395,7 @@ export function useView(initial: Array<SavedAiImage>) {
   return {
     images,
     cells,
+    uploadsHidden,
     gallery,
     groups,
     workingByGroup,

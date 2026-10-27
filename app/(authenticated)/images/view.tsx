@@ -29,6 +29,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
   const {
     images,
     cells,
+    uploadsHidden,
     gallery,
     userImages,
     modelSelector,
@@ -213,6 +214,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
             <ScopeRow
               value={prefs.originFilter}
               onChange={prefs.setOriginFilter}
+              uploadsHidden={uploadsHidden}
             />
           )
         )}

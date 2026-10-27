@@ -25,19 +25,39 @@ import { cx } from '#/lib/utils'
  *
  * Top level only. Inside a group the group *is* the scope, and two scoping
  * controls stacked on each other only raise the question of which one wins.
+ *
+ * **The one thing allowed at the left end is a question (#781).** Under
+ * Generations with uploads in the library, the wall shows pictures but not
+ * the ones you went and got, and "where are my uploads?" is what you are
+ * thinking. So the row says it, in the same muted register, and the click
+ * widens to All. Absent whenever the scope hides nothing, so a library with
+ * no uploads never sees it. Not on a phone: the row is folded into the
+ * toolbar there and has no left end to speak from.
  */
 export function ScopeRow({
   value,
   onChange,
   inline,
+  uploadsHidden,
 }: {
   value: OriginFilter
   onChange: (filter: OriginFilter) => void
   /** Inside the toolbar's row on a phone (#753), so no rule of its own. */
   inline?: boolean
+  /** Generations is hiding uploads that exist; offer the way to them. */
+  uploadsHidden?: boolean
 }) {
   return (
     <div className={cx(styles.row, inline && styles.inline)}>
+      {uploadsHidden && !inline && (
+        <button
+          type="button"
+          className={cx(styles.item, styles.hint)}
+          onClick={() => onChange('all')}
+        >
+          Where are my uploads?
+        </button>
+      )}
       {ORIGIN_FILTERS.map((filter) => (
         <button
           key={filter}

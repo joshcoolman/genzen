@@ -48,10 +48,11 @@ const DEFAULTS: Prefs = {
   sortAsc: false,
   showInfo: true,
   thumbZoom: 1,
-  // Matches the first pill, so the row and the starting state agree. The
-  // choice persists, so this is only ever seen on a fresh profile -- which is
-  // why it follows the ordering rather than arguing for itself.
-  originFilter: 'images',
+  // The choice persists, so this is only ever seen on a fresh browser -- and a
+  // fresh browser is the one place the wall must not hide anything. It used to
+  // match the first pill (Generations), which on a profile with uploads and no
+  // generations opened on an empty wall and read as lost data (#781).
+  originFilter: 'all',
 }
 
 /**
