@@ -2,10 +2,13 @@ Where development is. A snapshot, overwritten at natural beats, never a log:
 one Focus line naming the live card, then at most six one-line bullets of what
 shipped, most recent first. What is queued lives on the upnext board, not here.
 
-**Focus: #777, moving genzen to Vercel (Blob, Neon, no Docker). Code and docs are on branch `vercel-migration`; what remains is Josh's FAL and Anthropic keys via `pnpm local:up`, the first production deploy, and retiring Railway.**
+**Focus: empty. Now holds #777 (Vercel migration: code is on `main`; what remains is the first production deploy and retiring Railway), #780 (tests leave rows in the shared Neon database) and #748 (Director reorder conflict). Promote one.**
 
 Recent highlights:
 
+- **Images opens on All (#781)** -- the default scope no longer follows the
+  first pill, so a fresh browser with uploads and no generations is not an
+  empty wall. Under Generations, "Where are my uploads?" widens to All.
 - **Vercel migration (#777)** -- storage client rewritten on Vercel Blob,
   Postgres on Neon through the marketplace, `local:up` pulls the project's
   variables instead of starting Docker. MinIO had pulled its images from every
@@ -25,10 +28,3 @@ storage/ media/ generations/`, single-use files moved to their route.
   menu, #768); on Images and Video a floating plus opens a one-tap composer
   (prompt, chips, Generate with cost), 2-up bare walls, a Photos-first picker;
   the Images viewer has Generate from this and Animate. Desktop unchanged.
-- **Director cuts (#744, #746, #747, #749, #751)** -- a run session holds
-  several cuts as tabs. **New cut from script** remakes the open cut in one
-  pass, clips chained through durable frame handoffs; reference clips can try
-  Veo Fast.
-- **Director chat answers end on a last beat (#740, #741)** -- a tease, an
-  offer, a fork or a provocation that invites the next question, never a
-  question about the person and never a tidy wrap-up. Its own prompt section.
