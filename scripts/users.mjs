@@ -86,7 +86,6 @@ if (!resolved) {
 }
 
 const { hostname: dbHost } = new URL(resolved.url)
-console.log(`database: ${dbHost}  [${resolved.source}]\n`)
 
 async function confirmRemote(action) {
   const answer = await question(`${action} on ${dbHost}? (y/N) `)
@@ -98,24 +97,10 @@ const sql = postgres(resolved.url)
 
 try {
   if (command === 'list') {
-    const users = await sql`
-      select u.id, u.email, u.display_name, u.created_at,
-             count(i.id)::int as images
-      from users u
-      left join user_images i on i.user_id = u.id
-      group by u.id
-      order by u.created_at
-    `
-    if (users.length === 0) {
-      console.log('No users.')
-    } else {
-      for (const u of users) {
-        const when = u.created_at.toISOString().slice(0, 10)
-        const name = u.display_name ? ` (${u.display_name})` : ''
-        console.log(`${u.email}${name}  ${u.images} image(s)  since ${when}`)
-      }
-      console.log(`\n${users.length} user(s).`)
-    }
+    // Emails and nothing else: this is "who can sign in", read at a glance.
+    const users = await sql`select email from users order by created_at`
+    if (users.length === 0) console.log('No users.')
+    for (const u of users) console.log(u.email)
   } else if (command === 'add') {
     const [email, password] = args
     if (!email?.includes('@') || !password || password.length < 6) {
