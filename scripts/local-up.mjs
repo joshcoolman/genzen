@@ -242,6 +242,35 @@ if (!read('AUTH_SESSION_SECRET', env)) {
   env = pullEnv()
 }
 
+// The login is asked for once, on the first run, with the generated values
+// as the defaults so Enter alone is fine. After that the lines in `.env.local`
+// are the answer and a re-run never asks. Non-interactive runs (CI, a pipe)
+// take the defaults.
+if (!read('LOCAL_DEV_EMAIL', env) && !read('LOCAL_DEV_PASSWORD', env)) {
+  if (process.stdin.isTTY) {
+    console.log(`
+Your login. This is the user you sign in as, locally and on the deployment;
+it lands in .env.local, and editing it there and re-running changes it.`)
+    const rl = createInterface({ input: process.stdin, output: process.stdout })
+    const email = (
+      await rl.question(`Email [${DEV_USER_DEFAULTS.LOCAL_DEV_EMAIL}]: `)
+    ).trim()
+    let password = ''
+    for (;;) {
+      password = (
+        await rl.question(
+          `Password [${DEV_USER_DEFAULTS.LOCAL_DEV_PASSWORD}]: `,
+        )
+      ).trim()
+      // The same floor `pnpm users add` holds.
+      if (!password || password.length >= 6) break
+      console.log('At least 6 characters.')
+    }
+    rl.close()
+    if (email) DEV_USER_DEFAULTS.LOCAL_DEV_EMAIL = email
+    if (password) DEV_USER_DEFAULTS.LOCAL_DEV_PASSWORD = password
+  }
+}
 // Seeded only when absent, so an edited login survives a re-run.
 for (const [key, value] of Object.entries(DEV_USER_DEFAULTS)) {
   if (!read(key, env)) env = upsert(env, key, value)

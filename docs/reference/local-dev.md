@@ -40,9 +40,10 @@ real one.
 | Sign in as | printed by `local:up`, kept in `.env.local`               |
 | Data       | the Vercel project's Neon database and Blob store, shared |
 
-There is no shipped account. `local:up` generates a password on first run,
+There is no shipped account. On the first run `local:up` asks for an email
+and a password, with a generated login as the default so Enter alone works,
 creates the user, and prints the login; it lands in `.env.local` as
-`LOCAL_DEV_EMAIL` / `LOCAL_DEV_PASSWORD`. Edit either one and re-run to change
+`LOCAL_DEV_EMAIL` / `LOCAL_DEV_PASSWORD` and is never asked for again. Edit either one and re-run to change
 it -- the file is the source of truth and the password is re-synced from it,
 which is also the whole password-reset story. Because the database is shared,
 that login also works on the deployed URL. `pnpm users` manages other accounts
