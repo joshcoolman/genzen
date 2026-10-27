@@ -55,7 +55,10 @@ function usage() {
   console.log(`${d}Usage:${r}`)
   console.log(`  ${c}pnpm users${r}                            list every user`)
   console.log(
-    `  ${c}pnpm users add <email> <pass>${r}         create, or reset an existing password`,
+    `  ${c}pnpm users add${r}                        create a user, asking for email and password`,
+  )
+  console.log(
+    `  ${c}pnpm users add <email> <pass>${r}         the same, for a script; resets the password if the user exists`,
   )
   console.log(
     `  ${c}pnpm users delete <email>${r}             delete the user and all their images`,
@@ -117,19 +120,29 @@ try {
       console.log(`\n${users.length} user(s).`)
     }
   } else if (command === 'add') {
-    const [email, password] = args
-    if (!email?.includes('@') || !password || password.length < 6) {
-      console.error(
-        "Usage: pnpm users add '<email>' '<password>'  (password min 6 chars)",
-      )
-      process.exit(1)
+    // Interactive when the arguments are left off: email, then password, done.
+    // That is the common case for one person adding themselves, and the
+    // arguments stay for a script.
+    let [email, password] = args
+    while (!email?.includes('@')) {
+      if (!process.stdin.isTTY) {
+        console.error("Usage: pnpm users add '<email>' '<password>'")
+        process.exit(1)
+      }
+      email = (await question('Email: ')).trim()
+    }
+    while (!password || password.length < 6) {
+      if (!process.stdin.isTTY) {
+        console.error('Password must be at least 6 characters.')
+        process.exit(1)
+      }
+      password = (await question('Password (6+ characters): ')).trim()
     }
 
     const [existing] = await sql`select id from users where email = ${email}`
-    const action = existing
-      ? `Reset the password for ${email}`
-      : `Create ${email}`
-    if (!(await confirmRemote(action))) {
+    // Creating is additive and asks nothing. Overwriting someone's password
+    // is not, and does.
+    if (existing && !(await confirmRemote(`Reset the password for ${email}`))) {
       console.log('Aborted.')
       process.exit(0)
     }
