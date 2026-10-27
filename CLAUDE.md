@@ -141,13 +141,13 @@ At the end of any session:
 - No work exists only on one machine's disk
 - Branches for work that is genuinely done are deleted
 
-Trivial exceptions that stay direct-to-`main`: a README `## Status` touch-up, or
+Trivial exceptions that stay direct-to-`main`: a `docs/reference/dev-status.md` touch-up, or
 a one-line fix to something already merged.
 
 ## Orientation and capture
 
-No continuation file. Read the README `## Status` block and the open issues at
-session start. `## Status` is one Focus line naming the live card, a pointer at
+No continuation file. Read `docs/reference/dev-status.md` and the open issues at
+session start. It is one Focus line naming the live card, a pointer at
 the board, and at most six one-line bullets of what shipped. It never lists
 what is queued -- the labels are the ranking, and a hand-written copy of them
 drifted inside a single session before it was cut.
@@ -255,8 +255,8 @@ plausible invented one is worse.
 this session — a plan, a task, a bug, an idea from a poke-around session ("capture
 this") — becomes an issue. Do not create plan files, handoff docs, an `ideas/`
 folder, or a `continue/` directory; all of those existed and were removed
-deliberately. Update the README `## Status` block at natural beats so the front
-door always reflects the current state.
+deliberately. Update `docs/reference/dev-status.md` at natural beats so a cold
+session reads the current state.
 
 `docs/` is small on purpose: `OVERVIEW.md` (what genzen is), `SPEC.md` (what it
 does and must do), `DELTAS.md` (the deltas from the house standard),
