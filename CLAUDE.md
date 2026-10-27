@@ -45,7 +45,7 @@ database, local or deployed, are managed with `pnpm users` (`-h` for usage). It 
 working in. The only keys a human supplies are `FAL_KEY` and, if the AI-assisted
 features are wanted, `ANTHROPIC_API_KEY` -- `local:up` prompts for each that is
 missing and the app runs without the second. Everything else is a
-container or a fixed local value. See the README's Local Dev section.
+container or a fixed local value. See `docs/reference/local-dev.md`.
 
 Assume server-side access to the services below unless a feature explicitly says
 otherwise. Don't propose new auth/env plumbing for these. Note that locally the
