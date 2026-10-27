@@ -20,8 +20,8 @@ locally.
 ## Variables
 
 Every variable the app reads, and where a deployment's value comes from.
-If the app reads a var, it is in this table; `.env.example` deliberately lists
-none of them, because locally `pnpm local:up` writes them all.
+If the app reads a var, it is in this table. There is no `.env.example`:
+locally `pnpm local:up` writes them all, and this table is the only list.
 
 | Variable               | Required | Source                                                                                                                                                                                           |
 | ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
