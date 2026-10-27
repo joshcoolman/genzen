@@ -32,10 +32,13 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), CSS Mod
 
 ## Services
 
-Local dev is one command: **`pnpm local:up`** (pulls the Vercel project's
-variables, migrates, makes you a login), then `pnpm dev`. pnpm, Node 22.13+
-and a logged-in Vercel CLI are the only prerequisites; there is no Docker and
-nothing runs on the machine but Next (#777). One lab page wants a system
+Local dev is one command: **`pnpm local:up`**. It logs in, links or creates
+the Vercel project, provisions the store and the database when missing, pulls
+the variables, migrates, makes you a login, asks for your keys, and starts
+dev. pnpm, Node 22.13+ and the Vercel CLI are the only prerequisites; there is
+no Docker and nothing runs on the machine but Next (#777). **The script's
+rule: stop at the first missing thing and say the one line that fixes it, or
+fix it.** No checklist up front. One lab page wants a system
 binary on top of them: `lab/frames` grabs stills from a pasted YouTube link
 with `yt-dlp` (`brew install yt-dlp`), and that half of the page is
 development-only for exactly that reason (#613). Nothing else needs it and the

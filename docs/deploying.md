@@ -4,8 +4,9 @@ this is also the contract for a laptop.
 
 ## Requirements
 
-- A Vercel account with the repo reachable from it, and the Vercel CLI logged
-  in (`vercel login`) for `local:up` and `pnpm users`.
+- A Vercel account and the Vercel CLI. `pnpm local:up` logs in, links or
+  creates the project, and provisions the store and the database; the
+  dashboard is only needed to connect the GitHub repo so `main` deploys.
 - A FAL key. An Anthropic key if the AI-assisted features are wanted.
 
 ## Resources

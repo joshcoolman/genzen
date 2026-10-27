@@ -1,12 +1,17 @@
 // One command to get a working local genzen. Nothing starts and nothing is
 // installed: local dev points at the same Neon database and Blob store the
-// deployment uses, inside one Vercel project (#777). This script pulls that
-// project's variables, applies migrations, makes sure you have a login, asks
-// for any provider key still missing, and starts the dev server.
-// Idempotent -- run it as often as you like.
+// deployment uses, inside one Vercel project (#777). This script logs you in,
+// links or creates the project, provisions the store and the database when
+// they are missing, pulls the project's variables, applies migrations, makes
+// sure you have a login, asks for any provider key still missing, and starts
+// the dev server. Idempotent -- run it as often as you like.
 //
-// Prerequisites are pnpm, the Vercel CLI logged in, and the repo linked to the
-// project (`vercel link`, once per clone). There is no Docker and no global
+// **The rule: every run stops at the first missing thing, says the one line
+// that fixes it, and exits -- or fixes it itself when it can.** No checklist
+// up front. The person who reads ahead gets nothing from this script, and the
+// person who does not is never behind.
+//
+// Prerequisites are pnpm and the Vercel CLI. There is no Docker and no global
 // service to run.
 //
 //   pnpm local:up            set up, then run the dev server
@@ -16,9 +21,9 @@
 // Anthropic). They are stored on the Vercel project, so the deployment and
 // every Mac share them, and this script asks for each one the project does
 // not already have. Everything else -- the database, the store, the session
-// secret -- is already on the project. There is deliberately no
-// `.env.local.example`: a template listing a dozen vars reads as "this needs
-// configuring" when it does not.
+// secret -- is made on the project the first time it is missing. There is
+// deliberately no `.env.local.example`: a template listing a dozen vars reads
+// as "this needs configuring" when it does not.
 import { spawn, spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -126,57 +131,96 @@ function openBrowser(url) {
   spawnSync(opener[0], opener[1], { stdio: 'ignore' })
 }
 
-// 1. Preflight, so a missing CLI or an unlinked clone reads as a sentence
-//    rather than as whatever `vercel env pull` prints.
+// 1. Preflight. The CLI is the one thing this script cannot install for you;
+//    login is a browser round trip it can start but not finish.
 if (spawnSync('vercel', ['--version'], { stdio: 'ignore' }).status !== 0) {
   console.error(
-    'The Vercel CLI is not installed. `pnpm add -g vercel`, then `vercel login`, and re-run.',
+    'The Vercel CLI is not installed. `pnpm add -g vercel`, then re-run.',
   )
   process.exit(1)
 }
-if (!existsSync(new URL('.vercel/project.json', ROOT))) {
-  console.error(
-    'This clone is not linked to the Vercel project. Run `vercel link` (pick genzen) and re-run.',
-  )
-  process.exit(1)
+if (spawnSync('vercel', ['whoami'], { stdio: 'ignore' }).status !== 0) {
+  console.log('\n> not logged in to Vercel -- opening the login')
+  run('vercel', ['login'])
+}
+// The CLI writes `project.json` for a plain link and `repo.json` when the
+// project is connected to this repository's remote; either one means linked.
+// Neither means a fresh clone, or a fresh account -- `--yes` links the project
+// named after this folder, creating it when there is none.
+const linked = ['.vercel/project.json', '.vercel/repo.json'].some((file) =>
+  existsSync(new URL(file, ROOT)),
+)
+if (!linked) {
+  console.log('\n> linking this clone to the Vercel project')
+  run('vercel', ['link', '--yes'])
 }
 
 // 2. The project's variables. Pulled into a scratch file and merged, because
 //    `vercel env pull` replaces its target outright and the dev login below
 //    lives only in `.env.local`.
+function pullEnv() {
+  run('vercel', [
+    'env',
+    'pull',
+    '.env.vercel-pull',
+    '--environment',
+    'development',
+    '--yes',
+  ])
+  const pulled = readFileSync(ENV_PULLED, 'utf8')
+  rmSync(ENV_PULLED)
+  let text = existsSync(ENV_LOCAL)
+    ? readFileSync(ENV_LOCAL, 'utf8')
+    : ENV_HEADER
+  for (const line of pulled.split('\n')) {
+    const separator = line.indexOf('=')
+    if (separator === -1 || line.trimStart().startsWith('#')) continue
+    const key = line.slice(0, separator).trim()
+    text = upsert(text, key, unquote(line.slice(separator + 1).trim()))
+  }
+  return text
+}
 console.log('\n> pulling project variables from Vercel')
-run('vercel', [
-  'env',
-  'pull',
-  '.env.vercel-pull',
-  '--environment',
-  'development',
-  '--yes',
-])
-const pulled = readFileSync(ENV_PULLED, 'utf8')
-rmSync(ENV_PULLED)
+let env = pullEnv()
 
-let env = existsSync(ENV_LOCAL) ? readFileSync(ENV_LOCAL, 'utf8') : ENV_HEADER
-for (const line of pulled.split('\n')) {
-  const separator = line.indexOf('=')
-  if (separator === -1 || line.trimStart().startsWith('#')) continue
-  const key = line.slice(0, separator).trim()
-  env = upsert(env, key, unquote(line.slice(separator + 1).trim()))
+// 3. The store and the database, made when missing. Both are one CLI command
+//    with no questions: a private Blob store connected to every environment,
+//    and a Neon database through the marketplace on its free plan. You never
+//    hear the words Blob or Neon unless one of these fails.
+let provisioned = false
+if (!read('BLOB_READ_WRITE_TOKEN', env)) {
+  console.log('\n> no image store on the project yet -- creating one')
+  run('vercel', [
+    'blob',
+    'create-store',
+    'genzen-images',
+    '--access',
+    'private',
+    '--yes',
+  ])
+  provisioned = true
 }
-
-// Seeded only when absent, so an edited login survives a re-run.
-for (const [key, value] of Object.entries(DEV_USER_DEFAULTS)) {
-  if (!read(key, env)) env = upsert(env, key, value)
+if (!read('DATABASE_URL', env)) {
+  console.log(
+    '\n> no database on the project yet -- creating one (about a minute)',
+  )
+  run('vercel', [
+    'integration',
+    'add',
+    'neon',
+    '--no-claim',
+    '--non-interactive',
+  ])
+  provisioned = true
 }
-writeFileSync(ENV_LOCAL, env)
-console.log('.env.local: synced from the project')
-
+if (provisioned) {
+  console.log('\n> pulling project variables again')
+  env = pullEnv()
+}
 for (const key of ['DATABASE_URL', 'BLOB_READ_WRITE_TOKEN']) {
   if (!read(key, env)) {
     console.error(
-      `\n${key} is not on the Vercel project. In the project's Storage tab, connect ${
-        key === 'DATABASE_URL' ? 'a Neon database' : 'the Blob store'
-      } and re-run.`,
+      `\n${key} is still not on the Vercel project after provisioning. Check the project's Storage tab and re-run.`,
     )
     process.exit(1)
   }
@@ -184,7 +228,7 @@ for (const key of ['DATABASE_URL', 'BLOB_READ_WRITE_TOKEN']) {
 if (!read('AUTH_SESSION_SECRET', env)) {
   // Generated once, on the project, so every environment signs the same cookie
   // and nobody ever has to see it.
-  console.log('> generating AUTH_SESSION_SECRET on the project')
+  console.log('\n> generating AUTH_SESSION_SECRET on the project')
   run('vercel', [
     'env',
     'add',
@@ -195,17 +239,23 @@ if (!read('AUTH_SESSION_SECRET', env)) {
     '--value',
     randomBytes(32).toString('hex'),
   ])
-  console.log('re-run `pnpm local:up` to pull it.')
-  process.exit(0)
+  env = pullEnv()
 }
 
-// 3. Schema. `scripts/migrate.mjs` only applies files not already recorded in
+// Seeded only when absent, so an edited login survives a re-run.
+for (const [key, value] of Object.entries(DEV_USER_DEFAULTS)) {
+  if (!read(key, env)) env = upsert(env, key, value)
+}
+writeFileSync(ENV_LOCAL, env)
+console.log('.env.local: synced from the project')
+
+// 4. Schema. `scripts/migrate.mjs` only applies files not already recorded in
 //    `schema_migrations`, so re-running it against a database you have been
 //    working in is a no-op rather than a risk.
 console.log('\n> migrating the database')
 run('node', ['scripts/migrate.mjs'])
 
-// 4. The dev login. Provisioning is the whole whitelist -- a fresh database has
+// 5. The dev login. Provisioning is the whole whitelist -- a fresh database has
 //    no way in without it. The password is re-synced on every run rather than
 //    skipped when the row exists, so `.env.local` stays the source of truth.
 //    The database is the shared one, so this is also the deployment's login:
@@ -236,7 +286,7 @@ run('node', ['scripts/migrate.mjs'])
   }
 }
 
-// 5. The things that are actually yours: the provider keys. Ask for each one
+// 6. The things that are actually yours: the provider keys. Ask for each one
 //    that is missing rather than printing a warning and leaving you to find the
 //    right place and var name. A key goes onto the Vercel project, for every
 //    environment, so the deployment and the other Macs get it on their next
@@ -327,7 +377,7 @@ Ready.
   database and images      the Vercel project's, shared with the deployment
 `)
 
-// 6. Hand back a running app rather than an instruction to start one. If a dev
+// 7. Hand back a running app rather than an instruction to start one. If a dev
 //    server is already up on the port, don't start a second one -- just open it.
 if (SKIP_DEV) {
   console.log('--no-dev: skipping the dev server. Start it with `pnpm dev`.')

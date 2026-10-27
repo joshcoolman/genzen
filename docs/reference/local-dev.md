@@ -19,18 +19,20 @@ nothing is mocked.
 
 ```bash
 pnpm install
-vercel link                    # once per clone: pick the genzen project
-pnpm local:up                  # asks for your API keys, sets up everything else
-pnpm dev                       # http://localhost:3000
+pnpm local:up                  # everything else, then the dev server
 ```
 
 That is the whole setup -- there is no global service to install and no env
-file to copy or edit. `local:up` pulls the project's variables into
-`.env.local`, applies any migrations the database has not seen, generates and
-provisions a login, and prompts for your FAL and optional Anthropic keys, which
-it stores on the project so the deployment and the other Macs get them. Re-run
-it any time: it is idempotent and never resets anything. There is no reset:
-the database is the real one.
+file to copy or edit. **`local:up` stops at the first missing thing, says the
+one line that fixes it, or fixes it itself.** In order: the Vercel CLI (the one
+thing it cannot install), the login (it opens the browser), the project (it
+links or creates one named after the folder), the image store and the database
+(it provisions both on the project, about a minute the first time), the session
+secret, the migrations, your login, and your FAL and optional Anthropic keys,
+which it stores on the project so the deployment and the other Macs get them.
+Then it starts the dev server and opens the app. Re-run it any time: it is
+idempotent and never resets anything. There is no reset: the database is the
+real one.
 
 | Thing      | Where                                                     |
 | ---------- | --------------------------------------------------------- |
