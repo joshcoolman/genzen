@@ -19,20 +19,24 @@ locally.
 
 ## Variables
 
-`.env.example` is the contract: if the app reads a var, it is listed there.
-Split by where the value comes from:
+Every variable the app reads, and where a deployment's value comes from.
+If the app reads a var, it is in this table; `.env.example` deliberately lists
+none of them, because locally `pnpm local:up` writes them all.
 
-- **References** to the other two resources — `DATABASE_URL`, plus
-  `R2_BUCKET_NAME` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_ENDPOINT`.
-  Railway's bucket exposes these as `BUCKET`, `ACCESS_KEY_ID`,
-  `SECRET_ACCESS_KEY`, `ENDPOINT`.
-- **Yours** — `FAL_KEY`, and optionally `ANTHROPIC_API_KEY`. A feature whose key
-  is missing fails loudly rather than degrading.
-- **Generated per deployment** — `AUTH_SESSION_SECRET` (`openssl rand -hex 32`).
-  Do not reuse the local one; rotating it invalidates every session.
-
-`LOCAL_DEV_EMAIL` / `LOCAL_DEV_PASSWORD` are written by `local:up` and must not
-be set on a deployment.
+| Variable               | Required | Source                                                                                                                                                                                           |
+| ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`         | yes      | Reference to the Postgres resource (17+)                                                                                                                                                         |
+| `R2_BUCKET_NAME`       | yes      | Reference to the bucket's `BUCKET`                                                                                                                                                               |
+| `R2_ACCESS_KEY_ID`     | yes      | Reference to the bucket's `ACCESS_KEY_ID`                                                                                                                                                        |
+| `R2_SECRET_ACCESS_KEY` | yes      | Reference to the bucket's `SECRET_ACCESS_KEY`                                                                                                                                                    |
+| `R2_ENDPOINT`          | yes      | Reference to the bucket's `ENDPOINT`. Any S3-compatible bucket works; the `R2_` prefix is historical (#225). The bucket must be **private** (#226): the app serves images itself via `/img/[id]` |
+| `AUTH_SESSION_SECRET`  | yes      | Generated per deployment, `openssl rand -hex 32`. Never reuse the local one; rotating it signs everyone out                                                                                      |
+| `FAL_KEY`              | yes      | Yours, https://fal.ai/dashboard/keys. Image and video generation                                                                                                                                 |
+| `ANTHROPIC_API_KEY`    | no       | Yours. Read implicitly by `@ai-sdk/anthropic`; powers every text and vision call. A feature that needs it fails loudly rather than degrading                                                     |
+| `R2_ACCOUNT_ID`        | no       | Only read when `R2_ENDPOINT` is unset, to derive Cloudflare R2's endpoint. Unused on Railway                                                                                                     |
+| `APP_URL`              | no       | The deployment's public URL. Only the `context:*` inspection scripts read it, to tell a pasted URL from this instance apart from another                                                         |
+| `LOCAL_DEV_EMAIL`      | never    | Written by `local:up`; the generated local login. Must not be set on a deployment                                                                                                                |
+| `LOCAL_DEV_PASSWORD`   | never    | Same                                                                                                                                                                                             |
 
 ## Settings that are not defaults
 
