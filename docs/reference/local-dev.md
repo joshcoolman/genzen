@@ -45,8 +45,9 @@ creates the user, and prints the login; it lands in `.env.local` as
 `LOCAL_DEV_EMAIL` / `LOCAL_DEV_PASSWORD`. Edit either one and re-run to change
 it -- the file is the source of truth and the password is re-synced from it,
 which is also the whole password-reset story. Because the database is shared,
-that login also works on the deployed URL. `pnpm users` manages other accounts
--- list, add, delete.
+that login also works on the deployed URL. `pnpm users` lists accounts,
+`pnpm users:new` asks for an email and a password and creates one, and
+`pnpm users:delete <email>` removes one with its images.
 
 FAL is not mocked -- generation calls fal.ai for real and costs real money. The
 app boots and everything else works without a key. Generation cost estimates are recorded
@@ -57,24 +58,24 @@ about it -- that's the usual reason generation 401s.
 
 ## Scripts
 
-| Command                 | Purpose                                                                     |
-| ----------------------- | --------------------------------------------------------------------------- |
-| `pnpm local:up`         | Pull the project's variables, migrate, make a login, start dev              |
-| `pnpm dev`              | Next dev server on :3000                                                    |
-| `pnpm build`            | Production build                                                            |
-| `pnpm test`             | Vitest                                                                      |
-| `pnpm check`            | Prettier + ESLint --fix + color, token and class checks (run before commit) |
-| `pnpm check:colors`     | Fail on a raw color outside `tokens.css`                                    |
-| `pnpm check:tokens`     | Fail on a `var(--x)` that is declared nowhere                               |
-| `pnpm check:classes`    | Fail on a CSS module class that is used but never defined                   |
-| `pnpm typecheck`        | `tsc --noEmit` (the build typechecks too)                                   |
-| `pnpm db:migrate`       | Apply pending `migrations/*.sql`                                            |
-| `pnpm users`            | List/add/delete logins on the project database; `-h` for usage              |
-| `pnpm check:claude-md`  | What the pre-commit hook checks (advisory)                                  |
-| `pnpm activity:inspect` | Load a pasted Activity URL's stored data and media, no browser needed       |
-| `pnpm context:find`     | Find uploads/generations by recency, local date or text                     |
-| `pnpm context:inspect`  | Load a generation's stored data and media by URL or id                      |
-| `pnpm rive:build`       | Rebuild the News progress animation from `rive/news-progress/`              |
+| Command                 | Purpose                                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| `pnpm local:up`         | Pull the project's variables, migrate, make a login, start dev                            |
+| `pnpm dev`              | Next dev server on :3000                                                                  |
+| `pnpm build`            | Production build                                                                          |
+| `pnpm test`             | Vitest                                                                                    |
+| `pnpm check`            | Prettier + ESLint --fix + color, token and class checks (run before commit)               |
+| `pnpm check:colors`     | Fail on a raw color outside `tokens.css`                                                  |
+| `pnpm check:tokens`     | Fail on a `var(--x)` that is declared nowhere                                             |
+| `pnpm check:classes`    | Fail on a CSS module class that is used but never defined                                 |
+| `pnpm typecheck`        | `tsc --noEmit` (the build typechecks too)                                                 |
+| `pnpm db:migrate`       | Apply pending `migrations/*.sql`                                                          |
+| `pnpm users`            | List logins. `pnpm users:new` asks for an email and password; `pnpm users:delete <email>` |
+| `pnpm check:claude-md`  | What the pre-commit hook checks (advisory)                                                |
+| `pnpm activity:inspect` | Load a pasted Activity URL's stored data and media, no browser needed                     |
+| `pnpm context:find`     | Find uploads/generations by recency, local date or text                                   |
+| `pnpm context:inspect`  | Load a generation's stored data and media by URL or id                                    |
+| `pnpm rive:build`       | Rebuild the News progress animation from `rive/news-progress/`                            |
 
 ## Stack
 
