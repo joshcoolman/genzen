@@ -612,7 +612,12 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   upload is visible in the working view, so it stays even though it and
   Generations look alike whenever almost everything is grouped. The stored
   choice survives a refresh, so the default is only ever seen on a fresh
-  profile; it matches the first pill so the two agree. `revealAll()` replaces the old `reveal()`: making something is an
+  browser -- and **the default is `all`, not the first pill** (#781). It
+  matched the first pill until a fresh browser with uploads and no generations
+  opened on an empty wall and read as lost data. The same question gets a
+  hint: under Generations with uploads in the library, the left end of the row
+  reads "Where are my uploads?" and the click widens to All; it is absent
+  whenever the scope hides nothing. `revealAll()` replaces the old `reveal()`: making something is an
   implicit request to see it, so an upload or a submit widens the scope to
   `all` rather than switching to the matching one -- widening never takes away
   what you were looking at. A stored scope is validated against

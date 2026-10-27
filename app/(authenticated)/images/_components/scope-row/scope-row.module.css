@@ -34,6 +34,13 @@
   color: var(--text);
 }
 
+/* The question at the left end (#781). `margin-inline-end: auto` pushes the
+   scope words back to the right, so the row is unchanged when the hint is
+   absent. Same ink as an unlit scope word; hover lights it the same way. */
+.hint {
+  margin-inline-end: auto;
+}
+
 /* Folded into the toolbar's row on a phone (#753): the row it joins is the
    separation, so the hairline would be a second one. */
 .inline {
