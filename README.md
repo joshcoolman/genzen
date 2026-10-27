@@ -264,10 +264,10 @@ itself and prompts you for the values that are actually yours: your FAL key,
 and your Anthropic key if you want the AI-assisted features. The app runs
 without the second.
 
-`.env.example` is the reference for deploying, split into Required (a Postgres
-URL, a session secret, FAL, an S3 bucket) and Optional (Anthropic).
-[`docs/deploying.md`](docs/deploying.md) covers the rest: what a
-deployment needs, the two non-default settings, and how the first user is made.
+`.env.example` says only that, on purpose: nothing in it to copy or fill in.
+Every variable the app reads, and what a deployment sets it to, is the
+Variables table in [`docs/deploying.md`](docs/deploying.md), which also covers
+the two non-default settings and how the first user is made.
 
 The `R2_*` names are historical and are staying that way (#242). The storage
 layer is plain S3 pointing wherever `R2_ENDPOINT` says — MinIO locally, a
