@@ -112,7 +112,7 @@ itself and prompts you for the values that are actually yours: your FAL key,
 and your Anthropic key if you want the AI-assisted features. The app runs
 without the second.
 
-`.env.example` says only that, on purpose: nothing in it to copy or fill in.
+There is no `.env.example`, on purpose: nothing to copy or fill in.
 Every variable the app reads, and what a deployment sets it to, is the
 Variables table in [`docs/deploying.md`](../deploying.md), which also covers
 the two non-default settings and how the first user is made.
