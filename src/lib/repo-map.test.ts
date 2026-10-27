@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-// The README's `## Repo map` and the root `CLAUDE.md` feature table both name
+// `docs/reference/local-dev.md`'s `## Repo map` and the root `CLAUDE.md` feature table both name
 // paths, and nothing forces either to stay true. A doc that lists files goes
 // stale silently -- `src/features/ai-images/CLAUDE.md` listed two server files
 // deleted in 2b567fc and missed two that existed, and nothing noticed for months.
@@ -34,8 +34,8 @@ const featureDirs = readdirSync(new URL('src/features/', ROOT), {
   .map((e) => e.name)
   .sort()
 
-describe('README ## Repo map', () => {
-  const claimed = tablePaths(read('README.md'), 'Repo map')
+describe('local-dev.md ## Repo map', () => {
+  const claimed = tablePaths(read('docs/reference/local-dev.md'), 'Repo map')
 
   it('names at least the paths a reader needs to orient', () => {
     expect(claimed.length).toBeGreaterThan(4)
@@ -54,13 +54,13 @@ describe('README ## Repo map', () => {
     }
     expect(
       exists(path),
-      `README ## Repo map names ${path}, which is missing`,
+      `local-dev.md ## Repo map names ${path}, which is missing`,
     ).toBe(true)
   })
 })
 
 describe('the CLAUDE.md promise', () => {
-  // Both the README repo map and the root CLAUDE.md tell a reader that every
+  // Both the local-dev.md repo map and the root CLAUDE.md tell a reader that every
   // feature has one to read before editing. A feature without one breaks that
   // silently -- the reader finds nothing and assumes there was nothing to know.
   it.each(featureDirs)('src/features/%s has a CLAUDE.md', (dir) => {

@@ -79,6 +79,9 @@ with its cost and duration.
 - **A user only ever sees their own data.** Server code holding a service-role
   credential filters by user id explicitly rather than relying on row-level
   policy.
+- **Image batches show optimistic cards** before preparation starts, then
+  reconcile them with saved generation rows. Preparation and submission failures
+  stay visible instead of silently dropping the request.
 
 ## Non-goals
 

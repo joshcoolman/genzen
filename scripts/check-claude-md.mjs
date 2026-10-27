@@ -129,8 +129,8 @@ const rootStale =
   owners.includes('')
 
 /**
- * A feature folder is required to carry its own CLAUDE.md -- the root README and
- * `CLAUDE.md` both promise one is there to read before editing. A new folder that
+ * A feature folder is required to carry its own CLAUDE.md -- `docs/reference/local-dev.md`
+ * and `CLAUDE.md` both promise one is there to read before editing. A new folder that
  * arrives without one breaks that promise silently.
  */
 const missingDocs = catalogChanges
