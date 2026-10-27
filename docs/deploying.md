@@ -25,17 +25,17 @@ Every variable the app reads, and where its value comes from. If the app reads
 a var, it is in this table. There is no `.env.example`: `pnpm local:up` pulls
 these from the project and this table is the only list.
 
-| Variable                | Required | Source                                                                                                                                               |
-| ----------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`          | yes      | Set by the Neon integration (pooled)                                                                                                                 |
-| `DATABASE_URL_UNPOOLED` | no       | Set by the Neon integration. Preferred when present: the Director worker holds a session advisory lock, which a pooler cannot keep on one connection |
-| `BLOB_READ_WRITE_TOKEN` | yes      | Set by connecting the Blob store. The store must be **private** (#226)                                                                               |
-| `AUTH_SESSION_SECRET`   | yes      | Generated once by `local:up` onto the project for every environment. Rotating it signs everyone out                                                  |
-| `FAL_KEY`               | yes      | Yours, https://fal.ai/dashboard/keys. `local:up` asks and stores it on the project. Image and video generation                                       |
-| `ANTHROPIC_API_KEY`     | no       | Yours. Read implicitly by `@ai-sdk/anthropic`; powers every text and vision call. A feature that needs it fails loudly rather than degrading         |
-| `APP_URL`               | no       | The deployment's public URL. Only the `context:*` inspection scripts read it, to tell a pasted URL from this instance apart from another             |
-| `LOCAL_DEV_EMAIL`       | never    | Written by `local:up` into `.env.local` only; the generated login. Must not be set on the project                                                    |
-| `LOCAL_DEV_PASSWORD`    | never    | Same                                                                                                                                                 |
+| Variable                | Required | Source                                                                                                                                                  |
+| ----------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`          | yes      | Set by the Neon integration (pooled)                                                                                                                    |
+| `DATABASE_URL_UNPOOLED` | no       | Set by the Neon integration. Preferred when present: the Director worker holds a session advisory lock, which a pooler cannot keep on one connection    |
+| `BLOB_READ_WRITE_TOKEN` | yes      | Set by connecting the Blob store. The store must be **private** (#226)                                                                                  |
+| `AUTH_SESSION_SECRET`   | yes      | Generated once by `local:up` onto the project for every environment. Rotating it signs everyone out                                                     |
+| `FAL_KEY`               | yes      | Yours, https://fal.ai/dashboard/keys. `local:up` asks and stores it on the project; `local:up --force` pushes a rotated one. Image and video generation |
+| `ANTHROPIC_API_KEY`     | no       | Yours. Read implicitly by `@ai-sdk/anthropic`; powers every text and vision call. A feature that needs it fails loudly rather than degrading            |
+| `APP_URL`               | no       | The deployment's public URL. Only the `context:*` inspection scripts read it, to tell a pasted URL from this instance apart from another                |
+| `LOCAL_DEV_EMAIL`       | never    | Written by `local:up` into `.env.local` only; the generated login. Must not be set on the project                                                       |
+| `LOCAL_DEV_PASSWORD`    | never    | Same                                                                                                                                                    |
 
 The Neon integration also sets a dozen `POSTGRES_*` and `PG*` aliases the app
 does not read.

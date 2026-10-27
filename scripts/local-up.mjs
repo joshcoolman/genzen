@@ -16,6 +16,8 @@
 //
 //   pnpm local:up            set up, then run the dev server
 //   pnpm local:up --no-dev   set up only; don't start the dev server
+//   pnpm local:up --force    push the provider keys in .env.local to the
+//                            project first (a rotated key), then as usual
 //
 // The only values you have to supply are your provider keys (FAL, then
 // Anthropic). They are stored on the Vercel project, so the deployment and
@@ -34,6 +36,7 @@ const ROOT = new URL('../', import.meta.url)
 const ENV_LOCAL = new URL('.env.local', ROOT)
 const ENV_PULLED = new URL('.env.vercel-pull', ROOT)
 const SKIP_DEV = process.argv.includes('--no-dev')
+const FORCE_KEYS = process.argv.includes('--force')
 /** Mirrors the `dev` script in package.json. */
 const DEV_PORT = 3000
 const DEV_URL = `http://localhost:${DEV_PORT}/`
@@ -153,6 +156,80 @@ const linked = ['.vercel/project.json', '.vercel/repo.json'].some((file) =>
 if (!linked) {
   console.log('\n> linking this clone to the Vercel project')
   run('vercel', ['link', '--yes'])
+}
+
+const PROVIDER_KEYS = [
+  {
+    envVar: 'FAL_KEY',
+    label: 'FAL',
+    where: 'https://fal.ai/dashboard/keys',
+    needed: 'image generation',
+    consequence: 'the app runs, but image generation will fail',
+  },
+  {
+    envVar: 'ANTHROPIC_API_KEY',
+    label: 'Anthropic',
+    where: 'https://console.anthropic.com/settings/keys',
+    needed: 'the AI features layered on top of plain image generation',
+    note: `Strongly recommended. Without it the app still runs and images still
+generate, but Enhance Prompt, variation prompts, shot lists and Describe will
+each tell you the key is missing instead of working.`,
+    consequence:
+      'image generation still works, but the AI-assisted features will report the missing key',
+  },
+]
+
+/** Store a provider key on the project, for every environment. */
+function pushKey(envVar, value) {
+  run('vercel', [
+    'env',
+    'add',
+    envVar,
+    '--environment',
+    ENVIRONMENTS,
+    '--sensitive',
+    '--force',
+    '--value',
+    value,
+  ])
+}
+
+// 1b. `--force`: the keys in `.env.local` win over the project's. The normal
+//     run only asks for a key that is *missing* from the file, and every run
+//     pulls the project's values back over it -- so a key rotated by hand in
+//     `.env.local` works for one session and is quietly replaced by the dead
+//     one on the next run, here and on every other Mac. Pushing before the
+//     pull makes the pull bring back what was just pushed.
+if (FORCE_KEYS) {
+  if (!existsSync(ENV_LOCAL)) {
+    console.error('\n--force: there is no .env.local to push keys from.')
+    process.exit(1)
+  }
+  const text = readFileSync(ENV_LOCAL, 'utf8')
+  let pushed = 0
+  for (const key of PROVIDER_KEYS) {
+    const fileValue = read(key.envVar, text)
+    if (!fileValue) continue
+    const shellValue = process.env[key.envVar]
+    if (shellValue && shellValue !== fileValue) {
+      // The file value is not the one this machine is running with, so it is
+      // not the one that was just seen working. Refuse rather than guess.
+      console.error(
+        `\n--force: ${key.envVar} is exported in your shell and differs from .env.local; not pushing it. Fix or unset the export first.`,
+      )
+      process.exit(1)
+    }
+    console.log(`\n> pushing ${key.envVar} from .env.local to the project`)
+    pushKey(key.envVar, fileValue)
+    pushed++
+  }
+  if (pushed === 0) {
+    console.error('\n--force: no provider key found in .env.local to push.')
+    process.exit(1)
+  }
+  console.log(
+    'The deployment picks a key up on its next deploy -- `vercel redeploy` if nothing is about to ship.',
+  )
 }
 
 // 2. The project's variables. Pulled into a scratch file and merged, because
@@ -291,26 +368,6 @@ run('node', ['scripts/migrate.mjs'])
 //    right place and var name. A key goes onto the Vercel project, for every
 //    environment, so the deployment and the other Macs get it on their next
 //    pull; a re-run only prompts for what is still absent.
-const PROVIDER_KEYS = [
-  {
-    envVar: 'FAL_KEY',
-    label: 'FAL',
-    where: 'https://fal.ai/dashboard/keys',
-    needed: 'image generation',
-    consequence: 'the app runs, but image generation will fail',
-  },
-  {
-    envVar: 'ANTHROPIC_API_KEY',
-    label: 'Anthropic',
-    where: 'https://console.anthropic.com/settings/keys',
-    needed: 'the AI features layered on top of plain image generation',
-    note: `Strongly recommended. Without it the app still runs and images still
-generate, but Enhance Prompt, variation prompts, shot lists and Describe will
-each tell you the key is missing instead of working.`,
-    consequence:
-      'image generation still works, but the AI-assisted features will report the missing key',
-  },
-]
 
 for (const key of PROVIDER_KEYS) {
   const shellValue = process.env[key.envVar]
@@ -344,17 +401,7 @@ Get one at ${key.where} (leave blank to skip -- you can re-run
     const answer = (await rl.question(`\nPaste your ${key.label} key: `)).trim()
     rl.close()
     if (answer) {
-      run('vercel', [
-        'env',
-        'add',
-        key.envVar,
-        '--environment',
-        ENVIRONMENTS,
-        '--sensitive',
-        '--force',
-        '--value',
-        answer,
-      ])
+      pushKey(key.envVar, answer)
       writeFileSync(
         ENV_LOCAL,
         upsert(readFileSync(ENV_LOCAL, 'utf8'), key.envVar, answer),

@@ -56,11 +56,18 @@ in the Activity log.
 If a shell-exported `FAL_KEY` shadows the one in `.env.local`, `local:up` warns
 about it -- that's the usual reason generation 401s.
 
+A key that stopped working is replaced in `.env.local`, then pushed to the
+project with `pnpm local:up --force`. The plain run only asks for a key that
+is missing, and pulls the project's values back over the file, so without the
+push the dead key returns on the next run and on every other Mac. The
+deployment picks it up on its next deploy (`vercel redeploy`).
+
 ## Scripts
 
 | Command                 | Purpose                                                                                   |
 | ----------------------- | ----------------------------------------------------------------------------------------- |
 | `pnpm local:up`         | Pull the project's variables, migrate, make a login, start dev                            |
+| `pnpm local:up --force` | Same, after pushing the provider keys in `.env.local` to the project (a rotated key)      |
 | `pnpm dev`              | Next dev server on :3000                                                                  |
 | `pnpm build`            | Production build                                                                          |
 | `pnpm test`             | Vitest                                                                                    |
