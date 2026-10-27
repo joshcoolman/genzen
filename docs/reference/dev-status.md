@@ -2,10 +2,14 @@ Where development is. A snapshot, overwritten at natural beats, never a log:
 one Focus line naming the live card, then at most six one-line bullets of what
 shipped, most recent first. What is queued lives on the upnext board, not here.
 
-**Focus: nothing in the Focus column. Open #748 (top of Now) -- Director reordering after Extract or a storyboard write fails as "changed in another tab".**
+**Focus: #777, moving genzen to Vercel (Blob, Neon, no Docker). Code and docs are on branch `vercel-migration`; what remains is Josh's FAL and Anthropic keys via `pnpm local:up`, the first production deploy, and retiring Railway.**
 
 Recent highlights:
 
+- **Vercel migration (#777)** -- storage client rewritten on Vercel Blob,
+  Postgres on Neon through the marketplace, `local:up` pulls the project's
+  variables instead of starting Docker. MinIO had pulled its images from every
+  registry, which is what forced the move.
 - **Phone nav and swipe (#768-#770, #764-#767)** -- a green menu button
   bottom left (Images / Video / More, More flying out right), the plus bottom
   right. The image viewer swipes with a slide; fixed page scroll freezing after

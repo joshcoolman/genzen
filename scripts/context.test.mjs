@@ -67,19 +67,15 @@ describe('URL and target selection', () => {
       expect(() => parseActivityUrl(url)).toThrow()
     }
   })
-  it('does not silently substitute another environment', () => {
+  it('does not silently substitute another instance', () => {
+    // Local dev and the deployment share one database (#777): a localhost URL
+    // reads it whatever host it is on. Another origin is another instance.
     expect(
       validateTarget(new URL('http://localhost:3000'), local).databaseHost,
     ).toBe('localhost')
     expect(() =>
       validateTarget(new URL('https://genzen.example'), local),
     ).toThrow('APP_URL')
-    expect(() =>
-      validateTarget(new URL('https://genzen.example'), {
-        ...local,
-        APP_URL: 'https://genzen.example',
-      }),
-    ).toThrow('local')
     const remote = {
       DATABASE_URL: 'postgres://u:p@db.example/db',
       APP_URL: 'https://genzen.example',
@@ -87,9 +83,9 @@ describe('URL and target selection', () => {
     expect(validateTarget(new URL(remote.APP_URL), remote).origin).toBe(
       remote.APP_URL,
     )
-    expect(() =>
-      validateTarget(new URL('http://localhost:3000'), remote),
-    ).toThrow('remote')
+    expect(
+      validateTarget(new URL('http://localhost:3000'), remote).databaseHost,
+    ).toBe('db.example')
   })
 })
 

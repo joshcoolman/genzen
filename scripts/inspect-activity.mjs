@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import postgres from 'postgres'
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { get } from '@vercel/blob'
 import ffmpeg from 'ffmpeg-static'
 import { generationInputIds } from '../src/features/ai-images/generation-inputs.ts'
 import { getModelName } from '../src/features/ai-images/models.ts'
@@ -57,19 +57,15 @@ export function validateTarget(url, env) {
       'DATABASE_URL is missing. Run pnpm local:up or supply the target environment.',
     )
   const db = new URL(env.DATABASE_URL)
-  if (loopback(url.hostname)) {
-    if (!loopback(db.hostname)) {
-      throw new Error(
-        'Local Activity URL but DATABASE_URL is remote. Load the local environment; refusing to read another database.',
-      )
-    }
-  } else if (!env.APP_URL || new URL(env.APP_URL).origin !== url.origin) {
+  // Local dev and the deployment share one database (#777), so a localhost
+  // URL and the deployment's URL read the same rows. Any other host is some
+  // other instance, whose data must not be answered with this one's.
+  if (
+    !loopback(url.hostname) &&
+    (!env.APP_URL || new URL(env.APP_URL).origin !== url.origin)
+  ) {
     throw new Error(
-      'Hosted Activity URL does not match APP_URL. Supply that deployment’s APP_URL, DATABASE_URL and R2_* configuration; local data will not be substituted.',
-    )
-  } else if (loopback(db.hostname)) {
-    throw new Error(
-      'Hosted Activity URL but DATABASE_URL is local. Supply the deployment database; refusing to substitute local data.',
+      'Hosted Activity URL does not match APP_URL. Supply that deployment’s APP_URL, DATABASE_URL and BLOB_READ_WRITE_TOKEN; local data will not be substituted.',
     )
   }
   return { origin: url.origin, databaseHost: db.hostname }
@@ -263,38 +259,16 @@ export async function main(args = process.argv.slice(2)) {
     await sql.end({ timeout: 5 })
   }
   const directory = await mkdtemp(join(tmpdir(), 'genzen-activity-'))
-  const endpoint =
-    process.env.R2_ENDPOINT ||
-    (process.env.R2_ACCOUNT_ID
-      ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
-      : undefined)
-  const client =
-    endpoint && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY
-      ? new S3Client({
-          region: 'auto',
-          endpoint,
-          maxAttempts: 2,
-          forcePathStyle:
-            loopback(new URL(endpoint).hostname) ||
-            new URL(endpoint).hostname === 'minio',
-          credentials: {
-            accessKeyId: process.env.R2_ACCESS_KEY_ID,
-            secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-          },
-        })
-      : null
+  // The private Blob store on the Vercel project; the SDK reads
+  // BLOB_READ_WRITE_TOKEN from the environment (#777).
   const download = async (key, path) => {
-    if (!client) throw new Error('Storage configuration missing')
-    const object = await client.send(
-      new GetObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME || 'genzen-images',
-        Key: key,
-      }),
-      { abortSignal: AbortSignal.timeout(60000) },
-    )
-    await writeFile(path, await object.Body.transformToByteArray(), {
-      mode: 0o600,
-    })
+    if (!process.env.BLOB_READ_WRITE_TOKEN)
+      throw new Error('Storage configuration missing')
+    const object = await get(key, { access: 'private' })
+    if (!object || object.statusCode !== 200)
+      throw new Error(`Stored file not found: ${key}`)
+    const bytes = await new Response(object.stream).arrayBuffer()
+    await writeFile(path, new Uint8Array(bytes), { mode: 0o600 })
   }
   try {
     const outputMedia = await collectMedia(

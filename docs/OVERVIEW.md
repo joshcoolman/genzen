@@ -18,8 +18,9 @@ between views; a canvas image _is_ a library image.
   isolation, but no orgs, teams, roles or sharing.
 - **Not a general image editor.** It generates, organizes and keeps images. It
   does not do layers, masks or pixel editing.
-- **Not tied to a vendor.** Plain Postgres, generic S3 and Node, on Next. It
-  deploys to Railway or anywhere else; nothing proprietary holds a piece of it.
+- **Not tied to a vendor, mostly.** Plain Postgres and Node, on Next. It runs
+  on Vercel, with Neon for the database and Vercel Blob for images (#777); the
+  storage client is one file, and nothing else knows which store it is.
 
 ## Where it fits
 
@@ -168,7 +169,7 @@ GenZen is a personal creative workspace, with real accounts and per-user
 isolation but no public signup, teams, or sharing. Run it locally or deploy your
 own instance; generations bill the provider accounts whose keys you configure.
 
-Postgres and media storage run locally with Docker. FAL provides image and video
+Postgres and media storage are the Vercel project's, shared with local dev. FAL provides image and video
 generation, and Anthropic provides the reasoning and vision used by AI-assisted
 workflows such as storyboards. The app can start without provider keys; the
 features that call those providers need their keys configured.

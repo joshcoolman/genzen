@@ -32,20 +32,22 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), CSS Mod
 
 ## Services
 
-Local dev is one command: **`pnpm local:up`** (Postgres + MinIO + schema + a
-populated `.env.local`), then `pnpm dev`. Docker, pnpm and Node 22.13+ are the
-only prerequisites. One lab page wants a system binary on top of them:
-`lab/frames` grabs stills from a pasted YouTube link with `yt-dlp`
-(`brew install yt-dlp`), and that half of the page is development-only for
-exactly that reason (#613). Nothing else needs it and the app runs without it.
+Local dev is one command: **`pnpm local:up`** (pulls the Vercel project's
+variables, migrates, makes you a login), then `pnpm dev`. pnpm, Node 22.13+
+and a logged-in Vercel CLI are the only prerequisites; there is no Docker and
+nothing runs on the machine but Next (#777). One lab page wants a system
+binary on top of them: `lab/frames` grabs stills from a pasted YouTube link
+with `yt-dlp` (`brew install yt-dlp`), and that half of the page is
+development-only for exactly that reason (#613). Nothing else needs it and the
+app runs without it.
 
-genzen is also deployed — Railway, one service plus Postgres and a private
-bucket. `docs/deploying.md` is the contract; do not re-derive it. Logins on any
-database, local or deployed, are managed with `pnpm users` (`-h` for usage). It is idempotent and never resets a database you have been
-working in. The only keys a human supplies are `FAL_KEY` and, if the AI-assisted
-features are wanted, `ANTHROPIC_API_KEY` -- `local:up` prompts for each that is
-missing and the app runs without the second. Everything else is a
-container or a fixed local value. See `docs/reference/local-dev.md`.
+genzen is deployed on Vercel, and **local dev points at the same Neon database
+and Blob store the deployment uses** -- one project, one set of data on every
+Mac. `docs/deploying.md` is the contract; do not re-derive it. Logins are
+managed with `pnpm users` (`-h` for usage). The only keys a human supplies are
+`FAL_KEY` and, if the AI-assisted features are wanted, `ANTHROPIC_API_KEY` --
+`local:up` prompts for each that is missing, stores it on the project, and the
+app runs without the second. See `docs/reference/local-dev.md`.
 
 Assume server-side access to the services below unless a feature explicitly says
 otherwise. Don't propose new auth/env plumbing for these. Note that locally the
@@ -54,19 +56,19 @@ feature that needs it should fail loudly rather than assume it's there.
 
 - **Anthropic** (`ANTHROPIC_API_KEY`) — Claude, server-side only, and the only text/vision provider: prompt enhancement, variation prompts, Describe/Caption. There is no browser-held key. FAL is the only image provider.
 - **FAL AI** (`FAL_KEY`) — image generation via `@fal-ai/client`.
-- **Postgres** (`DATABASE_URL`) — the database, reached only through `sql` from `src/lib/server/db.server.ts`. There is no ORM and no query builder; server code writes SQL. There is also no RLS: `sql` connects as the owning role, so **every read and write carries an explicit `user_id` filter**, taken from `resolveAuth()` and never from the caller. That is checked, not remembered: `eslint-rules/sql-user-scoping.js` fails any `sql` statement naming a user-scoped table without one (#219). The tables come from the migrations, so a new one is covered the day it lands. Where an id is genuinely server-derived, annotate the statement `// sql-scope-exempt: <why>` — a reason is required, and `grep sql-scope-exempt` is the list of every place the rule is knowingly bent. Row shapes are `src/lib/types/db.ts`, paired with the select list in `src/lib/server/user-image-columns.server.ts` — a test fails if either drifts from `migrations/0001_init.sql`.
-- **S3 storage** (`R2_*`) — image/asset storage. `src/lib/server/storage/client.server.ts` is a
-  provider-agnostic S3 client pointed by `R2_ENDPOINT`; the `R2_` prefix is
-  historical and Cloudflare-specific plumbing (`R2_ACCOUNT_ID`) is a leftover of
-  it. The prefix is staying: #242 proposed renaming it to `BUCKET_*` and was
-  closed once a deployment existed, since the rename buys nothing but costs a
-  live variable change. **Cloudflare R2 is still not in use anywhere** — locally
-  it is MinIO in Docker, and in production it is a Railway bucket. A doc or
-  memory claiming R2 is the provider is wrong (#225).
-  **The bucket is private** (#226), locally too. Nothing reads an object without
-  credentials: the browser gets images from `/img/[id]`, which resolves identity
-  from the cookie and filters the row by `user_id`. `src/lib/image-url.ts` is the
-  only place a URL is built — two surfaces used to concatenate one by hand, so a
+- **Postgres** (`DATABASE_URL`, Neon through the Vercel marketplace; `DATABASE_URL_UNPOOLED` wins when set, because the Director worker's advisory lock needs one real connection) — the database, reached only through `sql` from `src/lib/server/db.server.ts`. There is no ORM and no query builder; server code writes SQL. There is also no RLS: `sql` connects as the owning role, so **every read and write carries an explicit `user_id` filter**, taken from `resolveAuth()` and never from the caller. That is checked, not remembered: `eslint-rules/sql-user-scoping.js` fails any `sql` statement naming a user-scoped table without one (#219). The tables come from the migrations, so a new one is covered the day it lands. Where an id is genuinely server-derived, annotate the statement `// sql-scope-exempt: <why>` — a reason is required, and `grep sql-scope-exempt` is the list of every place the rule is knowingly bent. Row shapes are `src/lib/types/db.ts`, paired with the select list in `src/lib/server/user-image-columns.server.ts` — a test fails if either drifts from `migrations/0001_init.sql`.
+- **Vercel Blob** (`BLOB_READ_WRITE_TOKEN`) — image/asset storage, one
+  private store on the Vercel project (#777). `src/lib/server/storage/client.server.ts`
+  is the only file that knows which store it is; everything else calls its
+  four methods. It replaced a generic S3 client whose `R2_*` variables named a
+  provider genzen never used (#225, #242): MinIO in Docker locally and a Railway
+  bucket in production, until MinIO pulled its images from every registry and
+  the stack moved to Vercel. A doc or memory mentioning `R2_*`, MinIO, Railway
+  or `docker-compose.yml` is describing that past.
+  **The store is private** (#226). Nothing reads an object without credentials:
+  the browser gets images from `/img/[id]`, which resolves identity from the
+  cookie and filters the row by `user_id`. `src/lib/image-url.ts` is the only
+  place a URL is built — two surfaces used to concatenate one by hand, so a
   change to the scheme silently missed them. Server code that needs bytes
   (FAL uploads, vision) calls `storage.download()` and never HTTP.
 

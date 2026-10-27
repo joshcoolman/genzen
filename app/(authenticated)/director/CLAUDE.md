@@ -53,11 +53,16 @@ spoken override, visible and editable while a clip is waiting.
   pending `user_images` rows together, before video submission. The session cut
   retains story, cast, seed and source id, as before #749.
 - `director_cut_jobs` stores the ordered plan, phase, receipts and progress.
-  `instrumentation.ts` starts a worker in the self-hosted Node process (`scripts/serve.mjs`
-  warms the server on startup), independent
-  of navigation. A reserved Postgres connection holds a per-cut advisory lock;
-  checkpoint versions fence stale workers and concurrent edits. This requires a
-  long-lived Node process, not request-lifetime/serverless execution.
+  On a long-lived Node server (`pnpm dev`, `pnpm start`) `instrumentation.ts`
+  starts a worker that polls for active jobs, independent of navigation
+  (`scripts/serve.mjs` warms the server on startup). **On Vercel there is no
+  such process** (#777): `getSession` advances the open cut's active job by one
+  checkpointed stage after each read, under Next's `after()`, and the page
+  reads every two seconds while a job is active -- so a closed tab pauses a
+  cut there, and reopening it resumes from the checkpoint. A reserved Postgres
+  connection holds a per-cut advisory lock either way, which is why the app
+  connects on `DATABASE_URL_UNPOOLED`; checkpoint versions fence stale workers
+  and concurrent edits.
 - Every clip after the first waits for the previous completed video and its
   full-resolution ending PNG (`cut-frame.server.ts`, sharing `decodeEndFrame`).
   That image is the next first-frame input on H3 Max Turbo. No text-only fallback.

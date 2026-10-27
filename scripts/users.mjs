@@ -1,23 +1,18 @@
-// List, add, and delete users, against local or a deployed database.
+// List, add, and delete users on the genzen database.
 //
 //   pnpm users                          list
 //   pnpm users add <email> <password>   create, or reset an existing password
 //   pnpm users delete <email>           delete the user AND all their images
 //
-//   --local                             target the docker stack instead
+// There is one database: the Neon one on the Vercel project, which local dev
+// and the deployment share (#777). `pnpm local:up` pulls its URL into
+// `.env.local`; an explicit DATABASE_URL in the shell wins over that, which is
+// how a different database is reached on purpose.
 //
-// Defaults to the DEPLOYED database, because managing deployed logins is what
-// this exists for -- `pnpm local:up` already makes a local one for you. Order:
-// an explicit DATABASE_URL, else Railway's public proxy, else .env.local.
-// `--local` skips Railway and uses .env.local.
-//
-// Every run names the target before doing anything, and writes to a non-local
-// database ask first. The failure worth preventing is silent, not loud: a
-// stale .env.local turns "add a local login" into a real account on production,
-// and the reverse -- editing production while you meant to edit local -- is
-// just as easy to do and harder to notice.
+// Every run names the host before doing anything, and every write asks first.
+// The failure worth preventing is silent, not loud: this database is the real
+// one, and "add a test login" is a real account.
 
-import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { createInterface } from 'node:readline'
 import postgres from 'postgres'
@@ -35,68 +30,20 @@ function question(prompt) {
   )
 }
 
-// The deployed DATABASE_URL points at postgres.railway.internal, which only
-// resolves inside Railway. From a laptop the usable address is the public TCP
-// proxy, so rebuild the URL from the proxy's host/port rather than reusing the
-// service's own DATABASE_URL.
-function resolveDeployedUrl() {
-  const read = (args) => {
-    try {
-      return execFileSync('railway', args, {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      })
-    } catch {
-      return null
-    }
-  }
-
-  const vars = read(['variables', '--service', 'Postgres', '--kv'])
-  if (!vars) return null
-
-  const get = (name) =>
-    vars
-      .split('\n')
-      .find((line) => line.startsWith(`${name}=`))
-      ?.slice(name.length + 1)
-      .trim()
-
-  const publicUrl = get('DATABASE_PUBLIC_URL')
-  // Railway populates DATABASE_PUBLIC_URL with an empty host until a TCP proxy
-  // exists, which parses as a URL but cannot connect. Treat that as absent.
-  if (publicUrl) {
-    try {
-      if (new URL(publicUrl).hostname) return publicUrl
-    } catch {
-      /* fall through */
-    }
-  }
-  return null
-}
-
 function resolveDatabaseUrl() {
   if (process.env.DATABASE_URL) {
     return { url: process.env.DATABASE_URL, source: 'DATABASE_URL' }
   }
-
-  if (!WANT_LOCAL) {
-    const deployed = resolveDeployedUrl()
-    if (deployed) return { url: deployed, source: 'Railway (public proxy)' }
-  }
-
   if (existsSync(ENV_LOCAL_PATH)) {
     process.loadEnvFile(ENV_LOCAL_PATH)
-    if (process.env.DATABASE_URL) {
-      return { url: process.env.DATABASE_URL, source: '.env.local' }
-    }
+    const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL
+    if (url) return { url, source: '.env.local' }
   }
-
   return null
 }
 
 const argv = process.argv.slice(2)
-const WANT_LOCAL = argv.includes('--local')
-const rest = argv.filter((a) => a !== '--local')
+const rest = argv
 
 function usage() {
   const b = process.stdout.isTTY ? '\x1b[1m' : ''
@@ -114,17 +61,12 @@ function usage() {
     `  ${c}pnpm users delete <email>${r}             delete the user and all their images`,
   )
   console.log(`\n${d}Options:${r}`)
-  console.log(
-    `  ${c}--local${r}                               use the docker stack instead of the deployed database`,
-  )
   console.log(`  ${c}-h, --help${r}                            show this help`)
   console.log(`\n${d}Notes:${r}`)
   console.log(
-    `  ${d}Targets the DEPLOYED database by default; every run prints which host it hit.${r}`,
+    `  ${d}Targets the project database from .env.local, or DATABASE_URL if exported; every run prints which host it hit.${r}`,
   )
-  console.log(
-    `  ${d}Writes to a non-local database ask for confirmation first.${r}`,
-  )
+  console.log(`  ${d}Every write asks for confirmation first.${r}`)
   console.log(
     `  ${d}Passwords are 6+ chars. Deleting a user cascades to their images.${r}`,
   )
@@ -138,22 +80,16 @@ if (rest.includes('-h') || rest.includes('--help') || rest[0] === 'help') {
 const resolved = resolveDatabaseUrl()
 if (!resolved) {
   console.error(
-    'No database found. Run `pnpm local:up` for a local stack, or set DATABASE_URL.',
+    'No database found. Run `pnpm local:up` once, or set DATABASE_URL.',
   )
   process.exit(1)
 }
 
 const { hostname: dbHost } = new URL(resolved.url)
-const isLocal = dbHost === 'localhost' || dbHost === '127.0.0.1'
-console.log(
-  `database: ${dbHost}${isLocal ? ' (local docker stack)' : ''}  [${resolved.source}]\n`,
-)
+console.log(`database: ${dbHost}  [${resolved.source}]\n`)
 
 async function confirmRemote(action) {
-  if (isLocal) return true
-  const answer = await question(
-    `This is NOT localhost. ${action} on ${dbHost}? (y/N) `,
-  )
+  const answer = await question(`${action} on ${dbHost}? (y/N) `)
   return answer.trim().toLowerCase() === 'y'
 }
 
@@ -196,19 +132,6 @@ try {
     if (!(await confirmRemote(action))) {
       console.log('Aborted.')
       process.exit(0)
-    }
-
-    // Creating is additive; overwriting someone's password is not. Locally the
-    // remote prompt never fires, so without this an existing user's password
-    // would be reset with no confirmation at all.
-    if (existing && isLocal) {
-      const answer = await question(
-        `${email} already exists. Reset their password? (y/N) `,
-      )
-      if (answer.trim().toLowerCase() !== 'y') {
-        console.log('User unchanged.')
-        process.exit(0)
-      }
     }
 
     if (existing) {
