@@ -1,8 +1,11 @@
 // List, add, and delete users on the genzen database.
 //
 //   pnpm users                          list
-//   pnpm users add <email> <password>   create, or reset an existing password
-//   pnpm users delete <email>           delete the user AND all their images
+//   pnpm users:new                      create a user, asking for email and password
+//   pnpm users:delete <email>           delete the user AND all their images
+//
+// `users:new` and `users:delete` are `users add` / `users delete`; the
+// positional forms take arguments for a script.
 //
 // There is one database: the Neon one on the Vercel project, which local dev
 // and the deployment share (#777). `pnpm local:up` pulls its URL into
@@ -55,13 +58,13 @@ function usage() {
   console.log(`${d}Usage:${r}`)
   console.log(`  ${c}pnpm users${r}                            list every user`)
   console.log(
-    `  ${c}pnpm users add${r}                        create a user, asking for email and password`,
+    `  ${c}pnpm users:new${r}                        create a user, asking for email and password`,
   )
   console.log(
-    `  ${c}pnpm users add <email> <pass>${r}         the same, for a script; resets the password if the user exists`,
+    `  ${c}pnpm users:delete <email>${r}             delete the user and all their images`,
   )
   console.log(
-    `  ${c}pnpm users delete <email>${r}             delete the user and all their images`,
+    `  ${c}pnpm users add <email> <pass>${r}         for a script; resets the password if the user exists`,
   )
   console.log(`\n${d}Options:${r}`)
   console.log(`  ${c}-h, --help${r}                            show this help`)
