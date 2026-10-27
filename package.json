@@ -13,6 +13,8 @@
     "check": "prettier --write . && eslint --fix && node scripts/check-raw-colors.mjs && node scripts/check-undeclared-tokens.mjs && node scripts/check-module-classes.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "users": "node scripts/users.mjs",
+    "users:new": "node scripts/users.mjs add",
+    "users:delete": "node scripts/users.mjs delete",
     "activity:inspect": "node --experimental-strip-types scripts/inspect-activity.mjs",
     "context:inspect": "node --experimental-strip-types scripts/inspect-activity.mjs",
     "context:find": "node --experimental-strip-types scripts/find-context.mjs",
