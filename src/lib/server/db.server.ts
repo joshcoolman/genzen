@@ -26,8 +26,14 @@ import postgres from 'postgres'
 //   * bigint and numeric arrive as strings, to avoid silent float rounding.
 //     `file_size` and `unit_price` are wrapped in `Number()` where read.
 
+// Neon through Vercel sets two URLs: `DATABASE_URL` goes through its pooler,
+// which hands a session a different server connection per transaction, and
+// `DATABASE_URL_UNPOOLED` is a direct connection. The Director worker holds a
+// session advisory lock on a reserved connection across async work, which the
+// pooler cannot promise to keep on one server -- so the direct URL wins when it
+// exists (#777). One user and a handful of pools sit well inside Neon's limit.
 function getDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL
+  const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL
   if (!url) throw new Error('DATABASE_URL is not set')
   return url
 }

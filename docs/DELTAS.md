@@ -94,6 +94,7 @@ one.
   delta left, and the practice worth carrying — push the branch, because three
   Macs pull from this remote — is a working habit rather than a code standard.
   It lives in the root `CLAUDE.md`.
-- **`R2_*` env names are historical, not descriptive.** A fact about this
-  repo's environment rather than a standards question; stated in the root
-  `CLAUDE.md`, where the other service facts are.
+- **Images live in Vercel Blob, not an S3 bucket** (#777). The storage client
+  is one file with four methods; a different store is a rewrite of that file
+  and nothing else. The `R2_*` variables and the Docker stack are gone with the
+  S3 client; the root `CLAUDE.md` holds the service facts.

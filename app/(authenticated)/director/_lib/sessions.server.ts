@@ -1,5 +1,6 @@
 import 'server-only'
 import { randomUUID } from 'node:crypto'
+import { after } from 'next/server'
 import { cancelCutJob, readCutJob } from './cut-job.server'
 import {
   activeCut,
@@ -51,11 +52,23 @@ export async function getSession(
   )
   if (!row) return null
   const cuts = parseCuts(row.cut, row.id)
+  const generation = (await readCutJob(owner, cuts.active)) ?? null
+  // On Vercel nothing runs between requests, so the poll that reads a job's
+  // progress (every two seconds while active) is also what advances it: one
+  // checkpointed stage per read, after the response, under the same advisory
+  // lock the worker takes. A closed tab pauses a cut there; reopening resumes
+  // it from its checkpoint. Elsewhere `instrumentation.ts` owns this (#777).
+  if (generation?.status === 'active' && process.env.VERCEL) {
+    after(async () => {
+      const { runCutJob } = await import('./cut-worker.server')
+      await runCutJob(owner, generation.id)
+    })
+  }
   return {
     ...row,
     cuts,
     cut: activeCut(cuts),
-    generation: (await readCutJob(owner, cuts.active)) ?? null,
+    generation,
     chat: parseChat(row.chat),
     refs: parseRefs(row.refs),
     board: parseBoard(row.board),

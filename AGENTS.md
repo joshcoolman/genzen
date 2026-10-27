@@ -33,8 +33,8 @@ Existing stored data and media are enough for ordinary product discussions.
 For other app entities (groups, canvases, Director sessions, settings), read
 the relevant feature/route `CLAUDE.md` and schema, then make bounded read-only
 queries scoped to the selected user and follow the actual relationships.
-The media command is not an index of every table. Docker/service status and
-logs can be inspected when troubleshooting warrants it; do not restart, reset,
+The media command is not an index of every table. Vercel deployment status and
+logs can be inspected when troubleshooting warrants it; do not redeploy, reset,
 poll provider jobs, or generate anything just to load discussion context.
 Treat database access as configured access, not a promise that local and
 deployed databases have the same records. Never print secrets.

@@ -17,3 +17,4 @@ tsconfig.tsbuildinfo
 # `build`, so tracking it means a permanently dirty tree. Verified: `pnpm
 # typecheck` passes without it.
 next-env.d.ts
+.vercel

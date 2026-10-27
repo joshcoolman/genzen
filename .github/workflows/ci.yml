@@ -82,10 +82,6 @@ jobs:
         env:
           DATABASE_URL: postgres://ci:ci@localhost:5432/ci
           AUTH_SESSION_SECRET: ci-not-a-real-secret
-          R2_ENDPOINT: http://localhost:9010
-          R2_BUCKET_NAME: genzen-images
-          R2_ACCESS_KEY_ID: ci
-          R2_SECRET_ACCESS_KEY: ci
 
       # Boot far enough to fail on a bad entrypoint or a module that explodes on
       # import. /login is the assertion because it is the one page that renders
@@ -110,7 +106,3 @@ jobs:
         env:
           DATABASE_URL: postgres://ci:ci@localhost:5432/ci
           AUTH_SESSION_SECRET: ci-not-a-real-secret
-          R2_ENDPOINT: http://localhost:9010
-          R2_BUCKET_NAME: genzen-images
-          R2_ACCESS_KEY_ID: ci
-          R2_SECRET_ACCESS_KEY: ci

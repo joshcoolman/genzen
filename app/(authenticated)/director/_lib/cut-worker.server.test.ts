@@ -61,11 +61,16 @@ vi.mock('#/lib/server/fal/completion.server', () => ({
 const isolation = vi.hoisted(() => ({
   schema: `director_queue_test_${Date.now()}`,
 }))
+// The database is Neon, across the network (#777): each of these walks a job
+// through many round trips, and the advisory lock wants one real connection,
+// so the direct URL and a generous clock.
+vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 })
 vi.mock('#/lib/server/db.server', async () => {
   const { default: postgres } = await import('postgres')
-  const client = postgres(process.env.DATABASE_URL!, {
-    connection: { search_path: isolation.schema },
-  })
+  const client = postgres(
+    process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!,
+    { connection: { search_path: isolation.schema } },
+  )
   return {
     sql: client,
     first: <T>(rows: Array<T>) => rows[0] as T | undefined,

@@ -68,13 +68,13 @@ missing original. Temporary downloads can be deleted after the conversation.
 
 The command loads `.env.local` relative to the repository; existing process
 variables take precedence, matching `pnpm dev`. Local URLs (`localhost`,
-`127.0.0.1`, `[::1]`) require a local database. Relative `/activity?entry=...`
+`127.0.0.1`, `[::1]`) read the project database, which local dev and the
+deployment share. Relative `/activity?entry=...`
 links use `APP_URL`, or localhost when it is unset. Extra query parameters and
 fragments do not change which entry is selected.
 
-For a deployed link, use the deployment's existing `APP_URL`, `DATABASE_URL`
-(public proxy when running from a laptop), and `R2_*` variables. `APP_URL` must
-match the link's origin. An isolated environment file can be loaded explicitly:
+For another instance's link, use that deployment's `APP_URL`, `DATABASE_URL`
+and `BLOB_READ_WRITE_TOKEN`. `APP_URL` must match the link's origin. An isolated environment file can be loaded explicitly:
 
 ```sh
 node --env-file=/absolute/path/to/deployment.env --experimental-strip-types scripts/inspect-activity.mjs 'https://your-deployment/activity?entry=<uuid>'

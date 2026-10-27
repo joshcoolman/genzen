@@ -95,7 +95,7 @@ export async function decodeEndFrame(file: string): Promise<Buffer | null> {
  * (#499, and the end frame in #512).
  *
  * ffmpeg is an npm dependency (`ffmpeg-static`), not a system package, so this
- * behaves the same on a laptop and on Railway and adds no prerequisite to
+ * behaves the same on a laptop and on Vercel and adds no prerequisite to
  * `local:up`. Its binary arrives in a postinstall, which pnpm 11 runs only for
  * packages named in `pnpm-workspace.yaml`'s `allowBuilds` -- miss that and
  * install, build and deploy all go green while the first generation fails.

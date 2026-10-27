@@ -35,8 +35,8 @@ barrel is how the Node half gets pulled into the Edge half by accident.
 - **`DUMMY_HASH` is not decoration.** Verification runs against it when no user
   row matches, so login costs the same time whether or not the email exists.
   Returning early on an unknown email restores an account-enumeration oracle.
-- **Rotating `AUTH_SESSION_SECRET` signs everyone out.** It is generated once by
-  `local:up` and then left alone.
+- **Rotating `AUTH_SESSION_SECRET` signs everyone out.** It is generated once,
+  on the Vercel project for every environment, and then left alone.
 
 ## Decided, not worth relitigating
 
