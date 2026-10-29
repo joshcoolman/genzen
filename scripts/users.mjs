@@ -12,7 +12,8 @@
 // `.env.local`; an explicit DATABASE_URL in the shell wins over that, which is
 // how a different database is reached on purpose.
 //
-// Every run names the host before doing anything, and every write asks first.
+// Every run names the host before doing anything, and every write asks first
+// (on `users:new`, typing the email and password is the asking).
 // The failure worth preventing is silent, not loud: this database is the real
 // one, and "add a test login" is a real account.
 
@@ -22,6 +23,28 @@ import postgres from 'postgres'
 import { hashPassword } from './hash-lib.mjs'
 
 const ENV_LOCAL_PATH = new URL('../.env.local', import.meta.url)
+
+// Like question(), but nothing typed is echoed: a password must not sit in the
+// terminal's scrollback.
+function questionHidden(prompt) {
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: true,
+  })
+  let muted = false
+  rl._writeToOutput = (s) => {
+    if (!muted) rl.output.write(s)
+  }
+  return new Promise((resolve) => {
+    rl.question(prompt, (answer) => {
+      rl.close()
+      process.stdout.write('\n')
+      resolve(answer)
+    })
+    muted = true
+  })
+}
 
 function question(prompt) {
   const rl = createInterface({ input: process.stdin, output: process.stdout })
@@ -58,6 +81,9 @@ function usage() {
   console.log(`${d}Usage:${r}`)
   console.log(`  ${c}pnpm users${r}                            list every user`)
   console.log(
+    `  ${c}pnpm users:new${r}                        asks for an email, then a hidden password`,
+  )
+  console.log(
     `  ${c}pnpm users add <email> <pass>${r}         create, or reset an existing password`,
   )
   console.log(
@@ -69,7 +95,9 @@ function usage() {
   console.log(
     `  ${d}Targets the project database from .env.local, or DATABASE_URL if exported; every run prints which host it hit.${r}`,
   )
-  console.log(`  ${d}Every write asks for confirmation first.${r}`)
+  console.log(
+    `  ${d}Every write asks first; on users:new, typing the details is the ask.${r}`,
+  )
   console.log(
     `  ${d}Passwords are 6+ chars. Deleting a user cascades to their images.${r}`,
   )
@@ -105,10 +133,20 @@ try {
     if (users.length === 0) console.log('No users.')
     for (const u of users) console.log(u.email)
   } else if (command === 'add') {
-    const [email, password] = args
+    // No arguments at a terminal: ask. Typing the details is the confirmation,
+    // so only a password reset asks again.
+    const interactive = args.length === 0 && process.stdin.isTTY
+    let [email, password] = args
+    if (interactive) {
+      console.log(`Creating a login on ${dbHost}.`)
+      email = (await question('Email: ')).trim()
+      password = await questionHidden('Password: ')
+    }
     if (!email?.includes('@') || !password || password.length < 6) {
       console.error(
-        "Usage: pnpm users add '<email>' '<password>'  (password min 6 chars)",
+        interactive
+          ? 'Needs an email with an @ and a password of 6+ chars.'
+          : "Usage: pnpm users add '<email>' '<password>'  (password min 6 chars)",
       )
       process.exit(1)
     }
@@ -117,7 +155,7 @@ try {
     const action = existing
       ? `Reset the password for ${email}`
       : `Create ${email}`
-    if (!(await confirmRemote(action))) {
+    if ((existing || !interactive) && !(await confirmRemote(action))) {
       console.log('Aborted.')
       process.exit(0)
     }
