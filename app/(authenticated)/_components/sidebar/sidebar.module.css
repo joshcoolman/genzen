@@ -74,7 +74,7 @@
 }
 
 .item:hover {
-  background: var(--bg);
+  background: var(--row-hover);
   color: var(--text);
 }
 
