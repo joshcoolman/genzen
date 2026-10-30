@@ -58,6 +58,7 @@ jobs:
       - run: pnpm check:colors
       - run: pnpm check:tokens
       - run: pnpm check:classes
+      - run: pnpm check:raw
       - run: pnpm typecheck
       - run: pnpm test
 

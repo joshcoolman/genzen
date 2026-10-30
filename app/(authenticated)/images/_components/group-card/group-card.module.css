@@ -63,7 +63,7 @@
   overflow: hidden;
   color: var(--text);
   font-size: var(--text-3xs);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   line-height: 1.5;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -188,7 +188,7 @@ button.swatches:hover .swatchEmpty {
   background: var(--scrim);
   color: var(--text);
   font-size: var(--text-2xs);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   text-align: center;
   pointer-events: none;
 }

@@ -70,7 +70,9 @@
 /* Lines up with the names above it rather than with their covers: it creates a
    group instead of choosing one, so it is not a row with a missing picture. */
 .newRow {
-  padding-left: calc(var(--space-12) + 2rem + var(--space-8));
+  padding-left: calc(
+    var(--space-12) + 2rem + var(--space-8)
+  ); /* raw: 2rem is the cover's width, not spacing */
 }
 
 /* Below the groups and quieter than them: it is the way out of the list, not

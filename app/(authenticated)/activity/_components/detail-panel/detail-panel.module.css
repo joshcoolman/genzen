@@ -190,7 +190,7 @@
 /* 28px of room for the copy button parked in the corner. Off the spacing
    scale on purpose -- two call sites in one file do not earn a --space-28. */
 .prompt {
-  padding-right: 1.75rem;
+  padding-right: 1.75rem; /* raw: clears the 1.75rem copy button, a size not a space */
   color: var(--text);
   font-size: var(--text-xs);
   line-height: var(--leading-relaxed);
@@ -200,7 +200,7 @@
 .errorText {
   max-height: 12rem;
   overflow: auto;
-  padding-right: 1.75rem;
+  padding-right: 1.75rem; /* raw: clears the 1.75rem copy button, a size not a space */
   color: var(--danger);
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
@@ -311,7 +311,7 @@
   background: color-mix(in oklab, var(--bg) 80%, transparent);
   color: var(--text-muted);
   /* 9px, one call site -- below the 3xs floor, so it stays a literal */
-  font-size: 0.5625rem;
+  font-size: var(--text-2xs);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
 }

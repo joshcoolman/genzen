@@ -22,10 +22,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  border-radius: 0.375rem;
+  gap: var(--space-8);
+  border-radius: var(--radius-lg);
   border: var(--border-width) solid transparent;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -50,12 +50,12 @@
 /* Sizes */
 
 .md {
-  padding: 0.5rem 1rem;
+  padding: var(--space-8) var(--space-16);
   font-size: var(--text-sm);
 }
 
 .sm {
-  padding: 0.375rem 0.75rem;
+  padding: var(--space-6) var(--space-12);
   font-size: var(--text-xs);
 }
 

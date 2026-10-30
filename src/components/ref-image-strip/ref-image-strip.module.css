@@ -84,7 +84,7 @@
 .image {
   width: 100%;
   height: 100%;
-  border-radius: 0.25rem;
+  border-radius: var(--radius-md);
   object-fit: cover;
 }
 
@@ -168,7 +168,7 @@
   width: 100%;
   height: var(--tile);
   border: 1px dashed color-mix(in oklab, var(--text-muted) 40%, transparent);
-  border-radius: 0.25rem;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-muted);
 }

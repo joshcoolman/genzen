@@ -36,7 +36,7 @@
 .thumb {
   width: 0.875rem;
   height: 0.875rem;
-  margin-left: 0.1875rem;
+  margin-left: 0.1875rem; /* raw: the thumb's offset inside the track, see above */
   border-radius: var(--radius-full);
   background: var(--text);
   transition: transform var(--duration-normal) var(--ease-in-out);
