@@ -15,7 +15,6 @@
   font-weight: var(--weight-medium);
   white-space: nowrap;
   cursor: pointer;
-  outline: none;
   transition: all var(--duration-normal) var(--ease-in-out);
 }
 
@@ -55,11 +54,6 @@
   background: var(--surface-raised);
   color: var(--text-muted);
   pointer-events: none;
-}
-
-.root:focus-visible {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 50%, transparent);
 }
 
 .spinner {

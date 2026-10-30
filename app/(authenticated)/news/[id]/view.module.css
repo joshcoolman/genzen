@@ -100,11 +100,6 @@
   color: var(--text);
 }
 
-.backBtn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 .backIcon {
   width: 1rem;
   height: 1rem;

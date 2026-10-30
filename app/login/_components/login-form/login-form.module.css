@@ -27,10 +27,11 @@
   color: var(--text-muted);
 }
 
-.input:focus {
+/* Input's treatment: a bordered box takes an accent border, not the global
+   ring, which would draw a second line around it. */
+.input:focus-visible {
   outline: none;
-  border-color: transparent;
-  box-shadow: 0 0 0 2px var(--accent);
+  border-color: var(--accent);
 }
 
 /* Room for the reveal toggle sitting on top of the field */
