@@ -11,7 +11,6 @@ import {
 import { outpaintModelId } from '#/features/ai-images/outpaint'
 import {
   ALL_RATIOS,
-  ActionButton,
   Button,
   CostNote,
   Dialog,
@@ -189,10 +188,11 @@ export function OutpaintDialog({
         <p className={styles.model}>{getModelName(modelId)}</p>
 
         <DialogFooter>
-          <Button variant="secondary" size="sm" onClick={onCancel}>
+          <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <ActionButton
+          <Button
+            variant="primary"
             loading={busy}
             loadingText="Sending"
             disabled={selected.length === 0}
@@ -201,7 +201,7 @@ export function OutpaintDialog({
             {selected.length > 1
               ? `Generate ${selected.length} images`
               : 'Generate'}
-          </ActionButton>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
