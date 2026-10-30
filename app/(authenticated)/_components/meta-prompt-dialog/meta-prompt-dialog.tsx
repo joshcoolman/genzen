@@ -6,7 +6,6 @@ import styles from './meta-prompt-dialog.module.css'
 import type { RefImage } from '#/features/ai-images/hooks/use-generator'
 import { writeMetaPrompts } from '#/features/ai-images/server/meta-prompt.action'
 import {
-  ActionButton,
   Button,
   Dialog,
   DialogContent,
@@ -148,14 +147,15 @@ export function MetaPromptButton({
             >
               Cancel
             </Button>
-            <ActionButton
+            <Button
+              variant="primary"
               onClick={() => void submit()}
               loading={loading}
               loadingText="Writing..."
               disabled={!request.trim()}
             >
               Write prompts
-            </ActionButton>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

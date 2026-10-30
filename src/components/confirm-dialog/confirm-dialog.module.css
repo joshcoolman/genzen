@@ -40,7 +40,7 @@
   padding: var(--space-20);
   background: var(--surface-raised);
   border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
 }
 
 .textCol {
@@ -50,16 +50,14 @@
 }
 
 /* Bootsy's `.house-eyebrow`, inlined. There it is a global typography class;
-   genzen has no global layer for it, so it lands here. Kept as their treatment
-   rather than translated into genzen's title style -- one less delta, and the
-   ported component should look like the ported component until a design pass
-   says otherwise. */
+   genzen has no global layer for it, so it lands here. It now reads genzen's
+   one eyebrow treatment (#789) rather than bootsy's sm / 0.08em. */
 .title {
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-2xs);
   font-weight: var(--weight-semibold);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
 }
 

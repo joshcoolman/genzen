@@ -7,7 +7,6 @@ import { RunCard } from '../_components/run-card/run-card'
 import { ENHANCE_TARGETS, useView } from './use-view'
 import styles from './view.module.css'
 import {
-  ActionButton,
   Button,
   DropdownMenu,
   DropdownMenuContent,
@@ -180,7 +179,8 @@ export function View() {
           </details>
 
           <div className={styles.actions}>
-            <ActionButton
+            <Button
+              variant="primary"
               onClick={() => void v.enhance()}
               loading={v.isRunning}
               loadingText="Enhancing"
@@ -189,7 +189,7 @@ export function View() {
               {!v.isMultiShot && v.modelCount > 1
                 ? `Enhance ${v.modelCount} ways`
                 : 'Enhance'}
-            </ActionButton>
+            </Button>
             {v.run && (
               <Button variant="ghost" onClick={v.clear}>
                 Clear

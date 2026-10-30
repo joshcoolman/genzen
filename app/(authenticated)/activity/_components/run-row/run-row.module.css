@@ -22,14 +22,18 @@
     border-color var(--duration-normal) var(--ease-in-out);
 }
 
+/* --row-hover laid over the row's own --surface, rather than replacing it: on
+   its own the wash over --bg comes out at the same lightness as --surface, and
+   the hover would vanish (#792). */
 .row:hover {
-  border-color: color-mix(in oklab, var(--text) 40%, transparent);
-  background: color-mix(in oklab, var(--surface) 80%, transparent);
+  border-color: var(--text-muted);
+  background-image: linear-gradient(var(--row-hover), var(--row-hover));
 }
 
+/* The global ring (base.css), drawn inside: an outside ring would be clipped by
+   the scrolling list. */
 .row:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--text) 40%, transparent);
+  outline-offset: -2px;
 }
 
 .rowDeleted {
@@ -69,9 +73,10 @@
   border-radius: var(--radius-md);
   background: var(--surface-raised);
   color: var(--text-muted);
-  font-size: var(--text-3xs);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
+  letter-spacing: var(--tracking-wider);
 }
 
 .cell {

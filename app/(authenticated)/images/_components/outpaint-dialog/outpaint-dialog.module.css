@@ -70,6 +70,7 @@
    competes with the icon inside it, which is the thing being chosen. */
 .tileOn {
   border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
   color: var(--accent);
 }
 

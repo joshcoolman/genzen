@@ -11,7 +11,6 @@ import {
 } from '#/features/ai-images/shots'
 import { SHOTS } from '#/lib/prompts/shots'
 import {
-  ActionButton,
   Button,
   CostNote,
   Dialog,
@@ -283,17 +282,18 @@ export function ShotsDialog({
         />
 
         <DialogFooter>
-          <Button variant="secondary" size="sm" onClick={onCancel}>
+          <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <ActionButton
+          <Button
+            variant="primary"
             disabled={total === 0}
             onClick={() =>
               onGenerate(pickedImages, pickedShots, modelId, instructions)
             }
           >
             {total > 1 ? `Generate ${total} images` : 'Generate'}
-          </ActionButton>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

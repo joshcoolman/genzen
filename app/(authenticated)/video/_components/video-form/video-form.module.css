@@ -35,8 +35,9 @@
    and neither does the second of two image strips. */
 .label {
   color: var(--text-muted);
-  font-size: var(--text-xs);
-  letter-spacing: var(--tracking-wide);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wider);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
 }
 

@@ -43,8 +43,8 @@
 
 /* The default when a caller sets `selected` and nothing else. */
 .rootSelected {
-  border-color: var(--text);
-  box-shadow: 0 0 0 1px var(--text);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .frame {

@@ -5,7 +5,7 @@ import { PromptList } from '../../../_components/prompt-list/prompt-list'
 import styles from './video-form.module.css'
 import type { ReactNode } from 'react'
 import {
-  ActionButton,
+  Button,
   ConfirmDialog,
   CostNote,
   SingleSelect,
@@ -201,16 +201,17 @@ export function VideoForm({
           the act; the price sits in the CostNote below, where it can carry the
           `~` and the spec without the control changing width as the duration
           changes (#416). */}
-      <ActionButton
-        icon={<Clapperboard size={16} />}
+      <Button
+        variant="primary"
         loading={isSubmitting}
         loadingText="Queueing"
         disabled={!canSubmit}
         onClick={() => void handleSubmit()}
         className={styles.generate}
       >
+        <Clapperboard size={16} />
         {pendingCount > 1 ? `Generate ${pendingCount} clips` : 'Generate video'}
-      </ActionButton>
+      </Button>
 
       <ConfirmDialog {...dialogProps} />
 

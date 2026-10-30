@@ -13,7 +13,7 @@
   pointer-events: none;
 }
 
-@media (width >= 640px) {
+@media (min-width: 40rem) {
   .preview {
     display: flex;
     right: 28rem;
@@ -48,7 +48,7 @@
   overflow: hidden;
 }
 
-@media (width >= 640px) {
+@media (min-width: 40rem) {
   .sheet {
     --sheet-max-width: 28rem;
   }
@@ -131,9 +131,10 @@
   border-radius: var(--radius-md);
   background: var(--surface-raised);
   color: var(--text-muted);
-  font-size: var(--text-3xs);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
+  letter-spacing: var(--tracking-wider);
 }
 
 .body {
@@ -170,7 +171,7 @@
 
 .sectionTitle {
   color: var(--text-muted);
-  font-size: var(--text-3xs);
+  font-size: var(--text-2xs);
   font-weight: var(--weight-semibold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
@@ -222,8 +223,10 @@
     border-color var(--duration-normal) var(--ease-in-out);
 }
 
+/* --row-hover, not --surface-raised: this sits in a panel on --surface, where a
+   --surface-raised hover is a 1.2% step (tokens.css). */
 .copy:hover {
-  background: color-mix(in oklab, var(--surface-raised) 60%, transparent);
+  background: var(--row-hover);
   color: var(--text);
 }
 
@@ -312,8 +315,9 @@
   color: var(--text-muted);
   /* 9px, one call site -- below the 3xs floor, so it stays a literal */
   font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
+  letter-spacing: var(--tracking-wider);
 }
 
 .json {

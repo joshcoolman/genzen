@@ -133,6 +133,7 @@
    hardest to read. */
 .itemOn {
   border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .itemIcon {
@@ -173,9 +174,11 @@
 
 .head {
   padding-block: var(--space-4);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
-  color: color-mix(in oklab, var(--text-muted) 60%, transparent);
+  color: var(--text-muted);
 }
 
 .head .itemName {

@@ -120,7 +120,9 @@
   margin: 0;
 }
 
-@media (max-width: 767px) {
+/* Below md. `not all and` keeps md one spelling (#790) without restating the
+   desktop values as overrides. */
+@media not all and (min-width: 48rem) {
   .playerError {
     position: absolute;
     inset-inline: var(--space-16);

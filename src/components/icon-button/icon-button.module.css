@@ -3,8 +3,6 @@
    it as shadcn's `variant="outline" size="icon"`, identically. */
 .root {
   display: inline-flex;
-  width: 2.25rem;
-  height: 2.25rem;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -27,9 +25,20 @@
   cursor: not-allowed;
 }
 
-.root:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+/* Button's heights (#791), square. */
+.lg {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.md {
+  width: 2rem;
+  height: 2rem;
+}
+
+.sm {
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
 /* Sized here, unlike Button, which leaves child SVGs to the call site. There is

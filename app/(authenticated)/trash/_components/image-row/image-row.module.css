@@ -17,12 +17,12 @@
 }
 
 .row:hover {
-  background: color-mix(in oklab, var(--surface-raised) 20%, transparent);
+  background: var(--row-hover);
 }
 
 .rowSelected {
   composes: row;
-  background: var(--field-hover);
+  background: var(--accent-soft);
 }
 
 .checkOn,

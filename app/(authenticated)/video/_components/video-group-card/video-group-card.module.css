@@ -28,8 +28,9 @@
   cursor: pointer;
 }
 
+/* The global ring (base.css), drawn inside: an outside ring would be clipped by
+   the card's overflow: hidden. */
 .stage:focus-visible {
-  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
@@ -168,11 +169,6 @@
 button.swatches:hover .swatch,
 button.swatches:hover .swatchEmpty {
   opacity: 0.82;
-}
-
-button.swatches:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 /* **Square, which is the image group card's row unchanged.** These are a count

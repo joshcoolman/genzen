@@ -1,4 +1,3 @@
-export { ActionButton } from './action-button/action-button'
 export { AspectRatioSelect } from './aspect-ratio-select/aspect-ratio-select'
 export {
   ALL_RATIOS,

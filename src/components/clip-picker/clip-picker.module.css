@@ -44,7 +44,9 @@
 }
 
 /* Solid brand border on the chosen tile -- the same answer the image picker
-   gives, so the two dialogs do not disagree about what "selected" looks like. */
+   gives, so the two dialogs do not disagree about what "selected" looks like.
+   The tile's 2px border already draws what border plus 1px ring draws on the
+   others (#793). */
 .tileSelected {
   border-color: var(--accent);
 }

@@ -50,11 +50,6 @@
   border-color: var(--text-muted);
 }
 
-.card:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
 /* Holds the card and its menu as siblings -- see CardMenu on why the menu is
    not inside the link. It is the grid cell, so it carries the alignment. */
 .cardWrap {
@@ -94,11 +89,6 @@
 
 .menuBtn:hover {
   color: var(--text);
-}
-
-.menuBtn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 .menuIcon {

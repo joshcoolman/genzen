@@ -191,13 +191,13 @@
      RADII
      ======================================== */
 
+  /* By role, not by taste (#795):
+       lg    card, panel, dialog, toast, overlay, empty state
+       md    control, menu, popover
+       sm    badge or tag inside a tile;  full  pill */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
   --radius-full: 9999px;
 
   /* ========================================
@@ -243,8 +243,6 @@
   --text-2xl-leading: calc(2 / 1.5);
   --text-3xl: 1.875rem;
   --text-3xl-leading: calc(2.25 / 1.875);
-  --text-4xl: 2.25rem;
-  --text-4xl-leading: calc(2.5 / 2.25);
 
   /* Only the three the repo actually uses, on the uppercase micro-labels that
      head a stat or a panel section. Tailwind's values verbatim. */
@@ -298,15 +296,17 @@
   /* ========================================
      BREAKPOINTS
      Reference only. A custom property cannot be used in a media query, so
-     modules state the px directly -- these exist so everyone states the same
-     px. `xs` is genzen's own; the rest are Tailwind's, kept because the
-     modules were converted from them.
+     modules state the value directly -- these exist so everyone states the
+     same one. `xs` is genzen's own; the rest are Tailwind's, kept because the
+     modules were converted from them. The px values below are what
+     src/lib/use-is-mobile.ts reads.
 
-       xs 400  sm 640  md 768  lg 1024  xl 1280  2xl 1536
+       xs 400px  sm 40rem  md 48rem  lg 64rem  xl 80rem  2xl 96rem
 
-     Write them as `min-width` in px. Two modules currently say `48rem` and one
-     says `width >= 768px` for the same md breakpoint -- same result, three
-     spellings; fold them in when you next touch those files.
+     Write them as `min-width` in rem (#790), e.g. `(min-width: 48rem)`. For
+     the branch below a breakpoint, write `not all and (min-width: 48rem)`
+     rather than a `max-width` one pixel short. xs stays in px: it is the
+     Images toolbar's own, with a JS twin.
      ======================================== */
 
   --breakpoint-xs: 400px;

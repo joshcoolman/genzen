@@ -3,13 +3,8 @@
 import { ArrowLeft, Plus, X } from 'lucide-react'
 import styles from './mobile-composer.module.css'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import {
-  ActionButton,
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  Textarea,
-} from '#/components'
+import type { ButtonProps } from '#/components'
+import { Button, Sheet, SheetContent, SheetTitle, Textarea } from '#/components'
 import { cx } from '#/lib/utils'
 
 /**
@@ -217,14 +212,14 @@ export function PrimaryAction({
   cost,
   children,
   ...props
-}: Omit<Parameters<typeof ActionButton>[0], 'className'> & {
+}: Omit<ButtonProps, 'className' | 'variant'> & {
   cost?: string | null
 }) {
   return (
-    <ActionButton {...props} className={styles.primary}>
+    <Button variant="primary" {...props} className={styles.primary}>
       {children}
       {cost && <span className={styles.cost}>{cost}</span>}
-    </ActionButton>
+    </Button>
   )
 }
 
@@ -232,9 +227,9 @@ export function PrimaryAction({
 export function DoneFooter({ onClick }: { onClick: () => void }) {
   return (
     <div className={styles.footer}>
-      <ActionButton onClick={onClick} className={styles.primary}>
+      <Button variant="primary" onClick={onClick} className={styles.primary}>
         Done
-      </ActionButton>
+      </Button>
     </div>
   )
 }
