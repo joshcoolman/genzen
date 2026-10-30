@@ -21,7 +21,7 @@ export function PostView({ post }: { post: NewsPost }) {
     <div className={styles.page}>
       {/* Not PageHeader: that pins its aside to the far edge of the content
           area, and the way out belongs beside the title it leaves -- the same
-          shape as GroupHeading and BoardHeading, chevron first. */}
+          shape as SubpageHeader and BoardHeading, chevron first. */}
       <div className={styles.heading}>
         <Link href="/news" className={styles.backBtn} aria-label="Back to News">
           <ChevronLeft className={styles.backIcon} />

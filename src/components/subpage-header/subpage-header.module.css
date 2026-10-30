@@ -1,0 +1,61 @@
+.root {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-width: 0;
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+/* Round, where every other control is square or a chip -- see the component. */
+.back {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.back:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.backIcon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* lg, never PageHeader's 2xl: a subpage does not outweigh its route. */
+.title {
+  min-width: 0;
+  padding-block: var(--space-8);
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--text-lg);
+  line-height: var(--text-lg-leading);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.error {
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
+/* Tabs, when there are any: the end of the same line, down to the hairline. */
+.end {
+  display: flex;
+  align-self: stretch;
+  align-items: stretch;
+  margin-left: auto;
+}

@@ -31,3 +31,8 @@
     top: var(--space-16);
   }
 }
+
+/* SubpageHeader leaves the space below it to the route. */
+.heading {
+  margin-bottom: var(--space-20);
+}
