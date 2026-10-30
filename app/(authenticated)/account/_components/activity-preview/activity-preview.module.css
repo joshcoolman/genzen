@@ -39,7 +39,7 @@
   height: var(--space-12);
 }
 
-.empty {
+.loading {
   padding: var(--space-24);
   color: var(--text-muted);
   font-size: var(--text-sm);

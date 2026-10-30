@@ -20,6 +20,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  EmptyState,
   ImageGrid,
   Sheet,
   SheetContent,
@@ -421,7 +422,15 @@ export function ExistingImagePicker({
       {isLoading ? (
         <div className={styles.state}>Loading images...</div>
       ) : filteredImages.length === 0 ? (
-        <div className={styles.state}>No images found</div>
+        images.length === 0 ? (
+          <EmptyState title="No images yet">
+            Upload one, or generate one in Images, and it can be picked here.
+          </EmptyState>
+        ) : (
+          <EmptyState title="Nothing matches these filters">
+            Pick another source or group.
+          </EmptyState>
+        )
       ) : (
         <>
           {alreadyCollectedImages.length > 0 && (

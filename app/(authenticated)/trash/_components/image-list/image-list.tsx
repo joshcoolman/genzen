@@ -1,10 +1,8 @@
 'use client'
 
-import { Trash2 } from 'lucide-react'
 import { ImageRow } from '../image-row/image-row'
-import styles from './image-list.module.css'
 import type { UserImage } from '#/features/user-images/types'
-import { ImageGrid } from '#/components'
+import { EmptyState, ImageGrid } from '#/components'
 
 interface ImageListProps {
   images: Array<UserImage>
@@ -29,10 +27,9 @@ export function ImageList({
 }: ImageListProps) {
   if (images.length === 0) {
     return (
-      <div className={styles.empty}>
-        <Trash2 className={styles.emptyIcon} />
-        <p>Trash is empty</p>
-      </div>
+      <EmptyState title="No deleted images yet">
+        Images you delete land here, where you can restore them.
+      </EmptyState>
     )
   }
 

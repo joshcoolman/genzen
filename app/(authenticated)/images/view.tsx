@@ -1,6 +1,5 @@
 'use client'
 
-import { GroupHeading } from '../_components/group-heading/group-heading'
 import { GroupPickerDialog } from '../_components/group-picker-dialog/group-picker-dialog'
 import { HiddenBar } from '../_components/hidden-bar/hidden-bar'
 import { useSelectionPanelFits } from '../_components/selection-panel/selection-panel'
@@ -21,6 +20,7 @@ import {
   ConfirmDialog,
   ImageViewer,
   NameDialog,
+  SubpageHeader,
   ZipDownloadDialog,
 } from '#/components'
 import { countedBaseName } from '#/lib/download-name'
@@ -192,8 +192,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
             (#444), and the heading takes this row's place. */}
         {activeGroup ? (
           <>
-            <GroupHeading
-              name={activeGroup.name}
+            <SubpageHeader
+              title={activeGroup.name}
               backLabel="Images"
               onBack={leaveGroup}
             />

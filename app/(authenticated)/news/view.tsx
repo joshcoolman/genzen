@@ -14,6 +14,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  EmptyState,
   Input,
   PageHeader,
   Stack,
@@ -194,9 +195,9 @@ export function View({ initial }: { initial: Array<NewsPost> }) {
       </div>
 
       {posts.length === 0 ? (
-        <p className={styles.empty}>
+        <EmptyState title="No news yet">
           Press Get news to fetch the latest in image and video generation.
-        </p>
+        </EmptyState>
       ) : (
         <div className={styles.feed}>
           {posts.map((post) => (

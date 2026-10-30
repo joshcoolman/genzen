@@ -26,13 +26,6 @@
   color: var(--danger);
 }
 
-.empty {
-  padding: var(--space-48) 0;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-}
-
 /* Card: same shell as video-thumb / video-group-card */
 .card {
   display: flex;
