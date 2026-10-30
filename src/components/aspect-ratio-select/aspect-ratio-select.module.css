@@ -87,7 +87,7 @@
 }
 
 .optionSelected {
-  background: var(--surface-raised);
+  background: var(--accent-soft);
 }
 
 .optionLabel {

@@ -28,6 +28,9 @@
   color: var(--text);
 }
 
+/* The one deliberate exception to "a pill that is on is an accent border, no
+   fill" (#793): these pills sit inside one bordered group, where a second
+   accent border would read as a focus ring. Inverting is what says which. */
 .pillActive {
   background: var(--text);
   color: var(--bg);

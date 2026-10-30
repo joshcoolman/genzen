@@ -156,6 +156,7 @@
    handles the hover half via `pickable`. */
 .thumbSelected {
   border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 /* ---- the phone's sheet (#753) ----

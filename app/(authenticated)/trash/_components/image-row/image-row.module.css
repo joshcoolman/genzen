@@ -22,7 +22,7 @@
 
 .rowSelected {
   composes: row;
-  background: var(--field-hover);
+  background: var(--accent-soft);
 }
 
 .checkOn,
