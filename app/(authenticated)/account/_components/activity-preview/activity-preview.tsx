@@ -7,7 +7,7 @@ import { clsx } from 'clsx'
 import styles from './activity-preview.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
 import { listActivity } from '#/features/activity/server/list-activity.action'
-import { firstFrameSrc } from '#/components'
+import { EmptyState, firstFrameSrc } from '#/components'
 import { formatCents } from '#/lib/format'
 import { imageUrl } from '#/lib/image-url'
 import { formatDurationMs, formatRelativeOrDate } from '#/lib/time-format'
@@ -50,9 +50,11 @@ export function ActivityPreview() {
       </div>
 
       {isLoading && entries.length === 0 ? (
-        <div className={styles.empty}>Loading…</div>
+        <div className={styles.loading}>Loading…</div>
       ) : entries.length === 0 ? (
-        <div className={styles.empty}>Nothing to show yet.</div>
+        <EmptyState title="No runs yet">
+          Every generation lands here as it finishes, failures included.
+        </EmptyState>
       ) : (
         <ul className={styles.list}>
           {entries.map((entry) => {

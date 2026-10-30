@@ -1,6 +1,7 @@
 import { RunRow } from '../run-row/run-row'
 import styles from './run-table.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
+import { EmptyState } from '#/components'
 import { imageUrl } from '#/lib/image-url'
 
 interface RunTableProps {
@@ -31,11 +32,16 @@ export function RunTable({
       {isLoading && entries.length === 0 ? (
         <div className={styles.placeholder}>Loading activity…</div>
       ) : entries.length === 0 ? (
-        <div className={styles.placeholder}>
-          {hasActiveFilters
-            ? 'Nothing matches the current filters.'
-            : 'Nothing to show yet.'}
-        </div>
+        hasActiveFilters ? (
+          <EmptyState title="Nothing matches these filters">
+            Clear a filter to see more runs.
+          </EmptyState>
+        ) : (
+          <EmptyState title="No runs yet">
+            Every generation lands here with its cost and time, failures
+            included.
+          </EmptyState>
+        )
       ) : (
         <div className={styles.rows}>
           {entries.map((entry) => (
