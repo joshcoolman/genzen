@@ -35,11 +35,12 @@
   gap: var(--space-8);
 }
 
+/* Loading only; empty is EmptyState (#796). Drawn as EmptyState's box so the
+   panel does not change shape when the first page answers empty. */
 .placeholder {
-  padding: var(--space-40) var(--space-16);
+  padding: var(--space-48);
   border: 1px dashed var(--border);
-  border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--surface) 40%, transparent);
+  border-radius: var(--radius-lg);
   color: var(--text-muted);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
