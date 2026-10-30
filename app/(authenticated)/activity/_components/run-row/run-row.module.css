@@ -22,9 +22,12 @@
     border-color var(--duration-normal) var(--ease-in-out);
 }
 
+/* --row-hover laid over the row's own --surface, rather than replacing it: on
+   its own the wash over --bg comes out at the same lightness as --surface, and
+   the hover would vanish (#792). */
 .row:hover {
-  border-color: color-mix(in oklab, var(--text) 40%, transparent);
-  background: color-mix(in oklab, var(--surface) 80%, transparent);
+  border-color: var(--text-muted);
+  background-image: linear-gradient(var(--row-hover), var(--row-hover));
 }
 
 .row:focus-visible {

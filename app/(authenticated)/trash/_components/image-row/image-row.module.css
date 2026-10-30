@@ -17,7 +17,7 @@
 }
 
 .row:hover {
-  background: color-mix(in oklab, var(--surface-raised) 20%, transparent);
+  background: var(--row-hover);
 }
 
 .rowSelected {

@@ -139,7 +139,7 @@
 }
 
 .newGroup:hover {
-  background: var(--field-hover);
+  background: var(--surface-raised);
   color: var(--text);
 }
 

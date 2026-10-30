@@ -35,7 +35,7 @@
 }
 
 .upload:hover:not(:disabled) {
-  background: color-mix(in oklab, var(--surface-raised) 80%, transparent);
+  background: var(--field-hover);
 }
 
 .upload:disabled {
@@ -64,7 +64,7 @@
 }
 
 .filter:hover {
-  background: color-mix(in oklab, var(--surface-raised) 80%, transparent);
+  background: var(--field-hover);
 }
 
 /* The chosen filter, on the brand: this one *is* the current state of the grid

@@ -35,7 +35,7 @@
 
 .row:hover,
 .newRow:hover {
-  background: var(--surface-raised);
+  background: var(--row-hover);
 }
 
 /* The group's cover, at the row's height. Square and cropped, unlike the card
