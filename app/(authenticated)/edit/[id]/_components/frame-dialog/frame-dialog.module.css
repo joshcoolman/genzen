@@ -34,9 +34,10 @@
 
 .label {
   color: var(--text-muted);
-  font-size: var(--text-3xs);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-wider);
 }
 
 .pills {

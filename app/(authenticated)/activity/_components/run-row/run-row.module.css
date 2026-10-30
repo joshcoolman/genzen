@@ -27,9 +27,10 @@
   background: color-mix(in oklab, var(--surface) 80%, transparent);
 }
 
+/* The global ring (base.css), drawn inside: an outside ring would be clipped by
+   the scrolling list. */
 .row:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--text) 40%, transparent);
+  outline-offset: -2px;
 }
 
 .rowDeleted {
@@ -69,9 +70,10 @@
   border-radius: var(--radius-md);
   background: var(--surface-raised);
   color: var(--text-muted);
-  font-size: var(--text-3xs);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
+  letter-spacing: var(--tracking-wider);
 }
 
 .cell {

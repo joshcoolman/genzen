@@ -25,11 +25,6 @@
   cursor: not-allowed;
 }
 
-.root:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 /* Button's heights (#791), square. */
 .lg {
   width: 2.25rem;
