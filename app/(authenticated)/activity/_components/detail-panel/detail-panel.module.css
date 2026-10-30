@@ -131,9 +131,10 @@
   border-radius: var(--radius-md);
   background: var(--surface-raised);
   color: var(--text-muted);
-  font-size: var(--text-3xs);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
+  letter-spacing: var(--tracking-wider);
 }
 
 .body {
@@ -170,7 +171,7 @@
 
 .sectionTitle {
   color: var(--text-muted);
-  font-size: var(--text-3xs);
+  font-size: var(--text-2xs);
   font-weight: var(--weight-semibold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
@@ -311,9 +312,10 @@
   background: color-mix(in oklab, var(--bg) 80%, transparent);
   color: var(--text-muted);
   /* 9px, one call site -- below the 3xs floor, so it stays a literal */
-  font-size: 0.5625rem;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
+  letter-spacing: var(--tracking-wider);
 }
 
 .json {
