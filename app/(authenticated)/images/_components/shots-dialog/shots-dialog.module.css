@@ -182,7 +182,7 @@
   right: var(--space-4);
   width: 1rem;
   height: 1rem;
-  padding: 0.0625rem;
+  padding: 0.0625rem; /* raw: a 1px inset for the tick, below the scale */
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--accent);

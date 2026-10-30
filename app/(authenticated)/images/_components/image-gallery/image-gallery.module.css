@@ -85,7 +85,7 @@
   background: var(--accent);
   color: var(--accent-contrast);
   font-size: var(--text-3xs);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   line-height: var(--space-20);
   text-align: center;
 }

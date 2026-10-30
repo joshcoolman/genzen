@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "format": "prettier --check .",
-    "check": "prettier --write . && eslint --fix && node scripts/check-raw-colors.mjs && node scripts/check-undeclared-tokens.mjs && node scripts/check-module-classes.mjs",
+    "check": "prettier --write . && eslint --fix && node scripts/check-raw-colors.mjs && node scripts/check-undeclared-tokens.mjs && node scripts/check-module-classes.mjs && node scripts/check-raw-values.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "users": "node scripts/users.mjs",
     "users:new": "node scripts/users.mjs add",
@@ -24,6 +24,7 @@
     "check:colors": "node scripts/check-raw-colors.mjs",
     "check:tokens": "node scripts/check-undeclared-tokens.mjs",
     "check:classes": "node scripts/check-module-classes.mjs",
+    "check:raw": "node scripts/check-raw-values.mjs",
     "rive:build": "cd rive/news-progress && python3 gen.py > scene.rml && rive . --verify && rive . --once && cp build/news-progress.riv ../../public/rive/news-progress.riv"
   },
   "dependencies": {

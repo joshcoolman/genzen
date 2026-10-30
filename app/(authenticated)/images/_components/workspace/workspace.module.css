@@ -12,7 +12,7 @@
 }
 
 .pushed {
-  margin-right: 20rem;
+  margin-right: 20rem; /* raw: the panel's own width, see above */
 }
 
 .body > :where(*:not(:last-child)) {

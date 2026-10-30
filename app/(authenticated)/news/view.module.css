@@ -8,12 +8,12 @@
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-12);
 }
 
 .guidanceBox {
   display: flex;
-  gap: 8px;
+  gap: var(--space-8);
   align-items: center;
 }
 
@@ -145,7 +145,7 @@
   backdrop-filter: blur(8px);
   color: var(--text);
   font-size: var(--text-xs);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   pointer-events: none;
 }
 

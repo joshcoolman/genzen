@@ -74,7 +74,7 @@
   bottom: var(--space-8);
   z-index: 3;
   width: 2px;
-  margin-left: -1px;
+  margin-left: -1px; /* raw: centres the 2px playhead on its x */
   background: var(--accent);
   pointer-events: none;
 }
@@ -107,7 +107,7 @@
 .tile + .tile,
 .tile + .slot,
 .slot + .tile {
-  margin-left: 2px;
+  margin-left: 2px; /* raw: a hairline seam between tiles, below the scale */
 }
 
 .tile:active {
@@ -252,7 +252,7 @@
   width: 2px;
   height: 16px;
   transform: translate(-50%, -50%);
-  border-radius: 1px;
+  border-radius: 1px; /* raw: rounds a 2px grip, below the scale */
   background: var(--text-muted);
 }
 
