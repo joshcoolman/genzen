@@ -6,7 +6,7 @@ import styles from './button.module.css'
 import type { ReactNode } from 'react'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
-export type ButtonSize = 'sm' | 'md'
+export type ButtonSize = 'sm' | 'md' | 'lg'
 
 export interface ButtonProps extends Omit<
   BaseButton.Props,
@@ -16,13 +16,22 @@ export interface ButtonProps extends Omit<
   children?: ReactNode
   /** @default 'secondary' */
   variant?: ButtonVariant
-  /** @default 'md' */
+  /**
+   * lg / md / sm are 36 / 32 / 28px -- with MiniButton's 20, the app's only
+   * control heights (#791). lg is the dialog footer and the primary CTA.
+   * @default 'lg'
+   */
   size?: ButtonSize
   /**
    * Shows a spinner and blocks interaction. Prefer this over disabling by hand:
    * it also sets `aria-busy`, which a plain `disabled` does not.
    */
   loading?: boolean
+  /**
+   * What the button says while `loading`, in place of its children. Omit to
+   * keep the label beside the spinner; pass `""` for the spinner alone.
+   */
+  loadingText?: ReactNode
   /** Escape hatch for layout only (width, margin) — not for restyling a variant. */
   className?: string
 }
@@ -30,7 +39,9 @@ export interface ButtonProps extends Omit<
 /**
  * Ported from `~/repos/bootsy`, which got here first. Four variants covering
  * the treatments that had already converged there by copy-paste, one canonical
- * disabled state, and a real loading affordance.
+ * disabled state, and a real loading affordance. It absorbed ActionButton,
+ * which drew the same 36px primary a second time (#791): that is
+ * `variant="primary"` with `loading` and `loadingText`.
  *
  * Base UI's Button is thin, but supplies the parts worth not hand-rolling:
  * `data-disabled` to style against, `focusableWhenDisabled` semantics, and
@@ -49,8 +60,9 @@ export interface ButtonProps extends Omit<
 export function Button({
   children,
   variant = 'secondary',
-  size = 'md',
+  size = 'lg',
   loading = false,
+  loadingText,
   disabled,
   className,
   type = 'button',
@@ -68,7 +80,7 @@ export function Button({
       className={`${styles.root} ${styles[variant]} ${styles[size]} ${className ?? ''}`}
     >
       {loading && <Loader2 className={styles.spinner} aria-hidden />}
-      {children}
+      {loading && loadingText !== undefined ? loadingText : children}
     </BaseButton>
   )
 }

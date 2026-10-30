@@ -8,7 +8,6 @@ import { generationInputIds } from '#/features/ai-images/generation-inputs'
 import { imageUrl as referenceUrl } from '#/lib/image-url'
 import { displayPrompt } from '#/features/ai-images/display-prompt'
 import {
-  ActionButton,
   Button,
   Dialog,
   DialogContent,
@@ -235,7 +234,8 @@ function Description({
         {hasDescription && (
           <CopyTextButton key={text} text={text} label="Copy description" />
         )}
-        <ActionButton
+        <Button
+          variant="primary"
           type="button"
           loading={busy}
           loadingText="Generating"
@@ -243,7 +243,7 @@ function Description({
           onClick={() => onGenerate(image)}
         >
           {hasDescription ? 'Regenerate description' : 'Generate description'}
-        </ActionButton>
+        </Button>
       </DialogFooter>
     </div>
   )

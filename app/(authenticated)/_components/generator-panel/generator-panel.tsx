@@ -16,8 +16,8 @@ import { REF_ROLES, isReadRole } from '#/features/ai-images/ref-roles'
 import { populateStoryboard } from '#/features/ai-images/server/populate-storyboard.action'
 import { systemInstructionsPrefix } from '#/features/ai-images/system-instructions'
 import {
-  ActionButton,
   AspectRatioSelect,
+  Button,
   ConfirmDialog,
   CostNote,
   ExpandableText,
@@ -324,16 +324,18 @@ export function GeneratorPanel({
           disabled={generator.loading}
         />
         {canPopulate && (
-          <ActionButton
+          <Button
+            variant="primary"
             onClick={() => void handlePopulate()}
             loading={populating}
             loadingText=""
             className={styles.generate}
           >
             Populate
-          </ActionButton>
+          </Button>
         )}
-        <ActionButton
+        <Button
+          variant="primary"
           onClick={() => void generate()}
           loading={generator.loading}
           /* Spinner only. There is no room beside it for a word at this width,
@@ -345,7 +347,7 @@ export function GeneratorPanel({
           {generator.totalImages > 1
             ? `Generate ${generator.totalImages}`
             : 'Generate'}
-        </ActionButton>
+        </Button>
       </div>
 
       {/* Images had no cost figure at all until #416 -- on the one route where

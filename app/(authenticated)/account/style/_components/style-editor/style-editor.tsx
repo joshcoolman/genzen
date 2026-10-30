@@ -5,7 +5,7 @@ import { SwatchList } from '../swatch-list/swatch-list'
 import { ThemePreview } from '../theme-preview/theme-preview'
 import styles from './style-editor.module.css'
 import type { useView } from '../../use-view'
-import { ActionButton } from '#/components'
+import { Button } from '#/components'
 
 /* The editor's whole layout, so `view.tsx` stays a composition and carries no
  * styles of its own -- the rule `docs/reference/route-shape.md` records. */
@@ -37,18 +37,23 @@ export function StyleEditor({
         )}
 
         <div className={styles.actions}>
-          <ActionButton type="submit" loading={saving} loadingText="Saving">
+          <Button
+            variant="primary"
+            type="submit"
+            loading={saving}
+            loadingText="Saving"
+          >
             Save
-          </ActionButton>
-          <ActionButton
+          </Button>
+          <Button
             type="button"
-            variant="outline"
-            icon={<RotateCcw size={14} />}
+            variant="secondary"
             disabled={busy}
             onClick={restoreDefaults}
           >
+            <RotateCcw size={14} />
             Restore defaults
-          </ActionButton>
+          </Button>
         </div>
       </form>
 
