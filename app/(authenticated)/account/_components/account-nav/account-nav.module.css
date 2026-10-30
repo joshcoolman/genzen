@@ -36,7 +36,7 @@
 }
 
 .linkActive {
-  background: var(--surface);
+  background: var(--accent-soft);
   color: var(--text);
   font-weight: var(--weight-medium);
 }

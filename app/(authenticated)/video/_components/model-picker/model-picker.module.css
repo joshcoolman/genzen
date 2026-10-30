@@ -39,6 +39,7 @@
 }
 .selected {
   border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
   > svg {
     color: var(--accent);
   }
