@@ -18,7 +18,7 @@
   gap: var(--space-12);
   padding: var(--space-20);
   border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: var(--shadow-overlay);
   transition:

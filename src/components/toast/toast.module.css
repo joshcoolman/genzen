@@ -29,7 +29,7 @@
   background: var(--surface-raised);
   color: var(--text);
   border: var(--border-width) solid var(--toast-accent, var(--border));
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-overlay);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
