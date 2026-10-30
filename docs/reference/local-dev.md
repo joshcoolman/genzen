@@ -82,7 +82,6 @@ deployment picks it up on its next deploy (`vercel redeploy`).
 | `pnpm activity:inspect` | Load a pasted Activity URL's stored data and media, no browser needed                     |
 | `pnpm context:find`     | Find uploads/generations by recency, local date or text                                   |
 | `pnpm context:inspect`  | Load a generation's stored data and media by URL or id                                    |
-| `pnpm rive:build`       | Rebuild the News progress animation from `rive/news-progress/`                            |
 
 ## Stack
 

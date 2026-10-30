@@ -100,7 +100,6 @@ live with the one route that renders them:
 | Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                                                                        |
 | Lab        | `app/(authenticated)/lab/` (has its CLAUDE.md) — one step of the work per page, judged before it earns a place in the panel              |
 | Activity   | `app/(authenticated)/activity/` — the route; the log itself is a feature                                                                 |
-| News       | `app/(authenticated)/news/` — illustrated feed of image/video generation news; post detail at `news/[id]/`                               |
 | Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                                                                         |
 | Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — the route; the lineup is a feature                                                    |
 | Director   | `app/(authenticated)/director/` — named sessions, each a run of library clips watched back to back                                       |
@@ -318,7 +317,6 @@ it is safe.
   thing that put an id there was the Cmd-F overlay, and both went in #348. If
   copy-here-paste-there returns, put the id on the clipboard, not the bytes --
   see #347
-- **Effect runs News and nothing else** (#721). `eslint-rules/effect-allowlist.js` fails an `effect` import outside `src/lib/effect/` and `app/(authenticated)/news/`, so the second surface is a deliberate one-line widening rather than an import. The error family, the Layers, the retry policy and the `{ ok, value } | { ok, error }` action boundary are `docs/reference/effect.md`. It is v4 (`4.0.0-rc.*`), whose own docs ship at `node_modules/effect/ai-docs/` -- everything on the web is v3
 - **Canvas replaces hotkeys-js's default text-field exemption** with a check on
   its own dialogs, so a floating thing that takes typing over the canvas has to
   suppress the route's hotkeys itself. `keyboard-capture.ts` was the ambient
