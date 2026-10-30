@@ -298,15 +298,17 @@
   /* ========================================
      BREAKPOINTS
      Reference only. A custom property cannot be used in a media query, so
-     modules state the px directly -- these exist so everyone states the same
-     px. `xs` is genzen's own; the rest are Tailwind's, kept because the
-     modules were converted from them.
+     modules state the value directly -- these exist so everyone states the
+     same one. `xs` is genzen's own; the rest are Tailwind's, kept because the
+     modules were converted from them. The px values below are what
+     src/lib/use-is-mobile.ts reads.
 
-       xs 400  sm 640  md 768  lg 1024  xl 1280  2xl 1536
+       xs 400px  sm 40rem  md 48rem  lg 64rem  xl 80rem  2xl 96rem
 
-     Write them as `min-width` in px. Two modules currently say `48rem` and one
-     says `width >= 768px` for the same md breakpoint -- same result, three
-     spellings; fold them in when you next touch those files.
+     Write them as `min-width` in rem (#790), e.g. `(min-width: 48rem)`. For
+     the branch below a breakpoint, write `not all and (min-width: 48rem)`
+     rather than a `max-width` one pixel short. xs stays in px: it is the
+     Images toolbar's own, with a JS twin.
      ======================================== */
 
   --breakpoint-xs: 400px;

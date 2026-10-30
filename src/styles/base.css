@@ -191,7 +191,7 @@ hr {
 
 /* Prevent iOS Safari auto-zoom on input focus. src/styles.css carries a live
    copy of this rule until #186; delete that one, not this one. */
-@media screen and (max-width: 767px) {
+@media not all and (min-width: 48rem) {
   input,
   textarea,
   select {

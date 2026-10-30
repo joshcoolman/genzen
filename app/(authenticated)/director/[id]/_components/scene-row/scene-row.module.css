@@ -137,7 +137,8 @@
   color: var(--text-muted);
 }
 
-@media (max-width: 48rem) {
+/* Below md; see video-player-dialog on the `not all and` form (#790). */
+@media not all and (min-width: 48rem) {
   .scene {
     grid-template-columns: 1fr;
     gap: var(--space-12);
