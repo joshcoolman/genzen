@@ -681,7 +681,8 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   this route's `_actions/` until Video became a second consumer (#517), and
   `kind` now keeps the two namespaces disjoint, so nothing on this route can
   see or join a group of clips. `GroupHeading` and `GroupPickerDialog` moved to
-  `app/(authenticated)/_components/` in the same change; `GroupCard` did not,
+  `app/(authenticated)/_components/` in the same change (the heading is now the
+  `SubpageHeader` primitive, #794); `GroupCard` did not,
   because Video draws its own. Every write **returns what it changed** (#331): the affected group summaries, the images
   whose `group_id` moved, and the ids a group trash soft-deleted. That is still
   server truth rather than client arithmetic -- a write moves a cover, a count,

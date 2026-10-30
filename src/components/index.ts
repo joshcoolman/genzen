@@ -99,6 +99,10 @@ export {
   type SheetContentProps,
 } from './sheet/sheet'
 export { Stack, type StackProps } from './stack/stack'
+export {
+  SubpageHeader,
+  type SubpageHeaderProps,
+} from './subpage-header/subpage-header'
 export { Switch, type SwitchProps } from './switch/switch'
 export { Textarea, type TextareaProps } from './textarea/textarea'
 export { Thumbnail, type ThumbnailProps } from './thumbnail/thumbnail'

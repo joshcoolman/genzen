@@ -1,7 +1,6 @@
 'use client'
 
 import { ExistingImagePicker } from '../_components/existing-image-picker/existing-image-picker'
-import { GroupHeading } from '../_components/group-heading/group-heading'
 import { GroupPickerDialog } from '../_components/group-picker-dialog/group-picker-dialog'
 import { HiddenBar } from '../_components/hidden-bar/hidden-bar'
 import { useSelectionPanelFits } from '../_components/selection-panel/selection-panel'
@@ -22,7 +21,13 @@ import styles from './video.module.css'
 import type { VideoRecord } from './_actions/generate-video.action'
 import { MAX_VIDEO_IMAGES } from '#/features/video/inputs'
 import { clipName } from '#/features/video/clip-facts'
-import { ConfirmDialog, NameDialog, PageHeader, Stack } from '#/components'
+import {
+  ConfirmDialog,
+  NameDialog,
+  PageHeader,
+  Stack,
+  SubpageHeader,
+} from '#/components'
 
 export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
   const {
@@ -149,8 +154,8 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
           am I" that the first one no longer gives. Leaving a group puts the
           route header back. */}
       {activeGroup ? (
-        <GroupHeading
-          name={activeGroup.name}
+        <SubpageHeader
+          title={activeGroup.name}
           backLabel="Video"
           onBack={leaveGroup}
         />

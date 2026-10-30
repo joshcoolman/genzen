@@ -7,7 +7,7 @@ import {
   Scissors,
   StepForward,
 } from 'lucide-react'
-import { EditHeading } from '../_components/edit-heading/edit-heading'
+import { changeEditName } from '../_actions/edits.action'
 import { ContinueDialog } from './_components/continue-dialog/continue-dialog'
 import { CutPlayer } from './_components/cut-player/cut-player'
 import { FrameDialog } from './_components/frame-dialog/frame-dialog'
@@ -18,7 +18,7 @@ import { useView } from './use-view'
 import styles from './view.module.css'
 import type { Edit, EditFrame } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
-import { Button, ClipPicker } from '#/components'
+import { Button, ClipPicker, SubpageHeader } from '#/components'
 
 /**
  * An edit: the stage on top, the timeline under it (#726).
@@ -42,7 +42,16 @@ export function View({
 
   return (
     <>
-      <EditHeading id={edit.id} name={edit.name} />
+      <SubpageHeader
+        title={edit.name}
+        backLabel="All edits"
+        backHref="/edit"
+        rename={{
+          noun: 'edit',
+          onRename: (name) => changeEditName(edit.id, name),
+        }}
+        className={styles.heading}
+      />
       <div className={styles.stack}>
         <CutPlayer
           /* The ready rows only (#731): a clip being made holds its place on

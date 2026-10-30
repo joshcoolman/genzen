@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { SessionHeading } from '../_components/session-heading/session-heading'
+import { changeSessionName } from '../_actions/sessions.action'
 import { cutProgressLabel } from '../_lib/cut-job'
 import { ChatPanel } from './_components/chat-panel/chat-panel'
 import { DeriveDialog } from './_components/derive-dialog/derive-dialog'
@@ -34,7 +34,7 @@ import type { RefAsset } from '../_actions/references.action'
 import type { RefKind, Session } from '../_lib/types'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { clipName } from '#/features/video/clip-facts'
-import { ImageViewer } from '#/components'
+import { ImageViewer, SubpageHeader } from '#/components'
 
 /**
  * A session: the player on top, the run underneath it (#662).
@@ -105,23 +105,35 @@ export function View({
 
   return (
     <>
-      <SessionHeading id={session.id} name={session.name}>
-        {/* Only once there is something to extract from (#690) -- in any cut,
+      <SubpageHeader
+        title={session.name}
+        backLabel="All sessions"
+        backHref="/director"
+        rename={{
+          noun: 'session',
+          onRename: (name) => changeSessionName(session.id, name),
+        }}
+        className={styles.heading}
+        end={
+          <>
+            {/* Only once there is something to extract from (#690) -- in any cut,
             since the sheets are the session's and an empty new cut does not
             take them away (#744). Extraction reads the open cut. */}
-        {session.cuts.cuts.some((cut) => cut.clipIds.length > 0) && (
-          <SessionTabs
-            tab={tab}
-            onChange={references.setTab}
-            script={view.chat !== null}
-            counts={{
-              characters: refs.characters.length,
-              locations: refs.locations.length,
-            }}
-            storyboard={canStoryboard}
-          />
-        )}
-      </SessionHeading>
+            {session.cuts.cuts.some((cut) => cut.clipIds.length > 0) && (
+              <SessionTabs
+                tab={tab}
+                onChange={references.setTab}
+                script={view.chat !== null}
+                counts={{
+                  characters: refs.characters.length,
+                  locations: refs.locations.length,
+                }}
+                storyboard={canStoryboard}
+              />
+            )}
+          </>
+        }
+      />
 
       {/* A reference tab replaces the work area's body and nothing else: the
           player, the row and the chat panel are the work tab's, and the heading
