@@ -3,7 +3,6 @@ import {
   Film,
   FlaskConical,
   Logs,
-  Newspaper,
   Scissors,
   Sparkles,
   Trash2,
@@ -71,13 +70,6 @@ export const navItems: Array<NavItem> = [
     label: 'Edit',
     href: '/edit',
     icon: Scissors,
-  },
-  {
-    id: 'news',
-    label: 'News',
-    href: '/news',
-    icon: Newspaper,
-    matchPaths: ['/news'],
   },
   {
     id: 'activity',

@@ -127,13 +127,6 @@ the timeline too. **Continue** makes the clip between the highlighted clip and
 the next, pinned at both frames, and holds its place on the strip while FAL
 works. **Export to Video** cuts it into one clip on the Video wall.
 
-### News: what changed in image and video models
-
-**News** is an illustrated feed. A run has Claude search for recent image and
-video model news, compared against the models genzen already offers, and writes
-each story up as a post with a generated hero image. A post opens to its full
-write-up and sources.
-
 ### On a phone
 
 Below tablet width the app has a phone layout. A green menu button sits bottom
