@@ -27,11 +27,6 @@
   cursor: not-allowed;
 }
 
-.root:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 /* Sized here, unlike Button, which leaves child SVGs to the call site. There is
    nothing else in an icon button to set the scale against. */
 .root > svg {

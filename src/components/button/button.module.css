@@ -9,8 +9,9 @@
  *   styles. The variants below are the ones that had actually converged in the
  *   codebase, not an invented set.
  *
- * State is driven off Base UI's data-attributes ([data-disabled],
- * [data-focus-visible]) rather than CSS pseudo-classes or utility variants.
+ * State is driven off Base UI's data-attributes ([data-disabled]) rather than
+ * CSS pseudo-classes or utility variants. Focus is the global ring in base.css
+ * (#788), not drawn here.
  *
  * TWO DELTAS from the bootsy original, both forced by token names that mean
  * different things in the two repos. Anything else diverging is a mistake:
@@ -40,11 +41,6 @@
 .root[data-disabled] {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.root[data-focus-visible] {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 /* Sizes */

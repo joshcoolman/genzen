@@ -131,8 +131,9 @@
   cursor: default;
 }
 
+/* The global ring (base.css), drawn inside: an outside ring would be clipped by
+   the edge of the bar. */
 .icon:focus-visible {
-  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
