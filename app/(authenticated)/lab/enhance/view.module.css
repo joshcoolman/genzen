@@ -70,9 +70,10 @@
 
 .sourceLabel {
   flex-shrink: 0;
-  font-size: var(--text-3xs);
+  font-size: var(--text-2xs);
   font-weight: var(--weight-semibold);
   line-height: var(--leading-prose);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
 }
@@ -186,7 +187,8 @@
 
 .shotLabel {
   color: var(--text-muted);
-  font-size: var(--text-xs);
-  letter-spacing: var(--tracking-wide);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wider);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
 }
