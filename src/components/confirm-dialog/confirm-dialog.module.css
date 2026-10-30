@@ -40,7 +40,7 @@
   padding: var(--space-20);
   background: var(--surface-raised);
   border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
 }
 
 .textCol {
