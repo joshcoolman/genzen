@@ -51,10 +51,14 @@ const noop = () => () => {}
  */
 export function DictateButton({
   onText,
+  onBusyChange,
   disabled,
   className,
 }: {
   onText: (text: string) => void
+  /** True from the first tap until the text lands, so a parent can hold its
+   *  rows still -- a removed row would hand the words to its neighbour. */
+  onBusyChange?: (busy: boolean) => void
   disabled?: boolean
   className?: string
 }) {
@@ -62,25 +66,35 @@ export function DictateButton({
   const [phase, setPhase] = useState<Phase>('idle')
   const recorder = useRef<MediaRecorder | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mounted = useRef(true)
   // The latest callback, so text lands against what the field holds when the
   // transcript arrives rather than when recording started.
   const onTextRef = useRef(onText)
   useEffect(() => {
     onTextRef.current = onText
   })
+  const onBusyRef = useRef(onBusyChange)
+  useEffect(() => {
+    onBusyRef.current = onBusyChange
+  })
+  useEffect(() => {
+    onBusyRef.current?.(phase !== 'idle')
+  }, [phase])
 
   // Leaving mid-recording releases the microphone without transcribing.
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      onBusyRef.current?.(false)
       const rec = recorder.current
       if (!rec) return
       rec.onstop = null
       if (rec.state !== 'inactive') rec.stop()
       rec.stream.getTracks().forEach((t) => t.stop())
       if (timer.current) clearTimeout(timer.current)
-    },
-    [],
-  )
+    }
+  }, [])
 
   if (!supported) return null
 
@@ -90,6 +104,12 @@ export function DictateButton({
       stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     } catch {
       toast.error('Microphone access was blocked.')
+      return
+    }
+    // Closed while the permission prompt was up: let the microphone go
+    // rather than record with no button left to stop it.
+    if (!mounted.current) {
+      stream.getTracks().forEach((t) => t.stop())
       return
     }
     const mimeType = pickMimeType()
@@ -127,12 +147,13 @@ export function DictateButton({
     form.append('audio', audio, `prompt.${ext}`)
     try {
       const result = await transcribeAudio(form)
+      if (!mounted.current) return
       if (result.ok) onTextRef.current(result.text)
       else toast.error(result.error)
     } catch {
       toast.error('Transcription failed. Try again.')
     } finally {
-      setPhase('idle')
+      if (mounted.current) setPhase('idle')
     }
   }
 
