@@ -1,6 +1,7 @@
 'use client'
 
 import { ArrowLeft, Plus, X } from 'lucide-react'
+import { DictateButton } from '../dictate-button/dictate-button'
 import styles from './mobile-composer.module.css'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import type { ButtonProps } from '#/components'
@@ -106,11 +107,27 @@ export function ComposerHeader({
   )
 }
 
-/** The one prompt box. Phone-sized type, so iOS does not zoom on focus. */
-export function ComposerPrompt(
-  props: Omit<Parameters<typeof Textarea>[0], 'className' | 'rows'>,
-) {
-  return <Textarea rows={4} className={styles.prompt} {...props} />
+/** The one prompt box. Phone-sized type, so iOS does not zoom on focus.
+ *  `onDictate` puts the microphone in its corner (#811) and receives the
+ *  spoken text; the composer decides how it joins what is typed. */
+export function ComposerPrompt({
+  onDictate,
+  ...props
+}: Omit<Parameters<typeof Textarea>[0], 'className' | 'rows'> & {
+  onDictate?: (text: string) => void
+}) {
+  if (!onDictate)
+    return <Textarea rows={4} className={styles.prompt} {...props} />
+  return (
+    <div className={styles.promptField}>
+      <Textarea rows={4} className={styles.prompt} {...props} />
+      <DictateButton
+        className={styles.dictate}
+        disabled={props.disabled}
+        onText={onDictate}
+      />
+    </div>
+  )
 }
 
 /** A step's content. `scroll` for a long one, so the header and footer hold

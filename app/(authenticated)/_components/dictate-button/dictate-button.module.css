@@ -1,0 +1,66 @@
+/* A round glyph in a prompt field's corner. Muted at rest so it does not
+   compete with the text; the danger ink while recording, because a live
+   microphone is the one state worth being impossible to miss. */
+.root {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-muted);
+  transition:
+    color var(--duration-normal) var(--ease-in-out),
+    background-color var(--duration-normal) var(--ease-in-out);
+}
+
+.root svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.root:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.root:disabled {
+  opacity: 0.5;
+}
+
+.recording,
+.recording:hover:not(:disabled) {
+  color: var(--danger);
+  background: var(--danger-soft);
+  animation: pulse 1.4s var(--ease-in-out) infinite;
+}
+
+.recording svg {
+  fill: currentColor;
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recording,
+  .spin {
+    animation: none;
+  }
+}

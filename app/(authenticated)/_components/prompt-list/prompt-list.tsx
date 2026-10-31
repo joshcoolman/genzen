@@ -1,7 +1,9 @@
 'use client'
 
 import { Plus, X } from 'lucide-react'
+import { useState } from 'react'
 import { SkillPrompt } from '../skill-prompt/skill-prompt'
+import { DictateButton, appendSpoken } from '../dictate-button/dictate-button'
 import styles from './prompt-list.module.css'
 import type { ReactNode } from 'react'
 import { MiniButton, Textarea } from '#/components'
@@ -48,6 +50,10 @@ export function PromptList({
   // below it while the user was typing. A row being added is already a shift;
   // typing should never be one.
   const PromptInput = imageCommands ? SkillPrompt : Textarea
+  // Rows are keyed by index, so removing or adding one while a row is being
+  // dictated would land the words in a different prompt. Hold the list still.
+  const [dictating, setDictating] = useState(false)
+  const locked = disabled || dictating
   const canClearPrompts = prompts.length > 1
   return (
     <div className={styles.root}>
@@ -58,7 +64,7 @@ export function PromptList({
           <button
             type="button"
             onClick={onClearPrompts}
-            disabled={disabled}
+            disabled={locked}
             className={styles.clearAll}
           >
             Clear all
@@ -90,10 +96,18 @@ export function PromptList({
               onClick={() => onRemovePrompt(index)}
               className={styles.remove}
               title="Remove this prompt"
-              disabled={disabled}
+              disabled={locked}
             >
               <X size={14} />
             </button>
+            <DictateButton
+              className={styles.dictate}
+              disabled={disabled}
+              onBusyChange={setDictating}
+              onText={(text) =>
+                onUpdatePrompt(index, appendSpoken(promptText, text))
+              }
+            />
           </div>
         )
       })}
@@ -102,7 +116,7 @@ export function PromptList({
           It shared a full-width dashed row with Paste Prompts and Generate
           prompts until those were removed. */}
       <div className={styles.actions}>
-        <MiniButton icon={<Plus />} onClick={onAddPrompt} disabled={disabled}>
+        <MiniButton icon={<Plus />} onClick={onAddPrompt} disabled={locked}>
           Add prompt
         </MiniButton>
         {actionSlot}

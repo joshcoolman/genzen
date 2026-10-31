@@ -18,6 +18,7 @@ import {
   Tile,
   TileGrid,
 } from '../../../_components/mobile-composer/mobile-composer'
+import { appendSpoken } from '../../../_components/dictate-button/dictate-button'
 import { ImageInputs } from '../image-inputs/image-inputs'
 import { ModelPicker } from '../model-picker/model-picker'
 import styles from './mobile-video-composer.module.css'
@@ -177,6 +178,9 @@ export function MobileVideoComposer(props: MobileVideoComposerProps) {
           <ComposerPrompt
             value={prompts[0] ?? ''}
             onChange={(e) => onUpdatePrompt(0, e.target.value)}
+            onDictate={(text) =>
+              onUpdatePrompt(0, appendSpoken(prompts[0] ?? '', text))
+            }
             placeholder={
               supportsAudio && generateAudio
                 ? 'What happens in the shot? Dialogue in quotes is spoken aloud.'
