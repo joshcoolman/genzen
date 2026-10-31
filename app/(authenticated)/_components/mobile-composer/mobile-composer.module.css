@@ -84,6 +84,23 @@
   font-size: var(--text-base);
 }
 
+.promptField {
+  position: relative;
+}
+
+.promptField .prompt {
+  padding-right: var(--space-40);
+}
+
+/* A thumb-sized target in the corner, clear of the text by the padding above. */
+.dictate {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
 .note {
   display: flex;
   align-items: center;

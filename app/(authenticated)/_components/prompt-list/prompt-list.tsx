@@ -2,6 +2,7 @@
 
 import { Plus, X } from 'lucide-react'
 import { SkillPrompt } from '../skill-prompt/skill-prompt'
+import { DictateButton, appendSpoken } from '../dictate-button/dictate-button'
 import styles from './prompt-list.module.css'
 import type { ReactNode } from 'react'
 import { MiniButton, Textarea } from '#/components'
@@ -94,6 +95,13 @@ export function PromptList({
             >
               <X size={14} />
             </button>
+            <DictateButton
+              className={styles.dictate}
+              disabled={disabled}
+              onText={(text) =>
+                onUpdatePrompt(index, appendSpoken(promptText, text))
+              }
+            />
           </div>
         )
       })}

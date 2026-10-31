@@ -18,6 +18,7 @@ import {
   Tile,
   TileGrid,
 } from '../../../_components/mobile-composer/mobile-composer'
+import { appendSpoken } from '../../../_components/dictate-button/dictate-button'
 import { ExistingImagePicker } from '../../../_components/existing-image-picker/existing-image-picker'
 import { ModelTable } from '../../../_components/model-selector/model-selector'
 import { SystemInstructionsButton } from '../../../_components/system-instructions-button/system-instructions-button'
@@ -135,6 +136,12 @@ export function MobileGenerator({
             value={generator.prompts[0] ?? ''}
             onChange={(e) => generator.setPromptAtIndex(0, e.target.value)}
             placeholder="Describe your image..."
+            onDictate={(text) =>
+              generator.setPromptAtIndex(
+                0,
+                appendSpoken(generator.prompts[0] ?? '', text),
+              )
+            }
             disabled={busy}
           />
           {extraPrompts > 0 && (

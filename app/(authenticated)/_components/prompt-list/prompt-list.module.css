@@ -99,3 +99,10 @@
   flex: 1;
   justify-content: center;
 }
+
+/* Bottom-right, under the remove button and in the same cleared column. */
+.dictate {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-4);
+}
